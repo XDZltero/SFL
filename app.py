@@ -57,4 +57,6 @@ def attack():
         return jsonify({ "message": f"你對 {monster['name']} 造成 {user['attack']} 傷害，但受到 {monster['attack']} 傷害。", "monster_hp": monster_hp, "your_hp": user["hp"] })
 
 if __name__ == "__main__":
-    app.run()
+    import os
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
