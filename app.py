@@ -232,6 +232,18 @@ def skillup():
     user["skill_points"] -= 1
     user_ref.set(user)
     return jsonify({"message": f"{skill['name']} 升級為 Lv {current_level + 1}", "status": user})
+    
+@app.route("/items", methods=["GET"])
+def get_all_items():
+    items = db.collection("items").stream()
+    result = {}
+    for doc in items:
+        data = doc.to_dict()
+        result[data["id"]] = {
+            "name": data["name"],
+            "special": data.get("special", 0)
+        }
+    return jsonify(result)
 
 if __name__ == "__main__":
     import os
