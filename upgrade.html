@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>升級與技能頁面</title>
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script>
@@ -13,12 +15,14 @@
     };
     firebase.initializeApp(firebaseConfig);
   </script>
+
   <style>
     body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
     input { margin: 5px; padding: 5px; }
     button { margin: 5px; padding: 5px 10px; cursor: pointer; }
     #base_stats ul { padding-left: 20px; }
     #log { white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
+
     #topbar {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -30,20 +34,32 @@
       border-bottom: 1px solid #ccc;
       font-size: 0.95em;
     }
+
+    #loadingOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 1.5em;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
   <div id="topbar">
-    <span>👤 使用者：<span id="userEmail">載入中...</span></span>
-    <button onclick="logout()">🔓 登出</button>
+    <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
+    <div>
+      <button onclick="location.href='index.html'">🔙 返回主頁</button>
+      <button onclick="logout()">🔓 登出</button>
+    </div>
   </div>
+
+  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
 
   <h1>🧠 升級與技能管理</h1>
-
-  <div>
-    使用者 ID：<input id="userId" placeholder="輸入使用者 ID" disabled />
-    <button onclick="loadStatus()">載入角色資料</button>
-  </div>
 
   <hr>
 
@@ -63,19 +79,16 @@
 
   <pre id="log"></pre>
 
-  <script>
+  <script type="module">
     const API_BASE = "https://sfl-9cb8.onrender.com";
+    const emailSpan = document.getElementById("userEmail");
+    const baseStatsBlock = document.getElementById("base_stats");
+    const loading = document.getElementById("loadingOverlay");
     let userId = null;
 
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) return location.href = "/SFL/login.html";
-      userId = user.email;
-
-      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-      const data = await res.json();
-      document.getElementById("userEmail").innerText = data.nickname || userId;
-      document.getElementById("userId").value = userId;
-    });
+    function showLoading(show) {
+      loading.style.display = show ? "flex" : "none";
+    }
 
     function logout() {
       firebase.auth().signOut().then(() => {
@@ -88,21 +101,37 @@
       document.getElementById("log").innerText = out;
     }
 
+    async function waitForUser() {
+      return new Promise((resolve) => {
+        const unsub = firebase.auth().onAuthStateChanged((user) => {
+          unsub();
+          resolve(user);
+        });
+      });
+    }
+
     async function loadStatus() {
       if (!userId) return;
-      const res = await fetch(`${API_BASE}/status?user=${userId}`);
-      const data = await res.json();
+      showLoading(true);
+      try {
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+        const data = await res.json();
 
-      if (data.error) return log(data);
+        if (data.error) return log(data);
 
-      let html = "<ul>";
-      for (const [k, v] of Object.entries(data.base_stats || {})) {
-        html += `<li>${k.toUpperCase()}：${v}</li>`;
+        let html = "<ul>";
+        for (const [k, v] of Object.entries(data.base_stats || {})) {
+          html += `<li>${k.toUpperCase()}：${v}</li>`;
+        }
+        html += "</ul>";
+
+        baseStatsBlock.innerHTML = html;
+        log(data);
+      } catch (err) {
+        log("❌ 載入錯誤：" + err.message);
+      } finally {
+        showLoading(false);
       }
-      html += "</ul>";
-
-      document.getElementById("base_stats").innerHTML = html;
-      log(data);
     }
 
     async function submitLevelUp() {
@@ -111,6 +140,7 @@
       const atk = parseInt(document.getElementById("lvl_atk").value || "0");
       const luck = parseInt(document.getElementById("lvl_luck").value || "0");
 
+      showLoading(true);
       const res = await fetch(`${API_BASE}/levelup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -123,11 +153,13 @@
       const data = await res.json();
       log(data.message || data);
       await loadStatus();
+      showLoading(false);
     }
 
     async function getSkills() {
       if (!userId) return;
-      const res = await fetch(`${API_BASE}/skills?user=${userId}`);
+      showLoading(true);
+      const res = await fetch(`${API_BASE}/skills?user=${encodeURIComponent(userId)}`);
       const data = await res.json();
 
       if (res.ok) {
@@ -139,12 +171,14 @@
       } else {
         log(data.error || "技能查詢失敗");
       }
+      showLoading(false);
     }
 
     async function skillUp() {
       const skill = document.getElementById("skill_id").value.trim();
       if (!userId || !skill) return alert("請輸入技能 ID");
 
+      showLoading(true);
       const res = await fetch(`${API_BASE}/skillup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -154,7 +188,28 @@
       const data = await res.json();
       log(data.message || data);
       await getSkills();
+      showLoading(false);
     }
+
+    // 主流程
+    (async () => {
+      showLoading(true);
+      const user = await waitForUser();
+      if (!user) {
+        location.href = "/SFL/login.html";
+        return;
+      }
+
+      userId = user.email;
+
+      // 載入暱稱顯示
+      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+      const data = await res.json();
+      emailSpan.innerText = data.nickname || userId;
+
+      await loadStatus();
+      showLoading(false);
+    })();
   </script>
 </body>
 </html>
