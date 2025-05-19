@@ -3,13 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <title>戰鬥中</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
+    #topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #f5f5f5;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+      font-size: 0.95em;
+    }
     #container {
       display: flex;
       gap: 30px;
+      margin-top: 60px;
     }
-
     #charInfo, #log {
       white-space: pre-wrap;
       border: 1px solid #ccc;
@@ -17,29 +38,30 @@
       flex: 1;
       min-height: 300px;
     }
-
     #status {
       font-weight: bold;
       margin-top: 1em;
       font-size: 1.2em;
     }
-
     #buttons {
       margin-top: 2em;
     }
-
     button {
       padding: 0.5em 1.2em;
       margin-right: 1em;
       font-size: 1em;
       cursor: pointer;
     }
-
     h1 { margin-bottom: 1em; }
     #waiting { margin-bottom: 1em; }
   </style>
 </head>
 <body>
+  <div id="topbar">
+    <span>👤 使用者：<span id="userEmail">載入中...</span></span>
+    <button onclick="logout()">🔓 登出</button>
+  </div>
+
   <h1>⚔️ 戰鬥中...</h1>
   <div id="waiting">請稍候，戰鬥進行中...</div>
 
@@ -57,13 +79,24 @@
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
+    let userId = null;
 
-    function getParams() {
-      const params = new URLSearchParams(window.location.search);
-      return {
-        user: params.get("user"),
-        monster: params.get("monster")
-      };
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = "/SFL/login.html";
+        return;
+      }
+      userId = user.email;
+      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+      const data = await res.json();
+      document.getElementById("userEmail").innerText = data.nickname || userId;
+      startBattle();
+    });
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        window.location.href = "/SFL/login.html";
+      });
     }
 
     async function fetchAndDisplayUser(userId) {
@@ -90,12 +123,8 @@
       }
 
       output += `\n📘 技能：\n`;
-      if ((user.skills || []).length === 0) {
-        output += "  - 無\n";
-      } else {
-        for (const skill of Object.entries(user.skills)) {
-          output += `  - ${skill[0]}（等級: ${skill[1]}）\n`;
-        }
+      for (const skill of Object.entries(user.skills || {})) {
+        output += `  - ${skill[0]}（等級: ${skill[1]}）\n`;
       }
 
       output += `\n✨ 增益狀態：\n`;
@@ -103,63 +132,50 @@
         output += `  - ${k}：${v}\n`;
       }
 
-      const charInfo = document.getElementById("charInfo");
-      charInfo.innerText = output;
-      charInfo.style.display = "block";
+      document.getElementById("charInfo").innerText = output;
+      document.getElementById("charInfo").style.display = "block";
     }
 
     async function startBattle() {
-      const { user, monster } = getParams();
-      if (!user || !monster) {
+      const params = new URLSearchParams(window.location.search);
+      const monster = params.get("monster");
+
+      if (!userId || !monster) {
         document.getElementById("waiting").innerText = "❌ 錯誤：缺少必要參數";
         return;
       }
 
       try {
-        // 初始角色資料
-        await fetchAndDisplayUser(user);
+        await fetchAndDisplayUser(userId);
 
         const res = await fetch(`${API_BASE}/battle`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user, monster })
+          body: JSON.stringify({ user: userId, monster })
         });
 
         const data = await res.json();
 
         document.getElementById("waiting").style.display = "none";
+        document.getElementById("log").style.display = "block";
+        document.getElementById("log").innerText = data.battle_log.join("\n");
 
-        // 顯示戰鬥紀錄
-        const logDiv = document.getElementById("log");
-        logDiv.style.display = "block";
-        logDiv.innerText = data.battle_log.join("\n");
+        document.getElementById("status").innerText =
+          data.result === "win" ? "✅ 戰鬥勝利！" : "💀 戰鬥失敗！";
 
-        // 顯示戰鬥結果
-        const statusDiv = document.getElementById("status");
-        statusDiv.innerText = data.result === "win" ? "✅ 戰鬥勝利！" : "💀 戰鬥失敗！";
-
-        // 重新載入角色資訊（刷新等級、點數等）
-        await fetchAndDisplayUser(user);
-
-        // 顯示按鈕
+        await fetchAndDisplayUser(userId);
         document.getElementById("buttons").style.display = "block";
-
       } catch (err) {
         document.getElementById("waiting").innerText = "❌ 發生錯誤，無法完成戰鬥";
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const retryBtn = document.getElementById("retryBtn");
-      retryBtn.addEventListener("click", () => {
-        document.getElementById("log").style.display = "none";
-        document.getElementById("status").innerText = "";
-        document.getElementById("buttons").style.display = "none";
-        document.getElementById("waiting").style.display = "block";
-        document.getElementById("waiting").innerText = "請稍候，戰鬥進行中...";
-        startBattle();
-      });
-
+    document.getElementById("retryBtn")?.addEventListener("click", () => {
+      document.getElementById("log").style.display = "none";
+      document.getElementById("status").innerText = "";
+      document.getElementById("buttons").style.display = "none";
+      document.getElementById("waiting").style.display = "block";
+      document.getElementById("waiting").innerText = "請稍候，戰鬥進行中...";
       startBattle();
     });
   </script>
