@@ -103,6 +103,48 @@ def battle():
 
     return jsonify(result)
 
+@app.route("/inventory", methods=["GET"])
+def inventory():
+    user_id = request.args.get("user")
+    if not user_id:
+        return jsonify({"error": "缺少使用者參數"}), 400
+
+    item_doc = db.collection("user_items").document(user_id).get()
+    if not item_doc.exists:
+        return jsonify({"items": {}})
+
+    return jsonify(item_doc.to_dict())
+
+@app.route("/levelup", methods=["POST"])
+def levelup():
+    data = request.json
+    user_id = data.get("user")
+    allocation = data.get("allocate")  # dict: {"hp": 1, "attack": 2, "luck": 2}
+
+    if not user_id or not allocation:
+        return jsonify({"error": "缺少參數"}), 400
+
+    ref = db.collection("users").document(user_id)
+    snap = ref.get()
+    if not snap.exists:
+        return jsonify({"error": "使用者不存在"}), 404
+
+    user = snap.to_dict()
+    total_points = sum(allocation.values())
+
+    if user["stat_points"] < total_points:
+        return jsonify({"error": "點數不足"}), 400
+
+    # 更新能力值
+    for stat, value in allocation.items():
+        if stat not in user["base_stats"]:
+            return jsonify({"error": f"無效屬性：{stat}"}), 400
+        user["base_stats"][stat] += value
+
+    user["stat_points"] -= total_points
+    ref.set(user)
+    return jsonify({"message": "屬性分配完成", "status": user})
+
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))
