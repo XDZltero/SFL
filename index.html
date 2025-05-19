@@ -157,6 +157,42 @@
       const data = await res.json();
       log(data.status || data);
     }
-  </script>
+  
+    async function getSkills() {
+      const user = getUser();
+      const res = await fetch(`${API_BASE}/skills?user=${user}`);
+      const data = await res.json();
+
+      if (res.ok) {
+        let out = "📘 技能列表：\n";
+        for (const [id, info] of Object.entries(data)) {
+          out += `  - ${info.name}（Lv ${info.level}, 倍率: ${info.multiplier}）\n`;
+        }
+        document.getElementById("log").innerText = out;
+      } else {
+        document.getElementById("log").innerText = data.error || "技能查詢失敗";
+      }
+    }
+
+    async function skillUp() {
+      const user = getUser();
+      const skill = document.getElementById("skill_id").value.trim();
+
+      if (!skill) {
+        document.getElementById("log").innerText = "請輸入技能 ID";
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/skillup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user, skill })
+      });
+
+      const data = await res.json();
+      document.getElementById("log").innerText = data.message || JSON.stringify(data, null, 2);
+    }
+
+</script>
 </body>
 </html>
