@@ -15,7 +15,7 @@
   <button onclick="register()">註冊</button>
   <button onclick="status()">查詢狀態</button>
   怪物 ID：<input id="monster_id" placeholder="輸入怪物 ID" />
-  <button onclick="battle()">戰鬥開始</button>
+  <button onclick="goToBattle()">戰鬥開始</button>
 
   <div class="section">
     <h2>🎒 查詢背包</h2>
@@ -121,13 +121,18 @@
     }
 
     
-    async function battle() {
-      const user = getUser();
+    function goToBattle() {
+      const user = document.getElementById("userId").value.trim();
       const monster = document.getElementById("monster_id").value.trim();
-      if (!monster) {
-        document.getElementById("log").innerText = "請輸入怪物 ID";
+
+      if (!user || !monster) {
+        alert("請輸入使用者 ID 和怪物 ID");
         return;
       }
+
+      // 將使用者與怪物ID帶入URL作為參數跳轉
+      window.location.href = `battle.html?user=${encodeURIComponent(user)}&monster=${encodeURIComponent(monster)}`;
+    }
 
       const res = await fetch(`${API_BASE}/battle`, {
         method: "POST",
