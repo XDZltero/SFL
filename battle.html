@@ -4,21 +4,50 @@
   <meta charset="UTF-8">
   <title>戰鬥中</title>
   <style>
-    #log { white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
-    #status { font-weight: bold; margin-top: 1em; font-size: 1.2em; }
-    #buttons { margin-top: 2em; }
+    body { font-family: sans-serif; padding: 20px; }
+    #container {
+      display: flex;
+      gap: 30px;
+    }
+
+    #charInfo, #log {
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      padding: 1em;
+      flex: 1;
+      min-height: 300px;
+    }
+
+    #status {
+      font-weight: bold;
+      margin-top: 1em;
+      font-size: 1.2em;
+    }
+
+    #buttons {
+      margin-top: 2em;
+    }
+
     button {
       padding: 0.5em 1.2em;
       margin-right: 1em;
       font-size: 1em;
       cursor: pointer;
     }
+
+    h1 { margin-bottom: 1em; }
+    #waiting { margin-bottom: 1em; }
   </style>
 </head>
 <body>
   <h1>⚔️ 戰鬥中...</h1>
   <div id="waiting">請稍候，戰鬥進行中...</div>
-  <div id="log" style="display:none;"></div>
+
+  <div id="container">
+    <div id="charInfo" style="display:none;"><strong>🧍 角色資訊載入中...</strong></div>
+    <div id="log" style="display:none;"><strong>📜 戰鬥紀錄</strong></div>
+  </div>
+
   <div id="status"></div>
 
   <div id="buttons" style="display: none;">
@@ -37,6 +66,48 @@
       };
     }
 
+    async function fetchAndDisplayUser(userId) {
+      const res = await fetch(`${API_BASE}/status?user=${userId}`);
+      const user = await res.json();
+
+      if (user.error) {
+        document.getElementById("charInfo").innerText = "❌ 無法取得角色資訊";
+        return;
+      }
+
+      let output = `🧍 使用者名稱：${user.nickname || "(未命名)"}\n`;
+      output += `🔢 等級：${user.level}（EXP: ${user.exp}）\n`;
+      output += `🧬 剩餘能力點：${user.stat_points}，技能點：${user.skill_points}\n`;
+
+      output += `\n💪 基礎能力值：\n`;
+      for (const [k, v] of Object.entries(user.base_stats || {})) {
+        output += `  - ${k.toUpperCase()}：${v}\n`;
+      }
+
+      output += `\n🛡️ 裝備：\n`;
+      for (const [slot, item] of Object.entries(user.equipment || {})) {
+        output += `  - ${slot}：${item || "無"}\n`;
+      }
+
+      output += `\n📘 技能：\n`;
+      if ((user.skills || []).length === 0) {
+        output += "  - 無\n";
+      } else {
+        for (const skill of Object.entries(user.skills)) {
+          output += `  - ${skill[0]}（等級: ${skill[1]}）\n`;
+        }
+      }
+
+      output += `\n✨ 增益狀態：\n`;
+      for (const [k, v] of Object.entries(user.buffs || {})) {
+        output += `  - ${k}：${v}\n`;
+      }
+
+      const charInfo = document.getElementById("charInfo");
+      charInfo.innerText = output;
+      charInfo.style.display = "block";
+    }
+
     async function startBattle() {
       const { user, monster } = getParams();
       if (!user || !monster) {
@@ -45,6 +116,9 @@
       }
 
       try {
+        // 初始角色資料
+        await fetchAndDisplayUser(user);
+
         const res = await fetch(`${API_BASE}/battle`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -54,24 +128,30 @@
         const data = await res.json();
 
         document.getElementById("waiting").style.display = "none";
+
+        // 顯示戰鬥紀錄
         const logDiv = document.getElementById("log");
         logDiv.style.display = "block";
         logDiv.innerText = data.battle_log.join("\n");
 
+        // 顯示戰鬥結果
         const statusDiv = document.getElementById("status");
         statusDiv.innerText = data.result === "win" ? "✅ 戰鬥勝利！" : "💀 戰鬥失敗！";
 
+        // 重新載入角色資訊（刷新等級、點數等）
+        await fetchAndDisplayUser(user);
+
+        // 顯示按鈕
         document.getElementById("buttons").style.display = "block";
+
       } catch (err) {
         document.getElementById("waiting").innerText = "❌ 發生錯誤，無法完成戰鬥";
       }
     }
 
-    // 再戰一次按鈕邏輯
     document.addEventListener("DOMContentLoaded", () => {
       const retryBtn = document.getElementById("retryBtn");
       retryBtn.addEventListener("click", () => {
-        // 重新執行戰鬥
         document.getElementById("log").style.display = "none";
         document.getElementById("status").innerText = "";
         document.getElementById("buttons").style.display = "none";
