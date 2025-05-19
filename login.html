@@ -178,11 +178,12 @@
     async function completeRegistration() {
       const email = window.__currentUserEmail;
       const nickname = document.getElementById("nickname").value.trim();
-
+    
       if (!nickname) return alert("請輸入暱稱");
-
+    
       try {
         showLoading(true);
+    
         const res = await fetch("/register", {
           method: "POST",
           headers: {
@@ -190,22 +191,22 @@
           },
           body: JSON.stringify({ user: email, nickname })
         });
-
+    
         const data = await res.json();
-
+    
         if (!res.ok) {
           alert(data.error || "註冊失敗");
           return;
         }
-
+    
         alert(data.message);
         window.location.href = "index.html";
-
+    
       } catch (err) {
         console.error("❌ 發生例外錯誤：", err);
         alert("發生錯誤，請稍後再試。");
       } finally {
-        showLoading(false);
+        showLoading(false); // ✅ 無論成功或失敗都要關閉載入提示
       }
     }
 
