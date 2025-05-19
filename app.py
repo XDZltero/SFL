@@ -44,7 +44,8 @@ def register():
             "phys_bonus": 0,
             "magic_bonus": 0,
             "accuracy": 1.0,
-            "luck": 10
+            "luck": 10,
+            "atk_speed": 100
         },
         "equipment": {
             "head": None,
