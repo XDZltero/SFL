@@ -56,16 +56,24 @@ def simulate_battle(user, monster):
     db = firestore.client()
 
     while user_hp > 0 and mon_hp > 0:
-        # 玩家攻擊
-        if calculate_hit(user["base_stats"]["accuracy"], monster["stats"]["evade"], user["base_stats"]["luck"]):
-            dmg = calculate_damage(user["base_stats"]["attack"], 1.0, user["buffs"]["phys_bonus"], monster["stats"]["shield"])
-            mon_hp -= dmg
-            log.append(f"你對 {monster['name']} 造成 {dmg} 傷害")
-        else:
-            log.append("你攻擊未命中")
+        # 玩家技能依序施放
+        for skill_id, level in user.get("skills", {}).items():
+            if mon_hp <= 0 or user_hp <= 0:
+                break
 
-        if mon_hp <= 0:
-            break
+            # 查技能資料
+            skill_doc = db.collection("skills").document(skill_id).get()
+            if not skill_doc.exists:
+                continue
+            skill = skill_doc.to_dict()
+            multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
+
+            if calculate_hit(user["base_stats"]["accuracy"], monster["stats"]["evade"], user["base_stats"]["luck"]):
+                dmg = calculate_damage(user["base_stats"]["attack"], multiplier, user["buffs"]["phys_bonus"], monster["stats"]["shield"])
+                mon_hp -= dmg
+                log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害")
+            else:
+                log.append(f"你使用 {skill['name']} 但未命中")
 
         # 怪物攻擊
         skill = random.choice(monster["skills"]) if monster.get("skills") else {"multiplier": 1.0, "description": "普通攻擊"}
