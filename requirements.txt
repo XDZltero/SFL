@@ -1,2 +1,3 @@
 flask
-deta
+firebase-admin
+flask_cors
