@@ -3,48 +3,121 @@
 <head>
   <meta charset="UTF-8" />
   <title>登入頁面</title>
+
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    #nicknameSection { display: none; margin-top: 20px; }
-    #log { margin-top: 1em; white-space: pre-wrap; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #f9f9f9, #e0f7fa);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #loginBox {
+      background: white;
+      padding: 2em 2.5em;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      width: 360px;
+      text-align: center;
+      animation: fadeIn 0.4s ease;
+    }
+
+    h1 {
+      margin-bottom: 1em;
+      color: #00796b;
+    }
+
+    button {
+      background: #00796b;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 1em;
+    }
+
+    button:hover {
+      background: #005a4f;
+    }
+
+    input {
+      padding: 8px;
+      margin-top: 1em;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1em;
+    }
+
+    #nicknameSection {
+      margin-top: 1em;
+      display: none;
+    }
+
+    #log {
+      margin-top: 1.5em;
+      font-size: 0.9em;
+      color: #444;
+      white-space: pre-wrap;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
   </style>
 </head>
 <body>
-  <h1>🔐 登入頁面</h1>
-  <button onclick="signInWithGoogle()">使用 Google 登入</button>
+  <div id="loginBox">
+    <h1>🔐 Dungeon，登入</h1>
+    <button onclick="signInWithGoogle()">使用 Google 登入</button>
 
-  <div id="nicknameSection">
-    <p>👋 歡迎新用戶，請輸入你的暱稱：</p>
-    <input id="nickname" placeholder="輸入暱稱" />
-    <button onclick="completeRegistration()">完成註冊</button>
+    <div id="nicknameSection">
+      <p>👋 歡迎新冒險者！請輸入你的暱稱：</p>
+      <input id="nickname" placeholder="輸入暱稱" />
+      <button onclick="completeRegistration()">完成註冊</button>
+    </div>
+
+    <div id="log"></div>
   </div>
 
-  <div id="log"></div>
-
   <script>
-    // ✅ 替換成你的 Firebase 專案資訊
-    const firebaseConfig = {
-    apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-    authDomain: "sfl-api-f0290.firebaseapp.com",
-    projectId: "sfl-api-f0290",
-    storageBucket: "sfl-api-f0290.firebasestorage.app",
-    messagingSenderId: "202781563473",
-    appId: "1:202781563473:web:338125b3f4499a23eff670",
-    measurementId: "G-MM2X8E9JNS"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
     const API_BASE = "https://sfl-9cb8.onrender.com";
+
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        const email = user.email;
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        if (!data.error) {
+          window.location.href = "/SFL/";
+        }
+      }
+    });
 
     async function signInWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
-
       try {
-        const result = await auth.signInWithPopup(provider);
+        const result = await firebase.auth().signInWithPopup(provider);
         const user = result.user;
         const email = user.email;
 
@@ -60,12 +133,12 @@
       const data = await res.json();
 
       if (data.error) {
-        log("⚠️ 使用者尚未註冊，請輸入暱稱");
+        log("⚠️ 尚未註冊，請輸入暱稱");
         document.getElementById("nicknameSection").style.display = "block";
         window.__currentUserEmail = email;
       } else {
-        log("🎉 登入成功，導向主頁...");
-        setTimeout(() => window.location.href = "index.html?user=" + encodeURIComponent(email), 1000);
+        log("🎉 登入成功，正在導向主頁...");
+        setTimeout(() => window.location.href = "/SFL/", 1000);
       }
     }
 
@@ -83,7 +156,7 @@
 
       const data = await res.json();
       log(data.message || data);
-      setTimeout(() => window.location.href = "index.html?user=" + encodeURIComponent(email), 1000);
+      setTimeout(() => window.location.href = "/SFL/", 1000);
     }
 
     function log(msg) {
