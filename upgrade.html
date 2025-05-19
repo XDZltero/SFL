@@ -96,6 +96,8 @@
       });
     }
 
+    window.logout = logout;
+
     function log(msg) {
       const out = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
       document.getElementById("log").innerText = out;
@@ -156,6 +158,8 @@
       showLoading(false);
     }
 
+    window.submitLevelUp = submitLevelUp;
+
     async function getSkills() {
       if (!userId) return;
       showLoading(true);
@@ -190,6 +194,8 @@
       await getSkills();
       showLoading(false);
     }
+
+    window.skillUp = skillUp;
 
     // 主流程
     (async () => {
