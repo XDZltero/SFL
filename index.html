@@ -3,18 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <title>Test</title>
+  <style>
+    #log { white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
+    #version { position: fixed; bottom: 5px; right: 10px; font-size: 0.8em; color: #999; }
+  </style>
 </head>
 <body>
-  <h1>文字冒險</h1>
+  <h1>Test</h1>
   <input id="userId" placeholder="輸入使用者ID" />
   <button onclick="register()">註冊</button>
   <button onclick="status()">查詢狀態</button>
   <button onclick="attack()">攻擊怪物</button>
 
   <pre id="log"></pre>
+  <div id="version">Last updated: 2025-05-19 10:45</div>
 
   <script>
-    const API_BASE = "https://你的-render-網址.onrender.com";
+    const API_BASE = "https://your-render-url.onrender.com";
 
     function log(msg) {
       document.getElementById("log").innerText = JSON.stringify(msg, null, 2);
