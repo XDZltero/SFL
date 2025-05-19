@@ -197,30 +197,29 @@
         // 🎯 獎勵顯示區塊
         if (data.result === "win" && data.rewards) {
           const { exp, leveled_up, drops } = data.rewards;
-    
-          let rewardLog = `\n[獲得經驗值] EXP + ${exp}。\n`;
-          if (leveled_up) rewardLog += `<span style="color:red">等級提升！達至 ${data.user.level} 級。</span>\n`;
-    
+          let rewardLog = `[獲得經驗值] EXP + ${exp}。<br>`;
+        
+          if (leveled_up) rewardLog += `<span style="color:red">等級提升！達至 ${data.user.level} 級。</span><br>`;
+        
           if (Array.isArray(drops) && drops.length > 0) {
-            rewardLog += `[戰利品]\n`;
-    
-            // ⬇️ 向 API 抓 items 表
+            rewardLog += `[戰利品]<br>`;
+        
             const itemRes = await fetch(`${API_BASE}/items`);
             const itemMap = await itemRes.json();
-    
+        
             for (const drop of drops) {
               if (Math.random() <= drop.rate) {
                 const meta = itemMap[drop.id] || { name: drop.id, special: 0 };
                 if (meta.special) {
-                  rewardLog += `<span style="color:red">【恭喜】獲得稀有道具 ${meta.name} ${drop.value}個</span>\n`;
+                  rewardLog += `<span style="color:red">【恭喜】獲得稀有道具 ${meta.name} ${drop.value}個</span><br>`;
                 } else {
-                  rewardLog += `獲得 ${meta.name} ${drop.value}個\n`;
+                  rewardLog += `獲得 ${meta.name} ${drop.value}個<br>`;
                 }
               }
             }
           }
-    
-          logBlock.innerText += `\n${rewardLog}`;
+        
+          logBlock.innerHTML += `<br>${rewardLog}`;
         }
     
         await fetchAndDisplayUser(userId);
