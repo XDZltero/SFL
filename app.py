@@ -148,6 +148,74 @@ def levelup():
     ref.set(user)
     return jsonify({"message": "屬性分配完成", "status": user})
 
+@app.route("/skills", methods=["GET"])
+def get_skills():
+    user_id = request.args.get("user")
+    if not user_id:
+        return jsonify({"error": "缺少使用者"}), 400
+
+    user_doc = db.collection("users").document(user_id).get()
+    if not user_doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+
+    user = user_doc.to_dict()
+    user_skills = user.get("skills", {})
+
+    skill_ref = db.collection("skills").stream()
+    skills = {doc.id: doc.to_dict() for doc in skill_ref}
+
+    result = {}
+    for skill_id, level in user_skills.items():
+        skill = skills.get(skill_id)
+        if not skill:
+            continue
+        effective_multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
+        result[skill_id] = {
+            "name": skill["name"],
+            "level": level,
+            "multiplier": round(effective_multiplier, 2),
+            "type": skill["type"]
+        }
+
+    return jsonify(result)
+
+@app.route("/skillup", methods=["POST"])
+def skillup():
+    data = request.json
+    user_id = data.get("user")
+    skill_id = data.get("skill")
+
+    if not user_id or not skill_id:
+        return jsonify({"error": "缺少參數"}), 400
+
+    user_ref = db.collection("users").document(user_id)
+    user_doc = user_ref.get()
+    if not user_doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+
+    user = user_doc.to_dict()
+    if user["skill_points"] < 1:
+        return jsonify({"error": "技能點不足"}), 400
+
+    skill_doc = db.collection("skills").document(skill_id).get()
+    if not skill_doc.exists:
+        return jsonify({"error": "技能不存在"}), 404
+
+    skill = skill_doc.to_dict()
+    current_level = user["skills"].get(skill_id, 0)
+
+    if user["level"] < skill["learnlvl"]:
+        return jsonify({"error": f"尚未達到學習等級：{skill['learnlvl']}"})
+
+    if current_level >= skill["maxlvl"]:
+        return jsonify({"error": "技能已達最大等級"}), 400
+
+    # 升級
+    user["skills"][skill_id] = current_level + 1
+    user["skill_points"] -= 1
+    user_ref.set(user)
+    return jsonify({"message": f"{skill['name']} 升級為 Lv {current_level + 1}", "status": user})
+
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))
