@@ -54,7 +54,10 @@ def register():
             "weapon_phys": None,
             "weapon_magic": None
         },
-        "skills": [],
+        "skills": {
+            "fireball": 1,
+            "slash": 1
+        },
         "buffs": {
             "phys_bonus": 0.0,
             "magic_bonus": 0.0
