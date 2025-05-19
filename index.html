@@ -22,8 +22,43 @@
     const API_BASE = "https://sfl-9cb8.onrender.com";
 
     function log(msg) {
-      document.getElementById("log").innerText = JSON.stringify(msg, null, 2);
+      if (typeof msg !== "object") {
+        document.getElementById("log").innerText = msg;
+        return;
+      }
+    
+      const user = msg;
+      let output = "";
+    
+      output += `🧍 使用者名稱：${user.nickname || "(未命名)"}\n`;
+      output += `🔢 等級：${user.level}（EXP: ${user.exp}）\n`;
+      output += `🧬 剩餘能力點：${user.stat_points}，技能點：${user.skill_points}\n`;
+      output += `\n💪 基礎能力值：\n`;
+      for (const [k, v] of Object.entries(user.base_stats || {})) {
+        output += `  - ${k.toUpperCase()}：${v}\n`;
+      }
+    
+      output += `\n🛡️ 裝備：\n`;
+      for (const [slot, item] of Object.entries(user.equipment || {})) {
+        output += `  - ${slot}：${item || "無"}\n`;
+      }
+    
+      output += `\n📘 技能：\n`;
+      if ((user.skills || []).length === 0) {
+        output += "  - 無\n";
+      } else {
+        for (const skill of user.skills) {
+          output += `  - ${skill.id}（倍率: ${skill.multiplier}）\n`;
+        }
     }
+
+  output += `\n✨ 增益狀態：\n`;
+  for (const [k, v] of Object.entries(user.buffs || {})) {
+    output += `  - ${k}：${v}\n`;
+  }
+
+  document.getElementById("log").innerText = output;
+}
 
     function getUser() {
       return document.getElementById("userId").value.trim();
