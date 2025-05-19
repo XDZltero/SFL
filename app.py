@@ -23,6 +23,8 @@ def user_ref(user_id):
 def register():
     data = request.json
     user_id = data.get("user")
+    nickname = data.get("nickname", user_id)
+
     if not user_id:
         return jsonify({"error": "缺少使用者 ID"}), 400
 
@@ -64,8 +66,9 @@ def register():
             "magic_bonus": 0.0
         }
     }
+
     ref.set(user_data)
-    return jsonify({"message": f"使用者 {user_id} 建立完成！"})
+    return jsonify({"message": f"使用者 {nickname} 建立完成！"})
 
 @app.route("/status", methods=["GET"])
 def status():
