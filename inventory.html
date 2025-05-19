@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>背包與裝備</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #userInfo { margin-bottom: 1em; }
+
+    #container {
+      display: flex;
+      gap: 40px;
+    }
+
+    #equipped, #items {
+      border: 1px solid #ccc;
+      padding: 1em;
+      flex: 1;
+      min-height: 300px;
+    }
+
+    h2 { margin-top: 0; }
+    input, button { padding: 6px; margin: 5px; }
+  </style>
+</head>
+<body>
+  <h1>🎒 背包與裝備管理</h1>
+
+  <div>
+    使用者 ID：<input id="userId" placeholder="輸入使用者 ID" />
+    <button onclick="loadInventory()">載入資料</button>
+  </div>
+
+  <div id="userInfo">(尚未載入)</div>
+
+  <div id="container">
+    <div id="equipped">
+      <h2>🛡️ 裝備中</h2>
+      <pre id="equipBlock">尚未載入</pre>
+    </div>
+    <div id="items">
+      <h2>📦 背包內容</h2>
+      <pre id="itemBlock">尚未載入</pre>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://sfl-9cb8.onrender.com";
+
+    function getUser() {
+      return document.getElementById("userId").value.trim();
+    }
+
+    async function loadInventory() {
+      const user = getUser();
+      if (!user) return alert("請輸入使用者 ID");
+
+      // 查詢角色基本狀態
+      const res1 = await fetch(`${API_BASE}/status?user=${user}`);
+      const userData = await res1.json();
+
+      if (userData.error) {
+        document.getElementById("userInfo").innerText = "❌ 無法取得角色資訊";
+        return;
+      }
+
+      // 顯示角色基本資訊
+      let info = `🧍 使用者：${userData.nickname || user}\n`;
+      info += `🔢 等級：${userData.level}（EXP: ${userData.exp}）\n`;
+      info += `💪 能力：\n`;
+      for (const [k, v] of Object.entries(userData.base_stats || {})) {
+        info += `  - ${k.toUpperCase()}：${v}\n`;
+      }
+      document.getElementById("userInfo").innerText = info;
+
+      // 顯示裝備中內容
+      let equipText = "";
+      for (const [slot, item] of Object.entries(userData.equipment || {})) {
+        equipText += `  - ${slot}：${item || "無"}\n`;
+      }
+      document.getElementById("equipBlock").innerText = equipText;
+
+      // 查詢背包資料
+      const res2 = await fetch(`${API_BASE}/inventory?user=${user}`);
+      const inv = await res2.json();
+      const items = inv.items || {};
+
+      let itemText = "";
+      for (const [name, count] of Object.entries(items)) {
+        itemText += `  - ${name} x ${count}\n`;
+      }
+
+      document.getElementById("itemBlock").innerText = itemText || "（無物品）";
+    }
+  </script>
+</body>
+</html>
