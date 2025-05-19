@@ -28,12 +28,14 @@ def register():
     if not user_id:
         return jsonify({"error": "缺少使用者 ID。"}), 400
 
+    # 檢查 user_id 是否已註冊
     ref = db.collection("users").document(user_id)
     if ref.get().exists:
         return jsonify({"error": "使用者已存在。"}), 400
 
-    ref = db.collection("users").document(nickname)
-    if ref.get().exists:
+    # 檢查 nickname 是否被其他人使用過
+    nickname_conflict = db.collection("users").where("nickname", "==", nickname).get()
+    if nickname_conflict:
         return jsonify({"error": "已經有人取過這個名字囉。"}), 400
 
     user_data = {
@@ -72,6 +74,7 @@ def register():
         }
     }
 
+    # 文件 ID 使用 user_id 儲存
     ref.set(user_data)
     return jsonify({"message": f"使用者 {nickname} 建立完成！"})
 
