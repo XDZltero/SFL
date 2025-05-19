@@ -14,7 +14,7 @@
   <input id="userId" placeholder="輸入使用者ID" />
   <button onclick="register()">註冊</button>
   <button onclick="status()">查詢狀態</button>
-  <button onclick="attack()">攻擊怪物</button>
+  <button onclick="battle()">戰鬥開始</button>
 
   <div class="section">
     <h2>🎒 查詢背包</h2>
@@ -22,11 +22,19 @@
   </div>
 
   <div class="section">
-    <h2>⬆️ 分配能力點</h2>
+    <h2>⬆️ 分配能力點（顯示基礎能力）</h2>
+    <div id="base_stats"></div>
     <input id="lvl_hp" type="number" placeholder="HP + ?" />
     <input id="lvl_atk" type="number" placeholder="攻擊 + ?" />
     <input id="lvl_luck" type="number" placeholder="運氣 + ?" />
     <button onclick="submitLevelUp()">提交分配</button>
+  </div>
+
+  <div class="section">
+    <h2>🧠 技能查詢與升級</h2>
+    <button onclick="getSkills()">查詢技能</button><br><br>
+    技能 ID：<input id="skill_id" placeholder="輸入技能 ID" />
+    <button onclick="skillUp()">升級技能</button>
   </div>
 
   <pre id="log"></pre>
@@ -34,6 +42,10 @@
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
+
+    function getUser() {
+      return document.getElementById("userId").value.trim();
+    }
 
     function log(msg) {
       if (typeof msg !== "object") {
@@ -56,6 +68,7 @@
       output += `🧍 使用者名稱：${user.nickname || "(未命名)"}\n`;
       output += `🔢 等級：${user.level}（EXP: ${user.exp}）\n`;
       output += `🧬 剩餘能力點：${user.stat_points}，技能點：${user.skill_points}\n`;
+
       output += `\n💪 基礎能力值：\n`;
       for (const [k, v] of Object.entries(user.base_stats || {})) {
         output += `  - ${k.toUpperCase()}：${v}\n`;
@@ -70,8 +83,8 @@
       if ((user.skills || []).length === 0) {
         output += "  - 無\n";
       } else {
-        for (const skill of user.skills) {
-          output += `  - ${skill.id}（倍率: ${skill.multiplier}）\n`;
+        for (const skill of Object.entries(user.skills)) {
+          output += `  - ${skill[0]}（等級: ${skill[1]}）\n`;
         }
       }
 
@@ -80,11 +93,16 @@
         output += `  - ${k}：${v}\n`;
       }
 
-      document.getElementById("log").innerText = output;
-    }
+      // 顯示在分配區段中 base stats
+      const base = user.base_stats || {};
+      let baseBlock = "<ul>";
+      for (const [k, v] of Object.entries(base)) {
+        baseBlock += `<li>${k.toUpperCase()}：${v}</li>`;
+      }
+      baseBlock += "</ul>";
+      document.getElementById("base_stats").innerHTML = baseBlock;
 
-    function getUser() {
-      return document.getElementById("userId").value.trim();
+      document.getElementById("log").innerText = output;
     }
 
     async function register() {
@@ -101,8 +119,8 @@
       log(await res.json());
     }
 
-    async function attack() {
-      const res = await fetch(`${API_BASE}/attack`, {
+    async function battle() {
+      const res = await fetch(`${API_BASE}/battle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user: getUser() }),
