@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>背包與裝備</title>
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script>
@@ -13,21 +15,14 @@
     };
     firebase.initializeApp(firebaseConfig);
   </script>
+
   <style>
-    body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
-    #userInfo { margin-bottom: 1em; }
-    #container {
-      display: flex;
-      gap: 40px;
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      padding-top: 60px;
     }
-    #equipped, #items {
-      border: 1px solid #ccc;
-      padding: 1em;
-      flex: 1;
-      min-height: 300px;
-    }
-    h2 { margin-top: 0; }
-    input, button { padding: 6px; margin: 5px; }
+
     #topbar {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -39,13 +34,47 @@
       border-bottom: 1px solid #ccc;
       font-size: 0.95em;
     }
+
+    #userInfo { margin-bottom: 1em; }
+
+    #container {
+      display: flex;
+      gap: 40px;
+    }
+
+    #equipped, #items {
+      border: 1px solid #ccc;
+      padding: 1em;
+      flex: 1;
+      min-height: 300px;
+    }
+
+    h2 { margin-top: 0; }
+    input, button { padding: 6px; margin: 5px; }
+
+    #loadingOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 1.5em;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
   <div id="topbar">
-    <span>👤 使用者：<span id="userEmail">載入中...</span></span>
-    <button onclick="logout()">🔓 登出</button>
+    <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
+    <div>
+      <button onclick="location.href='index.html'">🔙 返回主頁</button>
+      <button onclick="logout()">🔓 登出</button>
+    </div>
   </div>
+
+  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
 
   <h1>🎒 背包與裝備管理</h1>
 
@@ -62,20 +91,17 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
     const API_BASE = "https://sfl-9cb8.onrender.com";
-    let userId = null;
+    const loading = document.getElementById("loadingOverlay");
+    const nicknameSpan = document.getElementById("userEmail");
+    const userInfo = document.getElementById("userInfo");
+    const equipBlock = document.getElementById("equipBlock");
+    const itemBlock = document.getElementById("itemBlock");
 
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) return location.href = "/SFL/login.html";
-      userId = user.email;
-
-      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-      const data = await res.json();
-      document.getElementById("userEmail").innerText = data.nickname || userId;
-
-      loadInventory();
-    });
+    function showLoading(show) {
+      loading.style.display = show ? "flex" : "none";
+    }
 
     function logout() {
       firebase.auth().signOut().then(() => {
@@ -83,42 +109,68 @@
       });
     }
 
-    async function loadInventory() {
-      if (!userId) return;
+    function waitForUser() {
+      return new Promise(resolve => {
+        const unsub = firebase.auth().onAuthStateChanged(user => {
+          unsub();
+          resolve(user);
+        });
+      });
+    }
 
-      const res1 = await fetch(`${API_BASE}/status?user=${userId}`);
-      const userData = await res1.json();
+    async function loadInventory(userId) {
+      try {
+        const res1 = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+        const userData = await res1.json();
 
-      if (userData.error) {
-        document.getElementById("userInfo").innerText = "❌ 無法取得角色資訊";
+        if (userData.error) {
+          userInfo.innerText = "❌ 無法取得角色資訊";
+          return;
+        }
+
+        nicknameSpan.innerText = userData.nickname || userId;
+
+        let info = `🧍 使用者：${userData.nickname || userId}\n`;
+        info += `🔢 等級：${userData.level}（EXP: ${userData.exp}）\n`;
+        info += `💪 能力：\n`;
+        for (const [k, v] of Object.entries(userData.base_stats || {})) {
+          info += `  - ${k.toUpperCase()}：${v}\n`;
+        }
+        userInfo.innerText = info;
+
+        let equipText = "";
+        for (const [slot, item] of Object.entries(userData.equipment || {})) {
+          equipText += `  - ${slot}：${item || "無"}\n`;
+        }
+        equipBlock.innerText = equipText;
+
+        const res2 = await fetch(`${API_BASE}/inventory?user=${encodeURIComponent(userId)}`);
+        const inv = await res2.json();
+        const items = inv.items || {};
+
+        let itemText = "";
+        for (const [name, count] of Object.entries(items)) {
+          itemText += `  - ${name} x ${count}\n`;
+        }
+        itemBlock.innerText = itemText || "（無物品）";
+      } catch (err) {
+        userInfo.innerText = "❌ 載入錯誤：" + err.message;
+        console.error(err);
+      }
+    }
+
+    // 主流程
+    (async () => {
+      showLoading(true);
+      const user = await waitForUser();
+      if (!user) {
+        location.href = "/SFL/login.html";
         return;
       }
 
-      let info = `🧍 使用者：${userData.nickname || userId}\n`;
-      info += `🔢 等級：${userData.level}（EXP: ${userData.exp}）\n`;
-      info += `💪 能力：\n`;
-      for (const [k, v] of Object.entries(userData.base_stats || {})) {
-        info += `  - ${k.toUpperCase()}：${v}\n`;
-      }
-      document.getElementById("userInfo").innerText = info;
-
-      let equipText = "";
-      for (const [slot, item] of Object.entries(userData.equipment || {})) {
-        equipText += `  - ${slot}：${item || "無"}\n`;
-      }
-      document.getElementById("equipBlock").innerText = equipText;
-
-      const res2 = await fetch(`${API_BASE}/inventory?user=${userId}`);
-      const inv = await res2.json();
-      const items = inv.items || {};
-
-      let itemText = "";
-      for (const [name, count] of Object.entries(items)) {
-        itemText += `  - ${name} x ${count}\n`;
-      }
-
-      document.getElementById("itemBlock").innerText = itemText || "（無物品）";
-    }
+      await loadInventory(user.email);
+      showLoading(false);
+    })();
   </script>
 </body>
 </html>
