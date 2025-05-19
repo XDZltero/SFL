@@ -148,11 +148,28 @@
 
       if (!nickname) return alert("請輸入暱稱");
 
-      const res = await fetch(`${API_BASE}/register`, {
+      const res = await fetch("/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ user: email, nickname })
-      });
+      })
+        .then(async res => {
+          const data = await res.json();
+          if (!res.ok) {
+            // 顯示錯誤訊息
+            alert(data.error || "註冊失敗");
+            return;
+          }
+          // 成功才跳轉
+          alert(data.message);
+          window.location.href = "index.html";
+        })
+        .catch(err => {
+          console.error("❌ 發生例外錯誤：", err);
+          alert("發生錯誤，請稍後再試。");
+        });
 
       const data = await res.json();
       log(data.message || data);
