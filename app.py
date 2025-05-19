@@ -29,7 +29,36 @@ def register():
     if ref.get().exists:
         return jsonify({"error": "使用者已存在"}), 400
 
-    user_data = { ...如上... }
+    user_data = {
+        "nickname": user_id,
+        "level": 1,
+        "exp": 0,
+        "stat_points": 0,
+        "skill_points": 0,
+        "base_stats": {
+            "hp": 100,
+            "attack": 20,
+            "shield": 0,
+            "evade": 0.1,
+            "phys_bonus": 0,
+            "magic_bonus": 0,
+            "accuracy": 1.0,
+            "luck": 10
+        },
+        "equipment": {
+            "head": None,
+            "armor": None,
+            "gloves": None,
+            "boots": None,
+            "weapon_phys": None,
+            "weapon_magic": None
+        },
+        "skills": [],
+        "buffs": {
+            "phys_bonus": 0.0,
+            "magic_bonus": 0.0
+        }
+    }
     ref.set(user_data)
     return jsonify({"message": f"使用者 {user_id} 建立完成！"})
 
