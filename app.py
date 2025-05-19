@@ -22,19 +22,29 @@ def user_ref(user_id):
 def register():
     data = request.json
     user_id = data.get("user")
-    if user_ref(user_id).get().exists:
+    if not user_id:
+        return jsonify({"error": "缺少使用者 ID"}), 400
+
+    ref = db.collection("users").document(user_id)
+    if ref.get().exists:
         return jsonify({"error": "使用者已存在"}), 400
-    user_data = { "hp": 100, "attack": 10, "gold": 0, "exp": 0 }
-    user_ref(user_id).set(user_data)
+
+    user_data = { ...如上... }
+    ref.set(user_data)
     return jsonify({"message": f"使用者 {user_id} 建立完成！"})
 
 @app.route("/status", methods=["GET"])
 def status():
     user_id = request.args.get("user")
-    doc = user_ref(user_id).get()
+    if not user_id:
+        return jsonify({"error": "缺少使用者參數"}), 400
+
+    doc = db.collection("users").document(user_id).get()
     if not doc.exists:
         return jsonify({"error": "找不到使用者"}), 404
-    return jsonify(doc.to_dict())
+
+    user_data = doc.to_dict()
+    return jsonify(user_data)
 
 @app.route("/attack", methods=["POST"])
 def attack():
