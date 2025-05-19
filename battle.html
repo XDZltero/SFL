@@ -171,30 +171,58 @@
     async function startBattle() {
       const params = new URLSearchParams(window.location.search);
       const monster = params.get("monster");
-
+    
       if (!userId || !monster) {
         document.getElementById("waiting").innerText = "❌ 錯誤：缺少必要參數";
         return;
       }
-
+    
       try {
         await fetchAndDisplayUser(userId);
-
+    
         const res = await fetch(`${API_BASE}/battle`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user: userId, monster })
         });
-
+    
         const data = await res.json();
-
         document.getElementById("waiting").style.display = "none";
         logBlock.style.display = "block";
         logBlock.innerText = data.battle_log.join("\n");
-
+    
         document.getElementById("status").innerText =
           data.result === "win" ? "✅ 戰鬥勝利！" : "💀 戰鬥失敗！";
-
+    
+        // 🎯 獎勵顯示區塊
+        if (data.result === "win" && data.rewards) {
+          const { exp, leveled_up, drops } = data.rewards;
+    
+          let rewardLog = `\n[獲得經驗值] EXP + ${exp}。`;
+          if (leveled_up) rewardLog += `等級提升！達至 ${data.user.level} 級。\n`;
+    
+          if (Array.isArray(drops) && drops.length > 0) {
+            rewardLog += `[戰利品]\n`;
+    
+            // ⬇️ 向 API 抓 items 表
+            const itemRes = await fetch(`${API_BASE}/items`);
+            const itemMap = await itemRes.json();
+    
+            for (const drop of drops) {
+              if (Math.random() <= drop.rate) {
+                const meta = itemMap[drop.id] || { name: drop.id, special: 0 };
+                if (meta.special) {
+                  rewardLog += `【恭喜】獲得稀有道具 ${meta.name} ${drop.value}個\n`;
+                } else {
+                  rewardLog += `獲得 ${meta.name} ${drop.value}個\n`;
+                }
+              }
+            }
+          }
+    
+          logBlock.innerText += `\n${rewardLog}`;
+        }
+    
         await fetchAndDisplayUser(userId);
         document.getElementById("buttons").style.display = "block";
       } catch (err) {
@@ -202,6 +230,10 @@
         console.error(err);
       }
     }
+
+
+
+
 
     document.getElementById("retryBtn")?.addEventListener("click", () => {
       logBlock.style.display = "none";
