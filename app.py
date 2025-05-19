@@ -5,7 +5,7 @@ from firebase_admin import credentials, firestore
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["https://xdzltero.github.io"])
 
 # 從環境變數載入 JSON 字串並解析成 Python dict
 firebase_creds_str = os.environ["FIREBASE_CREDENTIALS"]
