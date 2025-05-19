@@ -26,14 +26,19 @@ def register():
     nickname = data.get("nickname", user_id)
 
     if not user_id:
-        return jsonify({"error": "缺少使用者 ID"}), 400
+        return jsonify({"error": "缺少使用者 ID。"}), 400
 
     ref = db.collection("users").document(user_id)
     if ref.get().exists:
-        return jsonify({"error": "使用者已存在"}), 400
+        return jsonify({"error": "使用者已存在。"}), 400
+
+    ref = db.collection("users").document(nickname)
+    if ref.get().exists:
+        return jsonify({"error": "已經有人取過這個名字囉。"}), 400
 
     user_data = {
-        "nickname": user_id,
+        "user_id": user_id,
+        "nickname": nickname,
         "level": 1,
         "exp": 0,
         "stat_points": 0,
