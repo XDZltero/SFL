@@ -28,22 +28,25 @@ def apply_drops(db, user_id, drops):
 
     ref.set(current)
 
-def check_level_up(user):
-    level = user["level"]
-    current_exp = user["exp"]
-    required_exp = level * 5  # 升級門檻：每級 *5
-    leveled_up = False
+import json
 
-    while current_exp >= required_exp:
-        current_exp -= required_exp
+def check_level_up(user):
+    with open("level_exp.json", "r", encoding="utf-8") as f:
+        level_table = json.load(f)
+
+    level = user["level"]
+    exp = user["exp"]
+    leveled = False
+
+    while str(level) in level_table and exp >= level_table[str(level)]:
+        exp -= level_table[str(level)]
         level += 1
         user["stat_points"] += 5
         user["skill_points"] += 3
-        required_exp = level * 5
-        leveled_up = True
+        leveled = True
 
     user["level"] = level
-    user["exp"] = current_exp
+    user["exp"] = exp
     return leveled_up
 
 def simulate_battle(user, monster):
