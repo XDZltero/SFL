@@ -84,24 +84,19 @@
     <button onclick="goToBattle()">戰鬥開始</button>
   </div>
 
+  <!-- 🔽 核心邏輯改為 module 模式 -->
   <script type="module">
     const API_BASE = "https://sfl-9cb8.onrender.com";
-    const loading = document.getElementById("loadingOverlay");
     const statusBlock = document.getElementById("statusBlock");
+    const loading = document.getElementById("loadingOverlay");
+    const nicknameSpan = document.getElementById("userNickname");
+
     let levelExp = {};
-    
-    function logout() {
-      firebase.auth().signOut().then(() => {
-        window.location.href = "/SFL/login.html";
-      });
-    }
 
     function showLoading(show) {
       loading.style.display = show ? "flex" : "none";
     }
 
-
-    
     function percent(val) {
       return Math.round(val * 100) + "%";
     }
@@ -112,17 +107,19 @@
 
     function formatStats(data) {
       const b = data.base_stats;
-      const e = data.equipment_stats || {}; // 若你未來整合裝備屬性，這裡可用
+      const e = data.equipment_stats || {}; // 若未來有裝備加成可加進來
       const total_hp = calcTotal(b.hp, e.hp);
       const total_atk = calcTotal(b.attack, e.attack);
       const total_shield = calcTotal(b.shield, e.shield);
       const total_luck = calcTotal(b.luck, e.luck);
       const total_accuracy = calcTotal(b.accuracy, e.accuracy);
       const total_evade = calcTotal(b.evade, e.evade);
+      const levelMaxExp = levelExp[data.level] || 1;
+      const progress = percent(data.exp / levelMaxExp);
 
       return `玩家名稱: ${data.nickname}
 等級: ${data.level}
-經驗值: ${data.exp} (${percent(data.exp / (levelExp[data.level] || 1))})
+經驗值: ${data.exp} (${progress})
 生命值: ${total_hp} (${b.hp} + ${e.hp || 0})
 攻擊力: ${total_atk} (${b.attack} + ${e.attack || 0})
 護盾值: ${total_shield} (${b.shield} + ${e.shield || 0})
@@ -136,47 +133,10 @@
 剩餘技能點: ${data.skill_points}`;
     }
 
-    async function loadStatus() {
-      showLoading(true);
-      const user = firebase.auth().currentUser;
-      if (!user) {
+    function logout() {
+      firebase.auth().signOut().then(() => {
         window.location.href = "/SFL/login.html";
-        return;
-      }
-    
-      try {
-        // 載入等級經驗表
-        const expRes = await fetch("level_exp.json");
-        levelExp = await expRes.json();
-    
-        // 取得使用者資料
-        const email = user.email;
-        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
-        const data = await res.json();
-    
-        document.getElementById("userNickname").innerText = data.nickname || email;
-        statusBlock.innerText = formatStats(data);
-      } catch (err) {
-        console.error("載入失敗", err);
-        statusBlock.innerText = "❌ 載入角色資料失敗，請稍後再試。";
-      } finally {
-        showLoading(false);
-      }
-    }
-
-      try {
-        const email = user.email;
-        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
-        const data = await res.json();
-
-        document.getElementById("userNickname").innerText = data.nickname || email;
-        statusBlock.innerText = formatStats(data);
-      } catch (err) {
-        console.error("載入失敗", err);
-        statusBlock.innerText = "❌ 載入角色資料失敗，請稍後再試。";
-      } finally {
-        showLoading(false);
-      }
+      });
     }
 
     function goToBattle() {
@@ -188,6 +148,34 @@
       }
 
       window.location.href = `battle.html?user=${encodeURIComponent(user.email)}&monster=${encodeURIComponent(monster)}`;
+    }
+
+    async function loadStatus() {
+      showLoading(true);
+
+      try {
+        // 取得等級經驗表
+        const expRes = await fetch("level_exp.json");
+        levelExp = await expRes.json();
+
+        const user = firebase.auth().currentUser;
+        if (!user) {
+          window.location.href = "/SFL/login.html";
+          return;
+        }
+
+        const email = user.email;
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        nicknameSpan.innerText = data.nickname || email;
+        statusBlock.innerText = formatStats(data);
+      } catch (err) {
+        console.error("載入失敗", err);
+        statusBlock.innerText = "❌ 載入角色資料失敗，請稍後再試。";
+      } finally {
+        showLoading(false);
+      }
     }
 
     firebase.auth().onAuthStateChanged((user) => {
