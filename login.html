@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>登入頁面</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #nicknameSection { display: none; margin-top: 20px; }
+    #log { margin-top: 1em; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>🔐 登入頁面</h1>
+  <button onclick="signInWithGoogle()">使用 Google 登入</button>
+
+  <div id="nicknameSection">
+    <p>👋 歡迎新用戶，請輸入你的暱稱：</p>
+    <input id="nickname" placeholder="輸入暱稱" />
+    <button onclick="completeRegistration()">完成註冊</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script>
+    // ✅ 替換成你的 Firebase 專案資訊
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const API_BASE = "https://sfl-9cb8.onrender.com";
+
+    async function signInWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+
+      try {
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
+        const email = user.email;
+
+        log(`✅ 登入成功：${email}`);
+        checkUserExists(email);
+      } catch (error) {
+        log("❌ 登入失敗：" + error.message);
+      }
+    }
+
+    async function checkUserExists(email) {
+      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+      const data = await res.json();
+
+      if (data.error) {
+        log("⚠️ 使用者尚未註冊，請輸入暱稱");
+        document.getElementById("nicknameSection").style.display = "block";
+        window.__currentUserEmail = email;
+      } else {
+        log("🎉 登入成功，導向主頁...");
+        setTimeout(() => window.location.href = "index.html?user=" + encodeURIComponent(email), 1000);
+      }
+    }
+
+    async function completeRegistration() {
+      const email = window.__currentUserEmail;
+      const nickname = document.getElementById("nickname").value.trim();
+
+      if (!nickname) return alert("請輸入暱稱");
+
+      const res = await fetch(`${API_BASE}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: email, nickname })
+      });
+
+      const data = await res.json();
+      log(data.message || data);
+      setTimeout(() => window.location.href = "index.html?user=" + encodeURIComponent(email), 1000);
+    }
+
+    function log(msg) {
+      document.getElementById("log").innerText = msg;
+    }
+  </script>
+</body>
+</html>
