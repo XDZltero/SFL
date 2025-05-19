@@ -47,7 +47,7 @@ def check_level_up(user):
 
     user["level"] = level
     user["exp"] = exp
-    return leveled_up
+    return leveled
 
 def simulate_battle(user, monster):
     log = []
