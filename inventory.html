@@ -3,33 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <title>背包與裝備</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
+    body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
     #userInfo { margin-bottom: 1em; }
-
     #container {
       display: flex;
       gap: 40px;
     }
-
     #equipped, #items {
       border: 1px solid #ccc;
       padding: 1em;
       flex: 1;
       min-height: 300px;
     }
-
     h2 { margin-top: 0; }
     input, button { padding: 6px; margin: 5px; }
+    #topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #f5f5f5;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+      font-size: 0.95em;
+    }
   </style>
 </head>
 <body>
-  <h1>🎒 背包與裝備管理</h1>
-
-  <div>
-    使用者 ID：<input id="userId" placeholder="輸入使用者 ID" />
-    <button onclick="loadInventory()">載入資料</button>
+  <div id="topbar">
+    <span>👤 使用者：<span id="userEmail">載入中...</span></span>
+    <button onclick="logout()">🔓 登出</button>
   </div>
+
+  <h1>🎒 背包與裝備管理</h1>
 
   <div id="userInfo">(尚未載入)</div>
 
@@ -46,17 +64,29 @@
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
+    let userId = null;
 
-    function getUser() {
-      return document.getElementById("userId").value.trim();
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) return location.href = "/SFL/login.html";
+      userId = user.email;
+
+      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+      const data = await res.json();
+      document.getElementById("userEmail").innerText = data.nickname || userId;
+
+      loadInventory();
+    });
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        location.href = "/SFL/login.html";
+      });
     }
 
     async function loadInventory() {
-      const user = getUser();
-      if (!user) return alert("請輸入使用者 ID");
+      if (!userId) return;
 
-      // 查詢角色基本狀態
-      const res1 = await fetch(`${API_BASE}/status?user=${user}`);
+      const res1 = await fetch(`${API_BASE}/status?user=${userId}`);
       const userData = await res1.json();
 
       if (userData.error) {
@@ -64,8 +94,7 @@
         return;
       }
 
-      // 顯示角色基本資訊
-      let info = `🧍 使用者：${userData.nickname || user}\n`;
+      let info = `🧍 使用者：${userData.nickname || userId}\n`;
       info += `🔢 等級：${userData.level}（EXP: ${userData.exp}）\n`;
       info += `💪 能力：\n`;
       for (const [k, v] of Object.entries(userData.base_stats || {})) {
@@ -73,15 +102,13 @@
       }
       document.getElementById("userInfo").innerText = info;
 
-      // 顯示裝備中內容
       let equipText = "";
       for (const [slot, item] of Object.entries(userData.equipment || {})) {
         equipText += `  - ${slot}：${item || "無"}\n`;
       }
       document.getElementById("equipBlock").innerText = equipText;
 
-      // 查詢背包資料
-      const res2 = await fetch(`${API_BASE}/inventory?user=${user}`);
+      const res2 = await fetch(`${API_BASE}/inventory?user=${userId}`);
       const inv = await res2.json();
       const items = inv.items || {};
 
