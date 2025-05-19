@@ -83,9 +83,23 @@
       from { opacity: 0; transform: scale(0.95); }
       to { opacity: 1; transform: scale(1); }
     }
+
+    #loadingOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      font-size: 1.5em;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
+  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
+
   <div id="loginBox">
     <h1>🔐 Dungeon，登入</h1>
     <button onclick="signInWithGoogle()">使用 Google 登入</button>
@@ -102,14 +116,24 @@
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
 
+    function showLoading(show) {
+      document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
+    }
+
     firebase.auth().onAuthStateChanged(async (user) => {
       if (user) {
+        showLoading(true);
         const email = user.email;
-        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
-        const data = await res.json();
-
-        if (!data.error) {
-          window.location.href = "/SFL/";
+        try {
+          const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+          const data = await res.json();
+          if (!data.error) {
+            window.location.href = "/SFL/";
+          }
+        } catch (err) {
+          log("⚠️ 錯誤：" + err.message);
+        } finally {
+          showLoading(false);
         }
       }
     });
@@ -117,28 +141,37 @@
     async function signInWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
       try {
+        showLoading(true);
         const result = await firebase.auth().signInWithPopup(provider);
         const user = result.user;
         const email = user.email;
-
         log(`✅ 登入成功：${email}`);
-        checkUserExists(email);
+        await checkUserExists(email);
       } catch (error) {
         log("❌ 登入失敗：" + error.message);
+      } finally {
+        showLoading(false);
       }
     }
 
     async function checkUserExists(email) {
-      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
-      const data = await res.json();
+      try {
+        showLoading(true);
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+        const data = await res.json();
 
-      if (data.error) {
-        log("⚠️ 尚未註冊，請輸入暱稱");
-        document.getElementById("nicknameSection").style.display = "block";
-        window.__currentUserEmail = email;
-      } else {
-        log("🎉 登入成功，正在導向主頁...");
-        setTimeout(() => window.location.href = "/SFL/", 1000);
+        if (data.error) {
+          log("⚠️ 尚未註冊，請輸入暱稱");
+          document.getElementById("nicknameSection").style.display = "block";
+          window.__currentUserEmail = email;
+        } else {
+          log("🎉 登入成功，正在導向主頁...");
+          setTimeout(() => window.location.href = "/SFL/", 1000);
+        }
+      } catch (err) {
+        log("❌ 錯誤：" + err.message);
+      } finally {
+        showLoading(false);
       }
     }
 
@@ -149,32 +182,31 @@
       if (!nickname) return alert("請輸入暱稱");
 
       try {
-  const res = await fetch("/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ user: email, nickname })
-      });
-    
-      const data = await res.json();
-    
-      if (!res.ok) {
-        alert(data.error || "註冊失敗");
-        return;
-      }
-    
-      alert(data.message);
-      window.location.href = "index.html";
-    
-    } catch (err) {
-      console.error("❌ 發生例外錯誤：", err);
-      alert("發生錯誤，請稍後再試。");
-    }
+        showLoading(true);
+        const res = await fetch("/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ user: email, nickname })
+        });
 
-      const data = await res.json();
-      log(data.message || data);
-      setTimeout(() => window.location.href = "/SFL/", 1000);
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "註冊失敗");
+          return;
+        }
+
+        alert(data.message);
+        window.location.href = "index.html";
+
+      } catch (err) {
+        console.error("❌ 發生例外錯誤：", err);
+        alert("發生錯誤，請稍後再試。");
+      } finally {
+        showLoading(false);
+      }
     }
 
     function log(msg) {
