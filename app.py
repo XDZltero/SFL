@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials, firestore
+from battle import simulate_battle
 
 app = Flask(__name__)
 CORS(app, origins=["https://xdzltero.github.io"])  # 限制只允許你的 GitHub 網頁呼叫
@@ -75,25 +76,32 @@ def status():
     user_data = doc.to_dict()
     return jsonify(user_data)
 
-@app.route("/attack", methods=["POST"])
-def attack():
+@app.route("/battle", methods=["POST"])
+def battle():
     data = request.json
     user_id = data.get("user")
-    doc = user_ref(user_id).get()
-    if not doc.exists:
-        return jsonify({"error": "使用者不存在"}), 404
-    user = doc.to_dict()
-    monster = { "name": "Slime", "hp": 30, "attack": 5 }
-    monster_hp = monster["hp"] - user["attack"]
-    if monster_hp <= 0:
-        user["gold"] += 10
-        user["exp"] += 5
-        user_ref(user_id).set(user)
-        return jsonify({ "message": f"你打敗了 {monster['name']}，獲得 10 金幣與 5 經驗值。", "status": user })
-    else:
-        user["hp"] -= monster["attack"]
-        user_ref(user_id).set(user)
-        return jsonify({ "message": f"你對 {monster['name']} 造成 {user['attack']} 傷害，但受到 {monster['attack']} 傷害。", "monster_hp": monster_hp, "your_hp": user["hp"] })
+    monster_id = data.get("monster")
+
+    if not user_id or not monster_id:
+        return jsonify({"error": "缺少參數"}), 400
+
+    user_doc = db.collection("users").document(user_id).get()
+    if not user_doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+
+    mon_doc = db.collection("monsters").document(monster_id).get()
+    if not mon_doc.exists:
+        return jsonify({"error": "找不到怪物"}), 404
+
+    user_data = user_doc.to_dict()
+    monster_data = mon_doc.to_dict()
+
+    result = simulate_battle(user_data, monster_data)
+
+    # 更新使用者戰鬥後的狀態
+    db.collection("users").document(user_id).set(result["user"])
+
+    return jsonify(result)
 
 if __name__ == "__main__":
     import os
