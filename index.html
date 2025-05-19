@@ -3,14 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <title>主頁</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
   <style>
-    body { font-family: sans-serif; padding: 20px; }
+    #topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #f5f5f5;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+      font-size: 0.95em;
+    }
+    body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
     input { margin: 5px; padding: 5px; }
     button { margin: 5px; padding: 5px 10px; cursor: pointer; }
     #log { white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
   </style>
 </head>
 <body>
+
+  <div id="topbar">
+    <span>👤 使用者：<span id="userEmail">載入中...</span></span>
+    <button onclick="logout()">🔓 登出</button>
+  </div>
+  
   <h1>🔥 RPG 主畫面</h1>
 
   <div>
@@ -25,14 +56,42 @@
   </div>
 
   <div>
-  <button onclick="location.href='upgrade.html'">🧠 前往技能與升級頁面</button>
-  <button onclick="location.href='inventory.html'">🎒 前往背包與裝備頁面</button>
+    <button onclick="location.href='upgrade.html'">🧠 前往技能與升級頁面</button>
+    <button onclick="location.href='inventory.html'">🎒 前往背包與裝備頁面</button>
   </div>
 
   <pre id="log"></pre>
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
+
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = "/SFL/login.html";
+        return;
+      }
+
+      // 顯示 email + nickname
+      const email = user.email;
+      let nickname = "(未知)";
+      try {
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        nickname = data.nickname || email;
+      } catch (err) {
+        console.warn("載入暱稱失敗");
+      }
+      document.getElementById("userEmail").innerText = nickname;
+
+      // 自動填入 userId 欄位
+      document.getElementById("userId").value = email;
+    });
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        window.location.href = "/SFL/login.html";
+      });
+    }
 
     function getUser() {
       return document.getElementById("userId").value.trim();
