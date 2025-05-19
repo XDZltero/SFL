@@ -138,6 +138,7 @@
         window.location.href = "/SFL/login.html";
       });
     }
+    window.logout = logout;
 
     function goToBattle() {
       const user = firebase.auth().currentUser;
@@ -146,9 +147,12 @@
         alert("請輸入怪物 ID");
         return;
       }
-
+    
       window.location.href = `battle.html?user=${encodeURIComponent(user.email)}&monster=${encodeURIComponent(monster)}`;
     }
+    
+    // ⬅️ 記得加入這行！讓 HTML 能呼叫
+    window.goToBattle = goToBattle;
 
     async function loadStatus() {
       showLoading(true);
