@@ -14,6 +14,7 @@
   <input id="userId" placeholder="輸入使用者ID" />
   <button onclick="register()">註冊</button>
   <button onclick="status()">查詢狀態</button>
+  怪物 ID：<input id="monster_id" placeholder="輸入怪物 ID" />
   <button onclick="battle()">戰鬥開始</button>
 
   <div class="section">
@@ -119,14 +120,25 @@
       log(await res.json());
     }
 
+    
     async function battle() {
+      const user = getUser();
+      const monster = document.getElementById("monster_id").value.trim();
+      if (!monster) {
+        document.getElementById("log").innerText = "請輸入怪物 ID";
+        return;
+      }
+
       const res = await fetch(`${API_BASE}/battle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: getUser() }),
+        body: JSON.stringify({ user, monster })
       });
-      log(await res.json());
+
+      const data = await res.json();
+      log(data);
     }
+
 
     async function getInventory() {
       const user = getUser();
