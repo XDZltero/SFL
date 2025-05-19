@@ -91,7 +91,7 @@ def simulate_battle(user, monster):
     if outcome == "win":
         user["exp"] += monster["exp"]
         leveled = check_level_up(user)
-        apply_drops(db, user["nickname"], monster["drops"])
+        apply_drops(db, user["user_id"], monster["drops"])
         rewards["exp"] = monster["exp"]
         rewards["leveled_up"] = leveled
         rewards["drops"] = monster["drops"]
