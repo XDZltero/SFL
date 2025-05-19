@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>升級與技能頁面</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input { margin: 5px; padding: 5px; }
+    button { margin: 5px; padding: 5px 10px; cursor: pointer; }
+    #base_stats ul { padding-left: 20px; }
+    #log { white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
+  </style>
+</head>
+<body>
+  <h1>🧠 升級與技能管理</h1>
+
+  <div>
+    使用者 ID：<input id="userId" placeholder="輸入使用者 ID" />
+    <button onclick="loadStatus()">載入角色資料</button>
+  </div>
+
+  <hr>
+
+  <h2>⬆️ 分配能力點</h2>
+  <div id="base_stats">(請先載入角色資料)</div>
+  <input id="lvl_hp" type="number" placeholder="HP + ?" />
+  <input id="lvl_atk" type="number" placeholder="攻擊 + ?" />
+  <input id="lvl_luck" type="number" placeholder="運氣 + ?" />
+  <button onclick="submitLevelUp()">提交分配</button>
+
+  <hr>
+
+  <h2>📘 技能查詢與升級</h2>
+  <button onclick="getSkills()">查詢技能</button><br><br>
+  技能 ID：<input id="skill_id" placeholder="輸入技能 ID" />
+  <button onclick="skillUp()">升級技能</button>
+
+  <pre id="log"></pre>
+
+  <script>
+    const API_BASE = "https://sfl-9cb8.onrender.com";
+
+    function getUser() {
+      return document.getElementById("userId").value.trim();
+    }
+
+    function log(msg) {
+      const out = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
+      document.getElementById("log").innerText = out;
+    }
+
+    async function loadStatus() {
+      const user = getUser();
+      if (!user) return alert("請輸入使用者 ID");
+
+      const res = await fetch(`${API_BASE}/status?user=${user}`);
+      const data = await res.json();
+
+      if (data.error) {
+        log(data);
+        return;
+      }
+
+      let html = "<ul>";
+      for (const [k, v] of Object.entries(data.base_stats || {})) {
+        html += `<li>${k.toUpperCase()}：${v}</li>`;
+      }
+      html += "</ul>";
+
+      document.getElementById("base_stats").innerHTML = html;
+      log(data);
+    }
+
+    async function submitLevelUp() {
+      const user = getUser();
+      const hp = parseInt(document.getElementById("lvl_hp").value || "0");
+      const atk = parseInt(document.getElementById("lvl_atk").value || "0");
+      const luck = parseInt(document.getElementById("lvl_luck").value || "0");
+
+      const res = await fetch(`${API_BASE}/levelup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user,
+          allocate: { hp, attack: atk, luck }
+        })
+      });
+
+      const data = await res.json();
+      log(data.message || data);
+
+      // 刷新顯示
+      await loadStatus();
+    }
+
+    async function getSkills() {
+      const user = getUser();
+      if (!user) return alert("請輸入使用者 ID");
+
+      const res = await fetch(`${API_BASE}/skills?user=${user}`);
+      const data = await res.json();
+
+      if (res.ok) {
+        let out = "📘 技能列表：\n";
+        for (const [id, info] of Object.entries(data)) {
+          out += `  - ${info.name}（Lv ${info.level}, 倍率: ${info.multiplier}）\n`;
+        }
+        log(out);
+      } else {
+        log(data.error || "技能查詢失敗");
+      }
+    }
+
+    async function skillUp() {
+      const user = getUser();
+      const skill = document.getElementById("skill_id").value.trim();
+
+      if (!user || !skill) return alert("請輸入使用者 ID 與技能 ID");
+
+      const res = await fetch(`${API_BASE}/skillup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user, skill })
+      });
+
+      const data = await res.json();
+      log(data.message || data);
+      await getSkills();  // 自動刷新技能列表
+    }
+  </script>
+</body>
+</html>
