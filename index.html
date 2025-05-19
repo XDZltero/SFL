@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>簡易文字遊戲</title>
+</head>
+<body>
+  <h1>文字冒險</h1>
+  <input id="userId" placeholder="輸入使用者ID" />
+  <button onclick="register()">註冊</button>
+  <button onclick="status()">查詢狀態</button>
+  <button onclick="attack()">攻擊怪物</button>
+
+  <pre id="log"></pre>
+
+  <script>
+    const API_BASE = "https://your-render-url.onrender.com";
+
+    function log(msg) {
+      document.getElementById("log").innerText = JSON.stringify(msg, null, 2);
+    }
+
+    function getUser() {
+      return document.getElementById("userId").value.trim();
+    }
+
+    async function register() {
+      const res = await fetch(`${API_BASE}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: getUser() }),
+      });
+      log(await res.json());
+    }
+
+    async function status() {
+      const res = await fetch(`${API_BASE}/status?user=${getUser()}`);
+      log(await res.json());
+    }
+
+    async function attack() {
+      const res = await fetch(`${API_BASE}/attack`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: getUser() }),
+      });
+      log(await res.json());
+    }
+  </script>
+</body>
+</html>
