@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>戰鬥中</title>
+  <style>
+    #log { white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
+    #status { font-weight: bold; margin-top: 1em; font-size: 1.2em; }
+    #buttons { margin-top: 2em; }
+    button {
+      padding: 0.5em 1.2em;
+      margin-right: 1em;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚔️ 戰鬥中...</h1>
+  <div id="waiting">請稍候，戰鬥進行中...</div>
+  <div id="log" style="display:none;"></div>
+  <div id="status"></div>
+
+  <div id="buttons" style="display: none;">
+    <button id="retryBtn">🔁 再戰一次</button>
+    <button onclick="window.location.href='index.html'">🔙 返回主介面</button>
+  </div>
+
+  <script>
+    const API_BASE = "https://sfl-9cb8.onrender.com";
+
+    function getParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        user: params.get("user"),
+        monster: params.get("monster")
+      };
+    }
+
+    async function startBattle() {
+      const { user, monster } = getParams();
+      if (!user || !monster) {
+        document.getElementById("waiting").innerText = "❌ 錯誤：缺少必要參數";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/battle`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user, monster })
+        });
+
+        const data = await res.json();
+
+        document.getElementById("waiting").style.display = "none";
+        const logDiv = document.getElementById("log");
+        logDiv.style.display = "block";
+        logDiv.innerText = data.battle_log.join("\n");
+
+        const statusDiv = document.getElementById("status");
+        statusDiv.innerText = data.result === "win" ? "✅ 戰鬥勝利！" : "💀 戰鬥失敗！";
+
+        document.getElementById("buttons").style.display = "block";
+      } catch (err) {
+        document.getElementById("waiting").innerText = "❌ 發生錯誤，無法完成戰鬥";
+      }
+    }
+
+    // 再戰一次按鈕邏輯
+    document.addEventListener("DOMContentLoaded", () => {
+      const retryBtn = document.getElementById("retryBtn");
+      retryBtn.addEventListener("click", () => {
+        // 重新執行戰鬥
+        document.getElementById("log").style.display = "none";
+        document.getElementById("status").innerText = "";
+        document.getElementById("buttons").style.display = "none";
+        document.getElementById("waiting").style.display = "block";
+        document.getElementById("waiting").innerText = "請稍候，戰鬥進行中...";
+        startBattle();
+      });
+
+      startBattle();
+    });
+  </script>
+</body>
+</html>
