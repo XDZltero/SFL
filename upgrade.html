@@ -178,6 +178,8 @@
       showLoading(false);
     }
 
+    window.getSkills = getSkills;
+
     async function skillUp() {
       const skill = document.getElementById("skill_id").value.trim();
       if (!userId || !skill) return alert("請輸入技能 ID");
