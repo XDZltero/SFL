@@ -54,13 +54,29 @@
     }
     h1 { margin-bottom: 1em; }
     #waiting { margin-bottom: 1em; }
+    #loadingOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      font-size: 1.5em;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
   <div id="topbar">
-    <span>👤 使用者：<span id="userEmail">載入中...</span></span>
-    <button onclick="logout()">🔓 登出</button>
+    <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
+    <div>
+      <button onclick="window.location.href='index.html'">🔙 返回主頁</button>
+      <button onclick="logout()">🔓 登出</button>
+    </div>
   </div>
+
+  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
 
   <h1>⚔️ 戰鬥中...</h1>
   <div id="waiting">請稍候，戰鬥進行中...</div>
@@ -77,21 +93,18 @@
     <button onclick="window.location.href='index.html'">🔙 返回主介面</button>
   </div>
 
-  <script>
+  <script type="module">
     const API_BASE = "https://sfl-9cb8.onrender.com";
+    const loading = document.getElementById("loadingOverlay");
+    const nicknameSpan = document.getElementById("userEmail");
+    const charInfo = document.getElementById("charInfo");
+    const logBlock = document.getElementById("log");
+
     let userId = null;
 
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) {
-        window.location.href = "/SFL/login.html";
-        return;
-      }
-      userId = user.email;
-      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-      const data = await res.json();
-      document.getElementById("userEmail").innerText = data.nickname || userId;
-      startBattle();
-    });
+    function showLoading(show) {
+      loading.style.display = show ? "flex" : "none";
+    }
 
     function logout() {
       firebase.auth().signOut().then(() => {
@@ -99,41 +112,60 @@
       });
     }
 
+    function percent(val) {
+      return Math.round(val * 100) + "%";
+    }
+
+    function calcTotal(base, equip) {
+      return base + (equip || 0);
+    }
+
+    function waitForUser() {
+      return new Promise(resolve => {
+        const unsub = firebase.auth().onAuthStateChanged(user => {
+          unsub();
+          resolve(user);
+        });
+      });
+    }
+
     async function fetchAndDisplayUser(userId) {
-      const res = await fetch(`${API_BASE}/status?user=${userId}`);
+      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
       const user = await res.json();
 
       if (user.error) {
-        document.getElementById("charInfo").innerText = "❌ 無法取得角色資訊";
+        charInfo.innerText = "❌ 無法取得角色資訊";
         return;
       }
 
-      let output = `🧍 使用者名稱：${user.nickname || "(未命名)"}\n`;
-      output += `🔢 等級：${user.level}（EXP: ${user.exp}）\n`;
-      output += `🧬 剩餘能力點：${user.stat_points}，技能點：${user.skill_points}\n`;
+      nicknameSpan.innerText = user.nickname || userId;
 
-      output += `\n💪 基礎能力值：\n`;
-      for (const [k, v] of Object.entries(user.base_stats || {})) {
-        output += `  - ${k.toUpperCase()}：${v}\n`;
-      }
+      const b = user.base_stats || {};
+      const e = user.equipment_stats || {};
+      const total_hp = calcTotal(b.hp, e.hp);
+      const total_atk = calcTotal(b.attack, e.attack);
+      const total_shield = calcTotal(b.shield, e.shield);
+      const total_luck = calcTotal(b.luck, e.luck);
+      const total_accuracy = calcTotal(b.accuracy, e.accuracy);
+      const total_evade = calcTotal(b.evade, e.evade);
 
-      output += `\n🛡️ 裝備：\n`;
-      for (const [slot, item] of Object.entries(user.equipment || {})) {
-        output += `  - ${slot}：${item || "無"}\n`;
-      }
+      let output = `玩家名稱: ${user.nickname}
+等級: ${user.level}
+經驗值: ${user.exp}
+生命值: ${total_hp} (${b.hp} + ${e.hp || 0})
+攻擊力: ${total_atk} (${b.attack} + ${e.attack || 0})
+護盾值: ${total_shield} (${b.shield} + ${e.shield || 0})
+幸運值: ${total_luck} (${b.luck} + ${e.luck || 0})
+命中率: ${percent(total_accuracy)} (${b.accuracy} + ${e.accuracy || 0})
+迴避率: ${percent(total_evade)} (${b.evade} + ${e.evade || 0})
+攻擊速度: ${b.atk_speed}
+物理傷害加成: ${user.buffs?.phys_bonus ?? 0}
+魔法傷害加成: ${user.buffs?.magic_bonus ?? 0}
+剩餘能力值點數: ${user.stat_points}
+剩餘技能點: ${user.skill_points}`;
 
-      output += `\n📘 技能：\n`;
-      for (const skill of Object.entries(user.skills || {})) {
-        output += `  - ${skill[0]}（等級: ${skill[1]}）\n`;
-      }
-
-      output += `\n✨ 增益狀態：\n`;
-      for (const [k, v] of Object.entries(user.buffs || {})) {
-        output += `  - ${k}：${v}\n`;
-      }
-
-      document.getElementById("charInfo").innerText = output;
-      document.getElementById("charInfo").style.display = "block";
+      charInfo.innerText = output;
+      charInfo.style.display = "block";
     }
 
     async function startBattle() {
@@ -157,8 +189,8 @@
         const data = await res.json();
 
         document.getElementById("waiting").style.display = "none";
-        document.getElementById("log").style.display = "block";
-        document.getElementById("log").innerText = data.battle_log.join("\n");
+        logBlock.style.display = "block";
+        logBlock.innerText = data.battle_log.join("\n");
 
         document.getElementById("status").innerText =
           data.result === "win" ? "✅ 戰鬥勝利！" : "💀 戰鬥失敗！";
@@ -167,17 +199,32 @@
         document.getElementById("buttons").style.display = "block";
       } catch (err) {
         document.getElementById("waiting").innerText = "❌ 發生錯誤，無法完成戰鬥";
+        console.error(err);
       }
     }
 
     document.getElementById("retryBtn")?.addEventListener("click", () => {
-      document.getElementById("log").style.display = "none";
+      logBlock.style.display = "none";
       document.getElementById("status").innerText = "";
       document.getElementById("buttons").style.display = "none";
       document.getElementById("waiting").style.display = "block";
       document.getElementById("waiting").innerText = "請稍候，戰鬥進行中...";
       startBattle();
     });
+
+    // 主流程
+    (async () => {
+      showLoading(true);
+      const user = await waitForUser();
+      if (!user) {
+        window.location.href = "/SFL/login.html";
+        return;
+      }
+
+      userId = user.email;
+      await startBattle();
+      showLoading(false);
+    })();
   </script>
 </body>
 </html>
