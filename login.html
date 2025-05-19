@@ -184,7 +184,7 @@
       try {
         showLoading(true);
     
-        const res = await fetch("/register", {
+        const res = await fetch(`${API_BASE}/register`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
