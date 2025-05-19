@@ -109,6 +109,8 @@
       });
     }
 
+    window.logout = logout;
+
     function waitForUser() {
       return new Promise(resolve => {
         const unsub = firebase.auth().onAuthStateChanged(user => {
