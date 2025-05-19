@@ -198,7 +198,7 @@
         if (data.result === "win" && data.rewards) {
           const { exp, leveled_up, drops } = data.rewards;
     
-          let rewardLog = `\n[獲得經驗值] EXP + ${exp}。`;
+          let rewardLog = `\n[獲得經驗值] EXP + ${exp}。\n`;
           if (leveled_up) rewardLog += `等級提升！達至 ${data.user.level} 級。\n`;
     
           if (Array.isArray(drops) && drops.length > 0) {
