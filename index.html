@@ -2,44 +2,29 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>Test</title>
+  <title>主頁</title>
   <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input { margin: 5px; padding: 5px; }
+    button { margin: 5px; padding: 5px 10px; cursor: pointer; }
     #log { white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
-    #version { position: fixed; bottom: 5px; right: 10px; font-size: 0.8em; color: #999; }
-    .section { margin-top: 2em; }
   </style>
 </head>
 <body>
-  <h1>Test</h1>
-  <input id="userId" placeholder="輸入使用者ID" />
-  <button onclick="register()">註冊</button>
-  <button onclick="status()">查詢狀態</button>
-  怪物 ID：<input id="monster_id" placeholder="輸入怪物 ID" />
-  <button onclick="goToBattle()">戰鬥開始</button>
+  <h1>🔥 RPG 主畫面</h1>
 
-  <div class="section">
-    <h2>🎒 查詢背包</h2>
-    <button onclick="getInventory()">查詢背包</button>
+  <div>
+    使用者 ID：<input id="userId" placeholder="輸入使用者 ID" />
+    <button onclick="registerUser()">註冊</button>
+    <button onclick="checkStatus()">查詢狀態</button>
   </div>
 
-  <div class="section">
-    <h2>⬆️ 分配能力點（顯示基礎能力）</h2>
-    <div id="base_stats"></div>
-    <input id="lvl_hp" type="number" placeholder="HP + ?" />
-    <input id="lvl_atk" type="number" placeholder="攻擊 + ?" />
-    <input id="lvl_luck" type="number" placeholder="運氣 + ?" />
-    <button onclick="submitLevelUp()">提交分配</button>
-  </div>
-
-  <div class="section">
-    <h2>🧠 技能查詢與升級</h2>
-    <button onclick="getSkills()">查詢技能</button><br><br>
-    技能 ID：<input id="skill_id" placeholder="輸入技能 ID" />
-    <button onclick="skillUp()">升級技能</button>
+  <div>
+    怪物 ID：<input id="monster_id" placeholder="輸入怪物 ID" />
+    <button onclick="goToBattle()">戰鬥開始</button>
   </div>
 
   <pre id="log"></pre>
-  <div id="version">Last updated: 2025-05-19 10:45</div>
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
@@ -49,80 +34,35 @@
     }
 
     function log(msg) {
-      if (typeof msg !== "object") {
-        document.getElementById("log").innerText = msg;
-        return;
-      }
-
-      if (msg.items) {
-        let out = `🎒 背包內容：\n`;
-        for (const [k, v] of Object.entries(msg.items)) {
-          out += `  - ${k}: ${v}\n`;
-        }
-        document.getElementById("log").innerText = out;
-        return;
-      }
-
-      const user = msg;
-      let output = "";
-
-      output += `🧍 使用者名稱：${user.nickname || "(未命名)"}\n`;
-      output += `🔢 等級：${user.level}（EXP: ${user.exp}）\n`;
-      output += `🧬 剩餘能力點：${user.stat_points}，技能點：${user.skill_points}\n`;
-
-      output += `\n💪 基礎能力值：\n`;
-      for (const [k, v] of Object.entries(user.base_stats || {})) {
-        output += `  - ${k.toUpperCase()}：${v}\n`;
-      }
-
-      output += `\n🛡️ 裝備：\n`;
-      for (const [slot, item] of Object.entries(user.equipment || {})) {
-        output += `  - ${slot}：${item || "無"}\n`;
-      }
-
-      output += `\n📘 技能：\n`;
-      if ((user.skills || []).length === 0) {
-        output += "  - 無\n";
-      } else {
-        for (const skill of Object.entries(user.skills)) {
-          output += `  - ${skill[0]}（等級: ${skill[1]}）\n`;
-        }
-      }
-
-      output += `\n✨ 增益狀態：\n`;
-      for (const [k, v] of Object.entries(user.buffs || {})) {
-        output += `  - ${k}：${v}\n`;
-      }
-
-      // 顯示在分配區段中 base stats
-      const base = user.base_stats || {};
-      let baseBlock = "<ul>";
-      for (const [k, v] of Object.entries(base)) {
-        baseBlock += `<li>${k.toUpperCase()}：${v}</li>`;
-      }
-      baseBlock += "</ul>";
-      document.getElementById("base_stats").innerHTML = baseBlock;
-
-      document.getElementById("log").innerText = output;
+      const out = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
+      document.getElementById("log").innerText = out;
     }
 
-    async function register() {
+    async function registerUser() {
+      const user = getUser();
+      if (!user) return alert("請輸入使用者 ID");
+
       const res = await fetch(`${API_BASE}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: getUser() }),
+        body: JSON.stringify({ user })
       });
-      log(await res.json());
+
+      const data = await res.json();
+      log(data);
     }
 
-    async function status() {
-      const res = await fetch(`${API_BASE}/status?user=${getUser()}`);
-      log(await res.json());
+    async function checkStatus() {
+      const user = getUser();
+      if (!user) return alert("請輸入使用者 ID");
+
+      const res = await fetch(`${API_BASE}/status?user=${user}`);
+      const data = await res.json();
+      log(data);
     }
 
-    
     function goToBattle() {
-      const user = document.getElementById("userId").value.trim();
+      const user = getUser();
       const monster = document.getElementById("monster_id").value.trim();
 
       if (!user || !monster) {
@@ -130,86 +70,8 @@
         return;
       }
 
-      // 將使用者與怪物ID帶入URL作為參數跳轉
       window.location.href = `battle.html?user=${encodeURIComponent(user)}&monster=${encodeURIComponent(monster)}`;
     }
-
-      const res = await fetch(`${API_BASE}/battle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user, monster })
-      });
-
-      const data = await res.json();
-      log(data);
-    }
-
-
-    async function getInventory() {
-      const user = getUser();
-      const res = await fetch(`${API_BASE}/inventory?user=${user}`);
-      const data = await res.json();
-      log(data);
-    }
-
-    async function submitLevelUp() {
-      const user = getUser();
-      const hp = parseInt(document.getElementById("lvl_hp").value || "0");
-      const atk = parseInt(document.getElementById("lvl_atk").value || "0");
-      const luck = parseInt(document.getElementById("lvl_luck").value || "0");
-
-      const res = await fetch(`${API_BASE}/levelup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user,
-          allocate: {
-            hp,
-            attack: atk,
-            luck
-          }
-        })
-      });
-
-      const data = await res.json();
-      log(data.status || data);
-    }
-  
-    async function getSkills() {
-      const user = getUser();
-      const res = await fetch(`${API_BASE}/skills?user=${user}`);
-      const data = await res.json();
-
-      if (res.ok) {
-        let out = "📘 技能列表：\n";
-        for (const [id, info] of Object.entries(data)) {
-          out += `  - ${info.name}（Lv ${info.level}, 倍率: ${info.multiplier}）\n`;
-        }
-        document.getElementById("log").innerText = out;
-      } else {
-        document.getElementById("log").innerText = data.error || "技能查詢失敗";
-      }
-    }
-
-    async function skillUp() {
-      const user = getUser();
-      const skill = document.getElementById("skill_id").value.trim();
-
-      if (!skill) {
-        document.getElementById("log").innerText = "請輸入技能 ID";
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/skillup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user, skill })
-      });
-
-      const data = await res.json();
-      document.getElementById("log").innerText = data.message || JSON.stringify(data, null, 2);
-    }
-
-</script>
+  </script>
 </body>
 </html>
