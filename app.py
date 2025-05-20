@@ -171,7 +171,13 @@ def battle_dungeon():
         db.collection("users").document(user_id).set(result["user"])
 
         if result["result"] == "lose":
-            return jsonify({"success": False, "message": "你被擊敗了。"})
+            # 重設副本層數為 0
+            user_key = user_id.replace(".", "_")
+            db.reference(f"progress/{user_key}/{dungeon_id}").set(0)
+            return jsonify({
+                "success": False,
+                "message": "你被擊敗了，進度已重設為第一層。"
+            })
 
         return jsonify({
             "success": True,
