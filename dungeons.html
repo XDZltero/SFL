@@ -53,56 +53,55 @@
       firebase.auth().signOut().then(() => location.href = "/SFL/login.html");
     }
 
-    async function loadDungeons() {
-      const user = firebase.auth().currentUser;
-      if (!user) return;
-      userId = user.email;
+async function loadDungeons() {
+  const user = firebase.auth().currentUser;
+  if (!user) return;
+  userId = user.email;
 
-      const userEmailSpan = document.getElementById("userEmail");
-      const dungeonList = document.getElementById("dungeonList");
+  const res = await fetch("parameter/dungeons.json");
+  const dungeons = await res.json();
 
-      const res = await fetch("parameter/dungeons.json");
-      const dungeons = await res.json();
+  const progRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+  const userData = await progRes.json();
+  const progress = userData.progress || {};
 
-      const progRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-      const userData = await progRes.json();
-      const progress = userData.progress || {};
+  userEmailSpan.innerText = userData.nickname || userId;
 
-      userEmailSpan.innerText = userData.nickname || userId;
-      dungeonList.innerHTML = "";
+  for (const dungeon of dungeons) {
+    const totalLayers = dungeon.monsters.length + 1;
+    const current = progress[dungeon.id] ?? 0;
 
-      for (const dungeon of dungeons) {
-        const totalLayers = dungeon.monsters.length + 1;
-        const current = progress[dungeon.id] ?? 0;
+    let text = "開始挑戰", cls = "button-normal";
+    let targetLayer = current;
 
-        let text = "開始挑戰", cls = "button-normal";
-        let targetLayer = current;
-
-        if (current === 0) {
-          text = "從第一層開始";
-        } else if (current < totalLayers - 1) {
-          text = `進入第 ${current + 1} 層`;
-        } else if (current === totalLayers - 1) {
-          text = "進入 BOSS 關卡";
-          cls = "button-boss";
-        } else {
-          text = "已完成所有層數";
-          cls = "button-normal";
-          targetLayer = totalLayers - 1; // 重打 boss
-        }
-
-        const div = document.createElement("div");
-        div.className = "dungeon-card";
-        div.innerHTML = `
-          <h2>${dungeon.name}</h2>
-          <img src="${dungeon.image}" />
-          <p>${dungeon.description}</p>
-          <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
-          <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}'">${text}</button>
-        `;
-        dungeonList.appendChild(div);
-      }
+    if (current === 0) {
+      text = "從第一層開始";
+    } else if (current < totalLayers - 1) {
+      text = `進入第 ${current + 1} 層`;
+    } else if (current === totalLayers - 1) {
+      text = "進入 BOSS 關卡";
+      cls = "button-boss";
+    } else {
+      text = "已完成所有層數";
+      cls = "button-normal";
+      targetLayer = totalLayers - 1;
     }
+
+    const div = document.createElement("div");
+    div.className = "dungeon-card";
+    div.innerHTML = `
+      <h2>${dungeon.name}</h2>
+      <img src="${dungeon.image}" />
+      <p>${dungeon.description}</p>
+      <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
+      <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}'">${text}</button>
+    `;
+    dungeonList.appendChild(div);
+  }
+
+  document.getElementById("loadingOverlay").style.display = "none";
+  document.getElementById("dungeonList").style.display = "none";
+}
 
     firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) location.href = "/SFL/login.html";
