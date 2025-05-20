@@ -187,7 +187,11 @@
         });
     
         const data = await res.json();
-        document.getElementById("waiting").style.display = "none";
+
+        if (!res.ok || !Array.isArray(data.battle_log)) {
+          throw new Error(data.error || "無法取得戰鬥結果");
+        }
+        
         logBlock.style.display = "block";
         logBlock.innerText = data.battle_log.join("\n");
     
