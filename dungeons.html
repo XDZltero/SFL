@@ -16,7 +16,7 @@
   <style>
     body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
     .dungeon-card { border: 1px solid #ccc; border-radius: 8px; margin: 10px 0; padding: 10px; }
-    .dungeon-card img { max-width: 50%; height: auto; border-radius: 8px; }
+    .dungeon-card img { max-width: 25%; height: auto; border-radius: 8px; }
     .button-normal { background: #f5deb3; color: black; border: none; padding: 6px 12px; cursor: pointer; }
     .button-boss { background: crimson; color: white; border: none; padding: 6px 12px; cursor: pointer; }
     #topbar {
@@ -100,6 +100,7 @@ async function loadDungeons() {
 
   document.getElementById("loadingOverlay").style.display = "none";
   document.getElementById("dungeonList").style.display = "block";
+  dungeonList.innerText = "";
 }
 
     firebase.auth().onAuthStateChanged(async (user) => {
