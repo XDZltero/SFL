@@ -173,7 +173,7 @@ def battle_dungeon():
             return jsonify({"error": "層數不合法"}), 400
 
         mon_doc = db.collection("monsters").document(monster_id).get()
-        if not mon_doc.exists():
+        if not mon_doc.exists:
             return jsonify({"error": "找不到怪物"}), 404
 
         monster_data = mon_doc.to_dict()
