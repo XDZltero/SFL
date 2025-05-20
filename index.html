@@ -7,13 +7,33 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="init-firebase.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 
   <style>
     body {
       font-family: sans-serif;
       padding: 20px;
       padding-top: 60px;
+    }
+
+    #topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #f5f5f5;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+      font-size: 0.95em;
     }
 
     button {
@@ -42,45 +62,10 @@
   </style>
 </head>
 <body>
-  <div id="topbar-placeholder"></div>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-      authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290"
-    };
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-  
-    // 先載入 topbar
-    fetch("topbar.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("topbar-placeholder").innerHTML = html;
-  
-        // 等待登入完成
-        onAuthStateChanged(auth, async (user) => {
-          if (!user) return location.href = "/SFL/login.html";
-  
-          // 💡 wait for #userNickname to be in DOM
-          const waitForNicknameEl = () => new Promise(resolve => {
-            const check = () => {
-              const el = document.getElementById("userNickname");
-              if (el) resolve(el);
-              else setTimeout(check, 50);
-            };
-            check();
-          });
-  
-          await waitForNicknameEl(); // 等 nickname span 存在
-          loadStatus(user);         // ✅ 執行你的原本邏輯
-        });
-      })
-      .catch(err => console.warn("❌ 載入 topbar 失敗", err));
-  </script>
+  <div id="topbar">
+    <span>👤 玩家名稱：<span id="userNickname">載入中...</span></span>
+    <button onclick="logout()">🔓 登出</button>
+  </div>
 
   <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
 
@@ -132,7 +117,7 @@
       const levelMaxExp = levelExp[data.level] || 1;
       const progress = percent(data.exp / levelMaxExp);
 
-      return `玩家名稱: ${data.nickname}
+      return 玩家名稱: ${data.nickname}
 等級: ${data.level}
 經驗值: ${data.exp} (${progress})
 生命值: ${total_hp} (${b.hp} + ${e.hp || 0})
@@ -145,8 +130,15 @@
 物理傷害加成: ${data.buffs?.phys_bonus ?? 0}
 魔法傷害加成: ${data.buffs?.magic_bonus ?? 0}
 剩餘能力值點數: ${data.stat_points}
-剩餘技能點: ${data.skill_points}`;
+剩餘技能點: ${data.skill_points};
     }
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        window.location.href = "/SFL/login.html";
+      });
+    }
+    window.logout = logout;
 
     function goToBattle() {
       const user = firebase.auth().currentUser;
@@ -156,23 +148,30 @@
         return;
       }
     
-      window.location.href = `battle.html?user=${encodeURIComponent(user.email)}&monster=${encodeURIComponent(monster)}`;
+      window.location.href = battle.html?user=${encodeURIComponent(user.email)}&monster=${encodeURIComponent(monster)};
     }
     
     // ⬅️ 記得加入這行！讓 HTML 能呼叫
     window.goToBattle = goToBattle;
 
-    async function loadStatus(user) {
+    async function loadStatus() {
       showLoading(true);
+
       try {
+        // 取得等級經驗表
+        const expRes = await fetch("level_exp.json");
+        levelExp = await expRes.json();
+
+        const user = firebase.auth().currentUser;
+        if (!user) {
+          window.location.href = "/SFL/login.html";
+          return;
+        }
+
         const email = user.email;
-        const nicknameSpan = document.getElementById("userNickname");
-        const res1 = await fetch("level_exp.json");
-        levelExp = await res1.json();
-    
-        const res2 = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
-        const data = await res2.json();
-    
+        const res = await fetch(${API_BASE}/status?user=${encodeURIComponent(email)});
+        const data = await res.json();
+
         nicknameSpan.innerText = data.nickname || email;
         statusBlock.innerText = formatStats(data);
       } catch (err) {
@@ -183,6 +182,10 @@
       }
     }
 
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) loadStatus();
+      else window.location.href = "/SFL/login.html";
+    });
   </script>
   <div id="footer-placeholder"></div>
   <script>
