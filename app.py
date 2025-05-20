@@ -173,23 +173,31 @@ def battle_dungeon():
             return jsonify({"error": "層數不合法"}), 400
 
         mon_doc = db.collection("monsters").document(monster_id).get()
-        if not mon_doc.exists:
+        if not mon_doc.exists():
             return jsonify({"error": "找不到怪物"}), 404
 
         monster_data = mon_doc.to_dict()
         result = simulate_battle(user_data, monster_data)
         db.collection("users").document(user_id).set(result["user"])
 
+        user_key = user_id.replace(".", "_")
+        progress_ref = db.collection("progress").document(user_key)
+        progress_doc = progress_ref.get()
+        current_progress = progress_doc.to_dict() if progress_doc.exists else {}
+        current_layer = current_progress.get(dungeon_id, 0)
+
         if result["result"] == "lose":
-            user_key = user_id.replace(".", "_")
-            db.collection("progress").document(user_key).set({dungeon_id: 0})
+            # 失敗 → 重設進度為 0
+            progress_ref.set({dungeon_id: 0}, merge=True)
             return jsonify({
                 "success": False,
                 "message": "你被擊敗了，進度已重設為第一層。",
-                "battle_log": result["battle_log"],
-                "rewards": result.get("rewards"),
-                "user": result.get("user")
+                "battle_log": result["battle_log"]
             })
+
+        # 勝利 → 若通關層數未記錄或低於本層，則更新
+        if int(layer) >= current_layer:
+            progress_ref.set({dungeon_id: int(layer) + 1}, merge=True)
 
         return jsonify({
             "success": True,
@@ -197,13 +205,14 @@ def battle_dungeon():
             "is_last_layer": is_boss,
             "battle_log": result["battle_log"],
             "rewards": result.get("rewards"),
-            "user": result.get("user")  # 若要顯示等級
+            "user": result.get("user")
         })
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
+
 
 
 
