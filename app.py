@@ -91,6 +91,19 @@ def status():
     user_data = doc.to_dict()
     return jsonify(user_data)
 
+# 獲得怪物資訊
+@app.route("/monster", methods=["GET"])
+def get_monster():
+    monster_id = request.args.get("id")
+    if not monster_id:
+        return jsonify({"error": "缺少 monster id"}), 400
+
+    mon_doc = db.collection("monsters").document(monster_id).get()
+    if not mon_doc.exists:
+        return jsonify({"error": "找不到怪物"}), 404
+
+    return jsonify(mon_doc.to_dict())
+
 @app.route("/battle", methods=["POST"])
 def battle():
     try:
