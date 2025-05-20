@@ -98,21 +98,22 @@
     window.startBattle = startBattle;
 
     async function goNext() {
-      const userKey = userId.replaceAll(".", "_");
-      const dungeonRef = firebase.database().ref(`progress/${userKey}/${dungeonId}`);
-    
-      // 判斷是否為 Boss 關
       const dungeonRes = await fetch("parameter/dungeons.json");
       const dungeons = await dungeonRes.json();
       const dungeon = dungeons.find(d => d.id === dungeonId);
       const isBoss = layer === dungeon.monsters.length;
     
+      const progressRef = firebase.firestore().collection("progress").doc(userId);
+      const progressSnap = await progressRef.get();
+      const current = progressSnap.exists ? progressSnap.data() : {};
+    
       if (isBoss) {
-        await dungeonRef.set(0); // 重置
+        current[dungeonId] = 0;
       } else {
-        await dungeonRef.set(layer + 1);
+        current[dungeonId] = layer + 1;
       }
     
+      await progressRef.set(current);
       location.href = `dungeon_layer.html?dungeon=${dungeonId}&layer=${layer + 1}`;
     }
     window.goNext = goNext;
