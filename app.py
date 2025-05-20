@@ -153,6 +153,9 @@ def battle_dungeon():
             return jsonify({"error": "找不到使用者"}), 404
         user_data = user_doc.to_dict()
 
+        # ✅ 補上 user_id 給 simulate_battle 用
+        user_data["user_id"] = user_id
+
         with open("parameter/dungeons.json", encoding="utf-8") as f:
             dungeons = json.load(f)
 
@@ -180,7 +183,8 @@ def battle_dungeon():
 
         if result["result"] == "lose":
             user_key = user_id.replace(".", "_")
-            db.reference(f"progress/{user_key}/{dungeon_id}").set(0)
+            # ✅ 改成 firestore 寫法（你前端也是 firestore）
+            db.collection("progress").document(user_key).set({dungeon_id: 0})
             return jsonify({
                 "success": False,
                 "message": "你被擊敗了，進度已重設為第一層。"
@@ -197,6 +201,7 @@ def battle_dungeon():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
+
 
 @app.route("/inventory", methods=["GET"])
 def inventory():
