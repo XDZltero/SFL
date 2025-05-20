@@ -149,7 +149,7 @@ def battle_dungeon():
             return jsonify({"error": "缺少參數"}), 400
 
         user_doc = db.collection("users").document(user_id).get()
-        if not user_doc.exists():
+        if not user_doc.exists:
             return jsonify({"error": "找不到使用者"}), 404
 
         user_data = user_doc.to_dict()
