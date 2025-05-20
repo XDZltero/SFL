@@ -159,7 +159,10 @@ def levelup():
     for stat, value in allocation.items():
         if stat not in user["base_stats"]:
             return jsonify({"error": f"無效屬性：{stat}"}), 400
-        user["base_stats"][stat] += value
+        if stat == "hp":
+            user["base_stats"][stat] += value * 5
+        else:
+            user["base_stats"][stat] += value
 
     user["stat_points"] -= total_points
     ref.set(user)
