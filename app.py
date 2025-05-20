@@ -123,6 +123,68 @@ def battle():
         traceback.print_exc()
         return jsonify({"error": f"伺服器內部錯誤: {str(e)}"}), 500
 
+# 副本
+@app.route("/battle_dungeon", methods=["POST"])
+def battle_dungeon():
+    try:
+        data = request.json
+        user_id = data.get("user")
+        dungeon_id = data.get("dungeon")
+        layer = data.get("layer")
+
+        if not user_id or dungeon_id is None or layer is None:
+            return jsonify({"error": "缺少參數"}), 400
+
+        # 取得玩家資料
+        user_doc = db.collection("users").document(user_id).get()
+        if not user_doc.exists:
+            return jsonify({"error": "找不到使用者"}), 404
+        user_data = user_doc.to_dict()
+
+        # 取得副本資料（從本地 JSON）
+        with open("parameter/dungeons.json", encoding="utf-8") as f:
+            dungeons = json.load(f)
+
+        dungeon = next((d for d in dungeons if d["id"] == dungeon_id), None)
+        if not dungeon:
+            return jsonify({"error": "副本不存在"}), 404
+
+        monsters = dungeon["monsters"]
+        is_boss = int(layer) == len(monsters)
+        if is_boss:
+            monster_id = dungeon["bossId"]
+        elif 0 <= int(layer) < len(monsters):
+            monster_id = monsters[int(layer)]
+        else:
+            return jsonify({"error": "層數不合法"}), 400
+
+        # 取得怪物資料
+        mon_doc = db.collection("monsters").document(monster_id).get()
+        if not mon_doc.exists:
+            return jsonify({"error": "找不到怪物"}), 404
+        monster_data = mon_doc.to_dict()
+
+        # 模擬戰鬥
+        result = simulate_battle(user_data, monster_data)
+
+        # 更新使用者狀態
+        db.collection("users").document(user_id).set(result["user"])
+
+        if result["result"] == "lose":
+            return jsonify({"success": False, "message": "你被擊敗了。"})
+
+        return jsonify({
+            "success": True,
+            "message": "戰鬥勝利",
+            "is_last_layer": is_boss,
+            "result": result["log"]
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
+
 @app.route("/inventory", methods=["GET"])
 def inventory():
     user_id = request.args.get("user")
