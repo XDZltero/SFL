@@ -17,7 +17,7 @@ def calculate_damage(base_atk, skill_multiplier, bonus, shield):
 
 # 屬性克制檔案
 def load_element_table():
-    with open("SFL/parameter/attribute_table.json", "r", encoding="utf-8") as f:
+    with open("parameter/attribute_table.json", "r", encoding="utf-8") as f:
         return json.load(f)
 ELEMENT_TABLE = load_element_table()
 # 屬性克制計算
