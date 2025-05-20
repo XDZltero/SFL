@@ -226,8 +226,23 @@ def battle_dungeon():
         traceback.print_exc()
         return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
 
+# 獲得副本層數
+@app.route("/get_progress", methods=["GET"])
+def get_progress():
+    user_id = request.args.get("user")
+    if not user_id:
+        return jsonify({"error": "缺少 user 參數"}), 400
 
+    # Firestore 不允許有 . 符號，需轉換為 _
+    user_key = user_id.replace(".", "_")
 
+    doc_ref = db.collection("progress").document(user_key)
+    doc = doc_ref.get()
+
+    if not doc.exists:
+        return jsonify({"progress": {}})
+
+    return jsonify({"progress": doc.to_dict()})
 
 @app.route("/inventory", methods=["GET"])
 def inventory():
