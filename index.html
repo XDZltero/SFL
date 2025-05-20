@@ -159,7 +159,7 @@
 
       try {
         // 取得等級經驗表
-        const expRes = await fetch("level_exp.json");
+        const expRes = await fetch("parameter/level_exp.json");
         levelExp = await expRes.json();
 
         const user = firebase.auth().currentUser;
