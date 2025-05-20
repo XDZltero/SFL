@@ -1,153 +1,82 @@
+<!-- ✅ dungeons.html：副本入口頁 -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <title>副本選擇</title>
-
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
       authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290",
+      projectId: "sfl-api-f0290"
     };
     firebase.initializeApp(firebaseConfig);
   </script>
-
   <style>
     body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
-    .dungeon-card {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin: 10px 0;
-      padding: 10px;
-    }
-    .dungeon-card img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-    }
-    #topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      background: #f5f5f5;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ccc;
-      font-size: 0.95em;
-    }
-    .button-normal {
-      background-color: #f5deb3; /* 淺米色 */
-      color: black;
-      border: none;
-      padding: 8px 12px;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    .button-boss {
-      background-color: crimson;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
+    .dungeon-card { border: 1px solid #ccc; border-radius: 8px; margin: 10px 0; padding: 10px; }
+    .dungeon-card img { max-width: 100%; height: auto; border-radius: 8px; }
+    .button-normal { background: #f5deb3; color: black; border: none; padding: 6px 12px; cursor: pointer; }
+    .button-boss { background: crimson; color: white; border: none; padding: 6px 12px; cursor: pointer; }
+    #topbar { position: fixed; top: 0; left: 0; right: 0; background: #f5f5f5; padding: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #ccc; }
   </style>
 </head>
 <body>
   <div id="topbar">
     <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
-    <div>
-      <button onclick="location.href='index.html'">🔙 返回主頁</button>
-      <button onclick="logout()">🔓 登出</button>
-    </div>
+    <div><button onclick="location.href='index.html'">🔙 返回主頁</button><button onclick="logout()">🔓 登出</button></div>
   </div>
-
   <h1>🗺️ 副本入口</h1>
   <div id="dungeonList">載入中...</div>
 
-  <script type="module">
-    const emailSpan = document.getElementById("userEmail");
+  <script>
+    const API_BASE = "https://sfl-9cb8.onrender.com";
+    const userEmailSpan = document.getElementById("userEmail");
     const dungeonList = document.getElementById("dungeonList");
-    const db = firebase.firestore();
     let userId = null;
 
     function logout() {
-      firebase.auth().signOut().then(() => {
-        location.href = "/SFL/login.html";
-      });
+      firebase.auth().signOut().then(() => location.href = "/SFL/login.html");
     }
-    window.logout = logout;
 
     async function loadDungeons() {
+      const user = firebase.auth().currentUser;
+      if (!user) return;
+      userId = user.email;
+
       const res = await fetch("parameter/dungeons.json");
       const dungeons = await res.json();
-
-      const progressDoc = await db.collection("progress").doc(userId).get();
-      const progressData = progressDoc.exists ? progressDoc.data() : {};
+      const progRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+      const userData = await progRes.json();
+      const progress = userData.progress || {};
+      userEmailSpan.innerText = userData.nickname || userId;
 
       for (const dungeon of dungeons) {
-        const layers = dungeon.monsters.length + 1;
-        const progress = progressData[dungeon.id] ?? 0;
-
-        let buttonText = "進入副本";
-        let buttonClass = "button-normal";
-
-        if (progress >= 1 && progress < layers - 1) {
-          buttonText = `進入第 ${progress + 1} 層`;
-        } else if (progress === layers - 1) {
-          buttonText = "進入 BOSS 關卡";
-          buttonClass = "button-boss";
-        }
+        const totalLayers = dungeon.monsters.length + 1;
+        const current = progress[dungeon.id] ?? 0;
+        let text = "進入副本", cls = "button-normal";
+        if (current >= 1 && current < totalLayers - 1) text = `進入第 ${current + 1} 層`;
+        else if (current === totalLayers - 1) text = "進入 BOSS 關卡", cls = "button-boss";
 
         const div = document.createElement("div");
         div.className = "dungeon-card";
         div.innerHTML = `
           <h2>${dungeon.name}</h2>
-          <img src="${dungeon.image}" alt="${dungeon.name}" />
+          <img src="${dungeon.image}" />
           <p>${dungeon.description}</p>
-          <p>層數：${layers}，入場限制：Lv.${dungeon.min_level}</p>
-          <button class="${buttonClass}" onclick="enterDungeon('${dungeon.id}', ${dungeon.min_level})">${buttonText}</button>
+          <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
+          <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${current}'">${text}</button>
         `;
         dungeonList.appendChild(div);
       }
     }
 
-    async function enterDungeon(dungeonId, minLevel) {
-      const user = firebase.auth().currentUser;
-      if (!user) return;
-
-      const progressDoc = await db.collection("progress").doc(userId).get();
-      const progressData = progressDoc.exists ? progressDoc.data() : {};
-      const progress = progressData[dungeonId] ?? 0;
-
-      location.href = `dungeon_layer.html?dungeon=${dungeonId}&layer=${progress}`;
-    }
-
     firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) return location.href = "/SFL/login.html";
-      userId = user.email;
-      const res = await fetch(`https://sfl-9cb8.onrender.com/status?user=${encodeURIComponent(userId)}`);
-      const data = await res.json();
-      emailSpan.innerText = data.nickname || userId;
-      await loadDungeons();
+      if (!user) location.href = "/SFL/login.html";
+      else await loadDungeons();
     });
-  </script>
-
-  <div id="footer-placeholder"></div>
-  <script>
-    fetch("footer.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("footer-placeholder").innerHTML = html;
-      });
   </script>
 </body>
 </html>
