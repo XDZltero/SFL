@@ -162,9 +162,15 @@
       剩餘技能點: ${data.skill_points}`;
     }
 
+    let levelExp = {}; // 全域變數
+
     async function loadLayer() {
       showLoading(true);
       try {
+        // 讀取經驗表
+        const expRes = await fetch("parameter/level_exp.json");
+        levelExp = await expRes.json();
+        
         const user = await fetchUser(userId);
         nicknameSpan.innerText = user.nickname || userId;
         userDiv.innerText = formatStats(user);  // 使用統一格式
