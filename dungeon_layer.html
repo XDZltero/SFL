@@ -164,7 +164,7 @@
 let currentProgress = 0; // 目前副本進度
 
 async function fetchProgress() {
-  const res = await fetch(`${API}/status?user=${encodeURIComponent(userId)}`);
+  const res = await fetch(`${API}/get_progress?user=${encodeURIComponent(userId)}`);
   const data = await res.json();
   currentProgress = data.progress?.[dungeon] ?? 0;
   return data;
