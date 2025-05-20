@@ -70,7 +70,7 @@
     window.logout = logout;
 
     async function loadDungeons() {
-      const res = await fetch("SFL/parameter/dungeons.json");
+      const res = await fetch("parameter/dungeons.json");
       const dungeons = await res.json();
 
       for (const dungeon of dungeons) {
