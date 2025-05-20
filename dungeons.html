@@ -72,8 +72,9 @@ async function loadDungeons() {
     const totalLayers = dungeon.monsters.length + 1;
     const current = progress[dungeon.id] ?? 0;
 
+    let targetLayer = Math.min(current, totalLayers - 1); // 👈 避免傳超過 boss 層
+
     let text = "開始挑戰", cls = "button-normal";
-    let targetLayer = current;
 
     if (current === 0) {
       text = "從第一層開始";
