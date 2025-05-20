@@ -203,7 +203,7 @@ window.startBattle = async function () {
 
     if (data.success) {
       html = `✅ 戰鬥勝利！\n` + html;
-      battleBtn.style.display = "none"; # 隱藏戰鬥開始按鈕
+      battleBtn.style.display = "none"; // 隱藏戰鬥開始按鈕
       if (data.rewards) {
         const { exp, leveled_up, drops } = data.rewards;
         html += `\n[獲得經驗值] EXP + ${exp}`;
