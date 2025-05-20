@@ -88,17 +88,17 @@
     }
     window.logout = logout;
 
+    const db = firebase.firestore();  // firestore 取代 database()
+
     async function loadDungeons() {
       const res = await fetch("parameter/dungeons.json");
       const dungeons = await res.json();
     
-      const userKey = userId.replaceAll(".", "_");
-      const progressRef = db.ref(`progress/${userKey}`);
-      const progressSnap = await progressRef.get();
-      const progressData = progressSnap.exists() ? progressSnap.val() : {};
+      const progressDoc = await db.collection("progress").doc(userId).get();
+      const progressData = progressDoc.exists ? progressDoc.data() : {};
     
       for (const dungeon of dungeons) {
-        const layers = dungeon.monsters.length + 1; // 包含 boss
+        const layers = dungeon.monsters.length + 1;
         const progress = progressData[dungeon.id] ?? 0;
     
         let buttonText = "進入副本";
@@ -127,13 +127,11 @@
     async function enterDungeon(dungeonId, minLevel) {
       const user = firebase.auth().currentUser;
       if (!user) return;
-
-      const userKey = user.email.replaceAll(".", "_");
-      const ref = db.ref(`progress/${userKey}/${dungeonId}`);
-      const snapshot = await ref.get();
-      const progress = snapshot.exists() ? snapshot.val() : 0;
-
-      // 進入對應關卡
+    
+      const progressDoc = await db.collection("progress").doc(userId).get();
+      const progressData = progressDoc.exists ? progressDoc.data() : {};
+      const progress = progressData[dungeonId] ?? 0;
+    
       location.href = `dungeon_layer.html?dungeon=${dungeonId}&layer=${progress}`;
     }
 
