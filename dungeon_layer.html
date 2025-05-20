@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>副本戰鬥</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -16,123 +16,132 @@
   <style>
     body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
     #topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      background: #f5f5f5;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid #ccc;
+      position: fixed; top: 0; left: 0; right: 0;
+      background: #f5f5f5; padding: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #ccc; font-size: 0.95em;
     }
-    #monsterInfo, #result { margin-top: 20px; }
+    #monsterInfo, #battleArea, #result {
+      margin-top: 20px;
+    }
+    #loadingOverlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); color: white; font-size: 1.5em;
+      display: none; justify-content: center; align-items: center; z-index: 9999;
+    }
+    button { padding: 8px 14px; margin: 5px; }
   </style>
 </head>
 <body>
-  <div id="topbar">
-    <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
-    <div>
-      <button onclick="location.href='index.html'">🔙 返回主頁</button>
-      <button onclick="logout()">🔓 登出</button>
-    </div>
+<div id="topbar">
+  <span>🕤 玩家名稱：<span id="nickname">...</span></span>
+  <div>
+    <button onclick="window.location.href='dungeons.html'">🔙 離開副本</button>
+    <button onclick="logout()">🔓 登出</button>
   </div>
-  <h1>⚔️ 副本戰鬥</h1>
-  <div id="monsterInfo">讀取中...</div>
-  <div id="battleArea" style="display:none;">
-    <button onclick="startBattle()">開始戰鬥</button>
-  </div>
-  <div id="result"></div>
+</div>
+<div id="loadingOverlay">⏳ 載入中...</div>
+<h1>🖔 副本戰鬥</h1>
+<div id="monsterInfo"></div>
+<div id="battleArea" style="display:none;"></div>
+<div id="result"></div>
+<script type="module">
+const API_BASE = "https://sfl-9cb8.onrender.com";
+const loading = document.getElementById("loadingOverlay");
+const params = new URLSearchParams(location.search);
+const dungeon = params.get("dungeon");
+let layer = parseInt(params.get("layer"));
+let userId = null;
 
-  <script type="module">
-    const API_BASE = "https://sfl-9cb8.onrender.com";
-    const emailSpan = document.getElementById("userEmail");
-    const monsterInfo = document.getElementById("monsterInfo");
-    const battleArea = document.getElementById("battleArea");
-    const result = document.getElementById("result");
-    let userId = null;
+function showLoading(show) {
+  loading.style.display = show ? "flex" : "none";
+}
 
-    const urlParams = new URLSearchParams(location.search);
-    const dungeonId = urlParams.get("dungeon");
-    const layer = parseInt(urlParams.get("layer"));
+function logout() {
+  firebase.auth().signOut().then(() => {
+    window.location.href = "/SFL/login.html";
+  });
+}
+window.logout = logout;
 
-    function logout() {
-      firebase.auth().signOut().then(() => location.href = "/SFL/login.html");
-    }
+function percent(val) {
+  return Math.round(val * 100) + "%";
+}
 
-    async function startBattle() {
-      result.innerHTML = "🌀 戰鬥中...";
-      const res = await fetch(`${API_BASE}/battle_dungeon`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: userId, dungeon: dungeonId, layer })
-      });
-      const data = await res.json();
-      if (!data.success) {
-        result.innerHTML = `💀 戰敗：${data.message || "你被打敗了"}<br><br><button onclick="location.href='dungeons.html'">離開副本</button>`;
-      } else {
-        const isLastLayer = data.is_last_layer;
-        result.innerHTML = `✅ 勝利！<br><br>
-          <button onclick="location.reload()">再戰一次</button>
-          ${isLastLayer ? `<button onclick="leave()">離開副本</button>` : `<button onclick="next()">前往下一層</button>`}`;
-      }
-    }
-    window.startBattle = startBattle;
-
-    function leave() {
-      location.href = "dungeons.html";
-    }
-
-    function next() {
-      location.href = `dungeon_layer.html?dungeon=${dungeonId}&layer=${layer + 1}`;
-    }
-    window.leave = leave;
-    window.next = next;
-
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) return location.href = "/SFL/login.html";
-      userId = user.email;
-
-      try {
-        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-        const userData = await res.json();
-        emailSpan.innerText = userData.nickname || userId;
-
-        const dungeonRes = await fetch("parameter/dungeons.json");
-        const dungeons = await dungeonRes.json();
-        const dungeon = dungeons.find(d => d.id === dungeonId);
-        if (!dungeon) return monsterInfo.innerText = "❌ 找不到副本";
-
-        const monsters = dungeon.monsters;
-        const isBoss = layer === monsters.length;
-        const monsterId = isBoss ? dungeon.bossId : monsters[layer];
-        if (!monsterId) return monsterInfo.innerText = "❌ 該層怪物不存在";
-
-        const progress = userData.progress?.[dungeonId] ?? 0;
-        if (layer !== progress) {
-          alert("⚠️ 請從副本入口正常進入該層！");
-          location.href = "dungeons.html";
-          return;
-        }
-
-        const monDoc = await fetch(`${API_BASE}/monster?id=${monsterId}`);
-        const mon = await monDoc.json();
-        monsterInfo.innerHTML = `
-          <h2>${mon.name}</h2>
-          <img src="${mon.image_url}" width="150" />
-          <p>${mon.info}</p>
-          <ul>
-            <li>HP：${mon.stats.hp}</li>
-            <li>攻擊：${mon.stats.attack}</li>
-            <li>命中率：${(mon.stats.accuracy * 100).toFixed(1)}%</li>
-            <li>迴避率：${(mon.stats.evade * 100).toFixed(1)}%</li>
-          </ul>
-        `;
-        battleArea.style.display = "block";
-      } catch (e) {
-        console.error("錯誤：", e);
-        emailSpan.innerText = userId;
-        monsterInfo.innerText = "❌ 載入資料失敗";
-      }
+async function waitForUser() {
+  return new Promise(resolve => {
+    const unsub = firebase.auth().onAuthStateChanged(user => {
+      unsub(); resolve(user);
     });
-  </script>
+  });
+}
+
+async function loadMonster() {
+  showLoading(true);
+  const res = await fetch("parameter/dungeons.json");
+  const all = await res.json();
+  const dungeonData = all.find(d => d.id === dungeon);
+  if (!dungeonData) return alert("找不到副本");
+
+  const isBoss = layer === dungeonData.monsters.length;
+  const monsterId = isBoss ? dungeonData.bossId : dungeonData.monsters[layer];
+  const monRes = await fetch(`${API_BASE}/monster?id=${monsterId}`);
+  const mon = await monRes.json();
+
+  const info = document.getElementById("monsterInfo");
+  info.innerHTML = `<h2>${mon.name}</h2>
+    <img src="${mon.image_url}" width="150"><p>${mon.info}</p>
+    <ul>
+      <li>♥️ HP：${mon.stats.hp}</li>
+      <li>⚔️ 攻擊：${mon.stats.attack}</li>
+      <li>✉️ 命中率：${percent(mon.stats.accuracy)}</li>
+      <li>🛡️ 迴避：${percent(mon.stats.evade)}</li>
+    </ul>
+    <button onclick="startBattle()">開始戰鬥</button>`;
+}
+
+window.startBattle = async function() {
+  showLoading(true);
+  document.getElementById("result").innerText = "";
+  const res = await fetch(`${API_BASE}/battle_dungeon`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user: userId, dungeon, layer })
+  });
+  const data = await res.json();
+
+  const area = document.getElementById("battleArea");
+  area.style.display = "block";
+  area.innerHTML = data.result.join("<br>");
+
+  const result = document.getElementById("result");
+  if (!data.success) {
+    result.innerHTML = `💀 戰敗：${data.message}<br>
+      <button onclick="window.location.href='dungeons.html'">離開副本</button>`;
+  } else {
+    result.innerHTML = `✅ 戰鬥勝利！<br>`;
+    if (!data.is_last_layer) {
+      result.innerHTML += `<button onclick="nextLayer()">→ 前往第${layer+2}層</button>`;
+    } else {
+      result.innerHTML += `<b>✨ 通關副本！</b><br>`;
+    }
+    result.innerHTML += `<button onclick="window.location.href='dungeons.html'">離開</button>`;
+  }
+  showLoading(false);
+}
+
+window.nextLayer = function() {
+  location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer+1}`;
+};
+
+(async () => {
+  const user = await waitForUser();
+  if (!user) return location.href = "/SFL/login.html";
+  userId = user.email;
+  document.getElementById("nickname").innerText = user.displayName || user.email;
+  await loadMonster();
+  showLoading(false);
+})();
+</script>
 </body>
 </html>
