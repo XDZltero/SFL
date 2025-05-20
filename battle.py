@@ -92,11 +92,16 @@ def simulate_battle(user, monster):
         user_turns = max(1, round(user_speed / mon_speed))
         mon_turns = max(1, round(mon_speed / user_speed))
 
+        # 攻速比較
         action_order = []
         if user_speed >= mon_speed:
             action_order.extend(["user"] * user_turns + ["mon"] * mon_turns)
         else:
             action_order.extend(["mon"] * mon_turns + ["user"] * user_turns)
+
+        # 等差增減傷
+        user_level_mod = level_damage_modifier(user["level"], monster["level"])
+        monster_level_mod = level_damage_modifier(monster["level"], user["level"])
 
         for actor in action_order:
             if user_hp <= 0 or mon_hp <= 0:
@@ -114,9 +119,9 @@ def simulate_battle(user, monster):
                     multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
 
                     if calculate_hit(user["base_stats"]["accuracy"], monster["stats"]["evade"], user["base_stats"]["luck"]):
-                        level_mod = level_damage_modifier(user["level"], monster["level"])
+                        
                         dmg = calculate_damage(user["base_stats"]["attack"], multiplier, user["buffs"]["phys_bonus"], monster["stats"]["shield"])
-                        dmg = round(dmg * level_mod) # 等差增減傷
+                        dmg = round(dmg * user_level_mod) # 等差增減傷
                         mon_hp -= dmg
                         log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害")
                     else:
@@ -124,13 +129,14 @@ def simulate_battle(user, monster):
             else:
                 skill = pick_monster_skill(monster.get("skills", []))
                 if calculate_hit(monster["stats"]["accuracy"], user["base_stats"]["evade"], monster["stats"]["luck"]):
-                    level_mod = level_damage_modifier(monster["level"], user["level"])
+                    
                     dmg = calculate_damage(monster["stats"]["attack"], skill["multiplier"], monster["stats"].get("phys_bonus", 0), user["base_stats"]["shield"])
-                    dmg = round(dmg * level_mod) # 等差增減傷
+                    dmg = round(dmg * monster_level_mod) # 等差增減傷
+                    
                     user_hp -= dmg
                     log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害")
                 else:
-                    log.append(f"{monster['name']} 攻擊失敗")
+                    log.append(f"{monster['name']} 攻擊未命中")
 
     outcome = "win" if user_hp > 0 else "lose"
     rewards = {}
