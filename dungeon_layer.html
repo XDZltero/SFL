@@ -86,6 +86,7 @@
     <button id="battleBtn" onclick="startBattle()">開始戰鬥</button>
     <button id="retryBtn" style="display:none">再戰一次</button>
     <button id="nextBtn" style="display:none">下一層</button>
+    <button id="leaveBtn" onclick="location.href='dungeons.html'" style="display:none">離開副本</button>
   </div>
 
   <script type="module">
@@ -220,6 +221,13 @@ window.startBattle = async function () {
       }
     } else {
       html = `💀 戰鬥失敗！\n` + html + `\n❌ ${data.message}`;
+      retryBtn.style.display = "none";     // ⛔ 隱藏再戰
+      nextBtn.style.display = "none";      // ⛔ 隱藏下一層
+      battleBtn.style.display = "none";    // ⛔ 隱藏開始戰鬥
+    
+      // ✅ 顯示「離開副本」按鈕
+      const leaveBtn = document.getElementById("leaveBtn");
+      if (leaveBtn) leaveBtn.style.display = "inline-block";
     }
 
     logArea.innerHTML = html.replace(/\n/g, "<br>");
