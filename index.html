@@ -7,33 +7,13 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-      authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
+  <script src="init-firebase.js"></script>
 
   <style>
     body {
       font-family: sans-serif;
       padding: 20px;
       padding-top: 60px;
-    }
-
-    #topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      background: #f5f5f5;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ccc;
-      font-size: 0.95em;
     }
 
     button {
@@ -62,10 +42,15 @@
   </style>
 </head>
 <body>
-  <div id="topbar">
-    <span>👤 玩家名稱：<span id="userNickname">載入中...</span></span>
-    <button onclick="logout()">🔓 登出</button>
-  </div>
+  <div id="topbar-placeholder"></div>
+  <script>
+    fetch("topbar.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("topbar-placeholder").innerHTML = html;
+      })
+      .catch(err => console.warn("無法載入 topbar", err));
+  </script>
 
   <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
 
@@ -132,13 +117,6 @@
 剩餘能力值點數: ${data.stat_points}
 剩餘技能點: ${data.skill_points}`;
     }
-
-    function logout() {
-      firebase.auth().signOut().then(() => {
-        window.location.href = "/SFL/login.html";
-      });
-    }
-    window.logout = logout;
 
     function goToBattle() {
       const user = firebase.auth().currentUser;
