@@ -145,17 +145,17 @@ def battle_dungeon():
         dungeon_id = data.get("dungeon")
         layer = data.get("layer")
 
-        if not user_id or dungeon_id is None or layer is None:
+        if not user_id or not dungeon_id or layer is None:
             return jsonify({"error": "缺少參數"}), 400
 
+        # 取得使用者
         user_doc = db.collection("users").document(user_id).get()
         if not user_doc.exists:
             return jsonify({"error": "找不到使用者"}), 404
         user_data = user_doc.to_dict()
+        user_data["user_id"] = user_id  # 給 simulate_battle 用
 
-        # ✅ 補上 user_id 給 simulate_battle 用
-        user_data["user_id"] = user_id
-
+        # 取得副本設定
         with open("parameter/dungeons.json", encoding="utf-8") as f:
             dungeons = json.load(f)
 
@@ -163,9 +163,10 @@ def battle_dungeon():
         if not dungeon:
             return jsonify({"error": "副本不存在"}), 404
 
-        monsters = dungeon["monsters"]
+        monsters = dungeon.get("monsters", [])
         is_boss = int(layer) == len(monsters)
 
+        # 找怪物 ID
         if is_boss:
             monster_id = dungeon["bossId"]
         elif 0 <= int(layer) < len(monsters):
@@ -173,34 +174,41 @@ def battle_dungeon():
         else:
             return jsonify({"error": "層數不合法"}), 400
 
+        # 取得怪物
         mon_doc = db.collection("monsters").document(monster_id).get()
         if not mon_doc.exists:
             return jsonify({"error": "找不到怪物"}), 404
         monster_data = mon_doc.to_dict()
 
+        # 戰鬥
         result = simulate_battle(user_data, monster_data)
+
+        # 更新使用者狀態
         db.collection("users").document(user_id).set(result["user"])
 
+        # 失敗 → 清除副本進度
         if result["result"] == "lose":
             user_key = user_id.replace(".", "_")
-            # ✅ 改成 firestore 寫法（你前端也是 firestore）
             db.collection("progress").document(user_key).set({dungeon_id: 0})
             return jsonify({
                 "success": False,
-                "message": "你被擊敗了，進度已重設為第一層。"
+                "result": result["log"],
+                "message": "你被打敗了，進度已重設為第一層"
             })
 
+        # 勝利 → 回傳正常
         return jsonify({
             "success": True,
-            "message": "戰鬥勝利",
+            "result": result["log"],
             "is_last_layer": is_boss,
-            "result": result["log"]
+            "message": "戰鬥勝利"
         })
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
+
 
 
 @app.route("/inventory", methods=["GET"])
