@@ -1,0 +1,20 @@
+[
+  {
+    "id": "dungeon_moss",
+    "name": "腐爛沼澤地",
+    "description": "一個瀰漫著毒霧與史萊姆的神祕沼澤。",
+    "bossId": "little_mage",
+    "min_level": 1,
+    "image": "https://i.imgur.com/xxxxxx.jpg",
+    "monsters": ["slime", "skeleton", "tree_monster"]
+  },
+  {
+    "id": "dungeon_b",
+    "name": "遺忘墓園",
+    "description": "滿佈骨骸與詛咒的荒廢地。",
+    "bossId": "lich_lord",
+    "min_level": 5,
+    "image": "https://i.imgur.com/yyyyyy.jpg",
+    "monsters": ["skeleton", "ghost", "wraith"]
+  }
+]
