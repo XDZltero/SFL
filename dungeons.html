@@ -62,11 +62,13 @@ async function loadDungeons() {
   const res = await fetch("parameter/dungeons.json");
   const dungeons = await res.json();
 
-  const progRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-  const userData = await progRes.json();
-  const progress = userData.progress || {};
-
+  const userRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+  const userData = await userRes.json();
   userEmailSpan.innerText = userData.nickname || userId;
+
+  const progRes = await fetch(`${API_BASE}/get_progress?user=${encodeURIComponent(userId)}`);
+  const progData = await progRes.json();
+  const progress = progData.progress || {};
 
   for (const dungeon of dungeons) {
     const totalLayers = dungeon.monsters.length + 1;
@@ -84,7 +86,6 @@ async function loadDungeons() {
       text = "從第一層開始";
     }
 
-
     const div = document.createElement("div");
     div.className = "dungeon-card";
     div.innerHTML = `
@@ -98,7 +99,7 @@ async function loadDungeons() {
   }
 
   document.getElementById("loadingOverlay").style.display = "none";
-  document.getElementById("dungeonList").style.display = "block";
+  document.getElementById("dungeonList").style.display = "none";
 }
 
     firebase.auth().onAuthStateChanged(async (user) => {
