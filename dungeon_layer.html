@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>副本戰鬥</title>
+  <meta charset="UTF-8" />
+  <title>副本選擇</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script>
@@ -14,11 +14,11 @@
     firebase.initializeApp(firebaseConfig);
   </script>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 0;
-      margin: 0;
-    }
+    body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
+    .dungeon-card { border: 1px solid #ccc; border-radius: 8px; margin: 10px 0; padding: 10px; }
+    .dungeon-card img { max-width: 50%; height: auto; border-radius: 8px; }
+    .button-normal { background: #f5deb3; color: black; border: none; padding: 6px 12px; cursor: pointer; }
+    .button-boss { background: crimson; color: white; border: none; padding: 6px 12px; cursor: pointer; }
     #topbar {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -30,227 +30,84 @@
       border-bottom: 1px solid #ccc;
       font-size: 0.95em;
     }
-    #content {
-      display: flex;
-      padding: 20px;
-      gap: 20px;
-    }
-    .section {
-      flex: 1;
-      border: 1px solid #ccc;
-      padding: 1em;
-      background: #fff;
-      min-height: 300px;
-    }
-    #footer {
-      padding: 20px;
-      text-align: center;
-    }
-    #loadingOverlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5); color: white;
-      font-size: 1.5em; display: none;
-      justify-content: center; align-items: center;
-      z-index: 9999;
-    }
-    button {
-      padding: 0.5em 1em;
-      margin: 0.5em;
-      font-size: 1em;
-      cursor: pointer;
-    }
-    pre {
-      white-space: pre-wrap;
-    }
   </style>
 </head>
 <body>
   <div id="topbar">
     <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
     <div>
-      <button onclick="location.href='dungeons.html'">🔙 離開副本</button>
+      <button onclick="location.href='index.html'">🔙 返回主頁</button>
       <button onclick="logout()">🔓 登出</button>
     </div>
   </div>
 
-  <div id="loadingOverlay">⏳ 載入中...</div>
+  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
+  <div id="dungeonList">載入中...</div>
 
-  <div id="content">
-    <div class="section" id="userInfo">🧍 角色資訊載入中...</div>
-    <div class="section" id="monsterInfo">👹 怪物資訊載入中...</div>
-    <div class="section"><strong>📜 戰鬥紀錄</strong><pre id="logArea"></pre></div>
-  </div>
-
-  <div id="footer">
-    <button id="battleBtn" onclick="startBattle()">開始戰鬥</button>
-    <button id="retryBtn" style="display:none">再戰一次</button>
-    <button id="nextBtn" style="display:none">下一層</button>
-  </div>
-
-  <script type="module">
-    const API = "https://sfl-9cb8.onrender.com";
-    const params = new URLSearchParams(location.search);
-    const dungeon = params.get("dungeon");
-    let layer = parseInt(params.get("layer") || "0");
+  <!-- ✅ 修正 script 放到底部 -->
+  <script>
+    const API_BASE = "https://sfl-9cb8.onrender.com";
     let userId = null;
 
-    const nicknameSpan = document.getElementById("userNickname");
-    const logArea = document.getElementById("logArea");
-    const userDiv = document.getElementById("userInfo");
-    const monsterDiv = document.getElementById("monsterInfo");
-    const loading = document.getElementById("loadingOverlay");
-
-    const retryBtn = document.getElementById("retryBtn");
-    const nextBtn = document.getElementById("nextBtn");
-
-    function showLoading(show) {
-      loading.style.display = show ? "flex" : "none";
-    }
-
     function logout() {
-      firebase.auth().signOut().then(() => {
-        location.href = "/SFL/login.html";
-      });
-    }
-    window.logout = logout;
-
-    async function fetchUser(userId) {
-      const res = await fetch(`${API}/status?user=${encodeURIComponent(userId)}`);
-      return await res.json();
+      firebase.auth().signOut().then(() => location.href = "/SFL/login.html");
     }
 
-    async function fetchMonster(monsterId) {
-      const res = await fetch(`${API}/monster?id=${encodeURIComponent(monsterId)}`);
-      return await res.json();
-    }
+    async function loadDungeons() {
+      const user = firebase.auth().currentUser;
+      if (!user) return;
+      userId = user.email;
 
-    async function loadLayer() {
-      showLoading(true);
-      try {
-        const user = await fetchUser(userId);
-        nicknameSpan.innerText = user.nickname || userId;
-        const b = user.base_stats || {};
-        userDiv.innerText = `等級: ${user.level}\nHP: ${b.hp}\n攻擊: ${b.attack}\n命中率: ${Math.round(b.accuracy * 100)}%\n迴避率: ${Math.round(b.evade * 100)}%\n攻速: ${b.atk_speed}`;
+      const userEmailSpan = document.getElementById("userEmail");
+      const dungeonList = document.getElementById("dungeonList");
 
-        const dungeonRes = await fetch("parameter/dungeons.json");
-        const all = await dungeonRes.json();
-        const current = all.find(d => d.id === dungeon);
-        if (!current) throw new Error("副本不存在");
+      const res = await fetch("parameter/dungeons.json");
+      const dungeons = await res.json();
 
-        const monsterId = (layer === current.monsters.length) ? current.bossId : current.monsters[layer];
-        const mon = await fetchMonster(monsterId);
-        monsterDiv.innerHTML = `
-          <h2>${mon.name}</h2>
-          <img src="${mon.image_url}" width="100"><br>
-          <p>${mon.info}</p>
-          <ul>
-            <li>HP：${mon.stats.hp}</li>
-            <li>攻擊：${mon.stats.attack}</li>
-            <li>命中：${Math.round(mon.stats.accuracy * 100)}%</li>
-            <li>迴避：${Math.round(mon.stats.evade * 100)}%</li>
-          </ul>
-        `;
-      } catch (err) {
-        monsterDiv.innerHTML = "❌ 載入資料失敗";
-        console.error(err);
-      } finally {
-        showLoading(false);
-      }
-    }
+      const progRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+      const userData = await progRes.json();
+      const progress = userData.progress || {};
 
-    // ✅ dungeon_layer.html 部分片段修改
+      userEmailSpan.innerText = userData.nickname || userId;
+      dungeonList.innerHTML = "";
 
-let currentProgress = 0; // 目前副本進度
+      for (const dungeon of dungeons) {
+        const totalLayers = dungeon.monsters.length + 1;
+        const current = progress[dungeon.id] ?? 0;
 
-async function fetchProgress() {
-  const res = await fetch(`${API}/status?user=${encodeURIComponent(userId)}`);
-  const data = await res.json();
-  currentProgress = data.progress?.[dungeon] ?? 0;
-  return data;
-}
+        let text = "開始挑戰", cls = "button-normal";
+        let targetLayer = current;
 
-function checkProgressBeforeBattle() {
-  if (layer > currentProgress) {
-    alert("層數異常，請重新進入副本");
-    window.location.href = "dungeons.html";
-    return false;
-  }
-  if (layer < currentProgress - 1) {
-    alert("層數異常，請重新進入副本");
-    window.location.href = "dungeons.html";
-    return false;
-  }
-  return true;
-}
-
-window.startBattle = async function () {
-  if (!checkProgressBeforeBattle()) return;
-  showLoading(true);
-  logArea.innerHTML = "";
-  retryBtn.style.display = "none";
-  nextBtn.style.display = "none";
-  try {
-    const res = await fetch(`${API}/battle_dungeon`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user: userId, dungeon, layer })
-    });
-    const data = await res.json();
-    const log = data.battle_log || data.result;
-    if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
-
-    let html = log.join("\n");
-
-    if (data.success) {
-      html = `✅ 戰鬥勝利！\n` + html;
-      battleBtn.style.display = "none"; # 隱藏戰鬥開始按鈕
-      if (data.rewards) {
-        const { exp, leveled_up, drops } = data.rewards;
-        html += `\n[獲得經驗值] EXP + ${exp}`;
-        if (leveled_up) html += `\n<span style='color:red'>等級提升！達至 ${data.user.level} 級。</span>`;
-        if (Array.isArray(drops) && drops.length > 0) {
-          const itemRes = await fetch(`${API}/items`);
-          const itemMap = await itemRes.json();
-          html += `\n[戰利品]`;
-          for (const drop of drops) {
-            if (Math.random() <= drop.rate) {
-              const meta = itemMap[drop.id] || { name: drop.id, special: 0 };
-              if (meta.special == 1) html += `\n<span style='color:cornflowerblue'>【恭喜】獲得稀有道具 ${meta.name} ${drop.value}個</span>`;
-              else if (meta.special == 2) html += `\n<span style='color:crimson'>【恭喜】獲得超稀有道具 ${meta.name} ${drop.value}個</span>`;
-              else html += `\n獲得 ${meta.name} ${drop.value}個`;
-            }
-          }
+        if (current === 0) {
+          text = "從第一層開始";
+        } else if (current < totalLayers - 1) {
+          text = `進入第 ${current + 1} 層`;
+        } else if (current === totalLayers - 1) {
+          text = "進入 BOSS 關卡";
+          cls = "button-boss";
+        } else {
+          text = "已完成所有層數";
+          cls = "button-normal";
+          targetLayer = totalLayers - 1; // 重打 boss
         }
+
+        const div = document.createElement("div");
+        div.className = "dungeon-card";
+        div.innerHTML = `
+          <h2>${dungeon.name}</h2>
+          <img src="${dungeon.image}" />
+          <p>${dungeon.description}</p>
+          <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
+          <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}'">${text}</button>
+        `;
+        dungeonList.appendChild(div);
       }
-    } else {
-      html = `💀 戰鬥失敗！\n` + html + `\n❌ ${data.message}`;
     }
 
-    logArea.innerHTML = html.replace(/\n/g, "<br>");
-    retryBtn.style.display = "inline-block";
-    if (data.success && !data.is_last_layer) {
-      nextBtn.style.display = "inline-block";
-      nextBtn.onclick = () => {
-        window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
-      };
-    }
-  } catch (err) {
-    logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
-  } finally {
-    showLoading(false);
-  }
-};
-
-firebase.auth().onAuthStateChanged(async user => {
-  if (user) {
-    userId = user.email;
-    await fetchProgress();        // ✅ 先抓目前進度
-    retryBtn.onclick = () => startBattle();  // ✅ 綁定按鈕（確保 userId 已存在）
-    loadLayer();                  // ✅ 然後載入該層
-  } else {
-    location.href = "/SFL/login.html";
-  }
-});
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) location.href = "/SFL/login.html";
+      else await loadDungeons();
+    });
   </script>
 </body>
 </html>
