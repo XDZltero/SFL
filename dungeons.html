@@ -64,7 +64,7 @@
         div.className = "dungeon-card";
         div.innerHTML = `
           <h2>${dungeon.name}</h2>
-          <img src="${dungeon.image}" />
+          <img src="pic/dungeon/${dungeon.image}" />
           <p>${dungeon.description}</p>
           <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
           <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${current}'">${text}</button>
