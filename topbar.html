@@ -1,0 +1,54 @@
+<!-- topbar.html -->
+<style>
+  #topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: #f5f5f5;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    font-size: 0.95em;
+    z-index: 999;
+  }
+</style>
+
+<div id="topbar">
+  <span>👤 玩家名稱：<span id="userNickname">載入中...</span></span>
+  <div id="topbar-buttons">
+    <!-- 按鈕會由 JS 動態生成 -->
+  </div>
+</div>
+
+<script type="module">
+  const userSpan = document.getElementById("userNickname");
+
+  firebase.auth().onAuthStateChanged(async (user) => {
+    if (!user) {
+      location.href = "/SFL/login.html";
+      return;
+    }
+
+    const API_BASE = "https://sfl-9cb8.onrender.com";
+    const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(user.email)}`);
+    const data = await res.json();
+
+    userSpan.innerText = data.nickname || user.email;
+
+    const isIndex = location.pathname.endsWith("index.html");
+
+    const btns = [];
+    if (!isIndex) {
+      btns.push(`<button onclick="location.href='index.html'">🔙 返回主頁</button>`);
+    }
+    btns.push(`<button onclick="logout()">🔓 登出</button>`);
+    document.getElementById("topbar-buttons").innerHTML = btns.join("");
+  });
+
+  window.logout = function () {
+    firebase.auth().signOut().then(() => {
+      location.href = "/SFL/login.html";
+    });
+  };
+</script>
