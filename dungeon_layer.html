@@ -132,7 +132,10 @@
         });
         const data = await res.json();
 
-        if (!Array.isArray(data.result)) throw new Error("伺服器未回傳 battle_log 陣列");
+        const log = data.battle_log || data.result;
+        if (!Array.isArray(log)) {
+          throw new Error("伺服器未回傳戰鬥紀錄");
+        }
 
         resultDiv.innerText = data.result.join("\n");
 
