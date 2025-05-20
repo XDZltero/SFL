@@ -72,7 +72,7 @@ def level_damage_modifier(attacker_level, defender_level):
 
 # 確認是否升級
 def check_level_up(user):
-    with open("level_exp.json", "r", encoding="utf-8") as f:
+    with open("parameter/level_exp.json", "r", encoding="utf-8") as f:
         level_table = json.load(f)
 
     level = user["level"]
