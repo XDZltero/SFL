@@ -69,7 +69,7 @@
 
   <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
 
-  <h1>🔥 RPG 主畫面</h1>
+  <h1>主畫面</h1>
 
   <pre id="statusBlock">正在載入角色資料...</pre>
 
@@ -117,7 +117,7 @@
       const levelMaxExp = levelExp[data.level] || 1;
       const progress = percent(data.exp / levelMaxExp);
 
-      return 玩家名稱: ${data.nickname}
+      return `玩家名稱: ${data.nickname}
 等級: ${data.level}
 經驗值: ${data.exp} (${progress})
 生命值: ${total_hp} (${b.hp} + ${e.hp || 0})
@@ -130,7 +130,7 @@
 物理傷害加成: ${data.buffs?.phys_bonus ?? 0}
 魔法傷害加成: ${data.buffs?.magic_bonus ?? 0}
 剩餘能力值點數: ${data.stat_points}
-剩餘技能點: ${data.skill_points};
+剩餘技能點: ${data.skill_points}`;
     }
 
     function logout() {
@@ -148,7 +148,7 @@
         return;
       }
     
-      window.location.href = battle.html?user=${encodeURIComponent(user.email)}&monster=${encodeURIComponent(monster)};
+      window.location.href = `battle.html?user=${encodeURIComponent(user.email)}&monster=${encodeURIComponent(monster)}`;
     }
     
     // ⬅️ 記得加入這行！讓 HTML 能呼叫
@@ -169,7 +169,7 @@
         }
 
         const email = user.email;
-        const res = await fetch(${API_BASE}/status?user=${encodeURIComponent(email)});
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
         const data = await res.json();
 
         nicknameSpan.innerText = data.nickname || email;
@@ -186,15 +186,6 @@
       if (user) loadStatus();
       else window.location.href = "/SFL/login.html";
     });
-  </script>
-  <div id="footer-placeholder"></div>
-  <script>
-    fetch("footer.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("footer-placeholder").innerHTML = html;
-      })
-      .catch(err => console.warn("載入 footer 失敗", err));
   </script>
 </body>
 </html>
