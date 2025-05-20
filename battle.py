@@ -114,9 +114,9 @@ def simulate_battle(user, monster):
                     multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
 
                     if calculate_hit(user["base_stats"]["accuracy"], monster["stats"]["evade"], user["base_stats"]["luck"]):
-                        # level_mod = level_damage_modifier(user["level"], monster["level"])
+                        level_mod = level_damage_modifier(user["level"], monster["level"])
                         dmg = calculate_damage(user["base_stats"]["attack"], multiplier, user["buffs"]["phys_bonus"], monster["stats"]["shield"])
-                        # dmg = round(dmg * level_mod) # 等差增減傷
+                        dmg = round(dmg * level_mod) # 等差增減傷
                         mon_hp -= dmg
                         log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害")
                     else:
@@ -124,9 +124,9 @@ def simulate_battle(user, monster):
             else:
                 skill = pick_monster_skill(monster.get("skills", []))
                 if calculate_hit(monster["stats"]["accuracy"], user["base_stats"]["evade"], monster["stats"]["luck"]):
-                    # level_mod = level_damage_modifier(monster["level"], user["level"])
+                    level_mod = level_damage_modifier(monster["level"], user["level"])
                     dmg = calculate_damage(monster["stats"]["attack"], skill["multiplier"], monster["stats"].get("phys_bonus", 0), user["base_stats"]["shield"])
-                    # dmg = round(dmg * level_mod) # 等差增減傷
+                    dmg = round(dmg * level_mod) # 等差增減傷
                     user_hp -= dmg
                     log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害")
                 else:
