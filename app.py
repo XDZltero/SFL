@@ -142,7 +142,7 @@ def battle_dungeon():
         user_data = user_doc.to_dict()
 
         # 取得副本資料（從本地 JSON）
-        with open("SFL/parameter/dungeons.json", encoding="utf-8") as f:
+        with open("parameter/dungeons.json", encoding="utf-8") as f:
             dungeons = json.load(f)
 
         dungeon = next((d for d in dungeons if d["id"] == dungeon_id), None)
