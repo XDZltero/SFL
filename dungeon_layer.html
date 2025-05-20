@@ -159,7 +159,7 @@
 
     window.startBattle = async function () {
       showLoading(true);
-      logArea.innerText = "";
+      logArea.innerHTML = "";
       retryBtn.style.display = "none";
       nextBtn.style.display = "none";
       try {
@@ -171,8 +171,36 @@
         const data = await res.json();
         const log = data.battle_log || data.result;
         if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
-        logArea.innerText = log.join("\n");
 
+        let html = log.join("\n");
+
+        if (data.success) {
+          html = `✅ 戰鬥勝利！\n` + html;
+          if (data.rewards) {
+            const { exp, leveled_up, drops } = data.rewards;
+            html += `\n[獲得經驗值] EXP + ${exp}`;
+            if (leveled_up) html += `\n<span style='color:red'>等級提升！達至 ${data.user.level} 級。</span>`;
+
+            if (Array.isArray(drops) && drops.length > 0) {
+              const itemRes = await fetch(`${API}/items`);
+              const itemMap = await itemRes.json();
+              html += `\n[戰利品]`;
+              for (const drop of drops) {
+                if (Math.random() <= drop.rate) {
+                  const meta = itemMap[drop.id] || { name: drop.id, special: 0 };
+                  if (meta.special == 1) html += `\n<span style='color:cornflowerblue'>【恭喜】獲得稀有道具 ${meta.name} ${drop.value}個</span>`;
+                  else if (meta.special == 2) html += `\n<span style='color:crimson'>【恭喜】獲得超稀有道具 ${meta.name} ${drop.value}個</span>`;
+                  else html += `\n獲得 ${meta.name} ${drop.value}個`;
+                }
+              }
+            }
+          }
+        } else {
+          html = `💀 戰鬥失敗！\n` + html;
+          html += `\n❌ ${data.message}`;
+        }
+
+        logArea.innerHTML = html.replace(/\n/g, "<br>");
         retryBtn.style.display = "inline-block";
         if (data.success && !data.is_last_layer) {
           nextBtn.style.display = "inline-block";
@@ -181,7 +209,7 @@
           };
         }
       } catch (err) {
-        logArea.innerText = "❌ 錯誤：無法完成戰鬥\n" + err.message;
+        logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
       } finally {
         showLoading(false);
       }
