@@ -14,23 +14,52 @@
     firebase.initializeApp(firebaseConfig);
   </script>
   <style>
-    body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
-    #topbar {
-      position: fixed; top: 0; left: 0; right: 0;
-      background: #f5f5f5; padding: 10px;
-      display: flex; justify-content: space-between;
-      border-bottom: 1px solid #ccc;
-      font-size: 0.95em;
+    body {
+      font-family: sans-serif;
+      padding: 0;
+      margin: 0;
     }
-    #monsterInfo { margin-bottom: 20px; }
-    #battleArea { display: none; }
-    #result { font-weight: bold; margin-top: 1em; }
+    #topbar {
+      background: #f5f5f5;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+      position: sticky;
+      top: 0;
+    }
+    #content {
+      display: flex;
+      padding: 20px;
+      gap: 20px;
+    }
+    .section {
+      flex: 1;
+      border: 1px solid #ccc;
+      padding: 1em;
+      background: #fff;
+      min-height: 300px;
+    }
+    #footer {
+      padding: 20px;
+      text-align: center;
+    }
     #loadingOverlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.5); color: white;
       font-size: 1.5em; display: none;
       justify-content: center; align-items: center;
       z-index: 9999;
+    }
+    button {
+      padding: 0.5em 1em;
+      margin: 0.5em;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    pre {
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -42,14 +71,19 @@
       <button onclick="logout()">🔓 登出</button>
     </div>
   </div>
+
   <div id="loadingOverlay">⏳ 載入中...</div>
 
-  <h1>⚔️ 副本戰鬥</h1>
-  <div id="monsterInfo"></div>
-  <div id="battleArea">
-    <button onclick="startBattle()">開始戰鬥</button>
-    <div id="result"></div>
-    <button id="nextBtn" style="display:none">▶️ 下一層</button>
+  <div id="content">
+    <div class="section" id="userInfo">🧍 角色資訊載入中...</div>
+    <div class="section" id="monsterInfo">👹 怪物資訊載入中...</div>
+    <div class="section"><strong>📜 戰鬥紀錄</strong><pre id="logArea"></pre></div>
+  </div>
+
+  <div id="footer">
+    <button id="battleBtn" onclick="startBattle()">開始戰鬥</button>
+    <button id="retryBtn" style="display:none">再戰一次</button>
+    <button id="nextBtn" style="display:none">下一層</button>
   </div>
 
   <script type="module">
@@ -59,9 +93,13 @@
     let layer = parseInt(params.get("layer") || "0");
     let userId = null;
 
-    const loading = document.getElementById("loadingOverlay");
+    const nicknameSpan = document.getElementById("userNickname");
+    const logArea = document.getElementById("logArea");
+    const userDiv = document.getElementById("userInfo");
     const monsterDiv = document.getElementById("monsterInfo");
-    const resultDiv = document.getElementById("result");
+    const loading = document.getElementById("loadingOverlay");
+
+    const retryBtn = document.getElementById("retryBtn");
     const nextBtn = document.getElementById("nextBtn");
 
     function showLoading(show) {
@@ -89,7 +127,9 @@
       showLoading(true);
       try {
         const user = await fetchUser(userId);
-        document.getElementById("userNickname").innerText = user.nickname || userId;
+        nicknameSpan.innerText = user.nickname || userId;
+        const b = user.base_stats || {};
+        userDiv.innerText = `等級: ${user.level}\nHP: ${b.hp}\n攻擊: ${b.attack}\n命中率: ${Math.round(b.accuracy * 100)}%\n迴避率: ${Math.round(b.evade * 100)}%\n攻速: ${b.atk_speed}`;
 
         const dungeonRes = await fetch("parameter/dungeons.json");
         const all = await dungeonRes.json();
@@ -98,20 +138,17 @@
 
         const monsterId = (layer === current.monsters.length) ? current.bossId : current.monsters[layer];
         const mon = await fetchMonster(monsterId);
-
         monsterDiv.innerHTML = `
           <h2>${mon.name}</h2>
-          <img src="${mon.image_url}" width="150"><br>
+          <img src="${mon.image_url}" width="100"><br>
           <p>${mon.info}</p>
           <ul>
-            <li>❤️ HP：${mon.stats.hp}</li>
-            <li>⚔️ 攻擊：${mon.stats.attack}</li>
-            <li>🎯 命中率：${Math.round(mon.stats.accuracy * 100)}%</li>
-            <li>🛡️ 迴避：${Math.round(mon.stats.evade * 100)}%</li>
+            <li>HP：${mon.stats.hp}</li>
+            <li>攻擊：${mon.stats.attack}</li>
+            <li>命中：${Math.round(mon.stats.accuracy * 100)}%</li>
+            <li>迴避：${Math.round(mon.stats.evade * 100)}%</li>
           </ul>
         `;
-
-        document.getElementById("battleArea").style.display = "block";
       } catch (err) {
         monsterDiv.innerHTML = "❌ 載入資料失敗";
         console.error(err);
@@ -122,7 +159,8 @@
 
     window.startBattle = async function () {
       showLoading(true);
-      resultDiv.innerText = "";
+      logArea.innerText = "";
+      retryBtn.style.display = "none";
       nextBtn.style.display = "none";
       try {
         const res = await fetch(`${API}/battle_dungeon`, {
@@ -131,31 +169,27 @@
           body: JSON.stringify({ user: userId, dungeon, layer })
         });
         const data = await res.json();
-
         const log = data.battle_log || data.result;
-        if (!Array.isArray(log)) {
-          throw new Error("伺服器未回傳戰鬥紀錄");
-        }
+        if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
+        logArea.innerText = log.join("\n");
 
-        resultDiv.innerText = data.result.join("\n");
-
+        retryBtn.style.display = "inline-block";
         if (data.success && !data.is_last_layer) {
           nextBtn.style.display = "inline-block";
           nextBtn.onclick = () => {
             window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
           };
-        } else if (!data.success) {
-          resultDiv.innerHTML += `\n💀 ${data.message}`;
         }
       } catch (err) {
-        console.error("發生錯誤：", err);
-        resultDiv.innerText = "❌ 錯誤：無法完成戰鬥";
+        logArea.innerText = "❌ 錯誤：無法完成戰鬥\n" + err.message;
       } finally {
         showLoading(false);
       }
     }
 
-    firebase.auth().onAuthStateChanged((user) => {
+    retryBtn.onclick = () => startBattle();
+
+    firebase.auth().onAuthStateChanged(user => {
       if (user) {
         userId = user.email;
         loadLayer();
