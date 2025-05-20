@@ -43,17 +43,40 @@
 </head>
 <body>
   <div id="topbar-placeholder"></div>
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+  
+    // 先載入 topbar
     fetch("topbar.html")
       .then(res => res.text())
       .then(html => {
         document.getElementById("topbar-placeholder").innerHTML = html;
   
-        // topbar 載入完 → 等待 Firebase 驗證完成 → 執行 loadStatus()
-        firebase.auth().onAuthStateChanged(user => {
-          if (user) {
-            loadStatus(); // ⭐ 正確時機
-          }
+        // 等待登入完成
+        onAuthStateChanged(auth, async (user) => {
+          if (!user) return location.href = "/SFL/login.html";
+  
+          // 💡 wait for #userNickname to be in DOM
+          const waitForNicknameEl = () => new Promise(resolve => {
+            const check = () => {
+              const el = document.getElementById("userNickname");
+              if (el) resolve(el);
+              else setTimeout(check, 50);
+            };
+            check();
+          });
+  
+          await waitForNicknameEl(); // 等 nickname span 存在
+          loadStatus(user);         // ✅ 執行你的原本邏輯
         });
       })
       .catch(err => console.warn("❌ 載入 topbar 失敗", err));
@@ -139,24 +162,17 @@
     // ⬅️ 記得加入這行！讓 HTML 能呼叫
     window.goToBattle = goToBattle;
 
-    async function loadStatus() {
+    async function loadStatus(user) {
       showLoading(true);
-
       try {
-        // 取得等級經驗表
-        const expRes = await fetch("level_exp.json");
-        levelExp = await expRes.json();
-
-        const user = firebase.auth().currentUser;
-        if (!user) {
-          window.location.href = "/SFL/login.html";
-          return;
-        }
-
         const email = user.email;
-        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
-        const data = await res.json();
-
+        const nicknameSpan = document.getElementById("userNickname");
+        const res1 = await fetch("level_exp.json");
+        levelExp = await res1.json();
+    
+        const res2 = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+        const data = await res2.json();
+    
         nicknameSpan.innerText = data.nickname || email;
         statusBlock.innerText = formatStats(data);
       } catch (err) {
