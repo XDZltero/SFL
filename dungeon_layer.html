@@ -203,6 +203,7 @@ window.startBattle = async function () {
 
     if (data.success) {
       html = `✅ 戰鬥勝利！\n` + html;
+      battleBtn.style.display = "none"; # 隱藏戰鬥開始按鈕
       if (data.rewards) {
         const { exp, leveled_up, drops } = data.rewards;
         html += `\n[獲得經驗值] EXP + ${exp}`;
@@ -243,8 +244,9 @@ window.startBattle = async function () {
 firebase.auth().onAuthStateChanged(async user => {
   if (user) {
     userId = user.email;
-    await fetchProgress();
-    loadLayer();
+    await fetchProgress();        // ✅ 先抓目前進度
+    retryBtn.onclick = () => startBattle();  // ✅ 綁定按鈕（確保 userId 已存在）
+    loadLayer();                  // ✅ 然後載入該層
   } else {
     location.href = "/SFL/login.html";
   }
