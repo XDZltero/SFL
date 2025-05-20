@@ -196,8 +196,21 @@ def battle_dungeon():
             })
 
         # 勝利 → 若通關層數未記錄或低於本層，則更新
-        if int(layer) >= current_layer:
-            progress_ref.set({dungeon_id: int(layer) + 1}, merge=True)
+        if result["result"] == "win":
+            user_key = user_id.replace(".", "_")
+            progress_ref = db.collection("progress").document(user_key)
+            progress_doc = progress_ref.get()
+            current_layer = 0
+        
+            if progress_doc.exists:
+                current_layer = progress_doc.to_dict().get(dungeon_id, 0)
+        
+            if is_boss:
+                # BOSS 勝利，自動重置進度為 0
+                progress_ref.set({dungeon_id: 0}, merge=True)
+            elif int(layer) >= current_layer:
+                # 勝利 → 若通關層數未記錄或低於本層，則更新
+                progress_ref.set({dungeon_id: int(layer) + 1}, merge=True)
 
         return jsonify({
             "success": True,
