@@ -126,19 +126,54 @@
       return await res.json();
     }
 
+    function calcTotal(base, equip) {
+      return (base || 0) + (equip || 0);
+    }
+    
+    function percent(num) {
+      return Math.round(num * 100) + "%";
+    }
+
+    function formatStats(data) {
+      const b = data.base_stats;
+      const e = data.equipment_stats || {}; // 若未來有裝備加成可加進來
+      const total_hp = calcTotal(b.hp, e.hp);
+      const total_atk = calcTotal(b.attack, e.attack);
+      const total_shield = calcTotal(b.shield, e.shield);
+      const total_luck = calcTotal(b.luck, e.luck);
+      const total_accuracy = calcTotal(b.accuracy, e.accuracy);
+      const total_evade = calcTotal(b.evade, e.evade);
+      const levelMaxExp = levelExp[data.level] || 1;
+      const progress = percent(data.exp / levelMaxExp);
+
+      return `玩家名稱: ${data.nickname}
+      等級: ${data.level}
+      經驗值: ${data.exp} (${progress})
+      生命值: ${total_hp} (${b.hp} + ${e.hp || 0})
+      攻擊力: ${total_atk} (${b.attack} + ${e.attack || 0})
+      護盾值: ${total_shield} (${b.shield} + ${e.shield || 0})
+      幸運值: ${total_luck} (${b.luck} + ${e.luck || 0})
+      命中率: ${percent(total_accuracy)} (${b.accuracy} + ${e.accuracy || 0})
+      迴避率: ${percent(total_evade)} (${b.evade} + ${e.evade || 0})
+      攻擊速度: ${b.atk_speed}
+      物理傷害加成: ${data.buffs?.phys_bonus ?? 0}
+      魔法傷害加成: ${data.buffs?.magic_bonus ?? 0}
+      剩餘能力值點數: ${data.stat_points}
+      剩餘技能點: ${data.skill_points}`;
+    }
+
     async function loadLayer() {
       showLoading(true);
       try {
         const user = await fetchUser(userId);
         nicknameSpan.innerText = user.nickname || userId;
-        const b = user.base_stats || {};
-        userDiv.innerText = `等級: ${user.level}\nHP: ${b.hp}\n攻擊: ${b.attack}\n命中率: ${Math.round(b.accuracy * 100)}%\n迴避率: ${Math.round(b.evade * 100)}%\n攻速: ${b.atk_speed}`;
-
+        userDiv.innerText = formatStats(user);  // 使用統一格式
+    
         const dungeonRes = await fetch("parameter/dungeons.json");
         const all = await dungeonRes.json();
         const current = all.find(d => d.id === dungeon);
         if (!current) throw new Error("副本不存在");
-
+    
         const monsterId = (layer === current.monsters.length) ? current.bossId : current.monsters[layer];
         const mon = await fetchMonster(monsterId);
         monsterDiv.innerHTML = `
@@ -146,10 +181,13 @@
           <img src="${mon.image_url}" width="100"><br>
           <p>${mon.info}</p>
           <ul>
-            <li>HP：${mon.stats.hp}</li>
-            <li>攻擊：${mon.stats.attack}</li>
-            <li>命中：${Math.round(mon.stats.accuracy * 100)}%</li>
-            <li>迴避：${Math.round(mon.stats.evade * 100)}%</li>
+            <li>等級：${mon.level}</li>
+            <li>屬性：${mon.element}</li>
+            <li>生命值：${mon.stats.hp}</li>
+            <li>攻擊力：${mon.stats.attack}</li>
+            <li>命中率：${Math.round(mon.stats.accuracy * 100)}%</li>
+            <li>迴避率：${Math.round(mon.stats.evade * 100)}%</li>
+            <li>攻擊速度：${mon.stats.atk_speed}</li>
           </ul>
         `;
       } catch (err) {
