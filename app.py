@@ -186,14 +186,18 @@ def battle_dungeon():
             return jsonify({
                 "success": False,
                 "message": "你被擊敗了，進度已重設為第一層。",
-                "battle_log": result["battle_log"]
+                "battle_log": result["battle_log"],
+                "rewards": result.get("rewards"),
+                "user": result.get("user")
             })
 
         return jsonify({
             "success": True,
             "message": "戰鬥勝利",
             "is_last_layer": is_boss,
-            "battle_log": result["battle_log"]
+            "battle_log": result["battle_log"],
+            "rewards": result.get("rewards"),
+            "user": result.get("user")  # 若要顯示等級
         })
 
     except Exception as e:
