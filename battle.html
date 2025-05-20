@@ -214,9 +214,12 @@
             for (const drop of drops) {
               if (Math.random() <= drop.rate) {
                 const meta = itemMap[drop.id] || { name: drop.id, special: 0 };
-                if (meta.special) {
-                  rewardLog += `<span style="color:red">【恭喜】獲得稀有道具 ${meta.name} ${drop.value}個</span><br>`;
-                } else {
+                if (meta.special == 1) {
+                  rewardLog += `<span style="color:cornflowerblue">【恭喜】獲得稀有道具 ${meta.name} ${drop.value}個</span><br>`;
+                } else if(meta.special == 2){
+                  rewardLog += `<span style="color:crimson">【恭喜】獲得超稀有道具 ${meta.name} ${drop.value}個</span><br>`;
+                }
+                else {
                   rewardLog += `獲得 ${meta.name} ${drop.value}個<br>`;
                 }
               }
