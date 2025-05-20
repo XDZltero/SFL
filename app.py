@@ -179,15 +179,7 @@ def battle_dungeon():
                 "message": "你被擊敗了，進度已重設為第一層。"
             })
 
-        # 判斷是否為 boss 層
-        is_last_layer = int(layer) == len(dungeon["monsters"])
-        
-        user_key = user_id.replace(".", "_")
-        if is_last_layer:
-            db.reference(f"progress/{user_key}/{dungeon_id}").set(0)
-        else:
-            db.reference(f"progress/{user_key}/{dungeon_id}").set(int(layer) + 1)
-        
+        # 戰鬥勝利
         return jsonify({
             "success": True,
             "message": "戰鬥勝利",
