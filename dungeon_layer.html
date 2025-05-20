@@ -201,6 +201,7 @@ window.startBattle = async function () {
     if (data.success) {
       html = `✅ 戰鬥勝利！\n` + html;
       battleBtn.style.display = "none"; // 隱藏戰鬥開始按鈕
+      retryBtn.style.display = "inline-block";
       if (data.rewards) {
         const { exp, leveled_up, drops } = data.rewards;
         html += `\n[獲得經驗值] EXP + ${exp}`;
@@ -231,7 +232,7 @@ window.startBattle = async function () {
     }
 
     logArea.innerHTML = html.replace(/\n/g, "<br>");
-    retryBtn.style.display = "inline-block";
+    
     if (data.success && !data.is_last_layer) {
       nextBtn.style.display = "inline-block";
       nextBtn.onclick = () => {
