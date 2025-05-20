@@ -117,7 +117,7 @@
         const mon = await monDoc.json();
         monsterInfo.innerHTML = `
           <h2>${mon.name}</h2>
-          <img src="$pic/{mon.image_url}" width="150" />
+          <img src="${mon.image_url}" width="150" />
           <p>${mon.info}</p>
           <ul>
             <li>HP：${mon.stats.hp}</li>
