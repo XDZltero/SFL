@@ -42,6 +42,25 @@
       border-bottom: 1px solid #ccc;
       font-size: 0.95em;
     }
+    .button-normal {
+      background-color: #f5deb3;  /* 淺米色 */
+      color: black;
+      border: none;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
+    .button-boss {
+      background-color: crimson;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -72,9 +91,26 @@
     async function loadDungeons() {
       const res = await fetch("parameter/dungeons.json");
       const dungeons = await res.json();
-
+    
+      const userKey = userId.replaceAll(".", "_");
+      const progressRef = db.ref(`progress/${userKey}`);
+      const progressSnap = await progressRef.get();
+      const progressData = progressSnap.exists() ? progressSnap.val() : {};
+    
       for (const dungeon of dungeons) {
-        const layers = dungeon.monsters.length + 1; // boss included
+        const layers = dungeon.monsters.length + 1; // 包含 boss
+        const progress = progressData[dungeon.id] ?? 0;
+    
+        let buttonText = "進入副本";
+        let buttonClass = "button-normal";
+    
+        if (progress >= 1 && progress < layers - 1) {
+          buttonText = `進入第 ${progress + 1} 層`;
+        } else if (progress === layers - 1) {
+          buttonText = "進入 BOSS 關卡";
+          buttonClass = "button-boss";
+        }
+    
         const div = document.createElement("div");
         div.className = "dungeon-card";
         div.innerHTML = `
@@ -82,7 +118,7 @@
           <img src="${dungeon.image}" alt="${dungeon.name}" />
           <p>${dungeon.description}</p>
           <p>層數：${layers}，入場限制：Lv.${dungeon.min_level}</p>
-          <button onclick="enterDungeon('${dungeon.id}', ${dungeon.min_level})">進入副本</button>
+          <button class="${buttonClass}" onclick="enterDungeon('${dungeon.id}', ${dungeon.min_level})">${buttonText}</button>
         `;
         dungeonList.appendChild(div);
       }
