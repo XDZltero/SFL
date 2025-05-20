@@ -97,7 +97,22 @@
     }
     window.startBattle = startBattle;
 
-    function goNext() {
+    async function goNext() {
+      const userKey = userId.replaceAll(".", "_");
+      const dungeonRef = firebase.database().ref(`progress/${userKey}/${dungeonId}`);
+    
+      // 判斷是否為 Boss 關
+      const dungeonRes = await fetch("parameter/dungeons.json");
+      const dungeons = await dungeonRes.json();
+      const dungeon = dungeons.find(d => d.id === dungeonId);
+      const isBoss = layer === dungeon.monsters.length;
+    
+      if (isBoss) {
+        await dungeonRef.set(0); // 重置
+      } else {
+        await dungeonRef.set(layer + 1);
+      }
+    
       location.href = `dungeon_layer.html?dungeon=${dungeonId}&layer=${layer + 1}`;
     }
     window.goNext = goNext;
