@@ -20,16 +20,29 @@
     .dungeon-card img { max-width: 50%; height: auto; border-radius: 8px; }
     .button-normal { background: #f5deb3; color: black; border: none; padding: 6px 12px; cursor: pointer; }
     .button-boss { background: crimson; color: white; border: none; padding: 6px 12px; cursor: pointer; }
-    #topbar { position: fixed; top: 0; left: 0; right: 0; background: #f5f5f5; padding: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #ccc; }
+    #topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #f5f5f5;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+      font-size: 0.95em;
+    }
   </style>
 </head>
 <body>
   <div id="topbar">
     <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
-    <div><button onclick="location.href='index.html'">🔙 返回主頁</button><button onclick="logout()">🔓 登出</button></div>
+    <div>
+      <button onclick="location.href='index.html'">🔙 返回主頁</button>
+      <button onclick="logout()">🔓 登出</button>
+    </div>
   </div>
-  <h1>🗺️ 副本入口</h1>
-  <div id="dungeonList">載入中...</div>
+
+  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
 
   <script>
   const API_BASE = "https://sfl-9cb8.onrender.com";
