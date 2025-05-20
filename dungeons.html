@@ -71,23 +71,19 @@ async function loadDungeons() {
   for (const dungeon of dungeons) {
     const totalLayers = dungeon.monsters.length + 1;
     const current = progress[dungeon.id] ?? 0;
+    const targetLayer = Math.min(current, totalLayers - 1);
 
-    let targetLayer = Math.min(current, totalLayers - 1); // 👈 避免傳超過 boss 層
-
-    let text = "開始挑戰", cls = "button-normal";
-
-    if (current === 0) {
-      text = "從第一層開始";
-    } else if (current < totalLayers - 1) {
-      text = `進入第 ${current + 1} 層`;
-    } else if (current === totalLayers - 1) {
+    let text = `進入第 ${targetLayer + 1} 層`;
+    let cls = "button-normal";
+    
+    if (targetLayer === totalLayers - 1) {
       text = "進入 BOSS 關卡";
       cls = "button-boss";
-    } else {
-      text = "已完成所有層數";
-      cls = "button-normal";
-      targetLayer = totalLayers - 1;
     }
+    if (targetLayer === 0) {
+      text = "從第一層開始";
+    }
+
 
     const div = document.createElement("div");
     div.className = "dungeon-card";
