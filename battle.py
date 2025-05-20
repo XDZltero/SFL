@@ -15,6 +15,29 @@ def calculate_damage(base_atk, skill_multiplier, bonus, shield):
     reduction = min(shield * 0.001, 0.99)
     return int(raw * (1 - reduction))
 
+# 屬性克制檔案
+def load_element_table():
+    with open("parameter/attribute_table.json", "r", encoding="utf-8") as f:
+        return json.load(f)
+ELEMENT_TABLE = load_element_table()
+# 屬性克制計算
+def get_element_multiplier(attacker_elements, defender_elements):
+    if not isinstance(attacker_elements, list):
+        attacker_elements = [attacker_elements]
+    if not isinstance(defender_elements, list):
+        defender_elements = [defender_elements]
+
+    total = 0
+    count = 0
+
+    for atk in attacker_elements:
+        for defn in defender_elements:
+            mult = ELEMENT_TABLE["advantage"].get(atk, {}).get(defn, 1.0)
+            total += mult
+            count += 1
+
+    return total / count if count > 0 else 1.0
+
 def get_user_item_ref(db, user_id):
     return db.collection("user_items").document(user_id)
 
@@ -121,7 +144,11 @@ def simulate_battle(user, monster):
                     if calculate_hit(user["base_stats"]["accuracy"], monster["stats"]["evade"], user["base_stats"]["luck"]):
                         
                         dmg = calculate_damage(user["base_stats"]["attack"], multiplier, user["buffs"]["phys_bonus"], monster["stats"]["shield"])
-                        dmg = round(dmg * user_level_mod) # 等差增減傷
+
+                        # 屬性克制
+                        ele_mod = get_element_multiplier(skill.get("element", []), monster.get("element", []))
+                        
+                        dmg = round(dmg * user_level_mod * ele_mod) # 傷害 * 等差增減傷 * 屬性克制
                         mon_hp -= dmg
                         log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害")
                     else:
@@ -131,7 +158,11 @@ def simulate_battle(user, monster):
                 if calculate_hit(monster["stats"]["accuracy"], user["base_stats"]["evade"], monster["stats"]["luck"]):
                     
                     dmg = calculate_damage(monster["stats"]["attack"], skill["multiplier"], monster["stats"].get("phys_bonus", 0), user["base_stats"]["shield"])
-                    dmg = round(dmg * monster_level_mod) # 等差增減傷
+
+                    # 屬性克制
+                    ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
+                    
+                    dmg = round(dmg * monster_level_mod * ele_mod) # 傷害 * 等差增減傷 * 屬性克制
                     
                     user_hp -= dmg
                     log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害")
