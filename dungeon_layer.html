@@ -171,21 +171,11 @@ async function fetchProgress() {
 }
 
 function checkProgressBeforeBattle() {
-  // ✅ 玩家最多只能挑戰到 currentProgress（含）
-  // 👉 例如 progress = 1，可以打 layer = 1（當前進度）
   if (layer > currentProgress) {
-    alert("層數異常，請重新進入副本");
+    alert("層數異常（尚未解鎖），請重新進入副本");
     window.location.href = "dungeons.html";
     return false;
   }
-
-  // ✅ 玩家允許再戰一次前一層
-  if (layer < currentProgress - 1) {
-    alert("層數異常，請重新進入副本");
-    window.location.href = "dungeons.html";
-    return false;
-  }
-
   return true;
 }
 
