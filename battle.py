@@ -1,12 +1,15 @@
 import random
 from firebase_admin import firestore
+import json
 
+# 命中計算
 def calculate_hit(attacker_acc, defender_evade, attacker_luck):
     # 命中率 - 迴避率 + 運氣補正，每點 luck +1%
     hit_chance = attacker_acc - defender_evade + (attacker_luck * 0.01)
     hit_chance = min(max(hit_chance, 0.05), 0.99)
     return random.random() < hit_chance
 
+# 傷害計算
 def calculate_damage(base_atk, skill_multiplier, bonus, shield):
     raw = base_atk * skill_multiplier * (1 + bonus)
     reduction = min(shield * 0.001, 0.99)
@@ -28,8 +31,23 @@ def apply_drops(db, user_id, drops):
 
     ref.set(current)
 
-import json
+# 等差增減傷計算
+def level_damage_modifier(attacker_level, defender_level):
+    diff = max(min(attacker_level - defender_level, 5), -5)
+    if diff == 0:
+        return 1.0
+    elif abs(diff) == 1:
+        return 1.05 if diff > 0 else 0.95
+    elif abs(diff) == 2:
+        return 1.075 if diff > 0 else 0.925
+    elif abs(diff) == 3:
+        return 1.10 if diff > 0 else 0.90
+    elif abs(diff) == 4:
+        return 1.15 if diff > 0 else 0.85
+    elif abs(diff) >= 5:
+        return 1.20 if diff > 0 else 0.80
 
+# 確認是否升級
 def check_level_up(user):
     with open("level_exp.json", "r", encoding="utf-8") as f:
         level_table = json.load(f)
@@ -49,6 +67,7 @@ def check_level_up(user):
     user["exp"] = exp
     return leveled
 
+# 怪物選擇技能
 def pick_monster_skill(skills):
     r = random.random()
     total = 0
@@ -58,6 +77,7 @@ def pick_monster_skill(skills):
             return s
     return {"multiplier": 1.0, "description": "普通攻擊"}
 
+# 戰鬥
 def simulate_battle(user, monster):
     log = []
     db = firestore.client()
@@ -94,7 +114,9 @@ def simulate_battle(user, monster):
                     multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
 
                     if calculate_hit(user["base_stats"]["accuracy"], monster["stats"]["evade"], user["base_stats"]["luck"]):
+                        level_mod = level_damage_modifier(user["level"], monster["level"])
                         dmg = calculate_damage(user["base_stats"]["attack"], multiplier, user["buffs"]["phys_bonus"], monster["stats"]["shield"])
+                        dmg = round(dmg * level_mod) # 等差增減傷
                         mon_hp -= dmg
                         log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害")
                     else:
@@ -102,7 +124,9 @@ def simulate_battle(user, monster):
             else:
                 skill = pick_monster_skill(monster.get("skills", []))
                 if calculate_hit(monster["stats"]["accuracy"], user["base_stats"]["evade"], monster["stats"]["luck"]):
+                    level_mod = level_damage_modifier(monster["level"], user["level"])
                     dmg = calculate_damage(monster["stats"]["attack"], skill["multiplier"], monster["stats"].get("phys_bonus", 0), user["base_stats"]["shield"])
+                    dmg = round(dmg * level_mod) # 等差增減傷
                     user_hp -= dmg
                     log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害")
                 else:
