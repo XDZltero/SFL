@@ -115,6 +115,7 @@ def init_stats_mod():
 def apply_buffs(buffs, base_stats, log, is_user, actor_name):
     stats_mod = init_stats_mod()
     new_buffs = []
+    temp_log = []
     for buff in buffs:
         if buff["round"] > 0:
             effect = buff.get("effectType", "")
@@ -124,17 +125,13 @@ def apply_buffs(buffs, base_stats, log, is_user, actor_name):
 
             buff["round"] -= 1
             if buff["round"] > 0:
-                if is_user:
-                    log.append(f"你身上的 {buff['name']} 效果剩下 {buff['round']} 回合")
-                else:
-                    log.append(f"{actor_name} 的 {buff['description']} 效果剩下 {buff['round']} 回合")
                 new_buffs.append(buff)
+                msg = f"你身上的 {buff['name']} 效果剩下 {buff['round']} 回合" if is_user else f"{actor_name} 的 {buff['description']} 效果剩下 {buff['round']} 回合"
+                temp_log.append(msg)
             else:
-                if is_user:
-                    log.append(f"你身上的 {buff['name']} 效果已消失")
-                else:
-                    log.append(f"{actor_name} 施放的 {buff['description']} 效果已消失")
-    return stats_mod, new_buffs
+                msg = f"你身上的 {buff['name']} 效果已消失" if is_user else f"{actor_name} 施放的 {buff['description']} 效果已消失"
+                temp_log.append(msg)
+    return stats_mod, new_buffs, temp_log
 
 
 def add_or_refresh_buff(buff_list, new_buff):
@@ -215,7 +212,8 @@ def simulate_battle(user, monster):
                     break
                 
                 # 確認玩家身上 buff
-                user_stats_mod, user_buffs = apply_buffs(user_buffs, user["base_stats"], log, True, "")
+                user_stats_mod, user_buffs, buff_log = apply_buffs(user_buffs, user["base_stats"], log, True, "")
+                log.extend(buff_log)
 
                 for skill_id, level in user.get("skills", {}).items():
                     skill_doc = db.collection("skills").document(skill_id).get()
@@ -276,7 +274,8 @@ def simulate_battle(user, monster):
             else:
                 
                 # 確認怪物身上 buff
-                mon_stats_mod, mon_buffs = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
+                mon_stats_mod, mon_buffs, buff_log = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
+                log.extend(buff_log)
                 
                 skill = pick_monster_skill(monster.get("skills", []))
                 skill_type = skill.get("type", "atk")
