@@ -128,8 +128,7 @@
 命中率: ${percent(total_accuracy)} (${b.accuracy} + ${e.accuracy || 0})
 迴避率: ${percent(total_evade)} (${b.evade} + ${e.evade || 0})
 攻擊速度: ${b.atk_speed}
-物理傷害加成: ${data.buffs?.phys_bonus ?? 0}
-魔法傷害加成: ${data.buffs?.magic_bonus ?? 0}
+額外傷害加成: ${b.other_bonus ?? 0}
 剩餘能力值點數: ${data.stat_points}
 剩餘技能點: ${data.skill_points}`;
     }
