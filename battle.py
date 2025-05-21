@@ -1,6 +1,7 @@
 import random
 from firebase_admin import firestore
 import json
+import copy
 
 # 命中計算
 def calculate_hit(attacker_acc, defender_evade, attacker_luck):
@@ -116,7 +117,10 @@ def apply_buffs(buffs, base_stats, log, is_user, actor_name):
     stats_mod = init_stats_mod()
     new_buffs = []
     temp_log = []
-    for buff in buffs:
+
+    buffs_copy = copy.deepcopy(buffs)
+
+    for buff in buffs_copy:
         if buff["round"] > 0:
             effect = buff.get("effectType", "")
             multiplier = buff.get("multiplier", 1.0)
