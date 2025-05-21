@@ -50,8 +50,7 @@ def register():
             "attack": 20,
             "shield": 0,
             "evade": 0.1,
-            "phys_bonus": 0,
-            "magic_bonus": 0,
+            "other_bonus": 0,
             "accuracy": 1.0,
             "luck": 10,
             "atk_speed": 100
@@ -61,8 +60,7 @@ def register():
             "armor": None,
             "gloves": None,
             "boots": None,
-            "weapon_phys": None,
-            "weapon_magic": None
+            "weapon_atk": None,
         },
         "skills": {
             "fireball": 1,
