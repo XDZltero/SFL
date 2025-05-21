@@ -128,10 +128,26 @@ def apply_buffs(buffs, base_stats, log, is_user, actor_name):
                 new_buffs.append(buff)
             else:
                 if is_user:
-                    log.append(f"你施放的 {buff['name']} 效果已消失")
+                    log.append(f"你身上的 {buff['name']} 效果已消失")
                 else:
                     log.append(f"{actor_name} 施放的 {buff['description']} 效果已消失")
     return stats_mod, new_buffs
+
+
+def add_or_refresh_buff(buff_list, new_buff):
+    for existing in buff_list:
+        if existing["name"] == new_buff["name"]:
+            existing["round"] = new_buff["round"]
+            return
+    buff_list.append(new_buff)
+
+
+def add_or_refresh_debuff(debuff_list, new_debuff):
+    for existing in debuff_list:
+        if existing["name"] == new_debuff["name"]:
+            existing["round"] = new_debuff["round"]
+            return
+    debuff_list.append(new_debuff)
 
 
 def simulate_battle(user, monster):
@@ -205,7 +221,7 @@ def simulate_battle(user, monster):
                             "effectType": skill.get("effectType", "atk"),
                             "round": skill.get("round", 3)
                         }
-                        user_buffs.append(buff)
+                        add_or_refresh_buff(user_buffs, buff)
                         log.append(f"你施放了 {buff['name']} ，自身獲得強化")
                         break
 
@@ -218,7 +234,7 @@ def simulate_battle(user, monster):
                                 "effectType": skill.get("effectType", "atk"),
                                 "round": skill.get("round", 3)
                             }
-                            mon_buffs.append(debuff)
+                            add_or_refresh_debuff(mon_buffs, debuff)
                             log.append(f"你對 {monster['name']} 施放了 {debuff['name']} ，造成減益效果")
                         else:
                             log.append(f"你對 {monster['name']} 施放 {skill['name']} 但未命中")
@@ -256,7 +272,7 @@ def simulate_battle(user, monster):
                         "effectType": skill.get("effectType", "atk"),
                         "round": skill.get("round", 3)
                     }
-                    mon_buffs.append(buff)
+                    add_or_refresh_buff(mon_buffs, buff)
                     log.append(f"{monster['name']} 施放了 {buff['description']} ，自身獲得強化")
 
                 elif skill_type == "debuff":
@@ -268,7 +284,7 @@ def simulate_battle(user, monster):
                             "effectType": skill.get("effectType", "atk"),
                             "round": skill.get("round", 3)
                         }
-                        user_buffs.append(debuff)
+                        add_or_refresh_debuff(user_buffs, debuff)
                         log.append(f"{monster['name']} 對你施放了 {debuff['description']} ，造成減益效果")
                     else:
                         log.append(f"{monster['name']} 對你施放 {skill['description']} 但未命中")
