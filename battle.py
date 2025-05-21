@@ -101,8 +101,8 @@ def pick_monster_skill(skills):
     return {"multiplier": 1.0, "description": "普通攻擊"}
 
 # buff技能
-def apply_buffs(buffs, base_stats, log, is_user, actor_name):
-    stats_mod = {
+def init_stats_mod():
+    return {
         "attack": 1.0,
         "shield": 1.0,
         "evade": 1.0,
@@ -111,6 +111,9 @@ def apply_buffs(buffs, base_stats, log, is_user, actor_name):
         "atk_speed": 1.0,
         "all_damage": 1.0
     }
+
+def apply_buffs(buffs, base_stats, log, is_user, actor_name):
+    stats_mod = init_stats_mod()
     new_buffs = []
     for buff in buffs:
         if buff["round"] > 0:
@@ -151,15 +154,7 @@ def add_or_refresh_debuff(debuff_list, new_debuff):
 
 # 用作計算出手預設值
 def get_buff_stats_only(buffs):
-    stats_mod = {
-        "attack": 1.0,
-        "shield": 1.0,
-        "evade": 1.0,
-        "accuracy": 1.0,
-        "luck": 1.0,
-        "atk_speed": 1.0,
-        "all_damage": 1.0
-    }
+    stats_mod = init_stats_mod()
     for buff in buffs:
         if buff["round"] > 0:
             effect = buff.get("effectType", "")
@@ -179,6 +174,9 @@ def simulate_battle(user, monster):
 
     turn_limit = 20 if monster.get("is_boss") else 10
     player_turns_used = 0
+    
+    user_stats_mod = init_stats_mod()
+    mon_stats_mod = init_stats_mod()
 
     while user_hp > 0 and mon_hp > 0:
         if player_turns_used >= turn_limit:
@@ -240,7 +238,7 @@ def simulate_battle(user, monster):
                             "name": skill["name"],
                             "description": skill["description"],
                             "multiplier": skill["multiplier"],
-                            "effectType": skill.get("effectType", "atk"),
+                            "effectType": skill.get("effectType", "attack"),
                             "round": skill.get("round", 3)
                         }
                         add_or_refresh_buff(user_buffs, buff)
