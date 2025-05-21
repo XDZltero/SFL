@@ -204,7 +204,11 @@ def simulate_battle(user, monster):
         mon_level_mod = level_damage_modifier(monster["level"], user["level"])
 
         for actor in action_order:
-            if user_hp <= 0 or mon_hp <= 0:
+            if user_hp <= 0: or mon_hp <= 0:
+                if user_hp <= 0:
+                    log.append("═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════")
+                if mon_hp <= 0:
+                    log.append("═══════════════ 🌟 戰鬥結束 🌟 ═══════════════")
                 break
 
             if actor == "user":
@@ -214,6 +218,8 @@ def simulate_battle(user, monster):
                     log.append(f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗")
                     user_hp = 0  # 強制失敗
                     break
+               
+                log.append(f"──────────────  第 {player_turns_used} 回合 ──────────────")
                 
                 # 確認玩家身上 buff
                 user_stats_mod, user_buffs, buff_log = apply_buffs(user_buffs, user["base_stats"], log, True, "")
