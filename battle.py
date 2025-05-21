@@ -177,8 +177,10 @@ def simulate_battle(user, monster):
 
                     if skill_type == "heal":
                         heal = int(user["base_stats"]["hp"] * 0.1 * multiplier)
+                        old_hp = user_hp
                         user_hp = min(user_hp + heal, user["base_stats"]["hp"])
-                        log.append(f"你使用 {skill['name']} 回復了 {heal} 點生命值")
+                        actual_heal = user_hp - old_hp
+                        log.append(f"你使用 {skill['name']} 回復了 {actual_heal} 點生命值（目前 HP：{user_hp}/{user['base_stats']['hp']}）")
                         break
 
                     elif skill_type == "buff":
@@ -216,7 +218,8 @@ def simulate_battle(user, monster):
                             dmg = calculate_damage(atk, multiplier, user["buffs"].get("phys_bonus", 0), shield)
                             dmg = round(dmg * user_level_mod * ele_mod * user_stats_mod.get("all_damage", 1.0))
                             mon_hp -= dmg
-                            log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害")
+                            mon_hp = max(mon_hp, 0)
+                            log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
                         else:
                             log.append(f"你使用 {skill['name']} 但未命中")
 
@@ -226,8 +229,10 @@ def simulate_battle(user, monster):
 
                 if skill_type == "heal":
                     heal = int(monster["stats"]["hp"] * 0.1 * skill["multiplier"])
+                    old_hp = mon_hp
                     mon_hp = min(mon_hp + heal, monster["stats"]["hp"])
-                    log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {heal} 點生命值")
+                    actual_heal = mon_hp - old_hp
+                    log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {actual_heal} 點生命值（目前 HP：{mon_hp}/{monster['stats']['hp']}）")
 
                 elif skill_type == "buff":
                     buff = {
@@ -262,7 +267,8 @@ def simulate_battle(user, monster):
                         dmg = calculate_damage(atk, skill["multiplier"], monster["stats"].get("phys_bonus", 0), shield)
                         dmg = round(dmg * mon_level_mod * ele_mod * mon_stats_mod.get("all_damage", 1.0))
                         user_hp -= dmg
-                        log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害")
+                        user_hp = max(user_hp, 0)
+                        log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user['base_stats']['hp']}）")
                     else:
                         log.append(f"{monster['name']} 攻擊未命中")
 
