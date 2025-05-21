@@ -204,7 +204,7 @@ def simulate_battle(user, monster):
         mon_level_mod = level_damage_modifier(monster["level"], user["level"])
 
         for actor in action_order:
-            if user_hp <= 0: or mon_hp <= 0:
+            if user_hp <= 0 or mon_hp <= 0:
                 if user_hp <= 0:
                     log.append("═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════")
                 if mon_hp <= 0:
