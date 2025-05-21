@@ -149,6 +149,24 @@ def add_or_refresh_debuff(debuff_list, new_debuff):
             return
     debuff_list.append(new_debuff)
 
+# 用作計算出手預設值
+def get_buff_stats_only(buffs):
+    stats_mod = {
+        "attack": 1.0,
+        "shield": 1.0,
+        "evade": 1.0,
+        "accuracy": 1.0,
+        "luck": 1.0,
+        "atk_speed": 1.0,
+        "all_damage": 1.0
+    }
+    for buff in buffs:
+        if buff["round"] > 0:
+            effect = buff.get("effectType", "")
+            multiplier = buff.get("multiplier", 1.0)
+            if effect in stats_mod:
+                stats_mod[effect] *= multiplier
+    return stats_mod
 
 def simulate_battle(user, monster):
     log = []
@@ -166,12 +184,13 @@ def simulate_battle(user, monster):
         if player_turns_used >= turn_limit:
             log.append(f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗")
             break
+        
+        # 計算出手
+        user_stats_mod_preview = get_buff_stats_only(user_buffs)
+        mon_stats_mod_preview = get_buff_stats_only(mon_buffs)
 
-        user_stats_mod, user_buffs = apply_buffs(user_buffs, user["base_stats"], log, True, "")
-        mon_stats_mod, mon_buffs = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
-
-        user_speed = user["base_stats"].get("atk_speed", 100) * user_stats_mod.get("atk_speed", 1.0)
-        mon_speed = monster["stats"].get("atk_speed", 100) * mon_stats_mod.get("atk_speed", 1.0)
+        user_speed = user["base_stats"].get("atk_speed", 100) * user_stats_mod_preview.get("atk_speed", 1.0)
+        mon_speed = monster["stats"].get("atk_speed", 100) * mon_stats_mod_preview.get("atk_speed", 1.0)
 
         user_turns = max(1, round(user_speed / mon_speed))
         mon_turns = max(1, round(mon_speed / user_speed))
@@ -196,6 +215,9 @@ def simulate_battle(user, monster):
                     log.append(f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗")
                     user_hp = 0  # 強制失敗
                     break
+                
+                # 確認玩家身上 buff
+                user_stats_mod, user_buffs = apply_buffs(user_buffs, user["base_stats"], log, True, "")
 
                 for skill_id, level in user.get("skills", {}).items():
                     skill_doc = db.collection("skills").document(skill_id).get()
@@ -231,7 +253,7 @@ def simulate_battle(user, monster):
                                 "name": skill["name"],
                                 "description": skill["description"],
                                 "multiplier": skill["multiplier"],
-                                "effectType": skill.get("effectType", "atk"),
+                                "effectType": skill.get("effectType", "attack"),
                                 "round": skill.get("round", 3)
                             }
                             add_or_refresh_debuff(mon_buffs, debuff)
@@ -254,6 +276,10 @@ def simulate_battle(user, monster):
                             log.append(f"你使用 {skill['name']} 但未命中")
 
             else:
+                
+                # 確認怪物身上 buff
+                mon_stats_mod, mon_buffs = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
+                
                 skill = pick_monster_skill(monster.get("skills", []))
                 skill_type = skill.get("type", "atk")
 
