@@ -51,7 +51,6 @@
   <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
   <div id="dungeonList"> </div>
 
-  <!-- ✅ 修正 script 放到底部 -->
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
     const userEmailSpan = document.getElementById("userEmail");
@@ -61,7 +60,13 @@
       firebase.auth().signOut().then(() => location.href = "/SFL/login.html");
     }
 
+    // 載入遮罩
+    function showLoading(show) {
+      document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
+    }
+
 async function loadDungeons() {
+  showLoading(true);
   const user = firebase.auth().currentUser;
   if (!user) return;
   userId = user.email;
@@ -105,7 +110,7 @@ async function loadDungeons() {
     dungeonList.appendChild(div);
   }
 
-  document.getElementById("loadingOverlay").style.display = "none";
+  showLoading(false);
   document.getElementById("dungeonList").style.display = "block";
 }
 
@@ -113,6 +118,15 @@ async function loadDungeons() {
       if (!user) location.href = "/SFL/login.html";
       else await loadDungeons();
     });
+  </script>
+  <div id="footer-placeholder"></div>
+  <script>
+    fetch("footer.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("footer-placeholder").innerHTML = html;
+      })
+      .catch(err => console.warn("載入 footer 失敗", err));
   </script>
 </body>
 </html>
