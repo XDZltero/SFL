@@ -188,9 +188,9 @@ def simulate_battle(user, monster):
         # 計算出手
         user_stats_mod_preview = get_buff_stats_only(user_buffs)
         mon_stats_mod_preview = get_buff_stats_only(mon_buffs)
-
-        user_speed = user["base_stats"].get("atk_speed", 100) * user_stats_mod_preview.get("atk_speed", 1.0)
-        mon_speed = monster["stats"].get("atk_speed", 100) * mon_stats_mod_preview.get("atk_speed", 1.0)
+        
+        user_speed = user["base_stats"]["atk_speed"] * user_stats_mod_preview["atk_speed"]
+        mon_speed = monster["stats"]["atk_speed"] * mon_stats_mod_preview["atk_speed"]
 
         user_turns = max(1, round(user_speed / mon_speed))
         mon_turns = max(1, round(mon_speed / user_speed))
