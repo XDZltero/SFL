@@ -143,7 +143,14 @@ def simulate_battle(user, monster):
     user_buffs = []
     mon_buffs = []
 
+    turn_limit = 20 if monster.get("is_boss") else 10
+    player_turns_used = 0
+
     while user_hp > 0 and mon_hp > 0:
+        if player_turns_used >= turn_limit:
+            log.append(f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗")
+            break
+
         user_stats_mod, user_buffs = apply_buffs(user_buffs, user["base_stats"], log, True, "")
         mon_stats_mod, mon_buffs = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
 
@@ -167,6 +174,13 @@ def simulate_battle(user, monster):
                 break
 
             if actor == "user":
+                player_turns_used += 1
+
+                if player_turns_used > turn_limit:
+                    log.append(f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗")
+                    user_hp = 0  # 強制失敗
+                    break
+
                 for skill_id, level in user.get("skills", {}).items():
                     skill_doc = db.collection("skills").document(skill_id).get()
                     if not skill_doc.exists:
@@ -272,7 +286,7 @@ def simulate_battle(user, monster):
                     else:
                         log.append(f"{monster['name']} 攻擊未命中")
 
-    outcome = "win" if user_hp > 0 else "lose"
+    outcome = "win" if user_hp > 0 and mon_hp <= 0 else "lose"
     rewards = {}
 
     if outcome == "win":
