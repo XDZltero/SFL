@@ -90,6 +90,19 @@
   </div>
 
   <script type="module">
+    const elementMap = {
+      "none": "無屬性",
+      "phy": "物理",
+      "pyro": "火",
+      "hydro": "水",
+      "electro": "雷",
+      "geo": "岩",
+      "dendro": "草",
+      "anemo": "風",
+      "cryo": "冰",
+      "light": "光",
+      "dark": "暗"
+    };
     const API = "https://sfl-9cb8.onrender.com";
     const params = new URLSearchParams(location.search);
     const dungeon = params.get("dungeon");
@@ -187,7 +200,7 @@
           <p>${mon.info}</p>
           <ul>
             <li>等級：${mon.level}</li>
-            <li>屬性：${mon.element}</li>
+            <li>屬性：${Array.isArray(mon.element) ? mon.element.map(e => elementMap[e] || e).join("、") : (elementMap[mon.element] || mon.element)}</li>
             <li>生命值：${mon.stats.hp}</li>
             <li>攻擊力：${mon.stats.attack}</li>
             <li>命中率：${Math.round(mon.stats.accuracy * 100)}%</li>
