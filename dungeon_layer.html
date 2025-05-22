@@ -182,18 +182,27 @@
         // 讀取經驗表
         const expRes = await fetch("parameter/level_exp.json");
         levelExp = await expRes.json();
-        
+    
         const user = await fetchUser(userId);
         nicknameSpan.innerText = user.nickname || userId;
-        userDiv.innerText = formatStats(user);  // 使用統一格式
+        userDiv.innerText = formatStats(user);
     
         const dungeonRes = await fetch("parameter/dungeons.json");
         const all = await dungeonRes.json();
         const current = all.find(d => d.id === dungeon);
         if (!current) throw new Error("副本不存在");
     
-        const monsterId = (layer === current.monsters.length) ? current.bossId : current.monsters[layer];
+        const isLastLayer = (layer === current.monsters.length);
+        const monsterId = isLastLayer ? current.bossId : current.monsters[layer];
         const mon = await fetchMonster(monsterId);
+    
+        // 🟢 控制 retryBtn 顯示與否
+        if (isLastLayer) {
+          retryBtn.style.display = "none";
+        } else {
+          retryBtn.style.display = "inline-block";
+        }
+    
         monsterDiv.innerHTML = `
           <h2>${mon.name}</h2>
           <img src="${mon.image_url}" width="100"><br>
@@ -317,7 +326,11 @@ firebase.auth().onAuthStateChanged(async user => {
   if (user) {
     userId = user.email;
     await fetchProgress();        // ✅ 先抓目前進度
-    retryBtn.onclick = () => startBattle();  // ✅ 綁定按鈕（確保 userId 已存在）
+    retryBtn.onclick = () => {
+      if (layer < currentProgress) {
+        startBattle();
+      }
+    };
     loadLayer();                  // ✅ 然後載入該層
   } else {
     location.href = "/SFL/login.html";
