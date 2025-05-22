@@ -177,7 +177,7 @@ def simulate_battle(user, monster):
 
     user_hp = user["base_stats"]["hp"]
     mon_hp = monster["stats"]["hp"]
-	monster_skill_cd = {s["id"]: 0 for s in monster.get("skills", [])}
+    monster_skill_cd = {s["id"]: 0 for s in monster.get("skills", [])}
     user_buffs = []
     mon_buffs = []
 
