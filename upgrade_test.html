@@ -229,9 +229,14 @@
 		}
 
 		allSkills = data.skills;
-		skillAlloc = { ...data.user_skills };
+		skillAlloc = {};
+		allSkills = data.skills;
 		remainingSkillPoints = data.remaining;
 		originalSkills = { ...data.user_skills };
+
+		allSkills.forEach(skill => {
+		  skillAlloc[skill.id] = data.user_skills[skill.id] ?? 0;
+		});
 
 		renderSkills();
 	  } catch (err) {
