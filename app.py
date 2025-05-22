@@ -296,20 +296,35 @@ def get_skills():
     user = user_doc.to_dict()
     user_skills = user.get("skills", {})
 
+    # 讀取所有技能資料
     skill_ref = db.collection("skills").stream()
     skills = {doc.id: doc.to_dict() for doc in skill_ref}
 
     result = {}
-    for skill_id, level in user_skills.items():
-        skill = skills.get(skill_id)
-        if not skill:
-            continue
-        effective_multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
+    for skill_id, skill in skills.items():
+        level = user_skills.get(skill_id, 0)
+        multiplier_base = skill.get("multiplier", 1.0)
+        multiplier_per = skill.get("multiplierperlvl", 0.0)
+        maxlvl = skill.get("maxlvl", 10)
+
+        # 計算目前倍率與下一級倍率（若未滿級）
+        effective = multiplier_base + (level - 1) * multiplier_per if level > 0 else 0
+        next_effective = (
+            multiplier_base + (level) * multiplier_per
+            if level < maxlvl else None
+        )
+
         result[skill_id] = {
-            "name": skill["name"],
+            "name": skill.get("name", skill_id),
+            "description": skill.get("description", ""),
+            "type": skill.get("type", "atk"),
             "level": level,
-            "multiplier": round(effective_multiplier, 2),
-            "type": skill["type"]
+            "learnlvl": skill.get("learnlvl", 1),
+            "maxlvl": maxlvl,
+            "multiplier": round(effective, 2),
+            "next_multiplier": round(next_effective, 2) if next_effective else None,
+            "cd": skill.get("cd", 0),
+            "element": skill.get("element", [])
         }
 
     return jsonify(result)
