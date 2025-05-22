@@ -266,7 +266,7 @@ def simulate_battle(user, monster):
                     multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
                     skill_type = skill.get("type", "atk")
 
-                    player_skill_cd[skill_id] = skill.get("cd", 0)
+                    player_skill_cd[skill_id] = skill.get("cd", 0) + 1
                     used_skill = True
 
                     if skill_type == "heal":
@@ -342,7 +342,7 @@ def simulate_battle(user, monster):
 
                 # ✅ 設定冷卻（普通攻擊不設）
                 if skill.get("id") != "basic_attack":
-                    monster_skill_cd[skill["id"]] = skill.get("cd", 0)
+                    monster_skill_cd[skill["id"]] = skill.get("cd", 0) + 1
 
                 skill_type = skill.get("type", "atk")
 
