@@ -251,7 +251,6 @@ def simulate_battle(user, monster):
                         player_skill_cd[sid] -= 1
 
                 user_stats_mod, user_buffs, buff_log = apply_buffs(user_buffs, user["base_stats"], log, True, "")
-                log.extend(buff_log)
 
                 used_skill = False
 
@@ -328,6 +327,9 @@ def simulate_battle(user, monster):
                         log.append(f"你使用 普通攻擊 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
                     else:
                         log.append("你使用 普通攻擊 但未命中")
+                
+                # buff 效果log
+                log.extend(buff_log)
 
             else:
                 # ✅ 怪物技能冷卻扣除
@@ -336,7 +338,6 @@ def simulate_battle(user, monster):
                         monster_skill_cd[sid] -= 1
 
                 mon_stats_mod, mon_buffs, buff_log = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
-                log.extend(buff_log)
 
                 skill = pick_monster_skill(monster.get("skills", []), monster_skill_cd)
 
@@ -390,6 +391,9 @@ def simulate_battle(user, monster):
                         log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user['base_stats']['hp']}）")
                     else:
                         log.append(f"{monster['name']} 攻擊未命中")
+                
+                # buff效果log
+                log.extend(buff_log)
 
     outcome = "win" if user_hp > 0 and mon_hp <= 0 else "lose"
     rewards = {}
