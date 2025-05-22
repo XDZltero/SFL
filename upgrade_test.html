@@ -77,15 +77,20 @@
   <hr>
 
   <h2>⬆️ 分配能力點</h2>
-  <div><strong>目前能力值：</strong></div>
-  <ul id="currentStats"></ul>
+  <div style="display: flex; gap: 40px; align-items: flex-start;">
+	  <div>
+		<strong>目前能力值：</strong>
+		<ul id="currentStats"></ul>
+	  </div>
 
-  <div><strong>剩餘能力點數：<span id="remainingPoints">0</span></strong></div>
-  <div id="base_stats"></div>
-
+	  <div>
+		<div><strong>剩餘能力點數：<span id="remainingPoints">0</span></strong></div>
+		<div id="base_stats"></div>
+	  </div>
   <div>
-    <button onclick="resetStats()">重置</button>
+	<button onclick="resetStats()">重置</button>
     <button onclick="submitLevelUp()">✅ 確認升級</button>
+  <div>
   </div>
 
   <hr>
