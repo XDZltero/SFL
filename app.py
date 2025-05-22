@@ -283,42 +283,48 @@ def levelup():
     ref.set(user)
     return jsonify({"message": "屬性分配完成", "status": user})
 
-@app.route("/skill_save", methods=["POST"])
-def skill_save():
+# 抓出所有技能
+@app.route("/skills_full", methods=["GET"])
+def get_skills_full():
+    skills = db.collection("skills").stream()
+    return jsonify([doc.to_dict() for doc in skills])
+
+# 儲存技能變更
+@app.route("/apply_skills", methods=["POST"])
+def apply_skills():
     data = request.json
     user_id = data.get("user")
-    new_skills = data.get("skills")  # dict: { "fireball": 2, "slash": 0 }
+    new_levels = data.get("skills")
 
-    if not user_id or not isinstance(new_skills, dict):
-        return jsonify({"error": "缺少參數或格式錯誤"}), 400
+    if not user_id or not new_levels:
+        return jsonify({"error": "缺少參數"}), 400
 
-    user_ref = db.collection("users").document(user_id)
-    user_doc = user_ref.get()
-    if not user_doc.exists:
-        return jsonify({"error": "找不到使用者"}), 404
+    ref = db.collection("users").document(user_id)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "使用者不存在"}), 404
 
-    user = user_doc.to_dict()
+    user = doc.to_dict()
+    user_skills = user.get("skills", {})
     skill_points = user.get("skill_points", 0)
-    current_skills = user.get("skills", {})
 
-    used_points = 0
-    result_skills = {}
+    used = 0
+    for skill_id, new_lv in new_levels.items():
+        old_lv = user_skills.get(skill_id, 0)
+        if new_lv < old_lv:
+            return jsonify({"error": f"{skill_id} 等級不可降低"}), 400
+        used += new_lv - old_lv
 
-    for skill_id, new_lvl in new_skills.items():
-        old_lvl = current_skills.get(skill_id, 0)
-        if new_lvl < 0 or new_lvl > 30:
-            return jsonify({"error": f"技能 {skill_id} 等級不合法"}), 400
-        used_points += (new_lvl - old_lvl)
-        result_skills[skill_id] = new_lvl
+    if used > skill_points:
+        return jsonify({"error": "技能點不足"}), 400
 
-    if used_points > skill_points:
-        return jsonify({"error": f"技能點不足（還差 {used_points - skill_points} 點）"}), 400
+    for skill_id, new_lv in new_levels.items():
+        user_skills[skill_id] = new_lv
 
-    user["skills"] = result_skills
-    user["skill_points"] -= used_points
-    user_ref.set(user)
-
-    return jsonify({"message": "技能更新完成", "status": user})
+    user["skills"] = user_skills
+    user["skill_points"] -= used
+    ref.set(user)
+    return jsonify({"message": f"成功升級技能，共花費 {used} 點"})
 
 @app.route("/skills", methods=["GET"])
 def get_skills():
