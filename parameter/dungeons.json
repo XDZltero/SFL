@@ -9,12 +9,12 @@
     "monsters": ["slime", "skeleton", "tree_monster","little_mage"]
   },
   {
-    "id": "dungeon_b",
-    "name": "遺忘墓園",
-    "description": "滿佈骨骸與詛咒的荒廢地。",
-    "bossId": "lich_lord",
-    "min_level": 5,
-    "image": "https://i.imgur.com/yyyyyy.jpg",
-    "monsters": ["skeleton", "ghost", "wraith"]
+    "id": "dungeon_skycity",
+    "name": "天空之城",
+    "description": "佇立在雲層之上的小島內，有著一座淒涼廢棄神廟。",
+    "bossId": "gaia",
+    "min_level": 10,
+    "image": "https://i.postimg.cc/hG07jRbw/dungeon-skycity.png",
+    "monsters": ["sky_cow", "temple_guard", "temple_guard_elite", "griffin", "athena", "athena_true", "temple_golem"]
   }
 ]
