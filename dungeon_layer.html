@@ -274,6 +274,7 @@ window.startBattle = async function () {
         document.getElementById("leaveBtn").style.display = "inline-block";
       } else {
         retryBtn.style.display = "inline-block";
+        retryBtn.onclick = () => startBattle();
       }
 
       if (data.rewards) {
