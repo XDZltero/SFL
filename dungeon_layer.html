@@ -255,8 +255,7 @@ window.startBattle = async function () {
       } else {
         retryBtn.style.display = "inline-block";
       }
-      
-      retryBtn.style.display = "inline-block";
+
       if (data.rewards) {
         const { exp, leveled_up, drops } = data.rewards;
         html += `\n[獲得經驗值] EXP + ${exp}`;
