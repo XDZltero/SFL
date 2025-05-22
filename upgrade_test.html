@@ -255,7 +255,7 @@
 	  container.innerHTML = "";
 
 	  allSkills.forEach(skill => {
-		const currentLevel = skillAlloc[skill.id] || 0;
+		const currentLevel = skillAlloc[skill.id] ?? 0;
 		const isLocked = userStats.level < skill.learnlvl;
 
 		const wrapper = document.createElement("div");
@@ -276,7 +276,7 @@
 
 		const minus = document.createElement("button");
 		minus.textContent = "-";
-		minus.disabled = isLocked || currentLevel === 0;
+		minus.disabled = currentLevel === 0 || isLocked;
 		minus.onclick = () => {
 		  if (skillAlloc[skill.id] > 0) {
 			skillAlloc[skill.id]--;
@@ -304,11 +304,20 @@
 		wrapper.appendChild(value);
 		wrapper.appendChild(plus);
 
+		if (isLocked) {
+		  const tip = document.createElement("span");
+		  tip.style.color = "red";
+		  tip.style.marginLeft = "10px";
+		  tip.textContent = `等級達至 ${skill.learnlvl} 級時解鎖`;
+		  wrapper.appendChild(tip);
+		}
+
 		container.appendChild(wrapper);
 	  });
 
 	  document.getElementById("remainingSkillPoints").innerText = remainingSkillPoints;
 	}
+
 
 	function resetSkills() {
 	  allSkills.forEach(skill => {
