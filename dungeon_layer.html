@@ -196,12 +196,10 @@
         const monsterId = isLastLayer ? current.bossId : current.monsters[layer];
         const mon = await fetchMonster(monsterId);
     
-        // 🟢 控制 retryBtn 顯示與否
-        if (isLastLayer) {
-          retryBtn.style.display = "none";
-        } else {
-          retryBtn.style.display = "inline-block";
-        }
+        // 初始一律隱藏"再戰一次"按鈕，等 battle 結果才控制顯示
+        retryBtn.style.display = "none";
+        nextBtn.style.display = "none";
+        document.getElementById("leaveBtn").style.display = "none";
     
         monsterDiv.innerHTML = `
           <h2>${mon.name}</h2>
