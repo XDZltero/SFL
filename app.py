@@ -291,9 +291,30 @@ def get_skills_full():
 
 @app.route("/skills_all", methods=["GET"])
 def get_all_skills():
+    user_id = request.args.get("user")
+    if not user_id:
+        return jsonify({"error": "缺少 user 參數"}), 400
+
+    user_doc = db.collection("users").document(user_id).get()
+    if not user_doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+
+    user = user_doc.to_dict()
+    user_skills = user.get("skills", {})
+    skill_points = user.get("skill_points", 0)
+
     skill_docs = db.collection("skills").stream()
-    all_skills = {doc.id: doc.to_dict() for doc in skill_docs}
-    return jsonify(all_skills)
+    skills = []
+    for doc in skill_docs:
+        s = doc.to_dict()
+        s["id"] = doc.id
+        skills.append(s)
+
+    return jsonify({
+        "skills": skills,
+        "user_skills": user_skills,
+        "remaining": skill_points
+    })
 
 @app.route("/skills_save", methods=["POST"])
 def save_skill_distribution():
