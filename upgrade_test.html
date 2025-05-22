@@ -219,23 +219,24 @@
     }
 
     async function loadAllSkills() {
-	  const res = await fetch(`${API_BASE}/skills_all?user=${encodeURIComponent(userId)}`);
-	  const data = await res.json();
+	  try {
+		const res = await fetch(`${API_BASE}/skills_all?user=${encodeURIComponent(userId)}`);
+		const data = await res.json();
 
-	  if (!res.ok) {
-		alert("技能讀取錯誤：" + (data.error || "未知錯誤"));
-		return;
+		if (!res.ok || !data.skills) {
+		  alert("技能讀取失敗：" + (data.error || "未知錯誤"));
+		  return;
+		}
+
+		allSkills = data.skills;
+		skillAlloc = { ...data.user_skills };
+		remainingSkillPoints = data.remaining;
+		originalSkills = { ...data.user_skills };
+
+		renderSkills();
+	  } catch (err) {
+		alert("❌ 載入技能錯誤：" + err.message);
 	  }
-
-	  skillAlloc = {};
-	  allSkills = data.skills;
-	  remainingSkillPoints = data.remaining;
-
-	  data.skills.forEach(skill => {
-		skillAlloc[skill.id] = skill.level;
-	  });
-
-	  renderSkills();
 	}
 
 	function renderSkills() {
