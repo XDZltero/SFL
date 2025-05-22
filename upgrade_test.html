@@ -45,39 +45,52 @@
   </div>
 
   <h2>⬆️ 分配能力值</h2>
-  <div>剩餘能力點數：<span id="remainingPoints">0</span></div>
+	<div>剩餘能力點數：<span id="remainingPoints">0</span></div>
 
-  <div id="statControls">
-    <div class="stat-row">
-      <span class="stat-label">生命值 (每點+5)</span>
-      <button onclick="adjustStat('hp', -1)">-</button>
-      <span id="hpVal">0</span>
-      <button onclick="adjustStat('hp', 1)">+</button>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">攻擊力</span>
-      <button onclick="adjustStat('attack', -1)">-</button>
-      <span id="attackVal">0</span>
-      <button onclick="adjustStat('attack', 1)">+</button>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">運氣值</span>
-      <button onclick="adjustStat('luck', -1)">-</button>
-      <span id="luckVal">0</span>
-      <button onclick="adjustStat('luck', 1)">+</button>
-    </div>
-    <div class="stat-row">
-      <span class="stat-label">攻擊速度</span>
-      <button onclick="adjustStat('atk_speed', -1)">-</button>
-      <span id="atk_speedVal">0</span>
-      <button onclick="adjustStat('atk_speed', 1)">+</button>
-    </div>
-  </div>
+	<div style="display: flex; gap: 50px;">
+	  <!-- 左側：目前能力值 -->
+	  <div>
+		<h4>目前能力值</h4>
+		<ul id="currentStats">
+		  <li>HP：-</li>
+		  <li>攻擊力：-</li>
+		  <li>運氣：-</li>
+		  <li>攻擊速度：-</li>
+		</ul>
+	  </div>
 
-  <div>
-    <button onclick="resetStats()">重置</button>
-    <button onclick="confirmUpgrade()">✅ 確認升級</button>
-  </div>
+	  <!-- 右側：能力值配點 -->
+	  <div id="statControls">
+		<div class="stat-row">
+		  <span class="stat-label">生命值 (每點+5)</span>
+		  <button onclick="adjustStat('hp', -1)">-</button>
+		  <span id="hpVal">0</span>
+		  <button onclick="adjustStat('hp', 1)">+</button>
+		</div>
+		<div class="stat-row">
+		  <span class="stat-label">攻擊力</span>
+		  <button onclick="adjustStat('attack', -1)">-</button>
+		  <span id="attackVal">0</span>
+		  <button onclick="adjustStat('attack', 1)">+</button>
+		</div>
+		<div class="stat-row">
+		  <span class="stat-label">運氣值</span>
+		  <button onclick="adjustStat('luck', -1)">-</button>
+		  <span id="luckVal">0</span>
+		  <button onclick="adjustStat('luck', 1)">+</button>
+		</div>
+		<div class="stat-row">
+		  <span class="stat-label">攻擊速度</span>
+		  <button onclick="adjustStat('atk_speed', -1)">-</button>
+		  <span id="atk_speedVal">0</span>
+		  <button onclick="adjustStat('atk_speed', 1)">+</button>
+		</div>
+		<div>
+		  <button onclick="resetStats()">重置</button>
+		  <button onclick="confirmUpgrade()">✅ 確認升級</button>
+		</div>
+	  </div>
+	</div>
 
   <pre id="log"></pre>
 
@@ -158,6 +171,13 @@
 
       document.getElementById("userEmail").innerText = data.nickname || userId;
       availablePoints = data.stat_points || 0;
+	  const stats = data.base_stats || {};
+		document.getElementById("currentStats").innerHTML = `
+		  <li>生命值：${stats.hp}</li>
+		  <li>攻擊力：${stats.attack}</li>
+		  <li>運氣值：${stats.luck}</li>
+		  <li>攻擊速度：${stats.atk_speed}</li>
+		`;
       remaining = availablePoints;
       document.getElementById("remainingPoints").innerText = remaining;
     }
