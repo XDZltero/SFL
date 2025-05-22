@@ -100,9 +100,12 @@
   <hr>
 
   <h2>📘 技能查詢與升級</h2>
-  <button onclick="getSkills()">查詢技能</button><br><br>
-  技能 ID：<input id="skill_id" placeholder="輸入技能 ID" />
-  <button onclick="skillUp()">升級技能</button>
+	<div><strong>剩餘技能點數：<span id="skillPoints">0</span></strong></div>
+	<div id="skill_list"></div>
+	<div style="margin-top:10px;">
+	  <button onclick="resetSkills()">重置技能</button>
+	  <button onclick="submitSkills()">✅ 確認技能升級</button>
+	</div>
 
   <pre id="log"></pre>
 
@@ -299,6 +302,142 @@
     window.submitLevelUp = submitLevelUp;
     window.getSkills = getSkills;
     window.skillUp = skillUp;
+	
+	
+	// 技能
+	let skillAlloc = {};
+	let originalSkills = {};
+	let skillPoints = 0;
+	let allSkills = [];
+	let skillElementMap = {};
+
+	const typeLabels = {
+	  atk: "輸出型",
+	  heal: "治療型",
+	  buff: "增益型"
+	};
+
+	skillElementMap = {
+	  pyro: "火",
+	  hydro: "水",
+	  nature: "自然",
+	  electro: "雷",
+	  light: "光",
+	  dark: "暗",
+	  all: "全",
+	  none: "無",
+	  phy: "物理"
+	};
+
+	async function getSkills() {
+	  if (!userId) return;
+	  showLoading(true);
+
+	  const [userRes, skillRes] = await Promise.all([
+		fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`),
+		fetch(`${API_BASE}/skills_full`)
+	  ]);
+	  const user = await userRes.json();
+	  const skills = await skillRes.json();
+
+	  skillPoints = user.skill_points || 0;
+	  originalSkills = user.skills || {};
+	  allSkills = skills;
+	  skillAlloc = { ...originalSkills };
+	  document.getElementById("skillPoints").innerText = skillPoints;
+	  renderSkillList();
+	  showLoading(false);
+	}
+
+	function renderSkillList() {
+	  const container = document.getElementById("skill_list");
+	  container.innerHTML = "";
+
+	  for (const s of allSkills) {
+		const level = skillAlloc[s.id] || 0;
+		const canLearn = userStats.level >= s.learnlvl;
+		const effMultiplier = (s.multiplier + (level - 1) * (s.multiplierperlvl || 0)).toFixed(2);
+		const elementText = s.element.map(e => skillElementMap[e] || e).join("、");
+
+		const disabled = canLearn ? "" : "disabled";
+		const block = document.createElement("div");
+		block.className = "skill-block";
+		block.style = "border:1px solid #ccc; padding:10px; margin-bottom:8px;";
+
+		block.innerHTML = `
+		  <div><strong>[${typeLabels[s.type] || "其他"}] ${s.name}</strong></div>
+		  <div>${s.description}</div>
+		  <div>等級上限：${s.maxlvl}，冷卻：${s.cd} 回合，倍率：${effMultiplier}</div>
+		  <div>屬性：${elementText}</div>
+		  <div style="margin-top:5px;">
+			<button ${disabled} onclick="adjustSkill('${s.id}', -1)">-</button>
+			<span id="skill_val_${s.id}">${level}</span>
+			<button ${disabled} onclick="adjustSkill('${s.id}', 1)">+</button>
+		  </div>
+		`;
+		container.appendChild(block);
+	  }
+	}
+
+	function adjustSkill(id, delta) {
+	  const current = skillAlloc[id] || 0;
+	  const used = Object.entries(skillAlloc).reduce((sum, [k, v]) => {
+		const base = originalSkills[k] || 0;
+		return sum + Math.max(0, v - base);
+	  }, 0);
+	  const remain = skillPoints - used;
+
+	  if (delta > 0 && remain > 0 && current < getSkillById(id).maxlvl) {
+		skillAlloc[id] = current + 1;
+	  } else if (delta < 0 && current > (originalSkills[id] || 0)) {
+		skillAlloc[id] = current - 1;
+	  }
+
+	  document.getElementById(`skill_val_${id}`).innerText = skillAlloc[id];
+	  document.getElementById("skillPoints").innerText = skillPoints - Object.entries(skillAlloc).reduce((sum, [k, v]) => Math.max(0, v - (originalSkills[k] || 0)) + sum, 0);
+	}
+
+	function getSkillById(id) {
+	  return allSkills.find(s => s.id === id) || {};
+	}
+
+	function resetSkills() {
+	  skillAlloc = { ...originalSkills };
+	  renderSkillList();
+	  document.getElementById("skillPoints").innerText = skillPoints;
+	}
+
+	async function submitSkills() {
+	  const changes = {};
+	  for (const [id, lvl] of Object.entries(skillAlloc)) {
+		if (lvl !== (originalSkills[id] || 0)) {
+		  changes[id] = lvl;
+		}
+	  }
+	  if (Object.keys(changes).length === 0) return alert("沒有變更任何技能");
+
+	  if (!confirm("確定要升級技能？")) return;
+	  showLoading(true);
+	  try {
+		const res = await fetch(`${API_BASE}/apply_skills`, {
+		  method: "POST",
+		  headers: { "Content-Type": "application/json" },
+		  body: JSON.stringify({ user: userId, skills: changes })
+		});
+		const data = await res.json();
+		if (res.ok) {
+		  alert("技能已成功升級！");
+		  await loadStatus(); // 更新 base_stats 等
+		  await getSkills();
+		} else {
+		  alert(data.error || "升級失敗");
+		}
+	  } catch (err) {
+		alert("❌ 發生錯誤：" + err.message);
+	  } finally {
+		showLoading(false);
+	  }
+	}
   </script>
 </body>
 </html>
