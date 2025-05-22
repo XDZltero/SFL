@@ -99,12 +99,12 @@
 
   <hr>
 
-  <h2>📘 技能查詢與升級</h2>
-	<div><strong>剩餘技能點數：<span id="skillPoints">0</span></strong></div>
-	<div id="skill_list"></div>
-	<div style="margin-top:10px;">
+  <h2>🧠 技能點分配</h2>
+	<div><strong>剩餘技能點數：<span id="remainingSkillPoints">0</span></strong></div>
+	<div id="skillList"></div>
+	<div style="margin-top: 10px;">
 	  <button onclick="resetSkills()">重置技能</button>
-	  <button onclick="submitSkills()">✅ 確認技能升級</button>
+	  <button onclick="submitSkills()">✅ 儲存技能</button>
 	</div>
 
   <pre id="log"></pre>
@@ -218,40 +218,128 @@
       }
     }
 
-    async function getSkills() {
-      if (!userId) return;
-      showLoading(true);
-      const res = await fetch(`${API_BASE}/skills?user=${encodeURIComponent(userId)}`);
-      const data = await res.json();
+    async function loadAllSkills() {
+	  const res = await fetch(`${API_BASE}/skills_all?user=${encodeURIComponent(userId)}`);
+	  const data = await res.json();
 
-      if (res.ok) {
-        let out = "📘 技能列表：\n";
-        for (const [id, info] of Object.entries(data)) {
-          out += `  - ${info.name}（Lv ${info.level}, 倍率: ${info.multiplier}）\n`;
-        }
-        log(out);
-      } else {
-        log(data.error || "技能查詢失敗");
-      }
-      showLoading(false);
-    }
+	  if (!res.ok) {
+		alert("技能讀取錯誤：" + (data.error || "未知錯誤"));
+		return;
+	  }
 
-    async function skillUp() {
-      const skill = document.getElementById("skill_id").value.trim();
-      if (!userId || !skill) return alert("請輸入技能 ID");
+	  skillAlloc = {};
+	  allSkills = data.skills;
+	  remainingSkillPoints = data.remaining;
 
-      showLoading(true);
-      const res = await fetch(`${API_BASE}/skillup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: userId, skill })
-      });
+	  data.skills.forEach(skill => {
+		skillAlloc[skill.id] = skill.level;
+	  });
 
-      const data = await res.json();
-      log(data.message || data);
-      await getSkills();
-      showLoading(false);
-    }
+	  renderSkills();
+	}
+
+	function renderSkills() {
+	  const mapType = {
+		"atk": "【輸出型】",
+		"heal": "【治療型】",
+		"buff": "【增益型】"
+	  };
+
+	  const elementMap = {
+		pyro: "火", hydro: "水", nature: "自然", electro: "雷",
+		light: "光", dark: "暗", all: "全", none: "無"
+	  };
+
+	  const container = document.getElementById("skillList");
+	  container.innerHTML = "";
+
+	  allSkills.forEach(skill => {
+		const currentLevel = skillAlloc[skill.id] || 0;
+		const isLocked = userStats.level < skill.learnlvl;
+
+		const wrapper = document.createElement("div");
+		wrapper.style.border = "1px solid #ccc";
+		wrapper.style.margin = "10px 0";
+		wrapper.style.padding = "10px";
+
+		const type = mapType[skill.type] || "【其他】";
+		const elements = skill.element.map(e => elementMap[e] || e).join("、");
+		const effectiveMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
+
+		wrapper.innerHTML = `
+		  <strong>${type} ${skill.name}</strong><br>
+		  ${skill.description}<br>
+		  等級上限：${skill.maxlvl}　冷卻：${skill.cd} 回合<br>
+		  倍率：${effectiveMultiplier}　屬性：${elements}<br>
+		`;
+
+		const minus = document.createElement("button");
+		minus.textContent = "-";
+		minus.disabled = isLocked || currentLevel === 0;
+		minus.onclick = () => {
+		  if (skillAlloc[skill.id] > 0) {
+			skillAlloc[skill.id]--;
+			remainingSkillPoints++;
+			renderSkills();
+		  }
+		};
+
+		const value = document.createElement("span");
+		value.textContent = currentLevel;
+		value.style.margin = "0 10px";
+
+		const plus = document.createElement("button");
+		plus.textContent = "+";
+		plus.disabled = isLocked || currentLevel >= skill.maxlvl || remainingSkillPoints <= 0;
+		plus.onclick = () => {
+		  if (skillAlloc[skill.id] < skill.maxlvl && remainingSkillPoints > 0) {
+			skillAlloc[skill.id]++;
+			remainingSkillPoints--;
+			renderSkills();
+		  }
+		};
+
+		wrapper.appendChild(minus);
+		wrapper.appendChild(value);
+		wrapper.appendChild(plus);
+
+		container.appendChild(wrapper);
+	  });
+
+	  document.getElementById("remainingSkillPoints").innerText = remainingSkillPoints;
+	}
+
+	function resetSkills() {
+	  allSkills.forEach(skill => {
+		skillAlloc[skill.id] = skill.level;
+	  });
+	  remainingSkillPoints = userStats.skill_points;
+	  renderSkills();
+	}
+
+	async function submitSkills() {
+	  showLoading(true);
+	  try {
+		const payload = { user: userId, skills: skillAlloc };
+		const res = await fetch(`${API_BASE}/skills_save`, {
+		  method: "POST",
+		  headers: { "Content-Type": "application/json" },
+		  body: JSON.stringify(payload)
+		});
+		const data = await res.json();
+		if (res.ok) {
+		  alert("技能儲存成功！");
+		  await loadStatus();
+		  await loadAllSkills();
+		} else {
+		  alert(data.error || "儲存失敗");
+		}
+	  } catch (err) {
+		alert("❌ 發生錯誤：" + err.message);
+	  } finally {
+		showLoading(false);
+	  }
+	}
 
     async function waitForUser() {
       return new Promise(resolve => {
@@ -293,15 +381,16 @@
       emailSpan.innerText = data.nickname || userId;
 
       await loadStatus();
+	  await loadAllSkills();
       showLoading(false);
     })();
 
     window.logout = logout;
-    window.adjust = adjust;
-    window.resetStats = resetStats;
-    window.submitLevelUp = submitLevelUp;
-    window.getSkills = getSkills;
-    window.skillUp = skillUp;
+	window.adjust = adjust;
+	window.resetStats = resetStats;
+	window.submitLevelUp = submitLevelUp;
+	window.resetSkills = resetSkills;
+	window.submitSkills = submitSkills;
 	
 	
 	// 技能
@@ -329,25 +418,6 @@
 	  phy: "物理"
 	};
 
-	async function getSkills() {
-	  if (!userId) return;
-	  showLoading(true);
-
-	  const [userRes, skillRes] = await Promise.all([
-		fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`),
-		fetch(`${API_BASE}/skills_full`)
-	  ]);
-	  const user = await userRes.json();
-	  const skills = await skillRes.json();
-
-	  skillPoints = user.skill_points || 0;
-	  originalSkills = user.skills || {};
-	  allSkills = skills;
-	  skillAlloc = { ...originalSkills };
-	  document.getElementById("skillPoints").innerText = skillPoints;
-	  renderSkillList();
-	  showLoading(false);
-	}
 
 	function renderSkillList() {
 	  const container = document.getElementById("skill_list");
@@ -428,7 +498,7 @@
 		if (res.ok) {
 		  alert("技能已成功升級！");
 		  await loadStatus(); // 更新 base_stats 等
-		  await getSkills();
+		  await loadAllSkills();
 		} else {
 		  alert(data.error || "升級失敗");
 		}
