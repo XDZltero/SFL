@@ -19,6 +19,11 @@ db = firestore.client()
 def user_ref(user_id):
     return db.collection("users").document(user_id)
 
+# 確認存活用
+@app.route("/ping")
+def ping():
+    return "pong", 200
+
 @app.route("/register", methods=["POST"])
 def register():
     data = request.json
