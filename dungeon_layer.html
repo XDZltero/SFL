@@ -325,9 +325,7 @@ firebase.auth().onAuthStateChanged(async user => {
     userId = user.email;
     await fetchProgress();        // ✅ 先抓目前進度
     retryBtn.onclick = () => {
-      if (!data.is_last_layer) {
         startBattle();
-      }
     };
     loadLayer();                  // ✅ 然後載入該層
   } else {
