@@ -1,235 +1,85 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <title>升級與技能頁面</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-      authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
   <style>
     body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
-    input { margin: 5px; padding: 5px; }
-    button { margin: 5px; padding: 5px 10px; cursor: pointer; }
-    #base_stats ul { padding-left: 20px; }
-    #log { white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; }
-    #topbar {
-      position: fixed; top: 0; left: 0; right: 0;
-      background: #f5f5f5; padding: 10px;
-      display: flex; justify-content: space-between;
-      align-items: center; border-bottom: 1px solid #ccc;
-      font-size: 0.95em;
-    }
-    #loadingOverlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5); color: white;
-      font-size: 1.5em; display: none;
-      justify-content: center; align-items: center;
-      z-index: 9999;
-    }
+    button { padding: 4px 8px; margin: 2px; }
+    .stat-row { margin-bottom: 10px; }
+    .stat-label { display: inline-block; width: 100px; }
   </style>
 </head>
 <body>
-  <div id="topbar">
-    <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
-    <div>
-      <button onclick="location.href='index.html'">🔙 返回主頁</button>
-      <button onclick="logout()">🔓 登出</button>
+  <h2>⬆️ 分配能力值</h2>
+  <div>剩餘能力點數：<span id="remainingPoints">0</span></div>
+
+  <div id="statControls">
+    <div class="stat-row">
+      <span class="stat-label">生命值</span>
+      <button onclick="adjustStat('hp', -1)">-</button>
+      <span id="hpVal">0</span>
+      <button onclick="adjustStat('hp', 1)">+</button>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">攻擊力</span>
+      <button onclick="adjustStat('attack', -1)">-</button>
+      <span id="attackVal">0</span>
+      <button onclick="adjustStat('attack', 1)">+</button>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">運氣值</span>
+      <button onclick="adjustStat('luck', -1)">-</button>
+      <span id="luckVal">0</span>
+      <button onclick="adjustStat('luck', 1)">+</button>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">攻擊速度</span>
+      <button onclick="adjustStat('atk_speed', -1)">-</button>
+      <span id="atk_speedVal">0</span>
+      <button onclick="adjustStat('atk_speed', 1)">+</button>
     </div>
   </div>
 
-  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
-
-  <h1>🧠 升級與技能管理</h1>
-  <hr>
-
-  <h2>⬆️ 分配能力點</h2>
-  <div id="base_stats">(請先載入角色資料)</div>
-  <div id="point_allocation_controls"></div>
-  <div style="margin-top: 10px;">
-    <button onclick="resetAllocation()">🔄 重置</button>
-    <button onclick="submitLevelUp()">✅ 確認升級</button>
+  <div>
+    <button onclick="resetStats()">重置</button>
+    <button onclick="confirmUpgrade()">確認升級</button>
   </div>
 
-  <hr>
-  <h2>📘 技能查詢與升級</h2>
-  <button onclick="getSkills()">查詢技能</button><br><br>
-  技能 ID：<input id="skill_id" placeholder="輸入技能 ID" />
-  <button onclick="skillUp()">升級技能</button>
-
-  <pre id="log"></pre>
-
-  <script type="module">
-    const API_BASE = "https://sfl-9cb8.onrender.com";
-    const emailSpan = document.getElementById("userEmail");
-    const baseStatsBlock = document.getElementById("base_stats");
-    const loading = document.getElementById("loadingOverlay");
-    let userId = null;
-    let userStatus = null;
-    const allocatableStats = ["hp", "attack", "luck", "atk_speed"];
-    let allocation = { hp: 0, attack: 0, luck: 0, atk_speed: 0 };
-
-    function showLoading(show) {
-      loading.style.display = show ? "flex" : "none";
-    }
-
-    function logout() {
-      firebase.auth().signOut().then(() => {
-        location.href = "/SFL/login.html";
-      });
-    }
-    window.logout = logout;
-
-    function log(msg) {
-      const out = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
-      document.getElementById("log").innerText = out;
-    }
-
-    async function waitForUser() {
-      return new Promise((resolve) => {
-        const unsub = firebase.auth().onAuthStateChanged((user) => {
-          unsub(); resolve(user);
-        });
-      });
-    }
-
-    async function loadStatus() {
-      if (!userId) return;
-      showLoading(true);
-      try {
-        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-        const data = await res.json();
-        if (data.error) return log(data);
-        userStatus = data;
-
-        let html = "<ul>";
-        for (const [k, v] of Object.entries(data.base_stats || {})) {
-          html += `<li>${k.toUpperCase()}：${v}</li>`;
-        }
-        html += "</ul>";
-
-        baseStatsBlock.innerHTML = html;
-        renderStatControls();
-        log(data);
-      } catch (err) {
-        log("❌ 載入錯誤：" + err.message);
-      } finally {
-        showLoading(false);
-      }
-    }
-
-    function renderStatControls() {
-      const container = document.getElementById("point_allocation_controls");
-      const remainingPoints = userStatus.stat_points - Object.values(allocation).reduce((a, b) => a + b, 0);
-      let html = `<p>剩餘點數：<b>${remainingPoints}</b></p>`;
-      for (const stat of allocatableStats) {
-        const current = allocation[stat];
-        const displayName = {
-          hp: "生命值 (每點+5)",
-          attack: "攻擊力",
-          luck: "運氣值",
-          atk_speed: "攻擊速度"
-        }[stat];
-
-        html += `
-          <div>
-            ${displayName}：
-            <button onclick="adjustStat('${stat}', -1)">➖</button>
-            <span id="alloc_${stat}">${current}</span>
-            <button onclick="adjustStat('${stat}', 1)">➕</button>
-          </div>
-        `;
-      }
-      container.innerHTML = html;
-    }
+  <script>
+    const statPoints = 5; // 假設從 API 取得的剩餘能力值點數
+    let remaining = statPoints;
+    const allocations = {
+      hp: 0,
+      attack: 0,
+      luck: 0,
+      atk_speed: 0
+    };
 
     function adjustStat(stat, delta) {
-      const total = Object.values(allocation).reduce((a, b) => a + b, 0);
-      const maxPoints = userStatus.stat_points;
-      if (delta === 1 && total >= maxPoints) return;
-      if (delta === -1 && allocation[stat] === 0) return;
-      allocation[stat] += delta;
-      renderStatControls();
+      if (delta > 0 && remaining <= 0) return;
+      if (allocations[stat] + delta < 0) return;
+
+      allocations[stat] += delta;
+      remaining -= delta;
+
+      document.getElementById(`${stat}Val`).innerText = allocations[stat];
+      document.getElementById("remainingPoints").innerText = remaining;
     }
 
-    function resetAllocation() {
-      for (const stat of allocatableStats) allocation[stat] = 0;
-      renderStatControls();
-    }
-    window.resetAllocation = resetAllocation;
-
-    async function submitLevelUp() {
-      if (!userId) return;
-      showLoading(true);
-      const res = await fetch(`${API_BASE}/levelup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: userId, allocate: allocation })
-      });
-      const data = await res.json();
-      log(data.message || data);
-      await loadStatus();
-      showLoading(false);
-    }
-    window.submitLevelUp = submitLevelUp;
-
-    async function getSkills() {
-      if (!userId) return;
-      showLoading(true);
-      const res = await fetch(`${API_BASE}/skills?user=${encodeURIComponent(userId)}`);
-      const data = await res.json();
-      if (res.ok) {
-        let out = "📘 技能列表：
-";
-        for (const [id, info] of Object.entries(data)) {
-          out += `  - ${info.name}（Lv ${info.level}, 倍率: ${info.multiplier}）
-`;
-        }
-        log(out);
-      } else {
-        log(data.error || "技能查詢失敗");
+    function resetStats() {
+      for (let stat in allocations) {
+        allocations[stat] = 0;
+        document.getElementById(`${stat}Val`).innerText = 0;
       }
-      showLoading(false);
+      remaining = statPoints;
+      document.getElementById("remainingPoints").innerText = remaining;
     }
-    window.getSkills = getSkills;
 
-    async function skillUp() {
-      const skill = document.getElementById("skill_id").value.trim();
-      if (!userId || !skill) return alert("請輸入技能 ID");
-      showLoading(true);
-      const res = await fetch(`${API_BASE}/skillup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: userId, skill })
-      });
-      const data = await res.json();
-      log(data.message || data);
-      await getSkills();
-      showLoading(false);
+    function confirmUpgrade() {
+      alert("送出升級：" + JSON.stringify(allocations));
+      // 實際開發中可送出 POST 請求
     }
-    window.skillUp = skillUp;
-
-    (async () => {
-      showLoading(true);
-      const user = await waitForUser();
-      if (!user) {
-        location.href = "/SFL/login.html";
-        return;
-      }
-      userId = user.email;
-      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-      const data = await res.json();
-      emailSpan.innerText = data.nickname || userId;
-      await loadStatus();
-      showLoading(false);
-    })();
   </script>
 </body>
 </html>
