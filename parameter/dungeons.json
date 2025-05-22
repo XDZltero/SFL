@@ -3,10 +3,10 @@
     "id": "dungeon_moss",
     "name": "腐爛沼澤地",
     "description": "一個瀰漫著毒霧與史萊姆的神祕沼澤。",
-    "bossId": "little_mage",
+    "bossId": "litch",
     "min_level": 1,
     "image": "https://i.postimg.cc/Bvj6GM01/dungeon-moss.png",
-    "monsters": ["slime", "skeleton", "tree_monster"]
+    "monsters": ["slime", "skeleton", "tree_monster","little_mage"]
   },
   {
     "id": "dungeon_b",
