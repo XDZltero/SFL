@@ -300,7 +300,8 @@ def simulate_battle(user, monster):
                 skill_type = skill.get("type", "atk")
 
                 if skill["id"] != "basic_attack":
-                    monster_skill_cd[skill["id"]] = skill.get("cd", 0)
+                    if skill.get("id") != "basic_attack":
+                        monster_skill_cd[skill["id"]] = skill.get("cd", 0)
 
                 if skill_type == "heal":
                     heal = int(monster["stats"]["hp"] * 0.1 * skill["multiplier"])
