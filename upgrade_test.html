@@ -259,7 +259,10 @@
 	  const container = document.getElementById("skillList");
 	  container.innerHTML = "";
 
-	  allSkills.forEach(skill => {
+	  allSkills
+	  .slice()
+	  .sort((a, b) => (a.sort || 999) - (b.sort || 999))
+	  .forEach(skill => {
 		const currentLevel = skillAlloc[skill.id] ?? 0;
 		const isLocked = userStats.level < skill.learnlvl;
 
