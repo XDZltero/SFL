@@ -325,7 +325,8 @@ firebase.auth().onAuthStateChanged(async user => {
     userId = user.email;
     await fetchProgress();        // ✅ 先抓目前進度
     retryBtn.onclick = () => {
-      if (layer < currentProgress) {
+      const isBossLayer = (layer === currentProgress);
+      if (!isBossLayer) {
         startBattle();
       }
     };
