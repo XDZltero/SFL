@@ -249,12 +249,10 @@ def simulate_battle(user, monster):
 
                 user_stats_mod, user_buffs, buff_log = apply_buffs(user_buffs, user["base_stats"], log, True, "")
 
-                used_skill = False
+                any_skill_used = False  # 是否有成功施放技能
 
                 for skill_id, level in user.get("skills", {}).items():
-                    if level <= 0:
-                        continue
-                    if player_skill_cd.get(skill_id, 0) > 0:
+                    if level <= 0 or player_skill_cd.get(skill_id, 0) > 0:
                         continue
 
                     skill_doc = db.collection("skills").document(skill_id).get()
@@ -264,10 +262,6 @@ def simulate_battle(user, monster):
                     skill = skill_doc.to_dict()
                     multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
                     skill_type = skill.get("type", "atk")
-
-                    # ✅ 設定冷卻（+1 才會真的冷卻完整回合）
-                    player_skill_cd[skill_id] = skill.get("cd", 0) + 1
-                    used_skill = True
 
                     if skill_type == "heal":
                         heal = int(user["base_stats"]["hp"] * 0.1 * multiplier)
@@ -314,9 +308,25 @@ def simulate_battle(user, monster):
                             log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
                         else:
                             log.append(f"你使用 {skill['name']} 但未命中")
-                
-                # buff 效果log
-                log.extend(buff_log)
+
+                    # ✅ 技能執行成功 → 設定冷卻
+                    player_skill_cd[skill_id] = skill.get("cd", 0) + 1
+                    any_skill_used = True
+
+                # ✅ 若該行動中沒任何技能被施放 → 使用普通攻擊
+                if not any_skill_used:
+                    if calculate_hit(user["base_stats"].get("accuracy", 1.0) * user_stats_mod.get("accuracy", 1.0),
+                                     monster["stats"].get("evade", 0) * mon_stats_mod.get("evade", 1.0),
+                                     user["base_stats"].get("luck", 0)):
+                        atk = user["base_stats"].get("attack", 0) * user_stats_mod.get("attack", 1.0)
+                        shield = monster["stats"].get("shield", 0) * mon_stats_mod.get("shield", 1.0)
+                        dmg = calculate_damage(atk, 1.0, user.get("other_bonus", 0), shield) # 技能倍率1.0
+                        dmg = round(dmg * user_level_mod * user_stats_mod.get("all_damage", 1.0))
+                        mon_hp -= dmg
+                        mon_hp = max(mon_hp, 0)
+                        log.append(f"你使用 普通攻擊 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
+                    else:
+                        log.append("你使用 普通攻擊 但未命中")
 
             else:
                 # ✅ 怪物技能冷卻扣除
