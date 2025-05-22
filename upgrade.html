@@ -253,7 +253,7 @@
 
 	  const elementMap = {
 		pyro: "火", hydro: "水", nature: "自然", electro: "雷",
-		light: "光", dark: "暗", all: "全", none: "無"
+		light: "光", dark: "暗", phy: "物理", all: "全", none: "無"
 	  };
 
 	  const container = document.getElementById("skillList");
@@ -417,24 +417,11 @@
 	let originalSkills = {};
 	let skillPoints = 0;
 	let allSkills = [];
-	let skillElementMap = {};
 
 	const typeLabels = {
 	  atk: "輸出型",
 	  heal: "治療型",
 	  buff: "增益型"
-	};
-
-	skillElementMap = {
-	  pyro: "火",
-	  hydro: "水",
-	  nature: "自然",
-	  electro: "雷",
-	  light: "光",
-	  dark: "暗",
-	  all: "全",
-	  none: "無",
-	  phy: "物理"
 	};
 
 	function getSkillById(id) {
