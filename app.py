@@ -289,42 +289,56 @@ def get_skills_full():
     skills = db.collection("skills").stream()
     return jsonify([doc.to_dict() for doc in skills])
 
-# 儲存技能變更
-@app.route("/apply_skills", methods=["POST"])
-def apply_skills():
+@app.route("/skills_all", methods=["GET"])
+def get_all_skills():
+    skill_docs = db.collection("skills").stream()
+    all_skills = {doc.id: doc.to_dict() for doc in skill_docs}
+    return jsonify(all_skills)
+
+@app.route("/skills_save", methods=["POST"])
+def save_skill_distribution():
     data = request.json
     user_id = data.get("user")
-    new_levels = data.get("skills")
+    new_levels = data.get("skills")  # {"fireball": 5, "slash": 0, ...}
 
-    if not user_id or not new_levels:
-        return jsonify({"error": "缺少參數"}), 400
+    if not user_id or not isinstance(new_levels, dict):
+        return jsonify({"error": "參數錯誤"}), 400
 
-    ref = db.collection("users").document(user_id)
-    doc = ref.get()
-    if not doc.exists:
-        return jsonify({"error": "使用者不存在"}), 404
+    user_ref = db.collection("users").document(user_id)
+    user_doc = user_ref.get()
+    if not user_doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
 
-    user = doc.to_dict()
-    user_skills = user.get("skills", {})
+    user = user_doc.to_dict()
+    old_skills = user.get("skills", {})
     skill_points = user.get("skill_points", 0)
 
-    used = 0
-    for skill_id, new_lv in new_levels.items():
-        old_lv = user_skills.get(skill_id, 0)
-        if new_lv < old_lv:
-            return jsonify({"error": f"{skill_id} 等級不可降低"}), 400
-        used += new_lv - old_lv
+    skill_docs = db.collection("skills").stream()
+    skill_data = {doc.id: doc.to_dict() for doc in skill_docs}
 
-    if used > skill_points:
-        return jsonify({"error": "技能點不足"}), 400
+    # 驗證新技能配置是否合法
+    total_used = 0
+    for skill_id, new_lvl in new_levels.items():
+        if skill_id not in skill_data:
+            return jsonify({"error": f"技能 {skill_id} 不存在"}), 400
+        skill_info = skill_data[skill_id]
 
-    for skill_id, new_lv in new_levels.items():
-        user_skills[skill_id] = new_lv
+        if new_lvl < 0 or new_lvl > skill_info["maxlvl"]:
+            return jsonify({"error": f"{skill_id} 超出等級範圍"}), 400
+        if new_lvl > 0 and user["level"] < skill_info.get("learnlvl", 1):
+            return jsonify({"error": f"{skill_id} 等級未達要求"}), 400
 
-    user["skills"] = user_skills
-    user["skill_points"] -= used
-    ref.set(user)
-    return jsonify({"message": f"成功升級技能，共花費 {used} 點"})
+        total_used += new_lvl
+
+    total_available = sum(old_skills.values()) + user.get("skill_points", 0)
+    if total_used > total_available:
+        return jsonify({"error": "技能點數不足"}), 400
+
+    user["skills"] = {k: v for k, v in new_levels.items() if v > 0}
+    user["skill_points"] = total_available - total_used
+
+    user_ref.set(user)
+    return jsonify({"message": "技能升級完成", "status": user})
 
 @app.route("/skills", methods=["GET"])
 def get_skills():
