@@ -244,6 +244,18 @@ window.startBattle = async function () {
     if (data.success) {
       html = `✅ 戰鬥勝利！\n` + html;
       battleBtn.style.display = "none"; // 隱藏戰鬥開始按鈕
+
+      // 更新角色資訊
+      const updatedUser = await fetchUser(userId);
+      userDiv.innerText = formatStats(updatedUser);
+
+      if (data.is_last_layer) {
+        retryBtn.style.display = "none";
+        document.getElementById("leaveBtn").style.display = "inline-block";
+      } else {
+        retryBtn.style.display = "inline-block";
+      }
+      
       retryBtn.style.display = "inline-block";
       if (data.rewards) {
         const { exp, leveled_up, drops } = data.rewards;
