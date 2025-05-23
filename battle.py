@@ -188,9 +188,11 @@ def player_attack(user, monster, skill, multiplier, user_stats_mod, mon_stats_mo
         log.append(f"你使用 {skill['name']} 但未命中")
         return 0
 
+
+from firebase_admin import firestore
+
 def simulate_battle(user, monster, user_skill_dict):
     log = []
-    current_round = 0
     round_log = []
     db = firestore.client()
 
@@ -210,12 +212,10 @@ def simulate_battle(user, monster, user_skill_dict):
     while user_hp > 0 and mon_hp > 0:
         turns_used += 1
         if turns_used > turn_limit:
-            round_log.append(f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗")
+            log.append({"round": turns_used, "actions": [f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗"]})
             user_hp = 0
             break
 
-        if round_log:
-            round_log.append({"round": current_round, "actions": round_log})
         current_round = turns_used
         round_log = [f"──────────────  第 {turns_used} 回合 ──────────────"]
 
@@ -244,6 +244,8 @@ def simulate_battle(user, monster, user_skill_dict):
                 if mon_hp <= 0:
                     round_log.append("═══════════════ 🌟 戰鬥結束 🌟 ═══════════════")
                 break
+            
+            log.append({"round": current_round, "actions": round_log})
 
             if actor == "user":
                 for sid in player_skill_cd:
@@ -391,6 +393,7 @@ def simulate_battle(user, monster, user_skill_dict):
                         round_log.append(f"{monster['name']} 攻擊未命中")
 
                 round_log.extend(buff_log)
+        log.append({"round": turns_used, "actions": round_log})
 
     outcome = "win" if user_hp > 0 and mon_hp <= 0 else "lose"
     rewards = {}
@@ -405,12 +408,9 @@ def simulate_battle(user, monster, user_skill_dict):
             "drops": monster["drops"]
         }
 
-    if round_log:
-        log.append({"round": current_round, "actions": round_log})
     return {
         "result": outcome,
         "battle_log": log,
         "user": user,
         "rewards": rewards if outcome == "win" else None
     }
-
