@@ -113,7 +113,6 @@ def battle():
         if not user_id or not monster_id:
             return jsonify({"error": "缺少參數"}), 400
 
-        # 取得使用者與怪物資料
         user_doc = db.collection("users").document(user_id).get()
         if not user_doc.exists:
             return jsonify({"error": "找不到使用者"}), 404
@@ -125,29 +124,22 @@ def battle():
             return jsonify({"error": "找不到怪物"}), 404
         monster_data = mon_doc.to_dict()
 
-        # 🔍 收集技能 ID（使用者＋怪物）
-        skill_ids = list(user_data.get("skills", {}).keys())
-        skill_ids += [s["id"] for s in monster_data.get("skills", [])]
-        skill_ids = list(set(skill_ids))  # 去重
-
-        # ✅ 分批查詢技能資料
-        skill_data_list = []
-        BATCH_LIMIT = 10
-        for i in range(0, len(skill_ids), BATCH_LIMIT):
-            batch_ids = skill_ids[i:i + BATCH_LIMIT]
-            docs = db.collection("skills").where("id", "in", batch_ids).stream()
+        # ✅ 玩家技能查詢
+        user_skill_ids = list(user_data.get("skills", {}).keys())
+        user_skill_list = []
+        for i in range(0, len(user_skill_ids), 10):
+            batch = user_skill_ids[i:i + 10]
+            docs = db.collection("skills").where("id", "in", batch).stream()
             for doc in docs:
-                skill = doc.to_dict()
-                skill_data_list.append(skill)
+                user_skill_list.append(doc.to_dict())
+        user_skill_list.sort(key=lambda x: x.get("sort", 9999))
+        user_skill_dict = {s["id"]: s for s in user_skill_list}
 
-        # ✅ 按 sort 排序後轉成 dict（供 simulate_battle 使用）
-        skill_data_list.sort(key=lambda x: x.get("sort", 9999))
-        skill_data_dict = {s["id"]: s for s in skill_data_list}
+        # ✅ 怪物技能直接使用其原始資料
+        monster_skill_dict = {s["id"]: s for s in monster_data.get("skills", [])}
 
-        # ✅ 執行模擬戰鬥
-        result = simulate_battle(user_data, monster_data, skill_data_dict)
-
-        # ✅ 更新使用者資料
+        # ✅ 執行戰鬥
+        result = simulate_battle(user_data, monster_data, user_skill_dict, monster_skill_dict)
         db.collection("users").document(user_id).set(result["user"])
 
         return jsonify(result)
@@ -156,6 +148,7 @@ def battle():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"伺服器內部錯誤: {str(e)}"}), 500
+
 
 
 @app.route("/battle_dungeon", methods=["POST"])
@@ -198,7 +191,23 @@ def battle_dungeon():
             return jsonify({"error": "找不到怪物"}), 404
 
         monster_data = mon_doc.to_dict()
-        result = simulate_battle(user_data, monster_data)
+
+        # ✅ 玩家技能查詢
+        user_skill_ids = list(user_data.get("skills", {}).keys())
+        user_skill_list = []
+        for i in range(0, len(user_skill_ids), 10):
+            batch = user_skill_ids[i:i + 10]
+            docs = db.collection("skills").where("id", "in", batch).stream()
+            for doc in docs:
+                user_skill_list.append(doc.to_dict())
+        user_skill_list.sort(key=lambda x: x.get("sort", 9999))
+        user_skill_dict = {s["id"]: s for s in user_skill_list}
+        
+        # ✅ 怪物技能直接用原始資料
+        monster_skill_dict = {s["id"]: s for s in monster_data.get("skills", [])}
+        
+        # ✅ 傳入 simulate_battle
+        result = simulate_battle(user_data, monster_data, user_skill_dict, monster_skill_dict)
         db.collection("users").document(user_id).set(result["user"])
 
         user_key = user_id.replace(".", "_")
@@ -208,7 +217,6 @@ def battle_dungeon():
         current_layer = current_progress.get(dungeon_id, 0)
 
         if result["result"] == "lose":
-            # 失敗 → 重設進度為 0
             progress_ref.set({dungeon_id: 0}, merge=True)
             return jsonify({
                 "success": False,
@@ -216,21 +224,10 @@ def battle_dungeon():
                 "battle_log": result["battle_log"]
             })
 
-        # 勝利 → 若通關層數未記錄或低於本層，則更新
         if result["result"] == "win":
-            user_key = user_id.replace(".", "_")
-            progress_ref = db.collection("progress").document(user_key)
-            progress_doc = progress_ref.get()
-            current_layer = 0
-        
-            if progress_doc.exists:
-                current_layer = progress_doc.to_dict().get(dungeon_id, 0)
-        
             if is_boss:
-                # BOSS 勝利，自動重置進度為 0
                 progress_ref.set({dungeon_id: 0}, merge=True)
             elif int(layer) >= current_layer:
-                # 勝利 → 若通關層數未記錄或低於本層，則更新
                 progress_ref.set({dungeon_id: int(layer) + 1}, merge=True)
 
         return jsonify({
@@ -246,6 +243,7 @@ def battle_dungeon():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
+
 
 # 獲得副本層數
 @app.route("/get_progress", methods=["GET"])
