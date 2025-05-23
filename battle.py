@@ -193,7 +193,6 @@ def player_attack(user, monster, skill, multiplier, user_stats_mod, mon_stats_mo
 
 def simulate_battle(user, monster, user_skill_dict):
     log = []
-    round_log = []
     db = firestore.client()
 
     user_hp = user["base_stats"]["hp"]
@@ -211,12 +210,8 @@ def simulate_battle(user, monster, user_skill_dict):
 
     while user_hp > 0 and mon_hp > 0:
         turns_used += 1
-        if turns_used > turn_limit:
-            log.append({"round": turns_used, "actions": [f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗"]})
-            user_hp = 0
-            break
-
         current_round = turns_used
+        round_log = []  # 每回合初始化 log
 
         user_stats_mod_preview = get_buff_stats_only(user_buffs)
         mon_stats_mod_preview = get_buff_stats_only(mon_buffs)
@@ -239,13 +234,14 @@ def simulate_battle(user, monster, user_skill_dict):
         for actor in action_order:
             if user_hp <= 0 or mon_hp <= 0:
                 break
+
             if actor == "user":
                 for sid in player_skill_cd:
                     if player_skill_cd[sid] > 0:
                         player_skill_cd[sid] -= 1
 
                 user_stats_mod, user_buffs, buff_log = apply_buffs(user_buffs, user["base_stats"], log, True, "")
-                round_log.extend(buff_log)
+                
 
                 any_skill_used = False
 
@@ -326,6 +322,7 @@ def simulate_battle(user, monster, user_skill_dict):
                         round_log.append(f"你使用 普通攻擊 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
                     else:
                         round_log.append("你使用 普通攻擊 但未命中")
+                round_log.extend(buff_log)
 
             else:
                 for sid in monster_skill_cd:
@@ -385,12 +382,13 @@ def simulate_battle(user, monster, user_skill_dict):
                         round_log.append(f"{monster['name']} 攻擊未命中")
 
                 round_log.extend(buff_log)
+
         if user_hp <= 0:
             round_log.append("═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════")
         elif mon_hp <= 0:
             round_log.append("═══════════════ 🌟 戰鬥結束 🌟 ═══════════════")
 
-        log.append({"round": turns_used, "actions": round_log})
+        log.append({"round": current_round, "actions": round_log})
 
         if user_hp <= 0 or mon_hp <= 0:
             break
