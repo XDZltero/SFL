@@ -65,6 +65,8 @@
     let levelExp = {};
 
     function showLoading(show) {
+      const loading = document.getElementById("loadingOverlay");
+      if (!loading) return; // ⛔ 尚未載入就不要動
       loading.style.display = show ? "flex" : "none";
     }
 
