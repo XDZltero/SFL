@@ -188,7 +188,7 @@ def player_attack(user, monster, skill, multiplier, user_stats_mod, mon_stats_mo
         log.append(f"你使用 {skill['name']} 但未命中")
         return 0
 
-def simulate_battle(user, monster, user_skill_dict):
+def simulate_battle(user, monster, user_skill_dict, monster_skill_dict):
     log = []
     current_round = 0
     round_log = []
@@ -240,9 +240,9 @@ def simulate_battle(user, monster, user_skill_dict):
         for actor in action_order:
             if user_hp <= 0 or mon_hp <= 0:
                 if user_hp <= 0:
-                    round_round_log.append("═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════")
+                    round_log.append("═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════")
                 if mon_hp <= 0:
-                    round_round_log.append("═══════════════ 🌟 戰鬥結束 🌟 ═══════════════")
+                    round_log.append("═══════════════ 🌟 戰鬥結束 🌟 ═══════════════")
                 break
 
             if actor == "user":
@@ -413,3 +413,4 @@ def simulate_battle(user, monster, user_skill_dict):
         "user": user,
         "rewards": rewards if outcome == "win" else None
     }
+
