@@ -40,10 +40,10 @@
 	    });
 	</script>
 
-  <h1>🧠 升級與技能管理</h1>
+  <h1 class="fancy-title">🧩 升級與技能管理</h1>
   <hr>
 
-  <h2>⬆️ 分配能力點</h2>
+  <h2 class="fancy-subtitle">📊 分配能力點</h2>
   <div style="display: flex; gap: 40px; align-items: flex-start;">
     <div>
       <strong>目前能力值：</strong>
@@ -62,7 +62,7 @@
 
   <hr>
 
-  <h2>🧠 技能點分配</h2>
+  <h2 class="fancy-subtitle">🌀 技能點分配</h2>
 	<div><strong>剩餘技能點數：<span id="remainingSkillPoints">0</span></strong></div>
 	<div id="skillList"></div>
 	<div style="margin-top: 10px;">
@@ -353,23 +353,28 @@
 
     // 主流程
     (async () => {
-      showLoading(true);
-      const user = await waitForUser();
-      if (!user) {
-        location.href = "/SFL/login.html";
-        return;
-      }
-
-      userId = user.email;
-
-      const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-      const data = await res.json();
-      emailSpan.innerText = data.nickname || userId;
-
-      await loadStatus();
-	  await loadAllSkills();
-      showLoading(false);
-    })();
+	  showLoading(true);
+	  const user = await waitForUser();
+	  if (!user) {
+	    location.href = "/SFL/login.html";
+	    return;
+	  }
+	
+	  userId = user.email;
+	
+	  try {
+	    const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+	    const data = await res.json();
+	    emailSpan.innerText = data.nickname || userId;
+	
+	    await loadStatus();
+	    await loadAllSkills(); // ✅ 技能完全載入完畢
+	  } catch (err) {
+	    console.error("❌ 發生錯誤", err);
+	  } finally {
+	    showLoading(false);  // ✅ 最後才解除遮罩
+	  }
+	})();
 
     window.logout = logout;
 	window.adjust = adjust;
