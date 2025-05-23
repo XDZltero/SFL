@@ -2,11 +2,13 @@ import os
 import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_compress import Compress
 import firebase_admin
 from firebase_admin import credentials, firestore
 from battle import simulate_battle
 
 app = Flask(__name__)
+Compress(app)
 CORS(app, origins=["https://xdzltero.github.io"])  # 限制只允許你的 GitHub 網頁呼叫
 
 # 從環境變數載入 Firebase 金鑰
