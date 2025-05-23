@@ -191,6 +191,9 @@ def player_attack(user, monster, skill, multiplier, user_stats_mod, mon_stats_mo
 
 from firebase_admin import firestore
 
+
+from firebase_admin import firestore
+
 def simulate_battle(user, monster, user_skill_dict):
     log = []
     round_log = []
@@ -244,8 +247,6 @@ def simulate_battle(user, monster, user_skill_dict):
                 if mon_hp <= 0:
                     round_log.append("═══════════════ 🌟 戰鬥結束 🌟 ═══════════════")
                 break
-            
-            log.append({"round": current_round, "actions": round_log})
 
             if actor == "user":
                 for sid in player_skill_cd:
