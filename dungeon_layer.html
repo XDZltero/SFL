@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -54,6 +55,171 @@
       justify-content: center; align-items: center;
       z-index: 9999;
     }
+    
+    /* 戰鬥載入遮罩 */
+    #battleLoadingOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      color: white;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+    }
+    
+    /* 背景動畫 */
+    #battleLoadingOverlay::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(255, 100, 100, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(100, 100, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(255, 255, 100, 0.1) 0%, transparent 50%);
+      animation: bgPulse 4s ease-in-out infinite;
+    }
+    
+    @keyframes bgPulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.7; }
+    }
+    
+    .battle-loading-container {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .battle-title {
+      font-size: 2.5em;
+      font-weight: bold;
+      color: #ff6b6b;
+      text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+      margin-bottom: 30px;
+      animation: titleGlow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes titleGlow {
+      from { text-shadow: 0 0 20px rgba(255, 107, 107, 0.5); }
+      to { text-shadow: 0 0 30px rgba(255, 107, 107, 0.8), 0 0 40px rgba(255, 107, 107, 0.3); }
+    }
+    
+    .battle-icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+      animation: iconBounce 1s ease-in-out infinite;
+    }
+    
+    @keyframes iconBounce {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.1) rotate(5deg); }
+    }
+    
+    .loading-text {
+      font-size: 1.3em;
+      margin-bottom: 30px;
+      color: #ffd93d;
+      animation: textFade 1.5s ease-in-out infinite alternate;
+    }
+    
+    @keyframes textFade {
+      from { opacity: 0.7; }
+      to { opacity: 1; }
+    }
+    
+    /* 進度條容器 */
+    .progress-container {
+      width: 400px;
+      max-width: 80vw;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      margin: 20px auto;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ff6b6b, #ffd93d, #4ecdc4, #45b7d1);
+      background-size: 200% 100%;
+      border-radius: 20px;
+      width: 0%;
+      transition: width 0.3s ease;
+      animation: gradientShift 2s linear infinite;
+      position: relative;
+    }
+    
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: shine 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes shine {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .progress-text {
+      font-size: 1.1em;
+      margin-top: 15px;
+      color: #b8e6ff;
+      font-weight: bold;
+    }
+    
+    /* 戰鬥提示文字 */
+    .battle-tips {
+      margin-top: 40px;
+      font-size: 0.9em;
+      color: #a0a0a0;
+      line-height: 1.6;
+    }
+    
+    /* 粒子效果 */
+    .particles {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+    }
+    
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      animation: float 6s linear infinite;
+    }
+    
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) translateX(0px) rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-100px) translateX(100px) rotate(360deg);
+        opacity: 0;
+      }
+    }
+    
     button {
       padding: 0.5em 1em;
       margin: 0.5em;
@@ -75,6 +241,26 @@
   </div>
 
   <div id="loadingOverlay">⏳ 載入中...</div>
+  
+  <!-- 戰鬥載入遮罩 -->
+  <div id="battleLoadingOverlay">
+    <div class="particles" id="particles"></div>
+    <div class="battle-loading-container">
+      <div class="battle-icon">⚔️</div>
+      <div class="battle-title">戰鬥準備中</div>
+      <div class="loading-text" id="loadingText">正在分析戰況...</div>
+      
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-text" id="progressText">0%</div>
+      
+      <div class="battle-tips">
+        💡 戰鬥小提示：善用屬性克制關係可以提高勝率！<br>
+        🛡️ 記得提升裝備來增強戰鬥力
+      </div>
+    </div>
+  </div>
 
   <div id="content">
     <div class="section" id="userInfo">🧍 角色資訊載入中...</div>
@@ -114,12 +300,78 @@
     const userDiv = document.getElementById("userInfo");
     const monsterDiv = document.getElementById("monsterInfo");
     const loading = document.getElementById("loadingOverlay");
+    const battleLoading = document.getElementById("battleLoadingOverlay");
 
     const retryBtn = document.getElementById("retryBtn");
     const nextBtn = document.getElementById("nextBtn");
 
     function showLoading(show) {
       loading.style.display = show ? "flex" : "none";
+    }
+
+    // 戰鬥載入畫面控制
+    function showBattleLoading(show) {
+      battleLoading.style.display = show ? "flex" : "none";
+      if (show) {
+        createParticles();
+        startLoadingProgress();
+      }
+    }
+
+    // 創建粒子效果
+    function createParticles() {
+      const particlesContainer = document.getElementById("particles");
+      particlesContainer.innerHTML = "";
+      
+      for (let i = 0; i < 50; i++) {
+        const particle = document.createElement("div");
+        particle.className = "particle";
+        particle.style.left = Math.random() * 100 + "%";
+        particle.style.animationDelay = Math.random() * 6 + "s";
+        particle.style.animationDuration = (Math.random() * 3 + 4) + "s";
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    // 進度條動畫
+    function startLoadingProgress() {
+      const progressBar = document.getElementById("progressBar");
+      const progressText = document.getElementById("progressText");
+      const loadingText = document.getElementById("loadingText");
+      
+      const messages = [
+        "正在分析戰況...",
+        "計算屬性克制...",
+        "準備戰鬥技能...",
+        "載入怪物資料...",
+        "初始化戰鬥系統...",
+        "準備就緒！"
+      ];
+      
+      let progress = 0;
+      let messageIndex = 0;
+      
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 15 + 5; // 每次增加 5-20%
+        if (progress > 100) progress = 100;
+        
+        progressBar.style.width = progress + "%";
+        progressText.textContent = Math.round(progress) + "%";
+        
+        // 更換載入文字
+        if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 15) {
+          messageIndex++;
+          loadingText.textContent = messages[messageIndex];
+        }
+        
+        if (progress >= 100) {
+          clearInterval(progressInterval);
+          loadingText.textContent = messages[messages.length - 1];
+        }
+      }, 200);
+      
+      // 儲存 interval ID 以便外部控制
+      window.battleProgressInterval = progressInterval;
     }
 
     function logout() {
@@ -149,7 +401,7 @@
 
     function formatStats(data) {
       const b = data.base_stats;
-      const e = data.equipment_stats || {}; // 若未來有裝備加成可加進來
+      const e = data.equipment_stats || {};
       const total_hp = calcTotal(b.hp, e.hp);
       const total_atk = calcTotal(b.attack, e.attack);
       const total_shield = calcTotal(b.shield, e.shield);
@@ -174,12 +426,12 @@
       剩餘技能點: ${data.skill_points}`;
     }
 
-    let levelExp = {}; // 全域變數
+    let levelExp = {};
 
     async function loadLayer() {
       showLoading(true);
       try {
-        // 讀取經驗表
+        // 讀取升級經驗表
         const expRes = await fetch(`${API}/exp_table`);
         levelExp = await expRes.json();
     
@@ -187,8 +439,10 @@
         nicknameSpan.innerText = user.nickname || userId;
         userDiv.innerText = formatStats(user);
     
-        const dungeonRes = await fetch("parameter/dungeons.json");
-        const all = await dungeonRes.json();
+        // 讀取副本資料
+      	const dungeonRes = await fetch(`${API}/dungeon_table`);
+        all = await dungeonRes.json();
+        
         const current = all.find(d => d.id === dungeon);
         if (!current) throw new Error("副本不存在");
     
@@ -196,14 +450,13 @@
         const monsterId = isLastLayer ? current.bossId : current.monsters[layer];
         const mon = await fetchMonster(monsterId);
     
-        // 初始一律隱藏"再戰一次"按鈕，等 battle 結果才控制顯示
         retryBtn.style.display = "none";
         nextBtn.style.display = "none";
         document.getElementById("leaveBtn").style.display = "none";
     
         monsterDiv.innerHTML = `
           <h2>${mon.name}</h2>
-          <img src="${mon.image_url}" width="100"><br>
+          <img src="${mon.image_url}" width="200"><br>
           <p>${mon.info}</p>
           <ul>
             <li>等級：${mon.level}</li>
@@ -223,152 +476,155 @@
       }
     }
 
-    // ✅ dungeon_layer.html 部分片段修改
+    let currentProgress = 0;
 
-	let currentProgress = 0; // 目前副本進度
+    async function fetchProgress() {
+      const res = await fetch(`${API}/get_progress?user=${encodeURIComponent(userId)}`);
+      const data = await res.json();
+      currentProgress = data.progress?.[dungeon] ?? 0;
+      return data;
+    }
 
-	async function fetchProgress() {
-	  const res = await fetch(`${API}/get_progress?user=${encodeURIComponent(userId)}`);
-	  const data = await res.json();
-	  currentProgress = data.progress?.[dungeon] ?? 0;
-	  return data;
-	}
+    function checkProgressBeforeBattle() {
+      if (layer > currentProgress) {
+        alert("層數異常（尚未解鎖），請重新進入副本");
+        window.location.href = "dungeons.html";
+        return false;
+      }
+      return true;
+    }
 
-	function checkProgressBeforeBattle() {
-	  if (layer > currentProgress) {
-		alert("層數異常（尚未解鎖），請重新進入副本");
-		window.location.href = "dungeons.html";
-		return false;
-	  }
-	  return true;
-	}
+    window.startBattle = async function () {
+      if (!checkProgressBeforeBattle()) return;
+      
+      // 顯示戰鬥載入畫面
+      showBattleLoading(true);
+      
+      logArea.innerHTML = "";
+      retryBtn.style.display = "none";
+      nextBtn.style.display = "none";
+      battleBtn.style.display = "none";
+      document.getElementById("leaveBtn").style.display = "none";
 
-	window.startBattle = async function () {
-	  if (!checkProgressBeforeBattle()) return;
-	  showLoading(true);
-	  logArea.innerHTML = "";
-	  retryBtn.style.display = "none";
-	  nextBtn.style.display = "none";
-	  battleBtn.style.display = "none";
-	  document.getElementById("leaveBtn").style.display = "none";
+      try {
+        const res = await fetch(`${API}/battle_dungeon`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user: userId, dungeon, layer })
+        });
+        const data = await res.json();
+        const log = data.battle_log;
+        if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
 
-	  try {
-		const res = await fetch(`${API}/battle_dungeon`, {
-		  method: "POST",
-		  headers: { "Content-Type": "application/json" },
-		  body: JSON.stringify({ user: userId, dungeon, layer })
-		});
-		const data = await res.json();
-		const log = data.battle_log;
-		if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
+        // 確保進度條達到 100% 後再隱藏載入畫面
+        setTimeout(() => {
+          showBattleLoading(false);
+          playBattleLog(log).then(() => {
+            // 戰鬥 log 播放完成後的處理
+            if (data.success) {
+              fetchUser(userId).then(updatedUser => {
+                userDiv.innerText = formatStats(updatedUser);
+              });
 
-		await playBattleLog(log);  // ✅ 播放 log 結束後才顯示按鈕
-		
-		if (data.success) {
-		  const updatedUser = await fetchUser(userId);
-		  userDiv.innerText = formatStats(updatedUser);
+              if (data.is_last_layer) {
+                document.getElementById("leaveBtn").style.display = "inline-block";
+              } else {
+                retryBtn.style.display = "inline-block";
+                retryBtn.onclick = () => startBattle();
+                nextBtn.style.display = "inline-block";
+                nextBtn.onclick = () => {
+                  window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
+                };
+              }
+              
+              const winMsg = document.createElement("div");
+              winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
+              logArea.appendChild(winMsg);
 
-		  if (data.is_last_layer) {
-			document.getElementById("leaveBtn").style.display = "inline-block";
-		  } else {
-			retryBtn.style.display = "inline-block";
-			retryBtn.onclick = () => startBattle();
-			nextBtn.style.display = "inline-block";
-			nextBtn.onclick = () => {
-			  window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
-			};
-		  }
-		  
-		  const lastRound = log[log.length - 1];
+              if (data.rewards) {
+                const { exp, leveled_up, drops } = data.rewards;
+                fetch(`${API}/items`).then(res => res.json()).then(itemMap => {
+                  const rewardLog = document.createElement("div");
+                  rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
+                    (leveled_up ? `<br><span style='color:red'>等級提升！</span>` : "") +
+                    drops.filter(d => Math.random() <= d.rate).map(d => {
+                      const meta = itemMap[d.id] || { name: d.id, special: 0 };
+                      if (meta.special === 2) return `<br><span style='color:crimson'>【超稀有】${meta.name} × ${d.value}</span>`;
+                      if (meta.special === 1) return `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${d.value}</span>`;
+                      return `<br>${meta.name} × ${d.value}`;
+                    }).join("");
+                  logArea.appendChild(rewardLog);
+                });
+              }
 
-		  const winMsg = document.createElement("div");
-		  winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
-		  logArea.appendChild(winMsg);
+            } else {
+              const loseMsg = document.createElement("div");
+              loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
+              logArea.appendChild(loseMsg);
+              const failMsg = document.createElement("div");
+              failMsg.innerHTML = `<br>❌ ${data.message}`;
+              logArea.appendChild(failMsg);
+              document.getElementById("leaveBtn").style.display = "inline-block";
+            }
+          });
+        }, 1000); // 給一點時間讓進度條完成
 
-		  if (data.rewards) {
-			const { exp, leveled_up, drops } = data.rewards;
-			const itemRes = await fetch(`${API}/items`);
-			const itemMap = await itemRes.json();
-			const rewardLog = document.createElement("div");
-			rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
-			  (leveled_up ? `<br><span style='color:red'>等級提升！</span>` : "") +
-			  drops.filter(d => Math.random() <= d.rate).map(d => {
-				const meta = itemMap[d.id] || { name: d.id, special: 0 };
-				if (meta.special === 2) return `<br><span style='color:crimson'>【超稀有】${meta.name} × ${d.value}</span>`;
-				if (meta.special === 1) return `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${d.value}</span>`;
-				return `<br>${meta.name} × ${d.value}`;
-			  }).join("");
-			logArea.appendChild(rewardLog);
-		  }
+      } catch (err) {
+        showBattleLoading(false);
+        logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
+        document.getElementById("leaveBtn").style.display = "inline-block";
+      }
+    };
 
-		} else {
-		  const loseMsg = document.createElement("div");
-		  loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
-		  logArea.appendChild(loseMsg);
-		  const failMsg = document.createElement("div");
-		  failMsg.innerHTML = `<br>❌ ${data.message}`;
-		  logArea.appendChild(failMsg);
-		  document.getElementById("leaveBtn").style.display = "inline-block";
-		}
+    function playBattleLog(log) {
+      return new Promise((resolve) => {
+        logArea.innerHTML = "";
+        let roundIndex = 0;
+        let actionIndex = 0;
 
-	  } catch (err) {
-		logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
-	  } finally {
-		showLoading(false);
-	  }
-	};
+        function nextLine() {
+          if (roundIndex >= log.length) {
+            clearInterval(player);
+            resolve();
+            return;
+          }
 
+          const round = log[roundIndex];
+          if (actionIndex === 0) {
+            const roundTitle = document.createElement("div");
+            roundTitle.innerHTML = `<span style='color:#ffa500'>────────────── 第 ${round.round} 回合 ──────────────</span>`;
+            logArea.appendChild(roundTitle);
+          }
 
-	function playBattleLog(log) {
-	  return new Promise((resolve) => {
-		logArea.innerHTML = "";
-		let roundIndex = 0;
-		let actionIndex = 0;
-		showLoading(false);
+          const line = round.actions[actionIndex];
+          const entry = document.createElement("div");
+          entry.textContent = line;
+          logArea.appendChild(entry);
+          logArea.scrollTop = logArea.scrollHeight;
 
-		function nextLine() {
-		  if (roundIndex >= log.length) {
-			clearInterval(player);
-			resolve(); // ✅ 播放完成
-			return;
-		  }
+          actionIndex++;
+          if (actionIndex >= round.actions.length) {
+            roundIndex++;
+            actionIndex = 0;
+          }
+        }
 
-		  const round = log[roundIndex];
-		  if (actionIndex === 0) {
-			const roundTitle = document.createElement("div");
-			roundTitle.innerHTML = `<span style='color:#ffa500'>────────────── 第 ${round.round} 回合 ──────────────</span>`;
-			logArea.appendChild(roundTitle);
-		  }
+        const player = setInterval(nextLine, 400);
+      });
+    }
 
-		  const line = round.actions[actionIndex];
-		  const entry = document.createElement("div");
-		  entry.textContent = line;
-		  logArea.appendChild(entry);
-		  logArea.scrollTop = logArea.scrollHeight;
-
-		  actionIndex++;
-		  if (actionIndex >= round.actions.length) {
-			roundIndex++;
-			actionIndex = 0;
-		  }
-		}
-
-		const player = setInterval(nextLine, 400);  // 每行間隔 400ms
-	  });
-	}
-
-	firebase.auth().onAuthStateChanged(async user => {
-	  if (user) {
-		userId = user.email;
-		await fetchProgress();        // ✅ 先抓目前進度
-		retryBtn.onclick = () => {
-			startBattle();
-		};
-		loadLayer();                  // ✅ 然後載入該層
-	  } else {
-		location.href = "/SFL/login.html";
-	  }
-	});
+    firebase.auth().onAuthStateChanged(async user => {
+      if (user) {
+        userId = user.email;
+        await fetchProgress();
+        retryBtn.onclick = () => {
+          startBattle();
+        };
+        loadLayer();
+      } else {
+        location.href = "/SFL/login.html";
+      }
+    });
   </script>
   <div id="footer-placeholder"></div>
   <script>
