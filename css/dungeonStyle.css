@@ -26,6 +26,29 @@ body {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
+#dungeonList {
+  margin-top: 100px; /* 避免被 topbar 蓋住 */
+}
+
+.dungeon-card-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.dungeon-card-inner img {
+  max-width: 200px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.dungeon-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
 .dungeon-card {
   display: flex;
   flex-direction: row;
@@ -43,10 +66,6 @@ body {
   max-width: 200px;
   border-radius: 12px;
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-}
-
-.dungeon-info {
-  flex: 1;
 }
 
 .dungeon-info h2 {
