@@ -59,6 +59,10 @@ def get_item_map():
         }
     return result
 
+@app.route("/exp_table")
+def exp_table():
+    return jsonify(get_level_exp())
+
 # 確認存活用
 @app.route("/ping")
 def ping():
