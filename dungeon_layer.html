@@ -225,114 +225,141 @@
 
     // ✅ dungeon_layer.html 部分片段修改
 
-let currentProgress = 0; // 目前副本進度
+	let currentProgress = 0; // 目前副本進度
 
-async function fetchProgress() {
-  const res = await fetch(`${API}/get_progress?user=${encodeURIComponent(userId)}`);
-  const data = await res.json();
-  currentProgress = data.progress?.[dungeon] ?? 0;
-  return data;
-}
+	async function fetchProgress() {
+	  const res = await fetch(`${API}/get_progress?user=${encodeURIComponent(userId)}`);
+	  const data = await res.json();
+	  currentProgress = data.progress?.[dungeon] ?? 0;
+	  return data;
+	}
 
-function checkProgressBeforeBattle() {
-  if (layer > currentProgress) {
-    alert("層數異常（尚未解鎖），請重新進入副本");
-    window.location.href = "dungeons.html";
-    return false;
-  }
-  return true;
-}
+	function checkProgressBeforeBattle() {
+	  if (layer > currentProgress) {
+		alert("層數異常（尚未解鎖），請重新進入副本");
+		window.location.href = "dungeons.html";
+		return false;
+	  }
+	  return true;
+	}
 
-window.startBattle = async function () {
-  if (!checkProgressBeforeBattle()) return;
-  showLoading(true);
-  logArea.innerHTML = "";
-  retryBtn.style.display = "none";
-  nextBtn.style.display = "none";
-  try {
-    const res = await fetch(`${API}/battle_dungeon`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user: userId, dungeon, layer })
-    });
-    const data = await res.json();
-    const log = data.battle_log || data.result;
-    if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
+	window.startBattle = async function () {
+	  if (!checkProgressBeforeBattle()) return;
+	  showLoading(true);
+	  logArea.innerHTML = "";
+	  retryBtn.style.display = "none";
+	  nextBtn.style.display = "none";
+	  battleBtn.style.display = "none";
+	  document.getElementById("leaveBtn").style.display = "none";
 
-    let html = log.join("\n");
+	  try {
+		const res = await fetch(`${API}/battle_dungeon`, {
+		  method: "POST",
+		  headers: { "Content-Type": "application/json" },
+		  body: JSON.stringify({ user: userId, dungeon, layer })
+		});
+		const data = await res.json();
+		const log = data.battle_log;
+		if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
 
-    if (data.success) {
-      html = `✅ 戰鬥勝利！\n` + html;
-      battleBtn.style.display = "none"; // 隱藏戰鬥開始按鈕
+		await playBattleLog(log);  // ✅ 播放 log 結束後才顯示按鈕
 
-      // 更新角色資訊
-      const updatedUser = await fetchUser(userId);
-      userDiv.innerText = formatStats(updatedUser);
+		if (data.success) {
+		  const updatedUser = await fetchUser(userId);
+		  userDiv.innerText = formatStats(updatedUser);
 
-      if (data.is_last_layer) {
-        retryBtn.style.display = "none";
-        document.getElementById("leaveBtn").style.display = "inline-block";
-      } else {
-        retryBtn.style.display = "inline-block";
-        retryBtn.onclick = () => startBattle();
-      }
+		  if (data.is_last_layer) {
+			document.getElementById("leaveBtn").style.display = "inline-block";
+		  } else {
+			retryBtn.style.display = "inline-block";
+			retryBtn.onclick = () => startBattle();
+			nextBtn.style.display = "inline-block";
+			nextBtn.onclick = () => {
+			  window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
+			};
+		  }
 
-      if (data.rewards) {
-        const { exp, leveled_up, drops } = data.rewards;
-        html += `\n[獲得經驗值] EXP + ${exp}`;
-        if (leveled_up) html += `\n<span style='color:red'>等級提升！達至 ${data.user.level} 級。</span>`;
-        if (Array.isArray(drops) && drops.length > 0) {
-          const itemRes = await fetch(`${API}/items`);
-          const itemMap = await itemRes.json();
-          html += `\n[戰利品]`;
-          for (const drop of drops) {
-            if (Math.random() <= drop.rate) {
-              const meta = itemMap[drop.id] || { name: drop.id, special: 0 };
-              if (meta.special == 1) html += `\n<span style='color:cornflowerblue'>【恭喜】獲得稀有道具 ${meta.name} ${drop.value}個</span>`;
-              else if (meta.special == 2) html += `\n<span style='color:crimson'>【恭喜】獲得超稀有道具 ${meta.name} ${drop.value}個</span>`;
-              else html += `\n獲得 ${meta.name} ${drop.value}個`;
-            }
-          }
-        }
-      }
-    } else {
-      html = `💀 戰鬥失敗！\n` + html + `\n❌ ${data.message}`;
-      retryBtn.style.display = "none";     // ⛔ 隱藏再戰
-      nextBtn.style.display = "none";      // ⛔ 隱藏下一層
-      battleBtn.style.display = "none";    // ⛔ 隱藏開始戰鬥
-    
-      // ✅ 顯示「離開副本」按鈕
-      const leaveBtn = document.getElementById("leaveBtn");
-      if (leaveBtn) leaveBtn.style.display = "inline-block";
-    }
+		  if (data.rewards) {
+			const { exp, leveled_up, drops } = data.rewards;
+			const itemRes = await fetch(`${API}/items`);
+			const itemMap = await itemRes.json();
+			const rewardLog = document.createElement("div");
+			rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
+			  (leveled_up ? `<br><span style='color:red'>等級提升！</span>` : "") +
+			  drops.filter(d => Math.random() <= d.rate).map(d => {
+				const meta = itemMap[d.id] || { name: d.id, special: 0 };
+				if (meta.special === 2) return `<br><span style='color:crimson'>【超稀有】${meta.name} × ${d.value}</span>`;
+				if (meta.special === 1) return `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${d.value}</span>`;
+				return `<br>${meta.name} × ${d.value}`;
+			  }).join("");
+			logArea.appendChild(rewardLog);
+		  }
 
-    logArea.innerHTML = html.replace(/\n/g, "<br>");
-    
-    if (data.success && !data.is_last_layer) {
-      nextBtn.style.display = "inline-block";
-      nextBtn.onclick = () => {
-        window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
-      };
-    }
-  } catch (err) {
-    logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
-  } finally {
-    showLoading(false);
-  }
-};
+		} else {
+		  const failMsg = document.createElement("div");
+		  failMsg.innerHTML = `<br>❌ ${data.message}`;
+		  logArea.appendChild(failMsg);
+		  document.getElementById("leaveBtn").style.display = "inline-block";
+		}
 
-firebase.auth().onAuthStateChanged(async user => {
-  if (user) {
-    userId = user.email;
-    await fetchProgress();        // ✅ 先抓目前進度
-    retryBtn.onclick = () => {
-        startBattle();
-    };
-    loadLayer();                  // ✅ 然後載入該層
-  } else {
-    location.href = "/SFL/login.html";
-  }
-});
+	  } catch (err) {
+		logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
+	  } finally {
+		showLoading(false);
+	  }
+	};
+
+
+	function playBattleLog(log) {
+	  return new Promise((resolve) => {
+		logArea.innerHTML = "";
+		let roundIndex = 0;
+		let actionIndex = 0;
+		showLoading(false);
+
+		function nextLine() {
+		  if (roundIndex >= log.length) {
+			clearInterval(player);
+			resolve(); // ✅ 播放完成
+			return;
+		  }
+
+		  const round = log[roundIndex];
+		  if (actionIndex === 0) {
+			const roundTitle = document.createElement("div");
+			roundTitle.innerHTML = `<span style='color:#ffa500'>────────────── 第 ${round.round} 回合 ──────────────</span>`;
+			logArea.appendChild(roundTitle);
+		  }
+
+		  const line = round.actions[actionIndex];
+		  const entry = document.createElement("div");
+		  entry.textContent = line;
+		  logArea.appendChild(entry);
+		  logArea.scrollTop = logArea.scrollHeight;
+
+		  actionIndex++;
+		  if (actionIndex >= round.actions.length) {
+			roundIndex++;
+			actionIndex = 0;
+		  }
+		}
+
+		const player = setInterval(nextLine, 400);  // 每行間隔 400ms
+	  });
+	}
+
+	firebase.auth().onAuthStateChanged(async user => {
+	  if (user) {
+		userId = user.email;
+		await fetchProgress();        // ✅ 先抓目前進度
+		retryBtn.onclick = () => {
+			startBattle();
+		};
+		loadLayer();                  // ✅ 然後載入該層
+	  } else {
+		location.href = "/SFL/login.html";
+	  }
+	});
   </script>
   <div id="footer-placeholder"></div>
   <script>
