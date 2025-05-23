@@ -188,7 +188,7 @@ def player_attack(user, monster, skill, multiplier, user_stats_mod, mon_stats_mo
         log.append(f"你使用 {skill['name']} 但未命中")
         return 0
 
-def simulate_battle(user, monster, skill_data_dict):
+def simulate_battle(user, monster, user_skill_dict):
     log = []
     db = firestore.client()
 
@@ -241,7 +241,6 @@ def simulate_battle(user, monster, skill_data_dict):
                 break
 
             if actor == "user":
-                # 技能冷卻 -1
                 for sid in player_skill_cd:
                     if player_skill_cd[sid] > 0:
                         player_skill_cd[sid] -= 1
@@ -251,17 +250,17 @@ def simulate_battle(user, monster, skill_data_dict):
 
                 any_skill_used = False
 
-                # ✅ 技能依照 sort 排序後施放
                 user_skill_levels = user.get("skills", {})
                 sorted_skills = sorted(
-                    [(sid, level) for sid, level in user_skill_levels.items() if sid in skill_data_dict],
-                    key=lambda pair: skill_data_dict[pair[0]].get("sort", 9999)
+                    [(sid, level) for sid, level in user_skill_levels.items() if sid in user_skill_dict],
+                    key=lambda pair: user_skill_dict[pair[0]].get("sort", 9999)
                 )
 
                 for skill_id, level in sorted_skills:
                     if level <= 0 or player_skill_cd.get(skill_id, 0) > 0:
                         continue
-                    skill = skill_data_dict.get(skill_id)
+
+                    skill = user_skill_dict.get(skill_id)
                     if not skill:
                         continue
 
@@ -270,8 +269,10 @@ def simulate_battle(user, monster, skill_data_dict):
 
                     if skill_type == "heal":
                         heal = int(user["base_stats"]["hp"] * 0.1 * multiplier)
+                        old_hp = user_hp
                         user_hp = min(user_hp + heal, user["base_stats"]["hp"])
-                        log.append(f"你使用 {skill['name']} 回復了 {heal} 點生命值（目前 HP：{user_hp}/{user['base_stats']['hp']}）")
+                        log.append(f"你使用 {skill['name']} 回復了 {user_hp - old_hp} 點生命值（目前 HP：{user_hp}/{user['base_stats']['hp']}）")
+
                     elif skill_type == "buff":
                         buff = {
                             "name": skill["name"],
@@ -282,8 +283,9 @@ def simulate_battle(user, monster, skill_data_dict):
                         }
                         add_or_refresh_buff(user_buffs, buff)
                         log.append(f"你施放了 {buff['name']} ，自身獲得強化")
+
                     elif skill_type == "debuff":
-                        if calculate_hit(user["base_stats"]["accuracy"], monster["stats"]["evade"], user["base_stats"]["luck"]):
+                        if calculate_hit(user["base_stats"]["accuracy"], monster["stats"].get("evade", 0), user["base_stats"]["luck"]):
                             debuff = {
                                 "name": skill["name"],
                                 "description": skill["description"],
@@ -295,6 +297,7 @@ def simulate_battle(user, monster, skill_data_dict):
                             log.append(f"你對 {monster['name']} 施放了 {debuff['name']} ，造成減益效果")
                         else:
                             log.append(f"你對 {monster['name']} 施放 {skill['name']} 但未命中")
+
                     elif skill_type == "atk":
                         if calculate_hit(user["base_stats"]["accuracy"] * user_stats_mod["accuracy"],
                                          monster["stats"]["evade"] * mon_stats_mod["evade"],
@@ -312,7 +315,6 @@ def simulate_battle(user, monster, skill_data_dict):
                     player_skill_cd[skill_id] = skill.get("cd", 0) + 1
                     any_skill_used = True
 
-                # ❗如果沒放出技能，使用普通攻擊
                 if not any_skill_used:
                     if calculate_hit(user["base_stats"]["accuracy"] * user_stats_mod["accuracy"],
                                      monster["stats"]["evade"] * mon_stats_mod["evade"],
@@ -327,16 +329,13 @@ def simulate_battle(user, monster, skill_data_dict):
                         log.append("你使用 普通攻擊 但未命中")
 
             else:
-                # ✅ 怪物技能冷卻扣除
                 for sid in monster_skill_cd:
                     if monster_skill_cd[sid] > 0:
                         monster_skill_cd[sid] -= 1
 
                 mon_stats_mod, mon_buffs, buff_log = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
-
                 skill = pick_monster_skill(monster.get("skills", []), monster_skill_cd)
 
-                # ✅ 設定冷卻（普通攻擊不設）
                 if skill.get("id") != "basic_attack":
                     monster_skill_cd[skill["id"]] = skill.get("cd", 0) + 1
 
@@ -358,9 +357,9 @@ def simulate_battle(user, monster, skill_data_dict):
                     add_or_refresh_buff(mon_buffs, buff)
                     log.append(f"{monster['name']} 施放了 {buff['description']} ，自身獲得強化")
                 elif skill_type == "debuff":
-                    if calculate_hit(monster["stats"].get("accuracy", 1.0) * mon_stats_mod.get("accuracy", 1.0),
-                                     user["base_stats"].get("evade", 0) * user_stats_mod.get("evade", 1.0),
-                                     monster["stats"].get("luck", 0)):
+                    if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                                     user["base_stats"]["evade"] * user_stats_mod["evade"],
+                                     monster["stats"]["luck"]):
                         debuff = {
                             "name": skill["description"],
                             "description": skill["description"],
@@ -373,21 +372,19 @@ def simulate_battle(user, monster, skill_data_dict):
                     else:
                         log.append(f"{monster['name']} 對你施放 {skill['description']} 但未命中")
                 elif skill_type == "atk":
-                    if calculate_hit(monster["stats"].get("accuracy", 1.0) * mon_stats_mod.get("accuracy", 1.0),
-                                     user["base_stats"].get("evade", 0) * user_stats_mod.get("evade", 1.0),
-                                     monster["stats"].get("luck", 0)):
+                    if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                                     user["base_stats"]["evade"] * user_stats_mod["evade"],
+                                     monster["stats"]["luck"]):
                         ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
-                        atk = monster["stats"].get("attack", 0) * mon_stats_mod.get("attack", 1.0)
-                        shield = user["base_stats"].get("shield", 0) * user_stats_mod.get("shield", 1.0)
+                        atk = monster["stats"]["attack"] * mon_stats_mod["attack"]
+                        shield = user["base_stats"]["shield"] * user_stats_mod["shield"]
                         dmg = calculate_damage(atk, skill["multiplier"], monster["stats"].get("phys_bonus", 0), shield)
-                        dmg = round(dmg * mon_level_mod * ele_mod * mon_stats_mod.get("all_damage", 1.0))
-                        user_hp -= dmg
-                        user_hp = max(user_hp, 0)
+                        dmg = round(dmg * mon_level_mod * ele_mod * mon_stats_mod["all_damage"])
+                        user_hp = max(user_hp - dmg, 0)
                         log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user['base_stats']['hp']}）")
                     else:
                         log.append(f"{monster['name']} 攻擊未命中")
-                
-                # buff效果log
+
                 log.extend(buff_log)
 
     outcome = "win" if user_hp > 0 and mon_hp <= 0 else "lose"
@@ -409,92 +406,3 @@ def simulate_battle(user, monster, skill_data_dict):
         "user": user,
         "rewards": rewards if outcome == "win" else None
     }
-
-
-
-# 戰鬥
-# def simulate_battle(user, monster):
-    # log = []
-    # db = firestore.client()
-
-    # user_hp = user["base_stats"]["hp"]
-    # mon_hp = monster["stats"]["hp"]
-
-    # user_speed = user["base_stats"].get("atk_speed", 100)
-    # mon_speed = monster["stats"].get("atk_speed", 100)
-
-    # while user_hp > 0 and mon_hp > 0:
-        # user_turns = max(1, round(user_speed / mon_speed))
-        # mon_turns = max(1, round(mon_speed / user_speed))
-
-        # # 攻速比較
-        # action_order = []
-        # if user_speed >= mon_speed:
-            # action_order.extend(["user"] * user_turns + ["mon"] * mon_turns)
-        # else:
-            # action_order.extend(["mon"] * mon_turns + ["user"] * user_turns)
-
-        # # 等差增減傷
-        # user_level_mod = level_damage_modifier(user["level"], monster["level"])
-        # monster_level_mod = level_damage_modifier(monster["level"], user["level"])
-
-        # for actor in action_order:
-            # if user_hp <= 0 or mon_hp <= 0:
-                # break
-
-            # if actor == "user":
-                # for skill_id, level in user.get("skills", {}).items():
-                    # if mon_hp <= 0:
-                        # break
-
-                    # skill_doc = db.collection("skills").document(skill_id).get()
-                    # if not skill_doc.exists:
-                        # continue
-                    # skill = skill_doc.to_dict()
-                    # multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
-
-                    # if calculate_hit(user["base_stats"]["accuracy"], monster["stats"]["evade"], user["base_stats"]["luck"]):
-                        
-                        # dmg = calculate_damage(user["base_stats"]["attack"], multiplier, user["buffs"]["phys_bonus"], monster["stats"]["shield"])
-
-                        # # 屬性克制
-                        # ele_mod = get_element_multiplier(skill.get("element", []), monster.get("element", []))
-                        
-                        # dmg = round(dmg * user_level_mod * ele_mod) # 傷害 * 等差增減傷 * 屬性克制
-                        # mon_hp -= dmg
-                        # log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害")
-                    # else:
-                        # log.append(f"你使用 {skill['name']} 但未命中")
-            # else:
-                # skill = pick_monster_skill(monster.get("skills", []))
-                # if calculate_hit(monster["stats"]["accuracy"], user["base_stats"]["evade"], monster["stats"]["luck"]):
-                    
-                    # dmg = calculate_damage(monster["stats"]["attack"], skill["multiplier"], monster["stats"].get("phys_bonus", 0), user["base_stats"]["shield"])
-
-                    # # 屬性克制
-                    # ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
-                    
-                    # dmg = round(dmg * monster_level_mod * ele_mod) # 傷害 * 等差增減傷 * 屬性克制
-                    
-                    # user_hp -= dmg
-                    # log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害")
-                # else:
-                    # log.append(f"{monster['name']} 攻擊未命中")
-
-    # outcome = "win" if user_hp > 0 else "lose"
-    # rewards = {}
-
-    # if outcome == "win":
-        # user["exp"] += monster["exp"]
-        # leveled = check_level_up(user)
-        # apply_drops(db, user["user_id"], monster["drops"])
-        # rewards["exp"] = monster["exp"]
-        # rewards["leveled_up"] = leveled
-        # rewards["drops"] = monster["drops"]
-
-    # return {
-        # "result": outcome,
-        # "battle_log": log,
-        # "user": user,
-        # "rewards": rewards if outcome == "win" else None
-    # }
