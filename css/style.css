@@ -538,13 +538,13 @@
     .battle-tips {
       margin-top: 40px;
       font-size: 1em;
-      color: #a0a0a0;
+      color: #ffffcc;
       line-height: 1.8;
       font-weight: 400;
     }
     
     .battle-tips.boss {
-      color: #ff6b6b;
+      color: #b8e6ff;
       font-weight: 600;
       animation: tipsPulse 2s ease-in-out infinite;
     }
