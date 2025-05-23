@@ -51,7 +51,7 @@
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(135deg, #2d1b69, #11998e, #38ef7d);
-      display: none;
+      display: flex;
       justify-content: center;
       align-items: center;
       z-index: 9999;
@@ -261,7 +261,7 @@
     </div>
   </div>
 
-  <!-- 頁面載入遮罩 -->
+  <!-- 頁面載入遮罩 - 立即顯示 -->
   <div id="loadingOverlay">
     <div class="particles" id="pageParticles"></div>
     <div class="battle-loading-container">
@@ -280,6 +280,75 @@
       </div>
     </div>
   </div>
+
+  <script>
+    // 立即開始頁面載入動畫
+    (function() {
+      // 創建頁面載入粒子效果
+      function createPageParticles() {
+        const particlesContainer = document.getElementById("pageParticles");
+        if (!particlesContainer) return;
+        
+        particlesContainer.innerHTML = "";
+        
+        for (let i = 0; i < 30; i++) {
+          const particle = document.createElement("div");
+          particle.className = "particle";
+          particle.style.left = Math.random() * 100 + "%";
+          particle.style.animationDelay = Math.random() * 4 + "s";
+          particle.style.animationDuration = (Math.random() * 2 + 3) + "s";
+          particle.style.background = `rgba(${Math.random() > 0.5 ? '56, 239, 125' : '17, 153, 142'}, 0.7)`;
+          particlesContainer.appendChild(particle);
+        }
+      }
+
+      // 頁面載入進度條動畫
+      function startPageLoadingProgress() {
+        const progressBar = document.getElementById("pageProgressBar");
+        const progressText = document.getElementById("pageProgressText");
+        const loadingText = document.getElementById("pageLoadingText");
+        
+        if (!progressBar || !progressText || !loadingText) return;
+        
+        const messages = [
+          "正在載入副本資料...",
+          "獲取玩家狀態...",
+          "載入怪物資訊...",
+          "準備戰鬥環境...",
+          "載入完成！"
+        ];
+        
+        let progress = 0;
+        let messageIndex = 0;
+        
+        const progressInterval = setInterval(() => {
+          progress += Math.random() * 20 + 10; // 每次增加 10-30%
+          if (progress > 100) progress = 100;
+          
+          progressBar.style.width = progress + "%";
+          progressText.textContent = Math.round(progress) + "%";
+          
+          // 更換載入文字
+          if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 20) {
+            messageIndex++;
+            loadingText.textContent = messages[messageIndex];
+          }
+          
+          if (progress >= 100) {
+            clearInterval(progressInterval);
+            loadingText.textContent = messages[messages.length - 1];
+          }
+        }, 300);
+        
+        // 儲存到全域變數以便後續控制
+        window.pageLoadingInterval = progressInterval;
+      }
+
+      // 立即執行
+      createPageParticles();
+      startPageLoadingProgress();
+    })();
+  </script>
   
   <!-- 戰鬥載入遮罩 -->
   <div id="battleLoadingOverlay">
@@ -347,67 +416,16 @@
     // 頁面載入畫面控制
     function showLoading(show) {
       loading.style.display = show ? "flex" : "none";
-      if (show) {
-        createPageParticles();
-        startPageLoadingProgress();
-      }
     }
 
-    // 創建頁面載入粒子效果
-    function createPageParticles() {
-      const particlesContainer = document.getElementById("pageParticles");
-      particlesContainer.innerHTML = "";
-      
-      for (let i = 0; i < 30; i++) {
-        const particle = document.createElement("div");
-        particle.className = "particle";
-        particle.style.left = Math.random() * 100 + "%";
-        particle.style.animationDelay = Math.random() * 4 + "s";
-        particle.style.animationDuration = (Math.random() * 2 + 3) + "s";
-        particle.style.background = `rgba(${Math.random() > 0.5 ? '56, 239, 125' : '17, 153, 142'}, 0.7)`;
-        particlesContainer.appendChild(particle);
+    // 隱藏頁面載入畫面
+    function hidePageLoading() {
+      if (window.pageLoadingInterval) {
+        clearInterval(window.pageLoadingInterval);
       }
-    }
-
-    // 頁面載入進度條動畫
-    function startPageLoadingProgress() {
-      const progressBar = document.getElementById("pageProgressBar");
-      const progressText = document.getElementById("pageProgressText");
-      const loadingText = document.getElementById("pageLoadingText");
-      
-      const messages = [
-        "正在載入副本資料...",
-        "獲取玩家狀態...",
-        "載入怪物資訊...",
-        "準備戰鬥環境...",
-        "載入完成！"
-      ];
-      
-      let progress = 0;
-      let messageIndex = 0;
-      
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 20 + 10; // 每次增加 10-30%
-        if (progress > 100) progress = 100;
-        
-        progressBar.style.width = progress + "%";
-        progressText.textContent = Math.round(progress) + "%";
-        
-        // 更換載入文字
-        if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 20) {
-          messageIndex++;
-          loadingText.textContent = messages[messageIndex];
-        }
-        
-        if (progress >= 100) {
-          clearInterval(progressInterval);
-          loadingText.textContent = messages[messages.length - 1];
-          // 頁面載入完成後自動隱藏
-          setTimeout(() => {
-            showLoading(false);
-          }, 500);
-        }
-      }, 300);
+      setTimeout(() => {
+        showLoading(false);
+      }, 500);
     }
 
     // 戰鬥載入畫面控制
@@ -530,7 +548,6 @@
     let levelExp = {};
 
     async function loadLayer() {
-      showLoading(true);
       try {
         // 讀取升級經驗表
         const expRes = await fetch(`${API}/exp_table`);
@@ -539,8 +556,8 @@
         const user = await fetchUser(userId);
         nicknameSpan.innerText = user.nickname || userId;
         userDiv.innerText = formatStats(user);
-		
-		// 讀取副本資料
+    
+        // 讀取副本資料
         const dungeonRes = await fetch(`${API}/dungeon_table`);
         const all = await dungeonRes.json();
 		
@@ -569,11 +586,13 @@
             <li>攻擊速度：${mon.stats.atk_speed}</li>
           </ul>
         `;
+        
+        // 所有資料載入完成後隱藏頁面載入畫面
+        hidePageLoading();
       } catch (err) {
         monsterDiv.innerHTML = "❌ 載入資料失敗";
         console.error(err);
-      } finally {
-        showLoading(false);
+        hidePageLoading();
       }
     }
 
