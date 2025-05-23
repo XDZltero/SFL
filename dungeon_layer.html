@@ -280,19 +280,10 @@
 		  }
 		  
 		  const lastRound = log[log.length - 1];
-		  const hasWin = lastRound.actions.some(line => line.includes("🌟"));
-		  const hasLose = lastRound.actions.some(line => line.includes("☠️"));
 
-		  if (!hasWin && data.success) {
-			const winMsg = document.createElement("div");
-			winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
-			logArea.appendChild(winMsg);
-		  }
-		  if (!hasLose && !data.success) {
-			const loseMsg = document.createElement("div");
-			loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
-			logArea.appendChild(loseMsg);
-		  }
+		  const winMsg = document.createElement("div");
+		  winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
+		  logArea.appendChild(winMsg);
 
 		  if (data.rewards) {
 			const { exp, leveled_up, drops } = data.rewards;
@@ -311,6 +302,9 @@
 		  }
 
 		} else {
+		  const loseMsg = document.createElement("div");
+		  loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
+		  logArea.appendChild(loseMsg);
 		  const failMsg = document.createElement("div");
 		  failMsg.innerHTML = `<br>❌ ${data.message}`;
 		  logArea.appendChild(failMsg);
