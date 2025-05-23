@@ -275,6 +275,12 @@ def battle_dungeon():
 
         if result["result"] == "win":
             if is_boss:
+                # ✅ 更新 ClearLog
+                clear_log = user_data.get("ClearLog", {})
+                clear_count = clear_log.get(dungeon_id, 0)
+                clear_log[dungeon_id] = clear_count + 1
+                db.collection("users").document(user_id).set({"ClearLog": clear_log}, merge=True)
+        
                 progress_ref.set({dungeon_id: 0}, merge=True)
             elif int(layer) >= current_layer:
                 progress_ref.set({dungeon_id: int(layer) + 1}, merge=True)
