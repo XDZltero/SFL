@@ -26,7 +26,18 @@
     <button onclick="logout()">🔓 登出</button>
   </div>
 
-  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
+  <script src="js/loading.js"></script>
+  <div id="loading-placeholder"></div>
+  <script>
+  fetch("loadingOverlay.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("loading-placeholder").innerHTML = html;
+      if (typeof startPageLoadingProgress === "function") {
+        startPageLoadingProgress();
+      }
+    });
+  </script>
 
   <h1>主畫面</h1>
 
