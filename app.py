@@ -59,13 +59,20 @@ def get_item_map():
         }
     return result
 
+# 獲得屬性表
 @app.route("/element_table")
 def element_table():
     return jsonify(get_element_table())
 
+# 獲得升級經驗表
 @app.route("/exp_table")
 def exp_table():
     return jsonify(get_level_exp())
+
+# 獲得副本資料
+@app.route("/dungeon_table")
+def dungeon_table():
+    return jsonify(get_dungeon_data())
 
 # 確認存活用
 @app.route("/ping")
