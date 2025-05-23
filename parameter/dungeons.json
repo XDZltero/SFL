@@ -26,7 +26,7 @@
     "name": "紫魔之城",
     "description": "學者、瘋子聚集在一起的王城，研究著一天突如其來壟罩整座城池的紫色魔力。",
     "bossId": "gaia",
-    "min_level": 10,
+    "min_level": 100,
     "image": "https://i.postimg.cc/hG07jRbw/dungeon-skycity.png",
     "monsters": ["sky_cow", "temple_guard", "temple_guard_elite", "griffin", "athena", "athena_true", "temple_golem"],
     "Pre-Task": "dungeon_skycity",
