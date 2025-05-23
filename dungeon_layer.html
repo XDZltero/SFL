@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>副本戰鬥</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script>
+<meta charset="utf-8"/>
+<title>副本戰鬥</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
     const firebaseConfig = {
       apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
       authDomain: "sfl-api-f0290.firebaseapp.com",
@@ -13,695 +14,65 @@
     };
     firebase.initializeApp(firebaseConfig);
   </script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-    
-    * { box-sizing: border-box; }
-    
-    body {
-      font-family: 'Orbitron', sans-serif;
-      padding: 0;
-      margin: 0;
-      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
-      color: #fff;
-      overflow-x: hidden;
-    }
-    
-    /* 動態背景效果 */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 226, 0.2) 0%, transparent 50%);
-      animation: backgroundFlow 20s ease-in-out infinite;
-      z-index: -2;
-    }
-    
-    @keyframes backgroundFlow {
-      0%, 100% { transform: rotate(0deg) scale(1); }
-      33% { transform: rotate(120deg) scale(1.1); }
-      66% { transform: rotate(240deg) scale(0.9); }
-    }
-    
-    /* BOSS模式特殊背景 */
-    body.boss-mode::before {
-      background: 
-        radial-gradient(circle at 30% 70%, rgba(255, 50, 50, 0.4) 0%, transparent 50%),
-        radial-gradient(circle at 70% 30%, rgba(255, 100, 0, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(139, 0, 0, 0.3) 0%, transparent 50%);
-      animation: bossBackgroundPulse 3s ease-in-out infinite;
-    }
-    
-    @keyframes bossBackgroundPulse {
-      0%, 100% { opacity: 0.6; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.05); }
-    }
-    
-    /* 頂部欄位 */
-    #topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(25, 25, 55, 0.95) 100%);
-      backdrop-filter: blur(10px);
-      padding: 15px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid rgba(0, 255, 255, 0.3);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-      font-size: 0.95em;
-      z-index: 1000;
-    }
-    
-    #topbar .user-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #00ffff;
-      text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-    }
-    
-    #topbar .controls {
-      display: flex;
-      gap: 10px;
-    }
-    
-    #topbar button {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      padding: 8px 16px;
-      border-radius: 20px;
-      color: white;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-    
-    #topbar button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    }
-    
-    /* 主要內容區域 */
-    #content {
-      display: flex;
-      padding: 30px 20px;
-      gap: 30px;
-      margin-top: 80px;
-      min-height: calc(100vh - 200px);
-    }
-    
-    .section {
-      flex: 1;
-      background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(0, 255, 255, 0.2);
-      border-radius: 15px;
-      padding: 25px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .section::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
-      animation: sectionShine 4s ease-in-out infinite;
-    }
-    
-    @keyframes sectionShine {
-      0%, 100% { transform: translateX(-100%); }
-      50% { transform: translateX(100%); }
-    }
-    
-    /* BOSS模式特殊樣式 */
-    body.boss-mode .section {
-      background: linear-gradient(135deg, rgba(50, 15, 15, 0.8) 0%, rgba(80, 25, 25, 0.6) 100%);
-      border: 1px solid rgba(255, 50, 50, 0.4);
-      box-shadow: 0 8px 32px rgba(255, 0, 0, 0.2);
-    }
-    
-    body.boss-mode .section::before {
-      background: linear-gradient(45deg, transparent 30%, rgba(255, 50, 50, 0.1) 50%, transparent 70%);
-    }
-    
-    /* 怪物資訊區域特殊效果 */
-    #monsterInfo {
-      position: relative;
-    }
-    
-    #monsterInfo.boss {
-      background: linear-gradient(135deg, rgba(139, 0, 0, 0.9) 0%, rgba(255, 69, 0, 0.7) 100%);
-      border: 2px solid rgba(255, 69, 0, 0.6);
-      box-shadow: 0 0 30px rgba(255, 69, 0, 0.4);
-      animation: bossPulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes bossPulse {
-      0%, 100% { 
-        box-shadow: 0 0 30px rgba(255, 69, 0, 0.4);
-        transform: scale(1);
-      }
-      50% { 
-        box-shadow: 0 0 50px rgba(255, 69, 0, 0.8);
-        transform: scale(1.02);
-      }
-    }
-    
-    .boss-title {
-      position: relative;
-      text-align: center;
-      font-size: 2em;
-      font-weight: 900;
-      color: #ff4500;
-      text-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
-      margin-bottom: 20px;
-      animation: bossTextGlow 1.5s ease-in-out infinite alternate;
-    }
-    
-    @keyframes bossTextGlow {
-      from { text-shadow: 0 0 20px rgba(255, 69, 0, 0.8); }
-      to { text-shadow: 0 0 40px rgba(255, 69, 0, 1), 0 0 60px rgba(255, 69, 0, 0.5); }
-    }
-    
-    .boss-title::before {
-      content: '👑';
-      position: absolute;
-      left: -50px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 1.2em;
-      animation: crownSpin 3s linear infinite;
-    }
-    
-    .boss-title::after {
-      content: '👑';
-      position: absolute;
-      right: -50px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 1.2em;
-      animation: crownSpin 3s linear infinite reverse;
-    }
-    
-    @keyframes crownSpin {
-      0% { transform: translateY(-50%) rotate(0deg); }
-      100% { transform: translateY(-50%) rotate(360deg); }
-    }
-    
-    /* 戰鬥紀錄區域 */
-    #logArea {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(0, 255, 255, 0.2);
-      border-radius: 10px;
-      padding: 15px;
-      max-height: 400px;
-      overflow-y: auto;
-      font-family: 'Courier New', monospace;
-      line-height: 1.6;
-    }
-    
-    body.boss-mode #logArea {
-      border-color: rgba(255, 50, 50, 0.3);
-      background: rgba(50, 0, 0, 0.3);
-    }
-    
-    /* 按鈕區域 */
-    #footer {
-      padding: 30px;
-      text-align: center;
-    }
-    
-    #footer button {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      padding: 15px 30px;
-      margin: 10px;
-      border-radius: 25px;
-      color: white;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 700;
-      font-size: 1.1em;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    #footer button::before {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%; right: 0; bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.5s ease;
-    }
-    
-    #footer button:hover::before {
-      left: 100%;
-    }
-    
-    #footer button:hover {
-      transform: translateY(-3px) scale(1.05);
-      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
-    }
-    
-    #battleBtn {
-      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-      font-size: 1.3em;
-      padding: 18px 40px;
-    }
-    
-    #battleBtn:hover {
-      box-shadow: 0 10px 30px rgba(255, 107, 107, 0.6);
-    }
-    
-    /* BOSS戰特殊按鈕 */
-    body.boss-mode #battleBtn {
-      background: linear-gradient(135deg, #ff4500 0%, #dc143c 100%);
-      box-shadow: 0 6px 20px rgba(255, 69, 0, 0.6);
-      animation: bossBattleButtonPulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes bossBattleButtonPulse {
-      0%, 100% { 
-        transform: scale(1);
-        box-shadow: 0 6px 20px rgba(255, 69, 0, 0.6);
-      }
-      50% { 
-        transform: scale(1.05);
-        box-shadow: 0 10px 40px rgba(255, 69, 0, 0.8);
-      }
-    }
-    
-    /* 載入遮罩效果增強 */
-    #loadingOverlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, #2d1b69, #11998e, #38ef7d);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      color: white;
-      font-family: 'Orbitron', sans-serif;
-      overflow: hidden;
-    }
-    
-    #loadingOverlay::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: 
-        radial-gradient(circle at 30% 40%, rgba(56, 239, 125, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 70% 60%, rgba(17, 153, 142, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 50% 20%, rgba(45, 27, 105, 0.2) 0%, transparent 50%);
-      animation: pageGlow 3s ease-in-out infinite;
-    }
-    
-    @keyframes pageGlow {
-      0%, 100% { opacity: 0.4; transform: scale(1); }
-      50% { opacity: 0.8; transform: scale(1.1); }
-    }
-    
-    /* BOSS戰鬥載入遮罩 */
-    #battleLoadingOverlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-      color: white;
-      font-family: 'Orbitron', sans-serif;
-      overflow: hidden;
-    }
-    
-    #battleLoadingOverlay.boss-battle {
-      background: linear-gradient(135deg, #2d1b69, #8b0000, #ff4500);
-    }
-    
-    #battleLoadingOverlay.boss-battle::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: 
-        radial-gradient(circle at 25% 25%, rgba(255, 0, 0, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 75% 75%, rgba(255, 69, 0, 0.2) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(139, 0, 0, 0.4) 0%, transparent 50%);
-      animation: bossBattleGlow 2s ease-in-out infinite;
-    }
-    
-    @keyframes bossBattleGlow {
-      0%, 100% { 
-        opacity: 0.7; 
-        transform: scale(1) rotate(0deg); 
-      }
-      50% { 
-        opacity: 1; 
-        transform: scale(1.2) rotate(180deg); 
-      }
-    }
-    
-    #battleLoadingOverlay::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: 
-        radial-gradient(circle at 20% 50%, rgba(255, 100, 100, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(100, 100, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 80%, rgba(255, 255, 100, 0.1) 0%, transparent 50%);
-      animation: bgPulse 4s ease-in-out infinite;
-    }
-    
-    @keyframes bgPulse {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 0.7; }
-    }
-    
-    .battle-loading-container {
-      text-align: center;
-      position: relative;
-      z-index: 1;
-    }
-    
-    .battle-title {
-      font-size: 3em;
-      font-weight: 900;
-      color: #ff6b6b;
-      text-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
-      margin-bottom: 30px;
-      animation: titleGlow 2s ease-in-out infinite alternate;
-    }
-    
-    .battle-title.boss {
-      color: #ff4500;
-      text-shadow: 0 0 40px rgba(255, 69, 0, 1);
-      animation: bossTitleGlow 1s ease-in-out infinite alternate;
-    }
-    
-    @keyframes titleGlow {
-      from { text-shadow: 0 0 20px rgba(255, 107, 107, 0.5); }
-      to { text-shadow: 0 0 30px rgba(255, 107, 107, 0.8), 0 0 40px rgba(255, 107, 107, 0.3); }
-    }
-    
-    @keyframes bossTitleGlow {
-      from { 
-        text-shadow: 0 0 40px rgba(255, 69, 0, 1);
-        transform: scale(1);
-      }
-      to { 
-        text-shadow: 0 0 60px rgba(255, 69, 0, 1), 0 0 80px rgba(255, 69, 0, 0.5);
-        transform: scale(1.05);
-      }
-    }
-    
-    .battle-icon {
-      font-size: 5em;
-      margin-bottom: 20px;
-      animation: iconBounce 1s ease-in-out infinite;
-    }
-    
-    .battle-icon.boss {
-      animation: bossIconPulse 0.8s ease-in-out infinite;
-    }
-    
-    @keyframes iconBounce {
-      0%, 100% { transform: scale(1) rotate(0deg); }
-      50% { transform: scale(1.1) rotate(5deg); }
-    }
-    
-    @keyframes bossIconPulse {
-      0%, 100% { 
-        transform: scale(1) rotate(0deg);
-        filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.8));
-      }
-      50% { 
-        transform: scale(1.2) rotate(10deg);
-        filter: drop-shadow(0 0 40px rgba(255, 69, 0, 1));
-      }
-    }
-    
-    .loading-text {
-      font-size: 1.4em;
-      margin-bottom: 30px;
-      color: #ffd93d;
-      animation: textFade 1.5s ease-in-out infinite alternate;
-      font-weight: 600;
-    }
-    
-    .loading-text.boss {
-      color: #ff4500;
-      font-weight: 700;
-      animation: bossTextPulse 1s ease-in-out infinite alternate;
-    }
-    
-    @keyframes textFade {
-      from { opacity: 0.7; }
-      to { opacity: 1; }
-    }
-    
-    @keyframes bossTextPulse {
-      from { 
-        opacity: 0.8;
-        transform: scale(1);
-      }
-      to { 
-        opacity: 1;
-        transform: scale(1.05);
-      }
-    }
-    
-    .progress-container {
-      width: 500px;
-      max-width: 80vw;
-      height: 15px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 25px;
-      margin: 20px auto;
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    .progress-container.boss {
-      border: 2px solid rgba(255, 69, 0, 0.5);
-      box-shadow: 0 4px 20px rgba(255, 69, 0, 0.4);
-    }
-    
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #ff6b6b, #ffd93d, #4ecdc4, #45b7d1);
-      background-size: 200% 100%;
-      border-radius: 25px;
-      width: 0%;
-      transition: width 0.3s ease;
-      animation: gradientShift 2s linear infinite;
-      position: relative;
-    }
-    
-    .progress-bar.boss {
-      background: linear-gradient(90deg, #ff4500, #dc143c, #b22222, #8b0000);
-      animation: bossGradientShift 1.5s linear infinite;
-    }
-    
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 200% 50%; }
-    }
-    
-    @keyframes bossGradientShift {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 200% 50%; }
-    }
-    
-    .progress-bar::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-      animation: shine 1.5s ease-in-out infinite;
-    }
-    
-    @keyframes shine {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-    
-    .progress-text {
-      font-size: 1.2em;
-      margin-top: 15px;
-      color: #b8e6ff;
-      font-weight: bold;
-    }
-    
-    .progress-text.boss {
-      color: #ff4500;
-      text-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
-    }
-    
-    .battle-tips {
-      margin-top: 40px;
-      font-size: 1em;
-      color: #a0a0a0;
-      line-height: 1.8;
-      font-weight: 400;
-    }
-    
-    .battle-tips.boss {
-      color: #ff6b6b;
-      font-weight: 600;
-      animation: tipsPulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes tipsPulse {
-      0%, 100% { opacity: 0.8; }
-      50% { opacity: 1; }
-    }
-    
-    /* 粒子效果 */
-    .particles {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none;
-    }
-    
-    .particle {
-      position: absolute;
-      border-radius: 50%;
-      animation: float 6s linear infinite;
-    }
-    
-    .particle.normal {
-      width: 4px;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.6);
-    }
-    
-    .particle.boss {
-      width: 6px;
-      height: 6px;
-      background: rgba(255, 69, 0, 0.8);
-      box-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
-    }
-    
-    @keyframes float {
-      0% {
-        transform: translateY(100vh) translateX(0px) rotate(0deg);
-        opacity: 0;
-      }
-      10% {
-        opacity: 1;
-      }
-      90% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(-100px) translateX(100px) rotate(360deg);
-        opacity: 0;
-      }
-    }
-    
-    /* 響應式設計 */
-    @media (max-width: 768px) {
-      #content {
-        flex-direction: column;
-        padding: 20px 10px;
-      }
-      
-      .battle-title {
-        font-size: 2em;
-      }
-      
-      .battle-icon {
-        font-size: 3em;
-      }
-      
-      .progress-container {
-        width: 300px;
-      }
-    }
-    
-    pre {
-      white-space: pre-wrap;
-    }
-  </style>
-</head>
-<body>
-  <div id="topbar">
-    <div class="user-info">
-      <span>👤</span>
-      <span>玩家名稱：<span id="userEmail">載入中...</span></span>
-    </div>
-    <div class="controls">
-      <button onclick="location.href='dungeons.html'">🔙 離開副本</button>
-      <button onclick="logout()">🔓 登出</button>
-    </div>
-  </div>
 
-  <!-- 頁面載入遮罩 -->
-  <div id="loadingOverlay">
-    <div class="particles" id="pageParticles"></div>
-    <div class="battle-loading-container">
-      <div class="battle-icon">🏰</div>
-      <div class="battle-title">進入副本</div>
-      <div class="loading-text" id="pageLoadingText">正在載入副本資料...</div>
-      
-      <div class="progress-container">
-        <div class="progress-bar" id="pageProgressBar"></div>
-      </div>
-      <div class="progress-text" id="pageProgressText">0%</div>
-      
-      <div class="battle-tips">
-        🗡️ 準備好迎接挑戰了嗎？<br>
+<link href="css/style.css" rel="stylesheet"/></head>
+<body>
+<div id="topbar">
+<div class="user-info">
+<span>👤</span>
+<span>玩家名稱：<span id="userEmail">載入中...</span></span>
+</div>
+<div class="controls">
+<button onclick="location.href='dungeons.html'">🔙 離開副本</button>
+<button onclick="logout()">🔓 登出</button>
+</div>
+</div>
+<!-- 頁面載入遮罩 -->
+<div id="loadingOverlay">
+<div class="particles" id="pageParticles"></div>
+<div class="battle-loading-container">
+<div class="battle-icon">🏰</div>
+<div class="battle-title">進入副本</div>
+<div class="loading-text" id="pageLoadingText">正在載入副本資料...</div>
+<div class="progress-container">
+<div class="progress-bar" id="pageProgressBar"></div>
+</div>
+<div class="progress-text" id="pageProgressText">0%</div>
+<div class="battle-tips">
+        🗡️ 準備好迎接挑戰了嗎？<br/>
         📊 檢查你的裝備和技能配置
       </div>
-    </div>
-  </div>
-
-  <!-- 戰鬥載入遮罩 -->
-  <div id="battleLoadingOverlay">
-    <div class="particles" id="particles"></div>
-    <div class="battle-loading-container">
-      <div class="battle-icon" id="battleIcon">⚔️</div>
-      <div class="battle-title" id="battleTitle">戰鬥準備中</div>
-      <div class="loading-text" id="loadingText">正在分析戰況...</div>
-      
-      <div class="progress-container" id="progressContainer">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
-      <div class="progress-text" id="progressText">0%</div>
-      
-      <div class="battle-tips" id="battleTips">
-        💡 戰鬥小提示：善用屬性克制關係可以提高勝率！<br>
+</div>
+</div>
+<!-- 戰鬥載入遮罩 -->
+<div id="battleLoadingOverlay">
+<div class="particles" id="particles"></div>
+<div class="battle-loading-container">
+<div class="battle-icon" id="battleIcon">⚔️</div>
+<div class="battle-title" id="battleTitle">戰鬥準備中</div>
+<div class="loading-text" id="loadingText">正在分析戰況...</div>
+<div class="progress-container" id="progressContainer">
+<div class="progress-bar" id="progressBar"></div>
+</div>
+<div class="progress-text" id="progressText">0%</div>
+<div class="battle-tips" id="battleTips">
+        💡 戰鬥小提示：善用屬性克制關係可以提高勝率！<br/>
         🛡️ 記得提升裝備來增強戰鬥力
       </div>
-    </div>
-  </div>
-
-  <div id="content">
-    <div class="section" id="userInfo">🧍 角色資訊載入中...</div>
-    <div class="section" id="monsterInfo">👹 怪物資訊載入中...</div>
-    <div class="section"><strong>📜 戰鬥紀錄</strong><pre id="logArea"></pre></div>
-  </div>
-
-  <div id="footer">
-    <button id="battleBtn" onclick="startBattle()">開始戰鬥</button>
-    <button id="retryBtn" style="display:none">再戰一次</button>
-    <button id="nextBtn" style="display:none">下一層</button>
-    <button id="leaveBtn" onclick="location.href='dungeons.html'" style="display:none">離開副本</button>
-  </div>
-  <script>
+</div>
+</div>
+<div id="content">
+<div class="section" id="userInfo">🧍 角色資訊載入中...</div>
+<div class="section" id="monsterInfo">👹 怪物資訊載入中...</div>
+<div class="section"><strong>📜 戰鬥紀錄</strong><pre id="logArea"></pre></div>
+</div>
+<div id="footer">
+<button id="battleBtn" onclick="startBattle()">開始戰鬥</button>
+<button id="retryBtn" style="display:none">再戰一次</button>
+<button id="nextBtn" style="display:none">下一層</button>
+<button id="leaveBtn" onclick="location.href='dungeons.html'" style="display:none">離開副本</button>
+</div>
+<script>
 	  (function() {
 		function createPageParticles() {
 		  const particlesContainer = document.getElementById("pageParticles");
@@ -759,7 +130,7 @@
 		startPageLoadingProgress();
 	  })();
   </script>
-  <script type="module">
+<script type="module">
     const elementMap = {
       "none": "無屬性",
       "phy": "物理",
@@ -1122,8 +493,8 @@
       }
     });
   </script>
-  <div id="footer-placeholder"></div>
-  <script>
+<div id="footer-placeholder"></div>
+<script>
     fetch("footer.html")
       .then(res => res.text())
       .then(html => {
