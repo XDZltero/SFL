@@ -14,7 +14,12 @@
     firebase.initializeApp(firebaseConfig);
   </script>
   <link href="css/dungeonStyle.css" rel="stylesheet" />
-  <link href="css/style.css" rel="stylesheet"/></head>
+  <link href="css/style.css" rel="stylesheet" />
+  <style>
+    #dungeonList {
+      margin-top: 100px;
+    }
+  </style>
 </head>
 <body>
   <div id="topbar">
@@ -37,65 +42,69 @@
       firebase.auth().signOut().then(() => location.href = "/SFL/login.html");
     }
 
-    // 載入遮罩
     function showLoading(show) {
       document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
     }
 
-async function loadDungeons() {
-  showLoading(true);
-  const user = firebase.auth().currentUser;
-  if (!user) return;
-  userId = user.email;
+    async function loadDungeons() {
+      showLoading(true);
+      const user = firebase.auth().currentUser;
+      if (!user) return;
+      userId = user.email;
 
-  const res = await fetch("parameter/dungeons.json");
-  const dungeons = await res.json();
+      const res = await fetch("parameter/dungeons.json");
+      const dungeons = await res.json();
 
-  const userRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-  const userData = await userRes.json();
-  userEmailSpan.innerText = userData.nickname || userId;
+      const userRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+      const userData = await userRes.json();
+      userEmailSpan.innerText = userData.nickname || userId;
 
-  const progRes = await fetch(`${API_BASE}/get_progress?user=${encodeURIComponent(userId)}`);
-  const progData = await progRes.json();
-  const progress = progData.progress || {};
+      const progRes = await fetch(`${API_BASE}/get_progress?user=${encodeURIComponent(userId)}`);
+      const progData = await progRes.json();
+      const progress = progData.progress || {};
 
-  for (const dungeon of dungeons) {
-    const totalLayers = dungeon.monsters.length + 1;
-    const current = progress[dungeon.id] ?? 0;
-    const targetLayer = Math.min(current, totalLayers - 1);
+      for (const dungeon of dungeons) {
+        const totalLayers = dungeon.monsters.length + 1;
+        const current = progress[dungeon.id] ?? 0;
+        const targetLayer = Math.min(current, totalLayers - 1);
 
-    let text = `進入第 ${targetLayer + 1} 層`;
-    let cls = "button-normal";
-    
-    if (targetLayer === totalLayers - 1) {
-      text = "進入 BOSS 關卡";
-      cls = "button-boss";
+        let text = `進入第 ${targetLayer + 1} 層`;
+        let cls = "button-normal";
+        
+        if (targetLayer === totalLayers - 1) {
+          text = "進入 BOSS 關卡";
+          cls = "button-boss";
+        }
+        if (targetLayer === 0) {
+          text = "從第一層開始";
+        }
+
+        const div = document.createElement("div");
+        div.className = "dungeon-card";
+        div.innerHTML = `
+          <div class="dungeon-card-inner">
+            <img src="${dungeon.image}" />
+            <div class="dungeon-info">
+              <h2>${dungeon.name}</h2>
+              <p>${dungeon.description}</p>
+              <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
+              <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}'">${text}</button>
+            </div>
+          </div>
+        `;
+        dungeonList.appendChild(div);
+      }
+
+      showLoading(false);
+      document.getElementById("dungeonList").style.display = "block";
     }
-    if (targetLayer === 0) {
-      text = "從第一層開始";
-    }
-
-    const div = document.createElement("div");
-    div.className = "dungeon-card";
-    div.innerHTML = `
-      <h2>${dungeon.name}</h2>
-      <img src="${dungeon.image}" />
-      <p>${dungeon.description}</p>
-      <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
-      <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}'">${text}</button>
-    `;
-    dungeonList.appendChild(div);
-  }
-
-  showLoading(false);
-  document.getElementById("dungeonList").style.display = "block";
-}
 
     firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) location.href = "/SFL/login.html";
       else await loadDungeons();
     });
   </script>
+
   <div id="footer-placeholder"></div>
   <script>
     fetch("footer.html")
