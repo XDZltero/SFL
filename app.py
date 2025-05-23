@@ -6,6 +6,11 @@ from flask_compress import Compress
 import firebase_admin
 from firebase_admin import credentials, firestore
 from battle import simulate_battle
+from functools import lru_cache
+from battle import (
+    get_dungeon_data, get_element_table, get_level_exp,
+    get_all_skill_data, get_item_map
+)
 
 app = Flask(__name__)
 Compress(app)
@@ -20,6 +25,43 @@ db = firestore.client()
 
 def user_ref(user_id):
     return db.collection("users").document(user_id)
+
+# 🔁 快取靜態副本資料
+@lru_cache()
+def get_dungeon_data():
+    with open("parameter/dungeons.json", encoding="utf-8") as f:
+        return json.load(f)
+
+@lru_cache()
+def get_element_table():
+    with open("parameter/attribute_table.json", encoding="utf-8") as f:
+        return json.load(f)
+
+@lru_cache()
+def get_level_exp():
+    with open("parameter/level_exp.json", encoding="utf-8") as f:
+        return json.load(f)
+
+@lru_cache()
+def get_all_skill_data():
+    skills = db.collection("skills").stream()
+    result = {}
+    for doc in skills:
+        data = doc.to_dict()
+        result[data["id"]] = data
+    return result
+
+@lru_cache()
+def get_item_map():
+    items = db.collection("items").stream()
+    result = {}
+    for doc in items:
+        data = doc.to_dict()
+        result[data["id"]] = {
+            "name": data["name"],
+            "special": data.get("special", 0)
+        }
+    return result
 
 # 確認存活用
 @app.route("/ping")
@@ -304,11 +346,10 @@ def levelup():
     ref.set(user)
     return jsonify({"message": "屬性分配完成", "status": user})
 
-# 抓出所有技能
+# 用快取方法改寫 /skills_full
 @app.route("/skills_full", methods=["GET"])
 def get_skills_full():
-    skills = db.collection("skills").stream()
-    return jsonify([doc.to_dict() for doc in skills])
+    return jsonify(list(get_all_skill_data().values())
 
 @app.route("/skills_all", methods=["GET"])
 def get_all_skills():
@@ -383,18 +424,22 @@ def save_skill_distribution():
     return jsonify({"message": "技能升級完成", "status": user})
 
 @app.route("/items", methods=["GET"])
-def get_all_items():
-    items = db.collection("items").stream()
-    result = {}
-    for doc in items:
-        data = doc.to_dict()
-        result[data["id"]] = {
-            "name": data["name"],
-            "special": data.get("special", 0)
-        }
-    return jsonify(result)
+def get_items():
+    return jsonify(get_item_map())
 
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
+@app.route("/clear_cache", methods=["POST"])
+def clear_cache():
+    try:
+        get_dungeon_data.cache_clear()
+        get_element_table.cache_clear()
+        get_level_exp.cache_clear()
+        get_all_skill_data.cache_clear()
+        get_item_map.cache_clear()
+        return jsonify({"message": "所有緩存已清除"}), 200
+    except Exception as e:
+        return jsonify({"error": f"清除失敗: {str(e)}"}), 500
