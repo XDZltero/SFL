@@ -7,7 +7,8 @@
     "min_level": 1,
     "image": "https://i.postimg.cc/Bvj6GM01/dungeon-moss.png",
     "monsters": ["slime", "skeleton", "tree_monster","little_mage"],
-    "Pre-Task": ""
+    "Pre-Task": "",
+	"Pre-Task-ReqTime" : 0
   },
   {
     "id": "dungeon_skycity",
@@ -17,6 +18,7 @@
     "min_level": 10,
     "image": "https://i.postimg.cc/hG07jRbw/dungeon-skycity.png",
     "monsters": ["sky_cow", "temple_guard", "temple_guard_elite", "griffin", "athena", "athena_true", "temple_golem"],
-    "Pre-Task": "dungeon_moss"
+    "Pre-Task": "dungeon_moss",
+	"Pre-Task-ReqTime" : 1
   }
 ]
