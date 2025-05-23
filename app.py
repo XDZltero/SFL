@@ -59,6 +59,10 @@ def get_item_map():
         }
     return result
 
+@app.route("/element_table")
+def element_table():
+    return jsonify(get_element_table())
+
 @app.route("/exp_table")
 def exp_table():
     return jsonify(get_level_exp())
