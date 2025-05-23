@@ -16,55 +16,7 @@
     firebase.initializeApp(firebaseConfig);
   </script>
 
-  <style>
-    body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
-    button { margin: 5px; padding: 5px 10px; cursor: pointer; }
-    #topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      background: #f5f5f5;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ccc;
-      font-size: 0.95em;
-    }
-    #loadingOverlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      color: white;
-      font-size: 1.5em;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-    .stat-control {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .stat-control label {
-      width: 100px;
-      display: inline-block;
-    }
-    .stat-control button {
-      width: 30px;
-    }
-    .stat-control span {
-      display: inline-block;
-      width: 40px;
-      text-align: center;
-    }
-    #log {
-      white-space: pre-wrap;
-      border: 1px solid #ccc;
-      padding: 1em;
-      margin-top: 1em;
-    }
-  </style>
+  <link href="css/style.css" rel="stylesheet"/></head>
 </head>
 <body>
   <div id="topbar">
