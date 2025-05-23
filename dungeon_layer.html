@@ -180,7 +180,7 @@
       showLoading(true);
       try {
         // 讀取經驗表
-        const expRes = await fetch("parameter/level_exp.json");
+        const expRes = await fetch(`${API_BASE}/exp_table`);
         levelExp = await expRes.json();
     
         const user = await fetchUser(userId);
