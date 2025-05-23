@@ -188,7 +188,7 @@ def player_attack(user, monster, skill, multiplier, user_stats_mod, mon_stats_mo
         log.append(f"你使用 {skill['name']} 但未命中")
         return 0
 
-def simulate_battle(user, monster, user_skill_dict, monster_skill_dict):
+def simulate_battle(user, monster, user_skill_dict):
     log = []
     current_round = 0
     round_log = []
