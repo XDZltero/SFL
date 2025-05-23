@@ -13,31 +13,7 @@
     };
     firebase.initializeApp(firebaseConfig);
   </script>
-  <style>
-    body { font-family: sans-serif; padding: 20px; padding-top: 60px; }
-    .dungeon-card { border: 1px solid #ccc; border-radius: 8px; margin: 10px 0; padding: 10px; }
-    .dungeon-card img { max-width: 25%; height: auto; border-radius: 8px; }
-    .button-normal { background: #f5deb3; color: black; border: none; padding: 6px 12px; cursor: pointer; }
-    .button-boss { background: crimson; color: white; border: none; padding: 6px 12px; cursor: pointer; }
-    #topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      background: #f5f5f5;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ccc;
-      font-size: 0.95em;
-    }
-    #loadingOverlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5); color: white;
-      font-size: 1.5em; display: none;
-      justify-content: center; align-items: center;
-      z-index: 9999;
-    }
-  </style>
+  <link href="css/dungeonStyle.css" rel="stylesheet" />
 </head>
 <body>
   <div id="topbar">
