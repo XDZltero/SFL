@@ -43,9 +43,7 @@
       });
   </script>
 
-
-  
-  <div id="dungeonList"> </div>
+  <div id="dungeonList"></div>
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
@@ -79,6 +77,9 @@
       const progData = await progRes.json();
       const progress = progData.progress || {};
 
+      const clearLog = userData.ClearLog || {};
+      const level = userData.level || 1;
+
       for (const dungeon of dungeons) {
         const totalLayers = dungeon.monsters.length + 1;
         const current = progress[dungeon.id] ?? 0;
@@ -86,13 +87,36 @@
 
         let text = `進入第 ${targetLayer + 1} 層`;
         let cls = "button-normal";
-        
         if (targetLayer === totalLayers - 1) {
           text = "進入 BOSS 關卡";
           cls = "button-boss";
         }
         if (targetLayer === 0) {
           text = "從第一層開始";
+        }
+
+        // 檢查條件
+        let lockReason = "";
+        const preTaskId = dungeon["Pre-Task"];
+        const preTaskReq = dungeon["Pre-Task-ReqTime"] || 0;
+        const cleared = clearLog[preTaskId] || 0;
+
+        if (level < dungeon.min_level) {
+          lockReason = `等級需達到 ${dungeon.min_level} 級`;
+        }
+
+        if (preTaskId && preTaskReq > 0 && cleared < preTaskReq) {
+          const remain = preTaskReq - cleared;
+          const preTaskName = dungeons.find(d => d.id === preTaskId)?.name || preTaskId;
+          const taskText = `還需完成 ${remain} 次 ${preTaskName}。`;
+          lockReason = lockReason ? `${lockReason}<br>${taskText}` : taskText;
+        }
+
+        let buttonHtml = `
+          <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}'">${text}</button>
+        `;
+        if (lockReason) {
+          buttonHtml = `<p style="color:red">${lockReason}</p>`;
         }
 
         const div = document.createElement("div");
@@ -104,7 +128,7 @@
               <h2>${dungeon.name}</h2>
               <p>${dungeon.description}</p>
               <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
-              <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}'">${text}</button>
+              ${buttonHtml}
             </div>
           </div>
         `;
