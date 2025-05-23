@@ -109,27 +109,49 @@ def battle():
         data = request.json
         user_id = data.get("user")
         monster_id = data.get("monster")
-    
+
         if not user_id or not monster_id:
             return jsonify({"error": "缺少參數"}), 400
-    
+
+        # 取得使用者與怪物資料
         user_doc = db.collection("users").document(user_id).get()
         if not user_doc.exists:
             return jsonify({"error": "找不到使用者"}), 404
-    
+        user_data = user_doc.to_dict()
+        user_data["user_id"] = user_id
+
         mon_doc = db.collection("monsters").document(monster_id).get()
         if not mon_doc.exists:
             return jsonify({"error": "找不到怪物"}), 404
-    
-        user_data = user_doc.to_dict()
         monster_data = mon_doc.to_dict()
-    
-        result = simulate_battle(user_data, monster_data)
-    
-        # 更新使用者戰鬥後的狀態
+
+        # 🔍 收集技能 ID（使用者＋怪物）
+        skill_ids = list(user_data.get("skills", {}).keys())
+        skill_ids += [s["id"] for s in monster_data.get("skills", [])]
+        skill_ids = list(set(skill_ids))  # 去重
+
+        # ✅ 分批查詢技能資料
+        skill_data_list = []
+        BATCH_LIMIT = 10
+        for i in range(0, len(skill_ids), BATCH_LIMIT):
+            batch_ids = skill_ids[i:i + BATCH_LIMIT]
+            docs = db.collection("skills").where("id", "in", batch_ids).stream()
+            for doc in docs:
+                skill = doc.to_dict()
+                skill_data_list.append(skill)
+
+        # ✅ 按 sort 排序後轉成 dict（供 simulate_battle 使用）
+        skill_data_list.sort(key=lambda x: x.get("sort", 9999))
+        skill_data_dict = {s["id"]: s for s in skill_data_list}
+
+        # ✅ 執行模擬戰鬥
+        result = simulate_battle(user_data, monster_data, skill_data_dict)
+
+        # ✅ 更新使用者資料
         db.collection("users").document(user_id).set(result["user"])
-    
+
         return jsonify(result)
+
     except Exception as e:
         import traceback
         traceback.print_exc()
