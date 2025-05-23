@@ -19,6 +19,7 @@
   <link href="css/style.css" rel="stylesheet"/></head>
 </head>
 <body>
+<div id="initialOverlay">載入中...</div>
   <div id="topbar">
     <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
     <div>
@@ -28,21 +29,21 @@
   </div>
 
   <div id="loading-placeholder"></div>
-  <script src="js/loading.js"></script>
+	<!-- 載入動畫邏輯 -->
+	<script src="js/loading.js"></script>
 	<script>
 	  fetch("loadingOverlay.html")
 	    .then(res => res.text())
 	    .then(html => {
 	      document.getElementById("loading-placeholder").innerHTML = html;
-	
+	      document.getElementById("initialOverlay")?.remove(); // ✅ 只做一次
 	      if (typeof startPageLoadingProgress === "function") {
 	        startPageLoadingProgress();
 	      }
-	
-	      // ✅ 等遮罩載入完，再執行主流程
-	      runMain();
+	      runMain(); // ✅ 確保在載入後才執行主流程
 	    });
 	</script>
+
 
   <h1 class="fancy-title">🧩 升級與技能管理</h1>
   <hr>
@@ -376,12 +377,13 @@
       }
     }
 
-    window.logout = logout;
+    	window.logout = logout;
 	window.adjust = adjust;
 	window.resetStats = resetStats;
 	window.submitLevelUp = submitLevelUp;
 	window.resetSkills = resetSkills;
 	window.submitSkills = submitSkills;
+	window.runMain = runMain;
 	
 	
 	// 技能
