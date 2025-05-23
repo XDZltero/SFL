@@ -430,15 +430,18 @@
     async function loadLayer() {
       showLoading(true);
       try {
-        const expRes = await fetch("parameter/level_exp.json");
+        // 讀取升級經驗表
+        const expRes = await fetch(`${API}/exp_table`);
         levelExp = await expRes.json();
     
         const user = await fetchUser(userId);
         nicknameSpan.innerText = user.nickname || userId;
         userDiv.innerText = formatStats(user);
     
-        const dungeonRes = await fetch("parameter/dungeons.json");
-        const all = await dungeonRes.json();
+        // 讀取副本資料
+      	const dungeonRes = await fetch(`${API}/dungeon_table`);
+        all = await dungeonRes.json();
+        
         const current = all.find(d => d.id === dungeon);
         if (!current) throw new Error("副本不存在");
     
