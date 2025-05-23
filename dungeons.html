@@ -30,7 +30,21 @@
     </div>
   </div>
 
-  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
+  <div id="loading-placeholder"></div>
+  <script src="js/loading.js"></script>
+  <script>
+    fetch("loadingOverlay.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("loading-placeholder").innerHTML = html;
+        if (typeof startPageLoadingProgress === "function") {
+          startPageLoadingProgress();
+        }
+      });
+  </script>
+
+
+  
   <div id="dungeonList"> </div>
 
   <script>
@@ -43,7 +57,9 @@
     }
 
     function showLoading(show) {
-      document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
+      const loading = document.getElementById("loadingOverlay");
+      if (!loading) return;
+      loading.style.display = show ? "flex" : "none";
     }
 
     async function loadDungeons() {
