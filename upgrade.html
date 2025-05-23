@@ -27,7 +27,18 @@
     </div>
   </div>
 
-  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
+  <div id="loading-placeholder"></div>
+  <script src="js/loading.js"></script>
+	<script>
+	  fetch("loadingOverlay.html")
+	    .then(res => res.text())
+	    .then(html => {
+	      document.getElementById("loading-placeholder").innerHTML = html;
+	      if (typeof startPageLoadingProgress === "function") {
+		startPageLoadingProgress();
+	      }
+	    });
+	</script>
 
   <h1>🧠 升級與技能管理</h1>
   <hr>
@@ -66,7 +77,11 @@
     const emailSpan = document.getElementById("userEmail");
     const baseStatsEl = document.getElementById("base_stats");
     const remainingPointsEl = document.getElementById("remainingPoints");
-    const loading = document.getElementById("loadingOverlay");
+    function showLoading(show) {
+      const loading = document.getElementById("loadingOverlay");
+      if (!loading) return;
+      	loading.style.display = show ? "flex" : "none";
+     }
 
     let userId = null;
     let userStats = {};
