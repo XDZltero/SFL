@@ -20,5 +20,16 @@
     "monsters": ["sky_cow", "temple_guard", "temple_guard_elite", "griffin", "athena", "athena_true", "temple_golem"],
     "Pre-Task": "dungeon_moss",
 	"Pre-Task-ReqTime" : 1
+  },
+  {
+    "id": "dungeon_skycity",
+    "name": "天空之城",
+    "description": "佇立在雲層之上的小島內，有著一座淒涼廢棄神廟。",
+    "bossId": "gaia",
+    "min_level": 10,
+    "image": "https://i.postimg.cc/hG07jRbw/dungeon-skycity.png",
+    "monsters": ["sky_cow", "temple_guard", "temple_guard_elite", "griffin", "athena", "athena_true", "temple_golem"],
+    "Pre-Task": "dungeon_skycity",
+    "Pre-Task-ReqTime" : 99
   }
 ]
