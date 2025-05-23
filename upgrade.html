@@ -34,9 +34,13 @@
 	    .then(res => res.text())
 	    .then(html => {
 	      document.getElementById("loading-placeholder").innerHTML = html;
+	
 	      if (typeof startPageLoadingProgress === "function") {
-		startPageLoadingProgress();
+	        startPageLoadingProgress();
 	      }
+	
+	      // ✅ 等遮罩載入完，再執行主流程
+	      runMain();
 	    });
 	</script>
 
@@ -348,29 +352,29 @@
     }
 
     // 主流程
-    (async () => {
-	  showLoading(true);
-	  const user = await waitForUser();
-	  if (!user) {
-	    location.href = "/SFL/login.html";
-	    return;
-	  }
-	
-	  userId = user.email;
-	
-	  try {
-	    const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
-	    const data = await res.json();
-	    emailSpan.innerText = data.nickname || userId;
-	
-	    await loadStatus();
-	    await loadAllSkills(); // ✅ 技能完全載入完畢
-	  } catch (err) {
-	    console.error("❌ 發生錯誤", err);
-	  } finally {
-	    showLoading(false);  // ✅ 最後才解除遮罩
-	  }
-	})();
+    async function runMain() {
+      showLoading(true);
+      const user = await waitForUser();
+      if (!user) {
+        location.href = "/SFL/login.html";
+        return;
+      }
+
+      userId = user.email;
+
+      try {
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+        const data = await res.json();
+        emailSpan.innerText = data.nickname || userId;
+
+        await loadStatus();
+        await loadAllSkills();
+      } catch (err) {
+        console.error("❌ 發生錯誤", err);
+      } finally {
+        showLoading(false); // ✅ 技能載入完才解除遮罩
+      }
+    }
 
     window.logout = logout;
 	window.adjust = adjust;
