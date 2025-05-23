@@ -6,7 +6,8 @@
     "bossId": "litch",
     "min_level": 1,
     "image": "https://i.postimg.cc/Bvj6GM01/dungeon-moss.png",
-    "monsters": ["slime", "skeleton", "tree_monster","little_mage"]
+    "monsters": ["slime", "skeleton", "tree_monster","little_mage"],
+    "Pre-Task": ""
   },
   {
     "id": "dungeon_skycity",
@@ -15,6 +16,7 @@
     "bossId": "gaia",
     "min_level": 10,
     "image": "https://i.postimg.cc/hG07jRbw/dungeon-skycity.png",
-    "monsters": ["sky_cow", "temple_guard", "temple_guard_elite", "griffin", "athena", "athena_true", "temple_golem"]
+    "monsters": ["sky_cow", "temple_guard", "temple_guard_elite", "griffin", "athena", "athena_true", "temple_golem"],
+    "Pre-Task": "dungeon_moss"
   }
 ]
