@@ -12,20 +12,6 @@ body {
 }
 */
 
-#topbar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(25, 25, 55, 0.95) 100%);
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid rgba(0, 255, 255, 0.3);
-  font-size: 0.95em;
-  z-index: 1000;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
-
 #dungeonList {
   margin-top: 100px; /* 避免被 topbar 蓋住 */
 }
