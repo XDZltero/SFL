@@ -349,7 +349,7 @@ def levelup():
 # 用快取方法改寫 /skills_full
 @app.route("/skills_full", methods=["GET"])
 def get_skills_full():
-    return jsonify(list(get_all_skill_data().values())
+    return jsonify(list(get_all_skill_data().values()))
 
 @app.route("/skills_all", methods=["GET"])
 def get_all_skills():
