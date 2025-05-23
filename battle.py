@@ -220,7 +220,6 @@ def simulate_battle(user, monster, user_skill_dict):
             break
 
         current_round = turns_used
-        round_log = [f"──────────────  第 {turns_used} 回合 ──────────────"]
 
         user_stats_mod_preview = get_buff_stats_only(user_buffs)
         mon_stats_mod_preview = get_buff_stats_only(mon_buffs)
