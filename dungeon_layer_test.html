@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -426,6 +427,7 @@
     }
 
     let levelExp = {};
+    let all = {};
 
     async function loadLayer() {
       showLoading(true);
@@ -439,9 +441,9 @@
         userDiv.innerText = formatStats(user);
     
         // 讀取副本資料
-      	const dungeonRes = await fetch(`${API}/dungeon_table`);
-        all = await dungeonRes.json();
-        
+        const dungeonRes = await fetch(`${API}/dungeon_table`);
+        const all = await dungeonRes.json(); // ✅ 修正：補上 const 宣告
+    
         const current = all.find(d => d.id === dungeon);
         if (!current) throw new Error("副本不存在");
     
@@ -455,7 +457,7 @@
     
         monsterDiv.innerHTML = `
           <h2>${mon.name}</h2>
-          <img src="${mon.image_url}" width="100"><br>
+          <img src="${mon.image_url}" width="200"><br>
           <p>${mon.info}</p>
           <ul>
             <li>等級：${mon.level}</li>
