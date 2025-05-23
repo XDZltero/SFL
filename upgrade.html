@@ -94,10 +94,6 @@
       { key: "atk_speed", label: "攻擊速度" }
     ];
 
-    function showLoading(show) {
-      loading.style.display = show ? "flex" : "none";
-    }
-
     function logout() {
       firebase.auth().signOut().then(() => {
         location.href = "/SFL/login.html";
