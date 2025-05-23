@@ -383,10 +383,10 @@ def simulate_battle(user, monster, user_skill_dict):
 
                 round_log.extend(buff_log)
 
-        if user_hp <= 0:
-            round_log.append("═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════")
-        elif mon_hp <= 0:
-            round_log.append("═══════════════ 🌟 戰鬥結束 🌟 ═══════════════")
+        # if user_hp <= 0:
+            # round_log.append("═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════")
+        # elif mon_hp <= 0:
+            # round_log.append("═══════════════ 🌟 戰鬥結束 🌟 ═══════════════")
 
         log.append({"round": current_round, "actions": round_log})
 
