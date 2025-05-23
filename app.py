@@ -449,7 +449,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 
-@app.route("/clear_cache", methods=["POST"])
+@app.route("/clear_cache", methods=["GET", "POST"])
 def clear_cache():
     try:
         get_dungeon_data.cache_clear()
