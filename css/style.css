@@ -620,4 +620,29 @@
     pre {
       white-space: pre-wrap;
     }
-  
+
+
+    .fancy-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.2em;
+      color: #00ffff;
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+      text-align: center;
+      margin-top: 30px;
+      margin-bottom: 20px;
+      animation: titlePulse 2s infinite alternate;
+    }
+    
+    .fancy-subtitle {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5em;
+      color: #ffd93d;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 5px rgba(255, 217, 61, 0.4);
+    }
+    
+    @keyframes titlePulse {
+      from { text-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+      to   { text-shadow: 0 0 20px rgba(0, 255, 255, 0.9); }
+    }
