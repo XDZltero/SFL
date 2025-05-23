@@ -7,10 +7,6 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from battle import simulate_battle
 from functools import lru_cache
-from battle import (
-    get_dungeon_data, get_element_table, get_level_exp,
-    get_all_skill_data, get_item_map
-)
 
 app = Flask(__name__)
 Compress(app)
