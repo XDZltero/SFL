@@ -246,8 +246,8 @@ def simulate_battle(user, monster, user_skill_dict):
                     round_log.append("═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════")
                 if mon_hp <= 0:
                     round_log.append("═══════════════ 🌟 戰鬥結束 🌟 ═══════════════")
+                log.append({"round": turns_used, "actions": round_log})
                 break
-
             if actor == "user":
                 for sid in player_skill_cd:
                     if player_skill_cd[sid] > 0:
