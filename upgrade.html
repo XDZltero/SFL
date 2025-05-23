@@ -220,27 +220,28 @@
 
     async function loadAllSkills() {
 	  try {
-		const res = await fetch(`${API_BASE}/skills_all?user=${encodeURIComponent(userId)}`);
-		const data = await res.json();
-
-		if (!res.ok || !data.skills) {
-		  alert("技能讀取失敗：" + (data.error || "未知錯誤"));
-		  return;
-		}
-
-		allSkills = data.skills;
-		skillAlloc = {};
-		allSkills = data.skills;
-		remainingSkillPoints = data.remaining;
-		originalSkills = { ...data.user_skills };
-
-		allSkills.forEach(skill => {
-		  skillAlloc[skill.id] = data.user_skills[skill.id] ?? 0;
-		});
-
-		renderSkills();
+	    // 改為快取資料
+	    const skillRes = await fetch(`${API_BASE}/skills_full`);
+	    const userRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+	
+	    const allSkillData = await skillRes.json();
+	    const userData = await userRes.json();
+	
+	    allSkills = allSkillData;
+	    userStats = userData;
+	
+	    skillAlloc = {};
+	    remainingSkillPoints = userStats.skill_points;
+	    originalSkills = { ...userStats.skills };
+	
+	    allSkills.forEach(skill => {
+	      skillAlloc[skill.id] = userStats.skills?.[skill.id] ?? 0;
+	    });
+	
+	    renderStats();
+	    renderSkills();
 	  } catch (err) {
-		alert("❌ 載入技能錯誤：" + err.message);
+	    alert("❌ 載入技能錯誤：" + err.message);
 	  }
 	}
 
