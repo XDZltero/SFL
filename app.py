@@ -135,11 +135,8 @@ def battle():
         user_skill_list.sort(key=lambda x: x.get("sort", 9999))
         user_skill_dict = {s["id"]: s for s in user_skill_list}
 
-        # ✅ 怪物技能直接使用其原始資料
-        monster_skill_dict = {s["id"]: s for s in monster_data.get("skills", [])}
-
         # ✅ 執行戰鬥
-        result = simulate_battle(user_data, monster_data, user_skill_dict, monster_skill_dict)
+        result = simulate_battle(user_data, monster_data, user_skill_dict)
         db.collection("users").document(user_id).set(result["user"])
 
         return jsonify(result)
@@ -203,11 +200,8 @@ def battle_dungeon():
         user_skill_list.sort(key=lambda x: x.get("sort", 9999))
         user_skill_dict = {s["id"]: s for s in user_skill_list}
         
-        # ✅ 怪物技能直接用原始資料
-        monster_skill_dict = {s["id"]: s for s in monster_data.get("skills", [])}
-        
         # ✅ 傳入 simulate_battle
-        result = simulate_battle(user_data, monster_data, user_skill_dict, monster_skill_dict)
+        result = simulate_battle(user_data, monster_data, user_skill_dict)
         db.collection("users").document(user_id).set(result["user"])
 
         user_key = user_id.replace(".", "_")
