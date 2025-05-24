@@ -164,6 +164,17 @@
   transform: scale(1.1);
 }
 
+.skill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.skill-row .skill-card {
+  flex: 1 1 calc(50% - 10px);
+}
+
 /* 剩餘點數字樣 */
 .remaining-points {
   color: #ffd93d;
