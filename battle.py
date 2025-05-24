@@ -252,6 +252,8 @@ def simulate_battle(user, monster, user_skill_dict):
                 )
 
                 for skill_id, level in sorted_skills:
+                    if user_hp <= 0 or mon_hp <= 0:
+                        break
                     if level <= 0 or player_skill_cd.get(skill_id, 0) > 0:
                         continue
 
@@ -263,6 +265,11 @@ def simulate_battle(user, monster, user_skill_dict):
                     skill_type = skill.get("type", "atk")
 
                     if skill_type == "heal":
+
+                        # 滿血不補
+                        if user_hp >= {user['base_stats']['hp']}:
+                            continue
+                        
                         heal = int(user["base_stats"]["hp"] * 0.1 * multiplier)
                         old_hp = user_hp
                         user_hp = min(user_hp + heal, user["base_stats"]["hp"])
