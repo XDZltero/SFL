@@ -178,16 +178,14 @@
   -webkit-background-clip: text;
   color: transparent;
   text-shadow: 0 0 5px rgba(255, 217, 61, 0.4);
-  position: relative;
-  display: inline-block;
-  padding-left: 1.5em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
 }
 
-.fancy-subtitle::before {
-  content: '📊';
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: #fff;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+.emoji {
+  color: #fff !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
 }
