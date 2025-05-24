@@ -86,9 +86,10 @@
 /* 能力值版面樣式 */
 
 .stat-control {
-  display: flex;
+  display: grid;
+  grid-template-columns: 140px auto auto auto;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   margin-bottom: 10px;
 }
 
