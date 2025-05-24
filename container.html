@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>遊戲容器</title>
+  <link rel="icon" href="favicon.ico" />
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #000;
+      color: white;
+      font-family: sans-serif;
+    }
+    #topbar {
+      background: #222;
+      color: white;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .user-info, .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    #mainFrame {
+      width: 100%;
+      height: calc(100% - 50px);
+      border: none;
+    }
+    .audio-controls {
+      margin-left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .audio-controls input[type=range] {
+      width: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <div class="user-info">
+      <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
+    </div>
+    <div class="controls" id="controlButtons"></div>
+    <div class="audio-controls">
+      <button id="toggleSound">🔇</button>
+      <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
+    </div>
+  </div>
+
+  <audio id="bgm" autoplay loop volume="0.5">
+    <source src="https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/skk-IDDPslKXh0ZsyZTJbfqT7DS0nbyBtT.mp3" type="audio/mpeg">
+  </audio>
+
+  <iframe id="mainFrame" src="index.html"></iframe>
+
+  <script>
+    const bgm = document.getElementById("bgm");
+    const toggleBtn = document.getElementById("toggleSound");
+    const volumeSlider = document.getElementById("volumeSlider");
+    let muted = false;
+
+    toggleBtn.onclick = () => {
+      muted = !muted;
+      bgm.muted = muted;
+      toggleBtn.textContent = muted ? "🔇" : "🔊";
+    };
+
+    volumeSlider.oninput = () => {
+      bgm.volume = volumeSlider.value;
+    };
+
+    const controlButtons = document.getElementById("controlButtons");
+    const userEmailSpan = document.getElementById("userEmail");
+
+    function updateTopbar(page) {
+      controlButtons.innerHTML = "";
+      if (page.includes("upgrade") || page.includes("inventory") || page.includes("dungeons")) {
+        controlButtons.innerHTML = `
+          <button onclick="loadPage('index.html')">🔙 返回主頁</button>
+          <button onclick="logout()">🔓 登出</button>
+        `;
+      } else if (page.includes("dungeon_layer")) {
+        controlButtons.innerHTML = `
+          <button onclick="loadPage('dungeons.html')">🔙 離開副本</button>
+          <button onclick="logout()">🔓 登出</button>
+        `;
+      } else {
+        controlButtons.innerHTML = `
+          <button onclick="logout()">🔓 登出</button>
+        `;
+      }
+    }
+
+    function loadPage(page) {
+      document.getElementById("mainFrame").src = page;
+      updateTopbar(page);
+    }
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        window.location.href = "/SFL/login.html";
+      });
+    }
+
+    window.addEventListener("message", (e) => {
+      if (e.data?.nickname) {
+        userEmailSpan.textContent = e.data.nickname;
+      }
+    });
+
+    updateTopbar("index.html");
+  </script>
+</body>
+</html>
