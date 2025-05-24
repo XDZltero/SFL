@@ -17,8 +17,8 @@
     };
     firebase.initializeApp(firebaseConfig);
   </script>
-<link href="css/style.css" rel="indexIntro.css" />
-<link href="css/style.css" rel="stylesheet" />
+  
+  <link href="css/indexIntro.css" rel="stylesheet"/></head>
 </head>
 <body>
   <!-- 粒子背景 -->
@@ -26,9 +26,6 @@
 
   <!-- 進入遮罩 -->
   <div id="loadingOverlay">
-    <div class="audio-notice" id="audioNotice">
-      🔊 點擊開始後將播放背景音樂
-    </div>
     <h1 class="game-title">遊戲容器</h1>
     <p class="game-subtitle">準備進入科技冒險世界</p>
     <button class="start-button" id="startButton">
@@ -48,12 +45,10 @@
       <div class="user-info">
         <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
       </div>
-      <div class="right-controls">
-        <div class="audio-controls">
-          <button id="toggleSound">🔇</button>
-          <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
-        </div>
-        <div class="controls" id="controlButtons"></div>
+      <div class="controls" id="controlButtons"></div>
+      <div class="audio-controls">
+        <button id="toggleSound">🔇</button>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5">
       </div>
     </div>
     <audio id="bgm" loop volume="0.5">
@@ -75,22 +70,6 @@
         particle.style.animationDelay = Math.random() * 6 + 's';
         particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
         particlesContainer.appendChild(particle);
-      }
-    }
-
-    // 檢測音樂播放狀態
-    function checkAudioSupport() {
-      const audioNotice = document.getElementById('audioNotice');
-      
-      // 嘗試檢測瀏覽器音樂政策
-      if (typeof navigator.getAutoplayPolicy === 'function') {
-        const policy = navigator.getAutoplayPolicy('mediaelement');
-        if (policy === 'disallowed') {
-          audioNotice.style.display = 'block';
-        }
-      } else {
-        // 備用檢測方法
-        audioNotice.style.display = 'block';
       }
     }
 
@@ -184,7 +163,6 @@
     document.addEventListener('DOMContentLoaded', function() {
       createParticles();
       updateTopbar("index_test.html");
-      checkAudioSupport();
       
       // 綁定開始按鈕事件
       document.getElementById('startButton').addEventListener('click', startGame);
