@@ -22,6 +22,17 @@
 	"Pre-Task-ReqTime" : 1
   },
   {
+    "id": "dungeon_ironcity",
+    "name": "鋼鐵都市",
+    "description": "來自「次元界」世界的入侵者，探索生命體信號而來的機器軍隊。",
+    "bossId": "gaia",
+    "min_level": 20,
+    "image": "https://i.postimg.cc/WbrtFLJV/dungeon-ironship.png",
+    "monsters": ["sky_cow", "temple_guard"],
+    "Pre-Task": "dungeon_skycity",
+    "Pre-Task-ReqTime" : 1
+  },
+  {
     "id": "dungeon_magictown",
     "name": "紫魔之城",
     "description": "學者、瘋子聚集在一起的王城，研究著一天突如其來壟罩整座城池的紫色魔力。",
@@ -29,7 +40,7 @@
     "min_level": 100,
     "image": "https://i.postimg.cc/hG07jRbw/dungeon-skycity.png",
     "monsters": ["sky_cow", "temple_guard", "temple_guard_elite", "griffin", "athena", "athena_true", "temple_golem"],
-    "Pre-Task": "dungeon_skycity",
+    "Pre-Task": "dungeon_ironcity",
     "Pre-Task-ReqTime" : 99
   }
 ]
