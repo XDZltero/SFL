@@ -171,6 +171,7 @@
       });
     }
     
+    const userEmailSpan = document.getElementById("userEmail");
     window.addEventListener("message", (e) => {
       if (e.data?.nickname) {
         userEmailSpan.textContent = e.data.nickname;
