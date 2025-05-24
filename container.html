@@ -57,15 +57,6 @@
     <audio id="bgm" loop volume="0.25">
       <source src="https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/skk-IDDPslKXh0ZsyZTJbfqT7DS0nbyBtT.mp3" type="audio/mpeg">
     </audio>
-    <iframe id="mainFrame" src="index_test.html"></iframe>
-    <script>
-    fetch("footer.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("footer-placeholder").innerHTML = html;
-      })
-      .catch(err => console.warn("載入 footer 失敗", err));
-    </script>
   </div>
 
   <script>
