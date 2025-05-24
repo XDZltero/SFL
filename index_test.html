@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>主頁</title>
+  <link rel="icon" href="favicon.ico" />
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+  <link href="css/style.css" rel="stylesheet" />
+</head>
+<body>
+  <script src="js/loading.js"></script>
+  <div id="loading-placeholder"></div>
+  <script>
+    fetch("loadingOverlay.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("loading-placeholder").innerHTML = html;
+        if (typeof startPageLoadingProgress === "function") {
+          startPageLoadingProgress();
+        }
+      });
+  </script>
+
+  <h1 class="fancy-title">👾 「此世已被遺忘，但仍有祂在覬覦著。」 👾</h1>
+
+  <pre id="statusBlock">正在載入角色資料...</pre>
+
+  <div>
+    <button onclick="location.href='upgrade.html'">🧠 技能與升級頁面</button>
+    <button onclick="location.href='inventory.html'">🎒 背包與裝備管理</button>
+  </div>
+
+  <div>
+    <h3>＜副本＞</h3>
+    <button onclick="location.href='dungeons.html'">🗡️ 前往副本入口</button>
+    怪物 ID：<input id="monster_id" placeholder="輸入怪物 ID" />
+    <button onclick="goToBattle()">戰鬥開始</button>
+  </div>
+
+  <script type="module">
+    const API_BASE = "https://sfl-9cb8.onrender.com";
+    const statusBlock = document.getElementById("statusBlock");
+    let levelExp = {};
+
+    function showLoading(show) {
+      const loading = document.getElementById("loadingOverlay");
+      if (!loading) return;
+      loading.style.display = show ? "flex" : "none";
+    }
+
+    function percent(val) {
+      return Math.round(val * 100) + "%";
+    }
+
+    function calcTotal(base, equip) {
+      return base + (equip || 0);
+    }
+
+    function formatStats(data) {
+      const b = data.base_stats;
+      const e = data.equipment_stats || {};
+      const total_hp = calcTotal(b.hp, e.hp);
+      const total_atk = calcTotal(b.attack, e.attack);
+      const total_shield = calcTotal(b.shield, e.shield);
+      const total_luck = calcTotal(b.luck, e.luck);
+      const total_accuracy = calcTotal(b.accuracy, e.accuracy);
+      const total_evade = calcTotal(b.evade, e.evade);
+      const levelMaxExp = levelExp[data.level] || 1;
+      const progress = percent(data.exp / levelMaxExp);
+
+      return `玩家名稱: ${data.nickname}
+等級: ${data.level}
+經驗值: ${data.exp} (${progress})
+生命值: ${total_hp} (${b.hp} + ${e.hp || 0})
+攻擊力: ${total_atk} (${b.attack} + ${e.attack || 0})
+護盾值: ${total_shield} (${b.shield} + ${e.shield || 0})
+幸運值: ${total_luck} (${b.luck} + ${e.luck || 0})
+命中率: ${percent(total_accuracy)} (${b.accuracy} + ${e.accuracy || 0})
+迴避率: ${percent(total_evade)} (${b.evade} + ${e.evade || 0})
+攻擊速度: ${b.atk_speed}
+額外傷害加成: ${b.other_bonus ?? 0}
+剩餘能力值點數: ${data.stat_points}
+剩餘技能點: ${data.skill_points}`;
+    }
+
+    function goToBattle() {
+      const user = firebase.auth().currentUser;
+      const monster = document.getElementById("monster_id").value.trim();
+      if (!user || !monster) {
+        alert("請輸入怪物 ID");
+        return;
+      }
+      window.location.href = `battle.html?user=${encodeURIComponent(user.email)}&monster=${encodeURIComponent(monster)}`;
+    }
+
+    window.goToBattle = goToBattle;
+
+    async function loadStatus() {
+      showLoading(true);
+      try {
+        const expRes = await fetch("parameter/level_exp.json");
+        levelExp = await expRes.json();
+
+        const user = firebase.auth().currentUser;
+        if (!user) {
+          window.location.href = "/SFL/login.html";
+          return;
+        }
+
+        const email = user.email;
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        // 傳給 container.html 更新暱稱顯示
+        window.parent.postMessage({ nickname: data.nickname || email }, "*");
+
+        statusBlock.innerText = formatStats(data);
+      } catch (err) {
+        console.error("載入失敗", err);
+        statusBlock.innerText = "❌ 載入角色資料失敗，請稍後再試。";
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) loadStatus();
+      else window.location.href = "/SFL/login.html";
+    });
+  </script>
+  <div id="footer-placeholder"></div>
+  <script>
+    fetch("footer.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("footer-placeholder").innerHTML = html;
+      })
+      .catch(err => console.warn("載入 footer 失敗", err));
+  </script>
+</body>
+</html>
