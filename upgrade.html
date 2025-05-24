@@ -300,10 +300,15 @@
 
 
 	function resetSkills() {
+	  // 將技能全部歸零
 	  allSkills.forEach(skill => {
-		skillAlloc[skill.id] = skill.level;
+	    skillAlloc[skill.id] = 0;
 	  });
-	  remainingSkillPoints = userStats.skill_points;
+	
+	  // 加回原本已分配的技能點數
+	  const spentPoints = Object.values(userStats.skills || {}).reduce((sum, val) => sum + (val || 0), 0);
+	  remainingSkillPoints = userStats.skill_points + spentPoints;
+	
 	  renderSkills();
 	}
 
