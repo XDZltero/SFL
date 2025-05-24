@@ -267,7 +267,7 @@ def simulate_battle(user, monster, user_skill_dict):
                     if skill_type == "heal":
 
                         # 滿血不補
-                        if user_hp >= {user['base_stats']['hp']}:
+                        if user_hp >= user['base_stats']['hp']:
                             continue
                         
                         heal = int(user["base_stats"]["hp"] * 0.1 * multiplier)
