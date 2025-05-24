@@ -216,18 +216,26 @@
 	
 	  const elementMap = {
 	    pyro: "火", hydro: "水", nature: "自然", electro: "雷",
-	    light: "光", dark: "暗", phy: "物理", all: "全", none: "無"
+	    light: "光", dark: "暗", all: "全", none: "無"
 	  };
 	
 	  const container = document.getElementById("skillList");
 	  container.innerHTML = "";
 	
+	  let row = null;
+	
 	  allSkills
 	    .slice()
 	    .sort((a, b) => (a.sort || 999) - (b.sort || 999))
-	    .forEach(skill => {
+	    .forEach((skill, index) => {
 	      const currentLevel = skillAlloc[skill.id] ?? 0;
 	      const isLocked = userStats.level < skill.learnlvl;
+	
+	      if (index % 2 === 0) {
+	        row = document.createElement("div");
+	        row.className = "skill-row";
+	        container.appendChild(row);
+	      }
 	
 	      const wrapper = document.createElement("div");
 	      wrapper.className = "skill-card";
@@ -238,7 +246,6 @@
 	        skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)
 	      ).toFixed(2);
 	
-	      // 資訊內容區
 	      wrapper.innerHTML = `
 	        <strong>${type} ${skill.name}</strong>
 	        <p>${skill.description}</p>
@@ -246,7 +253,6 @@
 	        <p>倍率：${effectiveMultiplier}　屬性：${elements}</p>
 	      `;
 	
-	      // 控制區
 	      const controls = document.createElement("div");
 	      controls.className = "skill-controls";
 	
@@ -283,7 +289,6 @@
 	      controls.appendChild(plus);
 	      wrapper.appendChild(controls);
 	
-	      // 解鎖提示
 	      if (isLocked) {
 	        const tip = document.createElement("span");
 	        tip.style.color = "red";
@@ -292,7 +297,7 @@
 	        wrapper.appendChild(tip);
 	      }
 	
-	      container.appendChild(wrapper);
+	      row.appendChild(wrapper);
 	    });
 	
 	  document.getElementById("remainingSkillPoints").innerText = remainingSkillPoints;
