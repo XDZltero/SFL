@@ -275,8 +275,11 @@
 
     #mainFrame {
       width: 100%;
-      height: calc(100% - 50px);
+      height: calc(100vh - 60px);
       border: none;
+      position: absolute;
+      top: 60px;
+      left: 0;
     }
     
     .audio-controls {
