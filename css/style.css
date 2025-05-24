@@ -407,7 +407,12 @@
       from { text-shadow: 0 0 20px rgba(255, 107, 107, 0.5); }
       to { text-shadow: 0 0 30px rgba(255, 107, 107, 0.8), 0 0 40px rgba(255, 107, 107, 0.3); }
     }
-    
+
+    @keyframes normalTitleGlow {
+      from { text-shadow: 0 0 10px rgba(0, 202, 202, 0.4); }
+      to   { text-shadow: 0 0 20px rgba(0, 202, 202, 0.7); }
+    }
+        
     @keyframes bossTitleGlow {
       from { 
         text-shadow: 0 0 40px rgba(255, 69, 0, 1);
