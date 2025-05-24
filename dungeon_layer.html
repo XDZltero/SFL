@@ -313,6 +313,23 @@
         const isLastLayer = (layer === current.monsters.length);
         const monsterId = isLastLayer ? current.bossId : current.monsters[layer];
         const mon = await fetchMonster(monsterId);
+	
+	if (isLastLayer) {
+	  // 加上整體 boss 模式樣式
+	  document.body.classList.add("boss-mode");
+	
+	  // 加上戰鬥載入畫面 boss 樣式
+	  document.getElementById("battleLoadingOverlay")?.classList.add("boss-battle");
+	  document.getElementById("battleIcon")?.classList.add("boss");
+	  document.getElementById("battleTitle")?.classList.add("boss");
+	  document.getElementById("loadingText")?.classList.add("boss");
+	  document.getElementById("progressContainer")?.classList.add("boss");
+	  document.getElementById("progressText")?.classList.add("boss");
+	  document.getElementById("battleTips")?.classList.add("boss");
+	
+	  // 選擇怪物區塊也可以加強
+	  document.getElementById("monsterInfo")?.classList.add("boss");
+	}
     
         retryBtn.style.display = "none";
         nextBtn.style.display = "none";
