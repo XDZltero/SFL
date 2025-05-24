@@ -47,7 +47,7 @@
 <h1 class="fancy-title">🧩 升級與技能管理</h1>
 <hr>
 
-<h2 class="fancy-subtitle">📊 分配能力點</h2>
+<h2 class="fancy-subtitle"><span class="emoji">📊</span> 分配能力點</h2>
 <div class="card" style="display: flex; gap: 40px; align-items: flex-start;">
   <div>
     <strong>目前能力值：</strong>
@@ -57,22 +57,23 @@
     <div><strong>剩餘能力點數：<span id="remainingPoints" class="remaining-points">0</span></strong></div>
     <div id="base_stats"></div>
     <div style="margin-top: 10px;">
-      <button class="upgrade-btn" onclick="resetStats()">重置</button>
-      <button class="upgrade-btn" onclick="submitLevelUp()">✅ 確認升級</button>
+      <button class="square-btn" onclick="resetStats()">重置</button>
+      <button class="square-btn" onclick="submitLevelUp()">✅ 確認升級</button>
     </div>
   </div>
 </div>
 
 <hr>
 
-<h2 class="fancy-subtitle">🌀 技能點分配</h2>
+<h2 class="fancy-subtitle"><span class="emoji">🌀</span> 技能點分配</h2>
 <div class="card">
   <div><strong>剩餘技能點數：<span id="remainingSkillPoints" class="remaining-points">0</span></strong></div>
-  <div id="skillList"></div>
   <div style="margin-top: 10px;">
-    <button class="upgrade-btn" onclick="resetSkills()">重置技能</button>
-    <button class="upgrade-btn" onclick="submitSkills()">✅ 儲存技能</button>
+    <button class="square-btn" onclick="resetSkills()">重置技能</button>
+    <button class="square-btn" onclick="submitSkills()">✅ 儲存技能</button>
   </div>
+  <div id="skillList"></div>
+  
 </div>
 
   <script type="module">
@@ -208,83 +209,92 @@
 
 	function renderSkills() {
 	  const mapType = {
-		"atk": "【輸出型】",
-		"heal": "【治療型】",
-		"buff": "【增益型】"
+	    "atk": "【輸出型】",
+	    "heal": "【治療型】",
+	    "buff": "【增益型】"
 	  };
-
+	
 	  const elementMap = {
-		pyro: "火", hydro: "水", nature: "自然", electro: "雷",
-		light: "光", dark: "暗", phy: "物理", all: "全", none: "無"
+	    pyro: "火", hydro: "水", nature: "自然", electro: "雷",
+	    light: "光", dark: "暗", phy: "物理", all: "全", none: "無"
 	  };
-
+	
 	  const container = document.getElementById("skillList");
 	  container.innerHTML = "";
-
+	
 	  allSkills
-	  .slice()
-	  .sort((a, b) => (a.sort || 999) - (b.sort || 999))
-	  .forEach(skill => {
-		const currentLevel = skillAlloc[skill.id] ?? 0;
-		const isLocked = userStats.level < skill.learnlvl;
-
-		const wrapper = document.createElement("div");
-		wrapper.style.border = "1px solid #ccc";
-		wrapper.style.margin = "10px 0";
-		wrapper.style.padding = "10px";
-
-		const type = mapType[skill.type] || "【其他】";
-		const elements = skill.element.map(e => elementMap[e] || e).join("、");
-		const effectiveMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
-
-		wrapper.innerHTML = `
-		  <strong>${type} ${skill.name}</strong><br>
-		  ${skill.description}<br>
-		  等級上限：${skill.maxlvl}　冷卻：${skill.cd} 回合<br>
-		  倍率：${effectiveMultiplier}　屬性：${elements}<br>
-		`;
-
-		const minus = document.createElement("button");
-		minus.textContent = "-";
-		minus.disabled = currentLevel === 0 || isLocked;
-		minus.onclick = () => {
-		  if (skillAlloc[skill.id] > 0) {
-			skillAlloc[skill.id]--;
-			remainingSkillPoints++;
-			renderSkills();
-		  }
-		};
-
-		const value = document.createElement("span");
-		value.textContent = currentLevel;
-		value.style.margin = "0 10px";
-
-		const plus = document.createElement("button");
-		plus.textContent = "+";
-		plus.disabled = isLocked || currentLevel >= skill.maxlvl || remainingSkillPoints <= 0;
-		plus.onclick = () => {
-		  if (skillAlloc[skill.id] < skill.maxlvl && remainingSkillPoints > 0) {
-			skillAlloc[skill.id]++;
-			remainingSkillPoints--;
-			renderSkills();
-		  }
-		};
-
-		wrapper.appendChild(minus);
-		wrapper.appendChild(value);
-		wrapper.appendChild(plus);
-
-		if (isLocked) {
-		  const tip = document.createElement("span");
-		  tip.style.color = "red";
-		  tip.style.marginLeft = "10px";
-		  tip.textContent = `等級達至 ${skill.learnlvl} 級時解鎖`;
-		  wrapper.appendChild(tip);
-		}
-
-		container.appendChild(wrapper);
-	  });
-
+	    .slice()
+	    .sort((a, b) => (a.sort || 999) - (b.sort || 999))
+	    .forEach(skill => {
+	      const currentLevel = skillAlloc[skill.id] ?? 0;
+	      const isLocked = userStats.level < skill.learnlvl;
+	
+	      const wrapper = document.createElement("div");
+	      wrapper.className = "skill-card";
+	
+	      const type = mapType[skill.type] || "【其他】";
+	      const elements = skill.element.map(e => elementMap[e] || e).join("、");
+	      const effectiveMultiplier = (
+	        skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)
+	      ).toFixed(2);
+	
+	      // 資訊內容區
+	      wrapper.innerHTML = `
+	        <strong>${type} ${skill.name}</strong>
+	        <p>${skill.description}</p>
+	        <p>等級上限：${skill.maxlvl}　冷卻：${skill.cd} 回合</p>
+	        <p>倍率：${effectiveMultiplier}　屬性：${elements}</p>
+	      `;
+	
+	      // 控制區
+	      const controls = document.createElement("div");
+	      controls.className = "skill-controls";
+	
+	      const minus = document.createElement("button");
+	      minus.textContent = "-";
+	      minus.disabled = currentLevel === 0 || isLocked;
+	      minus.onclick = () => {
+	        if (skillAlloc[skill.id] > 0) {
+	          skillAlloc[skill.id]--;
+	          remainingSkillPoints++;
+	          renderSkills();
+	        }
+	      };
+	
+	      const value = document.createElement("span");
+	      value.textContent = currentLevel;
+	      value.style.margin = "0 8px";
+	      value.style.color = "#ffd93d";
+	      value.style.fontWeight = "bold";
+	
+	      const plus = document.createElement("button");
+	      plus.textContent = "+";
+	      plus.disabled = isLocked || currentLevel >= skill.maxlvl || remainingSkillPoints <= 0;
+	      plus.onclick = () => {
+	        if (skillAlloc[skill.id] < skill.maxlvl && remainingSkillPoints > 0) {
+	          skillAlloc[skill.id]++;
+	          remainingSkillPoints--;
+	          renderSkills();
+	        }
+	      };
+	
+	      controls.appendChild(minus);
+	      controls.appendChild(value);
+	      controls.appendChild(plus);
+	      wrapper.appendChild(controls);
+	
+	      // 解鎖提示
+	      if (isLocked) {
+	        const tip = document.createElement("span");
+	        tip.style.color = "red";
+	        tip.style.marginLeft = "10px";
+	        tip.textContent = `等級達至 ${skill.learnlvl} 級時解鎖`;
+	        wrapper.appendChild(tip);
+	      }
+	
+	      container.appendChild(wrapper);
+	    });
+	
 	  document.getElementById("remainingSkillPoints").innerText = remainingSkillPoints;
 	}
 
