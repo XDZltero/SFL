@@ -123,28 +123,7 @@
       bgm.volume = volumeSlider.value;
     };
     
-    const controlButtons = document.getElementById("controlButtons");
-    const userEmailSpan = document.getElementById("userEmail");
-    
-    function updateTopbar(page) {
-      controlButtons.innerHTML = "";
-      if (page.includes("upgrade") || page.includes("inventory") || page.includes("dungeons")) {
-        controlButtons.innerHTML = `
-          <button onclick="loadPage('index_test.html')">🔙 返回主頁</button>
-          <button onclick="logout()">🔓 登出</button>
-        `;
-      } else if (page.includes("dungeon_layer")) {
-        controlButtons.innerHTML = `
-          <button onclick="loadPage('dungeons.html')">🔙 離開副本</button>
-          <button onclick="logout()">🔓 登出</button>
-        `;
-      } else {
-        controlButtons.innerHTML = `
-          <button onclick="logout()">🔓 登出</button>
-        `;
-      }
-    }
-    
+
     const iframe = document.getElementById("mainFrame");
     const controlButtons = document.getElementById("controlButtons");
     
