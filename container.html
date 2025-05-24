@@ -145,10 +145,46 @@
       }
     }
     
+    const iframe = document.getElementById("mainFrame");
+    const controlButtons = document.getElementById("controlButtons");
+    
+    // 載入頁面並更新 topbar
     function loadPage(page) {
-      document.getElementById("mainFrame").src = page;
+      iframe.src = page;
       updateTopbar(page);
     }
+    
+    // 根據頁面路徑顯示對應的控制按鈕
+    function updateTopbar(pagePath) {
+      controlButtons.innerHTML = "";
+    
+      if (pagePath.includes("upgrade") || pagePath.includes("inventory") || pagePath.includes("dungeons")) {
+        controlButtons.innerHTML = `
+          <button onclick="loadPage('index_test.html')">🔙 返回主頁</button>
+          <button onclick="logout()">🔓 登出</button>
+        `;
+      } else if (pagePath.includes("dungeon_layer")) {
+        controlButtons.innerHTML = `
+          <button onclick="loadPage('dungeons.html')">🔙 離開副本</button>
+          <button onclick="logout()">🔓 登出</button>
+        `;
+      } else {
+        controlButtons.innerHTML = `
+          <button onclick="logout()">🔓 登出</button>
+        `;
+      }
+    }
+    
+    // 監聽 iframe 切換完成後，依實際 src 再次修正 topbar（保險）
+    iframe.addEventListener("load", () => {
+      try {
+        const currentPath = iframe.contentWindow.location.pathname;
+        updateTopbar(currentPath);
+      } catch (e) {
+        console.warn("無法偵測 iframe 內容（跨域？）將使用原始 src 路徑");
+        updateTopbar(iframe.src);
+      }
+    });
     
     function logout() {
       firebase.auth().signOut().then(() => {
