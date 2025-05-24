@@ -57,6 +57,31 @@
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
+/* 能力值按鈕群組：等寬拉滿一行 */
+.btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btn-group .square-btn {
+  flex: 1;
+}
+
+/* 技能按鈕群組：按鈕保留原始寬度 */
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: flex-start;
+}
+
+.btn-row .square-btn {
+  flex: unset;         /* ❗避免被拉長 */
+  min-width: 100px;
+  height: 40px;
+}
+
 /* 能力值版面樣式 */
 
 .stat-control {
