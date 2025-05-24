@@ -172,24 +172,22 @@
 
 
 .fancy-subtitle {
-  position: relative;
-  padding-bottom: 10px;
-  font-size: 1.6em;
-  background: linear-gradient(90deg, #ffd93d, #ff6b6b);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5em;
+  background: linear-gradient(90deg, #ffd93d, #ffea00);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.4);
+  position: relative;
+  display: inline-block;
+  padding-left: 1.5em;
 }
 
-.emoji {
-  color: #fff; /* 原色保留 */
-  text-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
-}
-
-.fancy-subtitle::after {
-  content: '';
+.fancy-subtitle::before {
+  content: '📊';
   position: absolute;
-  bottom: 0;
-  left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #ffd93d, #ff6b6b);
+  left: 0;
+  top: 0;
+  color: #fff;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
