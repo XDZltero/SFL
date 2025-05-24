@@ -16,66 +16,63 @@
     firebase.initializeApp(firebaseConfig);
   </script>
 
-  <link href="css/style.css" rel="stylesheet"/></head>
+  <link href="css/style.css" rel="stylesheet"/>
+  <link href="css/normalStyle.css" rel="stylesheet"/>
 </head>
 <body>
 <div id="initialOverlay">載入中...</div>
-  <div id="topbar">
-    <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
-    <div>
-      <button onclick="location.href='index.html'">🔙 返回主頁</button>
-      <button onclick="logout()">🔓 登出</button>
+
+<div id="topbar">
+  <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
+  <div>
+    <button onclick="location.href='index.html'">🔙 返回主頁</button>
+    <button onclick="logout()">🔓 登出</button>
+  </div>
+</div>
+
+<div id="loading-placeholder"></div>
+<script src="js/loading.js"></script>
+<script>
+  fetch("loadingOverlay.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("loading-placeholder").innerHTML = html;
+      document.getElementById("initialOverlay")?.remove();
+      if (typeof startPageLoadingProgress === "function") startPageLoadingProgress();
+      runMain();
+    });
+</script>
+
+<h1 class="fancy-title">🧩 升級與技能管理</h1>
+<hr>
+
+<h2 class="fancy-subtitle">📊 分配能力點</h2>
+<div class="card" style="display: flex; gap: 40px; align-items: flex-start;">
+  <div>
+    <strong>目前能力值：</strong>
+    <ul id="currentStats"></ul>
+  </div>
+  <div>
+    <div><strong>剩餘能力點數：<span id="remainingPoints" class="remaining-points">0</span></strong></div>
+    <div id="base_stats"></div>
+    <div style="margin-top: 10px;">
+      <button class="upgrade-btn" onclick="resetStats()">重置</button>
+      <button class="upgrade-btn" onclick="submitLevelUp()">✅ 確認升級</button>
     </div>
   </div>
+</div>
 
-  <div id="loading-placeholder"></div>
-	<!-- 載入動畫邏輯 -->
-	<script src="js/loading.js"></script>
-	<script>
-	  fetch("loadingOverlay.html")
-	    .then(res => res.text())
-	    .then(html => {
-	      document.getElementById("loading-placeholder").innerHTML = html;
-	      document.getElementById("initialOverlay")?.remove(); // ✅ 只做一次
-	      if (typeof startPageLoadingProgress === "function") {
-	        startPageLoadingProgress();
-	      }
-	      runMain(); // ✅ 確保在載入後才執行主流程
-	    });
-	</script>
+<hr>
 
-
-  <h1 class="fancy-title">🧩 升級與技能管理</h1>
-  <hr>
-
-  <h2 class="fancy-subtitle">📊 分配能力點</h2>
-  <div style="display: flex; gap: 40px; align-items: flex-start;">
-    <div>
-      <strong>目前能力值：</strong>
-      <ul id="currentStats"></ul>
-    </div>
-
-    <div>
-      <div><strong>剩餘能力點數：<span id="remainingPoints">0</span></strong></div>
-      <div id="base_stats"></div>
-      <div style="margin-top: 10px;">
-        <button onclick="resetStats()">重置</button>
-        <button onclick="submitLevelUp()">✅ 確認升級</button>
-      </div>
-    </div>
+<h2 class="fancy-subtitle">🌀 技能點分配</h2>
+<div class="card">
+  <div><strong>剩餘技能點數：<span id="remainingSkillPoints" class="remaining-points">0</span></strong></div>
+  <div id="skillList"></div>
+  <div style="margin-top: 10px;">
+    <button class="upgrade-btn" onclick="resetSkills()">重置技能</button>
+    <button class="upgrade-btn" onclick="submitSkills()">✅ 儲存技能</button>
   </div>
-
-  <hr>
-
-  <h2 class="fancy-subtitle">🌀 技能點分配</h2>
-	<div><strong>剩餘技能點數：<span id="remainingSkillPoints">0</span></strong></div>
-	<div id="skillList"></div>
-	<div style="margin-top: 10px;">
-	  <button onclick="resetSkills()">重置技能</button>
-	  <button onclick="submitSkills()">✅ 儲存技能</button>
-	</div>
-
-  <pre id="log"></pre>
+</div>
 
   <script type="module">
     const API_BASE = "https://sfl-9cb8.onrender.com";
@@ -103,11 +100,6 @@
       firebase.auth().signOut().then(() => {
         location.href = "/SFL/login.html";
       });
-    }
-
-    function log(msg) {
-      const out = typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg;
-      document.getElementById("log").innerText = out;
     }
 
     function renderStats() {
@@ -346,7 +338,7 @@
         userStats = data;
         renderStats();
       } catch (err) {
-        log("❌ 載入錯誤：" + err.message);
+	console.error("❌ 載入錯誤：" + err.message);
       } finally {
         showLoading(false);
       }
@@ -404,15 +396,14 @@
 	}
 
 
-  </script>
 <div id="footer-placeholder"></div>
-  <script>
-    fetch("footer.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("footer-placeholder").innerHTML = html;
-      })
-      .catch(err => console.warn("載入 footer 失敗", err));
-  </script>
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("footer-placeholder").innerHTML = html;
+    })
+    .catch(err => console.warn("載入 footer 失敗", err));
+</script>
 </body>
 </html>
