@@ -46,7 +46,7 @@
       <source src="https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/skk-IDDPslKXh0ZsyZTJbfqT7DS0nbyBtT.mp3" type="audio/mpeg" />
     </audio>
 
-    <iframe id="mainFrame" src="index_test.html"></iframe>
+    <iframe id="mainFrame" src="main_page.html"></iframe>
   </div>
 
   <!-- 頁尾 -->
@@ -115,7 +115,7 @@
       controlButtons.innerHTML = "";
       if (pagePath.includes("upgrade") || pagePath.includes("inventory") || pagePath.includes("dungeons")) {
         controlButtons.innerHTML = `
-          <button onclick="loadPage('index_test.html')">🔙 返回主頁</button>
+          <button onclick="loadPage('main_page.html')">🔙 返回主頁</button>
           <button onclick="logout()">🔓 登出</button>
         `;
       } else if (pagePath.includes("dungeon_layer")) {
@@ -175,9 +175,9 @@
   
     document.addEventListener("DOMContentLoaded", () => {
       createParticles();
-      updateTopbar("index_test.html");
+      updateTopbar("main_page.html");
       document.getElementById("startButton").addEventListener("click", startGame);
-      loadPage("index_test.html");
+      loadPage("main_page.html");
     });
   </script>
 </body>
