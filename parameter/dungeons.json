@@ -25,10 +25,10 @@
     "id": "dungeon_ironcity",
     "name": "鋼鐵都市",
     "description": "來自「次元界」世界的入侵者，探索生命體信號而來的機器軍隊。",
-    "bossId": "gaia",
+    "bossId": "steel_destroyer",
     "min_level": 20,
     "image": "https://i.postimg.cc/WbrtFLJV/dungeon-ironship.png",
-    "monsters": ["sky_cow", "temple_guard"],
+    "monsters": ["armed_guard", "steel_lieutenant", "steel_invader", "steel_navigator", "black_gray_messenger", "steel_commander", "silver_emissary"],
     "Pre-Task": "dungeon_skycity",
     "Pre-Task-ReqTime" : 1
   },
