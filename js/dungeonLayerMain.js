@@ -1,4 +1,4 @@
-// ✅ js/dungeonLayerMain.js 最終修正版
+// js/dungeonLayerMain.js
 
 const elementMap = {
   none: "無", phy: "物理", pyro: "火", hydro: "水", electro: "雷",
@@ -114,6 +114,7 @@ async function startBattle() {
           else {
             retryBtn.style.display = "inline-block";
             nextBtn.style.display = "inline-block";
+            nextBtn.onclick = () => window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
           }
         } else {
           leaveBtn.style.display = "inline-block";
