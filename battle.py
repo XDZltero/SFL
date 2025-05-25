@@ -137,11 +137,14 @@ def apply_buffs(buffs, base_stats, log, is_user, actor_name):
             buff["round"] -= 1
             if buff["round"] > 0:
                 new_buffs.append(buff)
-                msg = f"你身上的 {buff['name']} 效果剩下 {buff['round']} 回合" if is_user else f"{actor_name} 的 {buff['description']} 效果剩下 {buff['round']} 回合"
+                name = buff.get("name", buff.get("description", "未知效果"))
+                msg = f"你身上的 {name} 效果剩下 {buff['round']} 回合" if is_user else f"{actor_name} 的 {name} 效果剩下 {buff['round']} 回合"
                 temp_log.append(msg)
             else:
-                msg = f"你身上的 {buff['name']} 效果已消失" if is_user else f"{actor_name} 施放的 {buff['description']} 效果已消失"
+                name = buff.get("name", buff.get("description", "未知效果"))
+                msg = f"你身上的 {name} 效果已消失" if is_user else f"{actor_name} 施放的 {name} 效果已消失"
                 temp_log.append(msg)
+
     return stats_mod, new_buffs, temp_log
 
 
@@ -351,23 +354,24 @@ def simulate_battle(user, monster, user_skill_dict):
                     round_log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {mon_hp - old_hp} 點生命值（目前 HP：{mon_hp}/{monster['stats']['hp']}）")
                 elif skill_type == "buff":
                     buff = {
-                        "name": skill.get("buffName", skill.get("name", skill.get("id", "未知技能"))),
-                        "description": skill.get("description", ""),
+                        "name": skill.get("buffName", skill["description"]),
+                        "description": skill["description"],
                         "multiplier": skill["multiplier"],
-                        "effectType": skill.get("effectType", "attack"),
+                        "effectType": skill.get("effectType", "atk"),
                         "round": skill.get("round", 3)
                     }
                     add_or_refresh_buff(mon_buffs, buff)
-                    round_log.append(f"{monster['name']} 施放了 {buff['buffName']} ，{buff['description']}")
+                    round_log.append(f"{monster['name']} 施放了 {buff['name']} ，{buff['description']}")
+                
                 elif skill_type == "debuff":
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user["base_stats"]["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
                         debuff = {
-                            "name": skill.get("buffName", skill.get("name", skill.get("id", "未知技能"))),
-                            "description": skill.get("description", ""),
+                            "name": skill.get("buffName", skill["description"]),
+                            "description": skill["description"],
                             "multiplier": skill["multiplier"],
-                            "effectType": skill.get("effectType", "attack"),
+                            "effectType": skill.get("effectType", "atk"),
                             "round": skill.get("round", 3)
                         }
                         add_or_refresh_debuff(user_buffs, debuff)
