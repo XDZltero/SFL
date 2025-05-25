@@ -104,19 +104,20 @@ async function startBattle() {
     const log = data.battle_log;
     if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
 
-    playBattleLog(log).then(() => {
-      if (data.success) {
-        fetchUser(userId).then(updatedUser => userDiv.innerText = formatStats(updatedUser));
-        if (data.is_last_layer) leaveBtn.style.display = "inline-block";
-        else {
-          retryBtn.style.display = "inline-block";
-          nextBtn.style.display = "inline-block";
-          nextBtn.onclick = () => window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
+    setTimeout(() => {
+      playBattleLog(log).then(() => {
+        if (data.success) {
+          fetchUser(userId).then(updatedUser => userDiv.innerText = formatStats(updatedUser));
+          if (data.is_last_layer) leaveBtn.style.display = "inline-block";
+          else {
+            retryBtn.style.display = "inline-block";
+            nextBtn.style.display = "inline-block";
+          }
+        } else {
+          leaveBtn.style.display = "inline-block";
         }
-      } else {
-        leaveBtn.style.display = "inline-block";
-      }
-    });
+      });
+    }, 1000);
   } catch (err) {
     logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
     leaveBtn.style.display = "inline-block";
@@ -150,14 +151,6 @@ function playBattleLog(log) {
   });
 }
 
-window.addEventListener("message", async (e) => {
-  if (e.data?.user) {
-    userId = e.data.user;
-    await fetchProgress();
-    await loadLayer();
-  }
-});
-
 async function loadLayer() {
   try {
     const expRes = await fetch(`${API}/exp_table`);
@@ -189,12 +182,31 @@ async function loadLayer() {
         <li>攻擊速度：${mon.stats.atk_speed}</li>
       </ul>
     `;
-    hidePageLoading();
   } catch (err) {
     monsterDiv.innerHTML = "❌ 載入資料失敗";
     console.error(err);
-    hidePageLoading();
   }
 }
 
+// ✅ iframe 收到登入後傳來的 user 資訊
+window.addEventListener("message", async (e) => {
+  if (e.data?.user) {
+    userId = e.data.user;
+    await fetchProgress();
+    await loadLayer();
+  }
+});
+
+// ✅ 明確掛載供外部 script 呼叫
 window.startBattle = startBattle;
+window.nextLayer = () => {
+  const next = layer + 1;
+  window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${next}`;
+};
+window.leaveDungeon = () => {
+  if (window.parent && typeof window.parent.loadPage === "function") {
+    window.parent.loadPage("dungeons.html");
+  } else {
+    window.location.href = "dungeons.html";
+  }
+};
