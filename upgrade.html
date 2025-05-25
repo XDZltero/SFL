@@ -346,15 +346,5 @@
   window.submitSkills = submitSkills;
   window.runMain = runMain;
 </script>
-
-<div id="footer-placeholder"></div>
-<script>
-  fetch("footer.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("footer-placeholder").innerHTML = html;
-    })
-    .catch(err => console.warn("載入 footer 失敗", err));
-</script>
 </body>
 </html>
