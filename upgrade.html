@@ -71,8 +71,7 @@
 
   function showLoading(show) {
     const loading = document.getElementById("loadingOverlay");
-    if (!loading) return;
-    loading.style.display = show ? "flex" : "none";
+    if (loading) loading.style.display = show ? "flex" : "none";
   }
 
   function renderStats() {
@@ -176,6 +175,7 @@
       renderSkills();
     } catch (err) {
       alert(`載入技能錯誤：${err.message}`);
+      console.error(err);
     }
   }
 
@@ -183,7 +183,7 @@
     const container = document.getElementById("skillList");
     container.innerHTML = "";
 
-    allSkills.sort((a, b) => (a.sort || 999) - (b.sort || 999)).forEach((skill, index) => {
+    allSkills.sort((a, b) => (a.sort || 999) - (b.sort || 999)).forEach((skill) => {
       const currentLevel = skillAlloc[skill.id] ?? 0;
       const isLocked = userStats.level < skill.learnlvl;
       const typeMap = { atk: "【輸出型】", heal: "【治療型】", buff: "【增益型】" };
@@ -283,35 +283,40 @@
     }
   }
 
-  async function runMain() {
-    showLoading(true);
+  async function loadStatus() {
     try {
       const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
       const data = await res.json();
       userStats = data;
       renderStats();
-      await loadAllSkills();
-      showLoading(false);
     } catch (err) {
-      console.error(err);
-      alert("載入錯誤，請稍後再試");
+      console.error("載入失敗：", err);
+    }
+  }
+
+  async function runMain() {
+    console.log("⚙️ runMain userId = ", userId);
+    showLoading(true);
+    try {
+      await loadStatus();
+      await loadAllSkills();
+    } catch (err) {
+      console.error("runMain 錯誤：", err);
+    } finally {
       showLoading(false);
     }
   }
 
-  // 從 container 注入使用者資訊後開始
+  // ✅ 正確從 parent 拿到 user email
   window.addEventListener("message", async (e) => {
+    console.log("📩 收到 parent 傳入：", e.data);
     if (e.data?.user) {
       userId = e.data.user;
       await runMain();
+    } else {
+      console.warn("⚠️ 未收到有效 user，無法啟動");
     }
   });
-
-  // 允許 container 呼叫
-  window.resetStats = resetStats;
-  window.submitLevelUp = submitLevelUp;
-  window.resetSkills = resetSkills;
-  window.submitSkills = submitSkills;
 </script>
 </body>
 </html>
