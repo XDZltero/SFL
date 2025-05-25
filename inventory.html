@@ -4,29 +4,9 @@
   <meta charset="UTF-8" />
   <title>背包與裝備</title>
   <link rel="icon" href="favicon.ico" />
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-      authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
-
-  <link href="css/style.css" rel="stylesheet"/></head>
+  <link href="css/style.css" rel="stylesheet"/>
 </head>
 <body>
-  <div id="topbar">
-    <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
-    <div>
-      <button onclick="location.href='index.html'">🔙 返回主頁</button>
-      <button onclick="logout()">🔓 登出</button>
-    </div>
-  </div>
-
   <div id="loading-placeholder"></div>
   <script src="js/loading.js"></script>
   <script>
@@ -41,9 +21,7 @@
   </script>
 
   <h1 class="fancy-title">🎒 背包與裝備管理</h1>
-
   <div id="userInfo">(尚未載入)</div>
-
   <div id="container">
     <div id="equipped">
       <h2>🛡️ 裝備中</h2>
@@ -54,39 +32,30 @@
       <pre id="itemBlock">尚未載入</pre>
     </div>
   </div>
+  <div class="btn-row">
+    <button id="btnBack">🔙 返回主頁</button>
+    <button id="btnLogout">🔓 登出</button>
+  </div>
 
   <script type="module">
     const API_BASE = "https://sfl-9cb8.onrender.com";
-    const loading = document.getElementById("loadingOverlay");
-    const nicknameSpan = document.getElementById("userEmail");
+    let userId = null;
+
     const userInfo = document.getElementById("userInfo");
     const equipBlock = document.getElementById("equipBlock");
     const itemBlock = document.getElementById("itemBlock");
+    const backBtn = document.getElementById("btnBack");
+    const logoutBtn = document.getElementById("btnLogout");
+
+    backBtn.onclick = () => window.parent.loadPage("index_test.html");
+    logoutBtn.onclick = () => window.parent.logout();
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
-      if (!loading) return;
-      loading.style.display = show ? "flex" : "none";
+      if (loading) loading.style.display = show ? "flex" : "none";
     }
 
-    function logout() {
-      firebase.auth().signOut().then(() => {
-        location.href = "/SFL/login.html";
-      });
-    }
-
-    window.logout = logout;
-
-    function waitForUser() {
-      return new Promise(resolve => {
-        const unsub = firebase.auth().onAuthStateChanged(user => {
-          unsub();
-          resolve(user);
-        });
-      });
-    }
-
-    async function loadInventory(userId) {
+    async function loadInventory() {
       try {
         const res1 = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
         const userData = await res1.json();
@@ -95,8 +64,6 @@
           userInfo.innerText = "❌ 無法取得角色資訊";
           return;
         }
-
-        nicknameSpan.innerText = userData.nickname || userId;
 
         let info = `🧍 使用者：${userData.nickname || userId}\n`;
         info += `🔢 等級：${userData.level}（EXP: ${userData.exp}）\n`;
@@ -110,7 +77,7 @@
         for (const [slot, item] of Object.entries(userData.equipment || {})) {
           equipText += `  - ${slot}：${item || "無"}\n`;
         }
-        equipBlock.innerText = equipText;
+        equipBlock.innerText = equipText || "（無裝備）";
 
         const res2 = await fetch(`${API_BASE}/inventory?user=${encodeURIComponent(userId)}`);
         const inv = await res2.json();
@@ -127,27 +94,15 @@
       }
     }
 
-    // 主流程
-    (async () => {
-      showLoading(true);
-      const user = await waitForUser();
-      if (!user) {
-        location.href = "/SFL/login.html";
-        return;
+    window.addEventListener("message", async (e) => {
+      console.log("📩 收到 parent 傳入：", e.data);
+      if (e.data?.user) {
+        userId = e.data.user;
+        showLoading(true);
+        await loadInventory();
+        showLoading(false);
       }
-
-      await loadInventory(user.email);
-      showLoading(false);
-    })();
-  </script>
-  <div id="footer-placeholder"></div>
-  <script>
-    fetch("footer.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("footer-placeholder").innerHTML = html;
-      })
-      .catch(err => console.warn("載入 footer 失敗", err));
+    });
   </script>
 </body>
 </html>
