@@ -1,4 +1,4 @@
-// js/dungeonLayerMain.js
+// ✅ 完整修正版 js/dungeonLayerMain.js
 
 const elementMap = {
   none: "無", phy: "物理", pyro: "火", hydro: "水", electro: "雷",
@@ -32,14 +32,59 @@ function hidePageLoading() {
   setTimeout(() => showLoading(false), 500);
 }
 
-async function fetchUser(userId) {
-  const res = await fetch(`${API}/status?user=${encodeURIComponent(userId)}`);
-  return await res.json();
+function showBattleLoading(show) {
+  const overlay = document.getElementById("battleLoadingOverlay");
+  if (!overlay) return;
+  overlay.style.display = show ? "flex" : "none";
+  if (show) {
+    createParticles();
+    startLoadingProgress();
+  }
 }
 
-async function fetchMonster(monsterId) {
-  const res = await fetch(`${API}/monster?id=${encodeURIComponent(monsterId)}`);
-  return await res.json();
+function createParticles() {
+  const container = document.getElementById("particles");
+  if (!container) return;
+  container.innerHTML = "";
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement("div");
+    p.className = "particle";
+    p.style.left = Math.random() * 100 + "%";
+    p.style.animationDelay = Math.random() * 6 + "s";
+    p.style.animationDuration = Math.random() * 3 + 3 + "s";
+    container.appendChild(p);
+  }
+}
+
+function startLoadingProgress() {
+  const progressBar = document.getElementById("progressBar");
+  const progressText = document.getElementById("progressText");
+  const loadingText = document.getElementById("loadingText");
+  const messages = [
+    "正在分析戰況...",
+    "計算屬性克制...",
+    "準備戰鬥技能...",
+    "載入怪物資料...",
+    "初始化戰鬥系統...",
+    "準備就緒！"
+  ];
+  let progress = 0;
+  let messageIndex = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 15 + 5;
+    if (progress > 100) progress = 100;
+    progressBar.style.width = progress + "%";
+    progressText.textContent = Math.round(progress) + "%";
+    if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 15) {
+      messageIndex++;
+      loadingText.textContent = messages[messageIndex];
+    }
+    if (progress >= 100) {
+      clearInterval(interval);
+      loadingText.textContent = messages[messages.length - 1];
+    }
+  }, 200);
+  window.battleProgressInterval = interval;
 }
 
 function percent(n) { return Math.round(n * 100) + "%"; }
@@ -48,26 +93,30 @@ function calcTotal(base, equip) { return (base || 0) + (equip || 0); }
 function formatStats(data) {
   const b = data.base_stats;
   const e = data.equipment_stats || {};
-  const total_hp = calcTotal(b.hp, e.hp);
-  const total_atk = calcTotal(b.attack, e.attack);
-  const total_shield = calcTotal(b.shield, e.shield);
-  const total_luck = calcTotal(b.luck, e.luck);
-  const total_accuracy = calcTotal(b.accuracy, e.accuracy);
-  const total_evade = calcTotal(b.evade, e.evade);
   const progress = percent(data.exp / (levelExp[data.level] || 1));
   return `玩家名稱: ${data.nickname}
 等級: ${data.level}
 經驗值: ${data.exp} (${progress})
-生命值: ${total_hp} (${b.hp} + ${e.hp || 0})
-攻擊力: ${total_atk} (${b.attack} + ${e.attack || 0})
-護盾值: ${total_shield} (${b.shield} + ${e.shield || 0})
-幸運值: ${total_luck} (${b.luck} + ${e.luck || 0})
-命中率: ${percent(total_accuracy)} (${b.accuracy} + ${e.accuracy || 0})
-迴避率: ${percent(total_evade)} (${b.evade} + ${e.evade || 0})
+生命值: ${calcTotal(b.hp, e.hp)} (${b.hp} + ${e.hp || 0})
+攻擊力: ${calcTotal(b.attack, e.attack)} (${b.attack} + ${e.attack || 0})
+護盾值: ${calcTotal(b.shield, e.shield)} (${b.shield} + ${e.shield || 0})
+幸運值: ${calcTotal(b.luck, e.luck)} (${b.luck} + ${e.luck || 0})
+命中率: ${percent(calcTotal(b.accuracy, e.accuracy))} (${b.accuracy} + ${e.accuracy || 0})
+迴避率: ${percent(calcTotal(b.evade, e.evade))} (${b.evade} + ${e.evade || 0})
 攻擊速度: ${b.atk_speed}
 額外傷害加成: ${b.other_bonus ?? 0}
 剩餘能力值點數: ${data.stat_points}
 剩餘技能點: ${data.skill_points}`;
+}
+
+async function fetchUser(id) {
+  const res = await fetch(`${API}/status?user=${encodeURIComponent(id)}`);
+  return await res.json();
+}
+
+async function fetchMonster(id) {
+  const res = await fetch(`${API}/monster?id=${encodeURIComponent(id)}`);
+  return await res.json();
 }
 
 async function fetchProgress() {
@@ -86,58 +135,55 @@ function checkProgressBeforeBattle() {
   return true;
 }
 
+function showBossCss() {
+  document.body.classList.add("boss-mode");
+  ["battleLoadingOverlay", "battleIcon", "battleTitle", "loadingText", "progressContainer", "progressText", "battleTips", "monsterInfo"]
+    .forEach(id => document.getElementById(id)?.classList.add("boss"));
+}
+
 async function loadLayer() {
-  try {
-    const expRes = await fetch(`${API}/exp_table`);
-    levelExp = await expRes.json();
+  const expRes = await fetch(`${API}/exp_table`);
+  levelExp = await expRes.json();
+  const user = await fetchUser(userId);
+  userDiv.innerText = formatStats(user);
+  const dungeonRes = await fetch(`${API}/dungeon_table`);
+  const all = await dungeonRes.json();
+  const current = all.find(d => d.id === dungeon);
+  if (!current) throw new Error("副本不存在");
 
-    const user = await fetchUser(userId);
-    userDiv.innerText = formatStats(user);
+  const isBoss = layer === current.monsters.length;
+  const monsterId = isBoss ? current.bossId : current.monsters[layer];
+  const mon = await fetchMonster(monsterId);
 
-    const dungeonRes = await fetch(`${API}/dungeon_table`);
-    const all = await dungeonRes.json();
-    const current = all.find(d => d.id === dungeon);
-    if (!current) throw new Error("副本不存在");
+  if (isBoss) showBossCss();
 
-    const isLast = layer === current.monsters.length;
-    const monId = isLast ? current.bossId : current.monsters[layer];
-    const mon = await fetchMonster(monId);
-
-    if (isLast) {
-      document.body.classList.add("boss-mode");
-      document.getElementById("monsterInfo")?.classList.add("boss");
-    }
-
-    monsterDiv.innerHTML = `
-      <h2>${mon.name}</h2>
-      <img src="${mon.image_url}" width="200"><br>
-      <p>${mon.info}</p>
-      <ul>
-        <li>等級：${mon.level}</li>
-        <li>屬性：${Array.isArray(mon.element) ? mon.element.map(e => elementMap[e] || e).join("、") : elementMap[mon.element]}</li>
-        <li>生命值：${mon.stats.hp}</li>
-        <li>攻擊力：${mon.stats.attack}</li>
-        <li>命中率：${Math.round(mon.stats.accuracy * 100)}%</li>
-        <li>迴避率：${Math.round(mon.stats.evade * 100)}%</li>
-        <li>攻擊速度：${mon.stats.atk_speed}</li>
-      </ul>
-    `;
-    hidePageLoading();
-  } catch (err) {
-    monsterDiv.innerHTML = "❌ 載入資料失敗";
-    console.error(err);
-    hidePageLoading();
-  }
+  monsterDiv.innerHTML = `
+    <h2>${mon.name}</h2>
+    <img src="${mon.image_url}" width="200"><br>
+    <p>${mon.info}</p>
+    <ul>
+      <li>等級：${mon.level}</li>
+      <li>屬性：${Array.isArray(mon.element) ? mon.element.map(e => elementMap[e] || e).join("、") : (elementMap[mon.element] || mon.element)}</li>
+      <li>生命值：${mon.stats.hp}</li>
+      <li>攻擊力：${mon.stats.attack}</li>
+      <li>命中率：${Math.round(mon.stats.accuracy * 100)}%</li>
+      <li>迴避率：${Math.round(mon.stats.evade * 100)}%</li>
+      <li>攻擊速度：${mon.stats.atk_speed}</li>
+    </ul>
+  `;
+  hidePageLoading();
 }
 
 function playBattleLog(log) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     logArea.innerHTML = "";
-    let roundIndex = 0;
-    let actionIndex = 0;
-
-    function nextLine() {
-      if (roundIndex >= log.length) return resolve();
+    let roundIndex = 0, actionIndex = 0;
+    const player = setInterval(() => {
+      if (roundIndex >= log.length) {
+        clearInterval(player);
+        resolve();
+        return;
+      }
       const round = log[roundIndex];
       if (actionIndex === 0) {
         const title = document.createElement("div");
@@ -153,14 +199,13 @@ function playBattleLog(log) {
         roundIndex++;
         actionIndex = 0;
       }
-    }
-    const interval = setInterval(nextLine, 400);
+    }, 400);
   });
 }
 
-async function startBattle() {
+window.startBattle = async function () {
   if (!checkProgressBeforeBattle()) return;
-
+  showBattleLoading(true);
   logArea.innerHTML = "";
   retryBtn.style.display = "none";
   nextBtn.style.display = "none";
@@ -175,54 +220,37 @@ async function startBattle() {
     });
     const data = await res.json();
     const log = data.battle_log;
-    if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
+    if (!Array.isArray(log)) throw new Error("無戰鬥紀錄");
 
     setTimeout(() => {
+      showBattleLoading(false);
       playBattleLog(log).then(() => {
         if (data.success) {
-          fetchUser(userId).then(updatedUser => userDiv.innerText = formatStats(updatedUser));
-
-          const winMsg = document.createElement("div");
-          winMsg.innerHTML = "<br><span style='color:limegreen'>🌟 戰鬥勝利！</span><br>";
-          logArea.appendChild(winMsg);
-
-          if (data.rewards) {
-            const { exp, leveled_up, drops } = data.rewards;
-            fetch(`${API}/items`).then(res => res.json()).then(itemMap => {
-              const rewardLog = document.createElement("div");
-              rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
-                (leveled_up ? `<br><span style='color:red'>等級提升！</span>` : "") +
-                drops.filter(d => Math.random() <= d.rate).map(d => {
-                  const meta = itemMap[d.id] || { name: d.id, special: 0 };
-                  if (meta.special === 2) return `<br><span style='color:crimson'>【超稀有】${meta.name} × ${d.value}</span>`;
-                  if (meta.special === 1) return `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${d.value}</span>`;
-                  return `<br>${meta.name} × ${d.value}`;
-                }).join("");
-              logArea.appendChild(rewardLog);
-            });
-          }
-
-          if (data.is_last_layer) {
-            leaveBtn.style.display = "inline-block";
-          } else {
+          fetchUser(userId).then(updated => userDiv.innerText = formatStats(updated));
+          if (data.is_last_layer) leaveBtn.style.display = "inline-block";
+          else {
             retryBtn.style.display = "inline-block";
             nextBtn.style.display = "inline-block";
           }
+          logArea.innerHTML += `
+            <div><span style='color:green'>🌟 戰鬥勝利！</span></div>
+            <div><strong>🎁 戰利品：</strong><br>EXP + ${data.rewards.exp}</div>
+          `;
         } else {
-          const failMsg = document.createElement("div");
-          failMsg.innerHTML = `<br><span style='color:red'>☠️ 戰鬥失敗</span><br>❌ ${data.message}`;
-          logArea.appendChild(failMsg);
+          logArea.innerHTML += `
+            <div><span style='color:red'>☠️ 戰鬥失敗</span></div>
+            <div>${data.message}</div>
+          `;
           leaveBtn.style.display = "inline-block";
         }
       });
-    }, 800);
+    }, 1000);
   } catch (err) {
-    logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
+    showBattleLoading(false);
+    logArea.innerHTML = "❌ 錯誤：" + err.message;
     leaveBtn.style.display = "inline-block";
   }
-}
-
-window.startBattle = startBattle;
+};
 
 window.addEventListener("message", async (e) => {
   if (e.data?.user) {
@@ -230,16 +258,4 @@ window.addEventListener("message", async (e) => {
     await fetchProgress();
     await loadLayer();
   }
-});
-
-window.addEventListener("DOMContentLoaded", () => {
-  battleBtn?.addEventListener("click", startBattle);
-  retryBtn?.addEventListener("click", startBattle);
-  nextBtn?.addEventListener("click", () => {
-    const next = layer + 1;
-    window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${next}`);
-  });
-  leaveBtn?.addEventListener("click", () => {
-    window.parent.loadPage("dungeons.html");
-  });
 });
