@@ -97,7 +97,7 @@
       display: flex;
       padding: 30px 20px;
       gap: 30px;
-      margin-top: 5px;
+      margin-top: 2.5px;
       min-height: calc(100vh - 200px);
     }
     
@@ -220,7 +220,7 @@
     
     /* 按鈕區域 */
     #footer {
-      padding: 5px 30px 30px 30px;
+      padding: 2.5px 30px 30px 30px;
       text-align: center;
     }
     
