@@ -88,7 +88,6 @@ function checkProgressBeforeBattle() {
 
 async function startBattle() {
   if (!checkProgressBeforeBattle()) return;
-  showLoading(true);
   logArea.innerHTML = "";
   retryBtn.style.display = "none";
   nextBtn.style.display = "none";
@@ -105,24 +104,20 @@ async function startBattle() {
     const log = data.battle_log;
     if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
 
-    setTimeout(() => {
-      showLoading(false);
-      playBattleLog(log).then(() => {
-        if (data.success) {
-          fetchUser(userId).then(updatedUser => userDiv.innerText = formatStats(updatedUser));
-          if (data.is_last_layer) leaveBtn.style.display = "inline-block";
-          else {
-            retryBtn.style.display = "inline-block";
-            nextBtn.style.display = "inline-block";
-            nextBtn.onclick = () => window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
-          }
-        } else {
-          leaveBtn.style.display = "inline-block";
+    playBattleLog(log).then(() => {
+      if (data.success) {
+        fetchUser(userId).then(updatedUser => userDiv.innerText = formatStats(updatedUser));
+        if (data.is_last_layer) leaveBtn.style.display = "inline-block";
+        else {
+          retryBtn.style.display = "inline-block";
+          nextBtn.style.display = "inline-block";
+          nextBtn.onclick = () => window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
         }
-      });
-    }, 1000);
+      } else {
+        leaveBtn.style.display = "inline-block";
+      }
+    });
   } catch (err) {
-    showLoading(false);
     logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
     leaveBtn.style.display = "inline-block";
   }
@@ -154,6 +149,14 @@ function playBattleLog(log) {
     const interval = setInterval(nextLine, 400);
   });
 }
+
+window.addEventListener("message", async (e) => {
+  if (e.data?.user) {
+    userId = e.data.user;
+    await fetchProgress();
+    await loadLayer();
+  }
+});
 
 async function loadLayer() {
   try {
@@ -194,21 +197,4 @@ async function loadLayer() {
   }
 }
 
-window.addEventListener("message", async (e) => {
-  if (e.data?.user) {
-    userId = e.data.user;
-    await fetchProgress();
-    await loadLayer();
-  }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  battleBtn?.addEventListener("click", startBattle);
-  retryBtn?.addEventListener("click", startBattle);
-  nextBtn?.addEventListener("click", () => {
-    window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
-  });
-  leaveBtn?.addEventListener("click", () => {
-    window.parent.loadPage("dungeons.html");
-  });
-});
+window.startBattle = startBattle;
