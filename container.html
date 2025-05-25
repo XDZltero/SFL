@@ -149,6 +149,29 @@
         userEmailSpan.textContent = e.data.nickname;
       }
     });
+
+    let currentUserInfo = null;
+
+    window.addEventListener("message", (e) => {
+      if (e.data?.user) {
+        currentUserInfo = e.data; // 包含 nickname 和 user
+        // 更新 topbar
+        document.getElementById("userEmail").innerText = e.data.nickname || e.data.user;
+      }
+    });
+
+    iframe.addEventListener("load", () => {
+      try {
+        updateTopbar(iframe.contentWindow.location.pathname);
+      } catch {
+        updateTopbar(iframe.src);
+      }
+    
+      // ✅ 傳遞使用者資料給 iframe 子頁面
+      if (currentUserInfo) {
+        iframe.contentWindow.postMessage(currentUserInfo, "*");
+      }
+    });
   
     document.addEventListener("DOMContentLoaded", () => {
       createParticles();
