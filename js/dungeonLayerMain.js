@@ -202,3 +202,8 @@ async function loadLayer() {
     hidePageLoading();
   }
 }
+
+// ✅ 確保戰鬥按鈕可點擊
+window.addEventListener("DOMContentLoaded", () => {
+  battleBtn?.addEventListener("click", startBattle);
+});
