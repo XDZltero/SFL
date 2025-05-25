@@ -322,19 +322,6 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: #111;
-  color: #ccc;
-  text-align: center;
-  padding: 10px;
-  font-size: 0.85em;
-  z-index: 999;
-}
-
-#container-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   background: #121212;
   color: #ccc;
   text-align: center;
