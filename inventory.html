@@ -91,7 +91,7 @@
     }
 
     window.addEventListener("message", async (e) => {
-      console.log("📩 收到 parent 傳入：", e.data);
+      /* console.log("📩 收到 parent 傳入：", e.data); */
       if (e.data?.user) {
         userId = e.data.user;
         showLoading(true);
