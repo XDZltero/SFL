@@ -5,20 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>還在測試階段 - 載入中</title>
   <link rel="icon" href="favicon.ico" />
-  
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-      authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
-  
-  <link href="css/indexIntro.css" rel="stylesheet"/></head>
+  <link href="css/indexIntro.css" rel="stylesheet"/>
 </head>
 <body>
   <!-- 粒子背景 -->
@@ -28,9 +15,7 @@
   <div id="loadingOverlay">
     <h1 class="game-title">遊戲容器</h1>
     <p class="game-subtitle">準備進入科技冒險世界</p>
-    <button class="start-button" id="startButton">
-      點擊開始
-    </button>
+    <button class="start-button" id="startButton">點擊開始</button>
     <div class="loading-animation" id="loadingAnimation" style="display: none;">
       <div class="loading-dot"></div>
       <div class="loading-dot"></div>
@@ -45,7 +30,6 @@
       <div class="user-info">
         <span>👤 玩家名稱：<span id="userEmail">載入中...</span></span>
       </div>
-    
       <div class="topbar-right">
         <div class="controls" id="controlButtons"></div>
         <div class="audio-controls">
@@ -54,19 +38,48 @@
         </div>
       </div>
     </div>
+
     <audio id="bgm" loop volume="0.10">
       <source src="https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/skk-IDDPslKXh0ZsyZTJbfqT7DS0nbyBtT.mp3" type="audio/mpeg">
     </audio>
     <iframe id="mainFrame" src="index_test.html"></iframe>
   </div>
 
-  <script>
-    // 創建粒子效果
+  <div id="container-footer">
+    📦 版本：v1.0.0 ｜ 🔗 <a href="https://discord.gg/你的連結" target="_blank">加入 Discord</a> ｜ 🕒 最後更新：2025-05-20 ｜ 🕒 開發作者：<a href="https://www.youtube.com/@XD_Zltero" target="_blank">萊姆醬</a>
+  </div>
+
+  <script type="module">
+    import { verifyLogin, logout } from "./js/firebase-init.js";
+
+    const userEmailSpan = document.getElementById("userEmail");
+    const bgm = document.getElementById("bgm");
+    const toggleBtn = document.getElementById("toggleSound");
+    const volumeSlider = document.getElementById("volumeSlider");
+    const controlButtons = document.getElementById("controlButtons");
+    const iframe = document.getElementById("mainFrame");
+
+    verifyLogin(); // 未登入會跳 loading.html
+
+    // 登出功能統一
+    window.logout = () => {
+      logout().then(() => {
+        window.top.location.href = "loading.html";
+      });
+    };
+
+    toggleBtn.onclick = () => {
+      bgm.muted = !bgm.muted;
+      toggleBtn.textContent = bgm.muted ? "🔇" : "🔊";
+    };
+
+    volumeSlider.oninput = () => {
+      bgm.volume = volumeSlider.value;
+    };
+
     function createParticles() {
       const particlesContainer = document.getElementById('particles');
-      const particleCount = 50;
-      
-      for (let i = 0; i < particleCount; i++) {
+      for (let i = 0; i < 50; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
         particle.style.left = Math.random() * 100 + '%';
@@ -76,67 +89,18 @@
       }
     }
 
-    // 開始遊戲函數
     function startGame() {
-      const startButton = document.getElementById('startButton');
-      const loadingAnimation = document.getElementById('loadingAnimation');
-      const overlay = document.getElementById('loadingOverlay');
-      const gameContent = document.getElementById('gameContent');
-      const bgm = document.getElementById('bgm');
-      
-      // 嘗試播放音樂
-      try {
-        bgm.play().catch(e => {
-          console.log('音樂播放被阻擋，但這是正常的');
-        });
-      } catch (e) {
-        console.log('音樂播放失敗');
-      }
-      
-      // 顯示載入動畫
-      startButton.style.display = 'none';
-      loadingAnimation.style.display = 'flex';
-      
-      // 模擬載入過程
+      document.getElementById('startButton').style.display = 'none';
+      document.getElementById('loadingAnimation').style.display = 'flex';
       setTimeout(() => {
-        overlay.classList.add('fade-out');
-        
-        setTimeout(() => {
-          gameContent.classList.add('show');
-        }, 500);
+        document.getElementById('loadingOverlay').classList.add('fade-out');
+        setTimeout(() => document.getElementById('gameContent').classList.add('show'), 500);
+        bgm.play().catch(() => {});
       }, 2000);
     }
 
-    // 原有的遊戲邏輯
-    const bgm = document.getElementById("bgm");
-    const toggleBtn = document.getElementById("toggleSound");
-    const volumeSlider = document.getElementById("volumeSlider");
-    let muted = false;
-    
-    toggleBtn.onclick = () => {
-      muted = !muted;
-      bgm.muted = muted;
-      toggleBtn.textContent = muted ? "🔇" : "🔊";
-    };
-    
-    volumeSlider.oninput = () => {
-      bgm.volume = volumeSlider.value;
-    };
-    
-
-    const iframe = document.getElementById("mainFrame");
-    const controlButtons = document.getElementById("controlButtons");
-    
-    // 載入頁面並更新 topbar
-    function loadPage(page) {
-      iframe.src = page;
-      updateTopbar(page);
-    }
-    
-    // 根據頁面路徑顯示對應的控制按鈕
     function updateTopbar(pagePath) {
       controlButtons.innerHTML = "";
-    
       if (pagePath.includes("upgrade") || pagePath.includes("inventory") || pagePath.includes("dungeons")) {
         controlButtons.innerHTML = `
           <button onclick="loadPage('index_test.html')">🔙 返回主頁</button>
@@ -148,52 +112,34 @@
           <button onclick="logout()">🔓 登出</button>
         `;
       } else {
-        controlButtons.innerHTML = `
-          <button onclick="logout()">🔓 登出</button>
-        `;
+        controlButtons.innerHTML = `<button onclick="logout()">🔓 登出</button>`;
       }
     }
-    
-    // 監聽 iframe 切換完成後，依實際 src 再次修正 topbar（保險）
+
+    window.loadPage = function(page) {
+      iframe.src = page;
+      updateTopbar(page);
+    }
+
     iframe.addEventListener("load", () => {
       try {
-        const currentPath = iframe.contentWindow.location.pathname;
-        updateTopbar(currentPath);
+        updateTopbar(iframe.contentWindow.location.pathname);
       } catch (e) {
-        console.warn("無法偵測 iframe 內容（跨域？）將使用原始 src 路徑");
         updateTopbar(iframe.src);
       }
     });
-    
-    function logout() {
-      firebase.auth().signOut().then(() => {
-        window.location.href = "/SFL/login.html";
-      });
-    }
-    
-    const userEmailSpan = document.getElementById("userEmail");
-    window.addEventListener("message", (e) => {
-      if (e.data?.nickname) {
-        userEmailSpan.textContent = e.data.nickname;
-      }
+
+    window.addEventListener("message", e => {
+      if (e.data?.nickname) userEmailSpan.textContent = e.data.nickname;
     });
-    
-    // 初始化
-    document.addEventListener('DOMContentLoaded', function() {
+
+    document.addEventListener('DOMContentLoaded', () => {
       createParticles();
       updateTopbar("index_test.html");
-      
-      // 綁定開始按鈕事件
       document.getElementById('startButton').addEventListener('click', startGame);
     });
 
     loadPage("index_test.html");
   </script>
-  <div id="container-footer">
-  📦 版本：v1.0.0
-  ｜ 🔗 <a href="https://discord.gg/你的連結" target="_blank">加入 Discord</a>
-  ｜ 🕒 最後更新：2025-05-20
-  ｜ 🕒 開發作者：<a href="https://www.youtube.com/@XD_Zltero" target="_blank">萊姆醬</a>
-  </div>
 </body>
 </html>
