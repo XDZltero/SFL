@@ -58,24 +58,25 @@
   </div>
 
   <!-- 行為腳本 -->
-  <script>
+  <script type="module">
+    import { auth, signOut } from "./js/firebase-init.js";
+  
     // BGM 控制
     const bgm = document.getElementById("bgm");
     const toggleBtn = document.getElementById("toggleSound");
     const volumeSlider = document.getElementById("volumeSlider");
     let muted = false;
-
+  
     toggleBtn.onclick = () => {
       muted = !muted;
       bgm.muted = muted;
       toggleBtn.textContent = muted ? "🔇" : "🔊";
     };
-
+  
     volumeSlider.oninput = () => {
       bgm.volume = volumeSlider.value;
     };
-
-    // 粒子背景
+  
     function createParticles() {
       const container = document.getElementById("particles");
       const count = 50;
@@ -88,8 +89,7 @@
         container.appendChild(p);
       }
     }
-
-    // 遊戲開始流程
+  
     function startGame() {
       document.getElementById("startButton").style.display = "none";
       document.getElementById("loadingAnimation").style.display = "flex";
@@ -101,16 +101,15 @@
         }, 500);
       }, 2000);
     }
-
-    // IFRAME 切換
+  
     const iframe = document.getElementById("mainFrame");
     const controlButtons = document.getElementById("controlButtons");
-
+  
     function loadPage(page) {
       iframe.src = page;
       updateTopbar(page);
     }
-
+  
     function updateTopbar(pagePath) {
       controlButtons.innerHTML = "";
       if (pagePath.includes("upgrade") || pagePath.includes("inventory") || pagePath.includes("dungeons")) {
@@ -127,7 +126,7 @@
         controlButtons.innerHTML = `<button onclick="logout()">🔓 登出</button>`;
       }
     }
-
+  
     iframe.addEventListener("load", () => {
       try {
         updateTopbar(iframe.contentWindow.location.pathname);
@@ -135,21 +134,21 @@
         updateTopbar(iframe.src);
       }
     });
-
-    function logout() {
-      firebase.auth().signOut().then(() => {
+  
+    // ✅ 修正後的 logout
+    window.logout = function () {
+      signOut(auth).then(() => {
         window.location.href = "/SFL/loading.html";
       });
-    }
-
-    // 接收 iframe 傳來的使用者名稱
+    };
+  
     const userEmailSpan = document.getElementById("userEmail");
     window.addEventListener("message", (e) => {
       if (e.data?.nickname) {
         userEmailSpan.textContent = e.data.nickname;
       }
     });
-
+  
     document.addEventListener("DOMContentLoaded", () => {
       createParticles();
       updateTopbar("index_test.html");
