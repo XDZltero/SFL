@@ -37,7 +37,7 @@
         <div class="controls" id="controlButtons"></div>
         <div class="audio-controls">
           <button id="toggleSound">🔊</button>
-          <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.1" />
+          <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.05" />
         </div>
       </div>
     </div>
@@ -60,21 +60,67 @@
   <!-- 行為腳本 -->
   <script type="module">
     import { auth, signOut } from "./js/firebase-init.js";
+
+    // Cookie 操作函數
+    function setCookie(name, value, days = 30) {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+      document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+    }
+
+    function getCookie(name) {
+      const nameEQ = name + "=";
+      const ca = document.cookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      }
+      return null;
+    }
   
     // BGM 控制
     const bgm = document.getElementById("bgm");
     const toggleBtn = document.getElementById("toggleSound");
     const volumeSlider = document.getElementById("volumeSlider");
-    let muted = false;
+
+    // 從 cookie 讀取設定，如果沒有則使用預設值
+    const savedMuted = getCookie('bgm_muted');
+    const savedVolume = getCookie('bgm_volume');
+    
+    let muted = savedMuted === 'true';
+    const initialVolume = savedVolume ? parseFloat(savedVolume) : 0.05;
+
+    // 設定初始狀態
+    volumeSlider.value = initialVolume;
+    toggleBtn.textContent = muted ? "🔇" : "🔊";
+
+    // 當音頻加載完成後設置音量和靜音狀態
+    bgm.addEventListener('loadeddata', () => {
+      bgm.volume = initialVolume;
+      bgm.muted = muted;
+    });
+
+    // 也可以在 canplay 事件中設置，確保音頻可以播放時就有正確設定
+    bgm.addEventListener('canplay', () => {
+      bgm.volume = initialVolume;
+      bgm.muted = muted;
+    });
   
     toggleBtn.onclick = () => {
       muted = !muted;
       bgm.muted = muted;
       toggleBtn.textContent = muted ? "🔇" : "🔊";
+      
+      // 儲存靜音狀態到 cookie
+      setCookie('bgm_muted', muted);
     };
   
     volumeSlider.oninput = () => {
       bgm.volume = volumeSlider.value;
+      
+      // 儲存音量到 cookie
+      setCookie('bgm_volume', volumeSlider.value);
     };
   
     function createParticles() {
@@ -93,6 +139,11 @@
     function startGame() {
       document.getElementById("startButton").style.display = "none";
       document.getElementById("loadingAnimation").style.display = "flex";
+      
+      // 確保音量和靜音狀態設置正確
+      bgm.volume = volumeSlider.value;
+      bgm.muted = muted;
+      
       bgm.play().catch(() => {});
       setTimeout(() => {
         document.getElementById("loadingOverlay").classList.add("fade-out");
