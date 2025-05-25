@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>還在測試階段 - 載入中</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>遊戲容器</title>
   <link rel="icon" href="favicon.ico" />
-  <link href="css/indexIntro.css" rel="stylesheet"/>
+  <link href="css/indexIntro.css" rel="stylesheet" />
+
+  <!-- Firebase 初始化模組 -->
+  <script type="module" src="firebase-init.js"></script>
 </head>
 <body>
-  <!-- 粒子背景 -->
+  <!-- 背景粒子 -->
   <div class="particles" id="particles"></div>
 
-  <!-- 進入遮罩 -->
+  <!-- 初始遮罩 -->
   <div id="loadingOverlay">
     <h1 class="game-title">遊戲容器</h1>
     <p class="game-subtitle">準備進入科技冒險世界</p>
@@ -24,7 +27,7 @@
     <div class="version-info">v2.0.1 | 科技版</div>
   </div>
 
-  <!-- 主遊戲內容 -->
+  <!-- 主內容 -->
   <div id="gameContent">
     <div id="topbar">
       <div class="user-info">
@@ -34,69 +37,78 @@
         <div class="controls" id="controlButtons"></div>
         <div class="audio-controls">
           <button id="toggleSound">🔊</button>
-          <input type="range" id="volumeSlider" min="0" max="1" step="0.10" value="0.10">
+          <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.1" />
         </div>
       </div>
     </div>
 
-    <audio id="bgm" loop volume="0.10">
-      <source src="https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/skk-IDDPslKXh0ZsyZTJbfqT7DS0nbyBtT.mp3" type="audio/mpeg">
+    <audio id="bgm" loop>
+      <source src="https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/skk-IDDPslKXh0ZsyZTJbfqT7DS0nbyBtT.mp3" type="audio/mpeg" />
     </audio>
+
     <iframe id="mainFrame" src="index_test.html"></iframe>
   </div>
 
+  <!-- 頁尾 -->
   <div id="container-footer">
-    📦 版本：v1.0.0 ｜ 🔗 <a href="https://discord.gg/你的連結" target="_blank">加入 Discord</a> ｜ 🕒 最後更新：2025-05-20 ｜ 🕒 開發作者：<a href="https://www.youtube.com/@XD_Zltero" target="_blank">萊姆醬</a>
+    📦 版本：v1.0.0
+    ｜ 🔗 <a href="https://discord.gg/你的連結" target="_blank">加入 Discord</a>
+    ｜ 🕒 最後更新：2025-05-20
+    ｜ 🧑‍💻 開發者：<a href="https://www.youtube.com/@XD_Zltero" target="_blank">萊姆醬</a>
   </div>
 
-  <script type="module">
-    import { verifyLogin, logout } from "./js/firebase-init.js";
-
-    const userEmailSpan = document.getElementById("userEmail");
+  <!-- 行為腳本 -->
+  <script>
+    // BGM 控制
     const bgm = document.getElementById("bgm");
     const toggleBtn = document.getElementById("toggleSound");
     const volumeSlider = document.getElementById("volumeSlider");
-    const controlButtons = document.getElementById("controlButtons");
-    const iframe = document.getElementById("mainFrame");
-
-    verifyLogin(); // 未登入會跳 loading.html
-
-    // 登出功能統一
-    window.logout = () => {
-      logout().then(() => {
-        window.top.location.href = "loading.html";
-      });
-    };
+    let muted = false;
 
     toggleBtn.onclick = () => {
-      bgm.muted = !bgm.muted;
-      toggleBtn.textContent = bgm.muted ? "🔇" : "🔊";
+      muted = !muted;
+      bgm.muted = muted;
+      toggleBtn.textContent = muted ? "🔇" : "🔊";
     };
 
     volumeSlider.oninput = () => {
       bgm.volume = volumeSlider.value;
     };
 
+    // 粒子背景
     function createParticles() {
-      const particlesContainer = document.getElementById('particles');
-      for (let i = 0; i < 50; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = Math.random() * 100 + '%';
-        particle.style.animationDelay = Math.random() * 6 + 's';
-        particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
-        particlesContainer.appendChild(particle);
+      const container = document.getElementById("particles");
+      const count = 50;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement("div");
+        p.className = "particle";
+        p.style.left = Math.random() * 100 + "%";
+        p.style.animationDelay = Math.random() * 6 + "s";
+        p.style.animationDuration = (Math.random() * 3 + 3) + "s";
+        container.appendChild(p);
       }
     }
 
+    // 遊戲開始流程
     function startGame() {
-      document.getElementById('startButton').style.display = 'none';
-      document.getElementById('loadingAnimation').style.display = 'flex';
+      document.getElementById("startButton").style.display = "none";
+      document.getElementById("loadingAnimation").style.display = "flex";
+      bgm.play().catch(() => {});
       setTimeout(() => {
-        document.getElementById('loadingOverlay').classList.add('fade-out');
-        setTimeout(() => document.getElementById('gameContent').classList.add('show'), 500);
-        bgm.play().catch(() => {});
+        document.getElementById("loadingOverlay").classList.add("fade-out");
+        setTimeout(() => {
+          document.getElementById("gameContent").classList.add("show");
+        }, 500);
       }, 2000);
+    }
+
+    // IFRAME 切換
+    const iframe = document.getElementById("mainFrame");
+    const controlButtons = document.getElementById("controlButtons");
+
+    function loadPage(page) {
+      iframe.src = page;
+      updateTopbar(page);
     }
 
     function updateTopbar(pagePath) {
@@ -116,30 +128,34 @@
       }
     }
 
-    window.loadPage = function(page) {
-      iframe.src = page;
-      updateTopbar(page);
-    }
-
     iframe.addEventListener("load", () => {
       try {
         updateTopbar(iframe.contentWindow.location.pathname);
-      } catch (e) {
+      } catch {
         updateTopbar(iframe.src);
       }
     });
 
-    window.addEventListener("message", e => {
-      if (e.data?.nickname) userEmailSpan.textContent = e.data.nickname;
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        window.location.href = "/SFL/loading.html";
+      });
+    }
+
+    // 接收 iframe 傳來的使用者名稱
+    const userEmailSpan = document.getElementById("userEmail");
+    window.addEventListener("message", (e) => {
+      if (e.data?.nickname) {
+        userEmailSpan.textContent = e.data.nickname;
+      }
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener("DOMContentLoaded", () => {
       createParticles();
       updateTopbar("index_test.html");
-      document.getElementById('startButton').addEventListener('click', startGame);
+      document.getElementById("startButton").addEventListener("click", startGame);
+      loadPage("index_test.html");
     });
-
-    loadPage("index_test.html");
   </script>
 </body>
 </html>
