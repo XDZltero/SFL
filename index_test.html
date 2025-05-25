@@ -4,17 +4,6 @@
   <meta charset="UTF-8" />
   <title>主頁</title>
   <link rel="icon" href="favicon.ico" />
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-      authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
   <link href="css/style.css" rel="stylesheet" />
 </head>
 <body>
@@ -46,6 +35,8 @@
   </div>
 
   <script type="module">
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js";
+
     const API_BASE = "https://sfl-9cb8.onrender.com";
     const statusBlock = document.getElementById("statusBlock");
     let levelExp = {};
@@ -91,37 +82,37 @@
 剩餘技能點: ${data.skill_points}`;
     }
 
-    async function loadStatus() {
+    async function loadStatus(userEmail) {
       showLoading(true);
       try {
         const expRes = await fetch("parameter/level_exp.json");
         levelExp = await expRes.json();
 
-        const user = firebase.auth().currentUser;
-        if (!user) {
-          window.location.href = "/SFL/login.html";
-          return;
-        }
-
-        const email = user.email;
-        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userEmail)}`);
         const data = await res.json();
 
-        // 傳給 container.html 更新暱稱顯示
-        window.parent.postMessage({ nickname: data.nickname || email }, "*");
+        // 傳給 container 顯示 nickname
+        window.parent.postMessage({ nickname: data.nickname || userEmail }, "*");
 
         statusBlock.innerText = formatStats(data);
       } catch (err) {
-        console.error("載入失敗", err);
+        console.error("❌ 載入角色資料失敗", err);
         statusBlock.innerText = "❌ 載入角色資料失敗，請稍後再試。";
       } finally {
         showLoading(false);
       }
     }
 
-    firebase.auth().onAuthStateChanged((user) => {
-      if (user) loadStatus();
-      else window.location.href = "/SFL/login.html";
+    // ✅ 主流程（父層容器已處理 Firebase 初始化）
+    window.addEventListener("DOMContentLoaded", () => {
+      const auth = firebase.auth(); // 已由父層初始化
+      auth.onAuthStateChanged(user => {
+        if (!user) {
+          window.parent.location.href = "/SFL/loading.html";
+        } else {
+          loadStatus(user.email);
+        }
+      });
     });
   </script>
 </body>
