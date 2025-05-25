@@ -1,5 +1,6 @@
-// 必須先載入 firebase-app-compat.js 和 firebase-auth-compat.js
-// 使用 firebase compat 版本的初始化
+// firebase-init.js (模組版)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
@@ -7,15 +8,20 @@ const firebaseConfig = {
   projectId: "sfl-api-f0290"
 };
 
-// 避免重複初始化
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-// 驗證登入狀態，未登入就導回登入頁
-firebase.auth().onAuthStateChanged(user => {
+// 共用登入狀態監聽
+onAuthStateChanged(auth, user => {
   if (!user) {
-    // 整個 container 跳出
-    window.parent.location.href = "/SFL/login.html";
+    // 若未登入，統一跳轉至登入頁（含 iframe 容器）
+    if (window.top === window.self) {
+      window.location.href = "/SFL/loading.html";
+    } else {
+      window.top.location.href = "/SFL/loading.html";
+    }
   }
 });
+
+// 可選匯出供外部使用
+export { app, auth, signOut };
