@@ -102,7 +102,10 @@
         const data = await res.json();
 
         // 傳給 container.html 更新 topbar 使用者名稱
-        window.parent.postMessage({ nickname: data.nickname || email }, "*");
+        window.parent.postMessage({
+          nickname: data.nickname || email,
+          user: email
+        }, "*");
         statusBlock.innerText = formatStats(data);
       } catch (err) {
         console.error("載入失敗", err);
