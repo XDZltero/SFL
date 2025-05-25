@@ -4,33 +4,13 @@
   <meta charset="UTF-8" />
   <title>副本選擇</title>
   <link rel="icon" href="favicon.ico" />
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-      authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
   <link href="css/dungeonStyle.css" rel="stylesheet" />
   <link href="css/style.css" rel="stylesheet" />
   <style>
-    #dungeonList {
-      margin-top: 100px;
-    }
+    #dungeonList { margin-top: 100px; }
   </style>
 </head>
 <body>
-  <div id="topbar">
-    <span>👤 玩家名稱：<span id="userEmail"> 載入中... </span></span>
-    <div>
-      <button onclick="location.href='index.html'">🔙 返回主頁</button>
-      <button onclick="logout()">🔓 登出</button>
-    </div>
-  </div>
-
   <div id="loading-placeholder"></div>
   <script src="js/loading.js"></script>
   <script>
@@ -48,12 +28,7 @@
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
-    const userEmailSpan = document.getElementById("userEmail");
     let userId = null;
-
-    function logout() {
-      firebase.auth().signOut().then(() => location.href = "/SFL/login.html");
-    }
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
@@ -61,18 +36,13 @@
       loading.style.display = show ? "flex" : "none";
     }
 
-    async function loadDungeons() {
+    async function loadDungeons(userId) {
       showLoading(true);
-      const user = firebase.auth().currentUser;
-      if (!user) return;
-      userId = user.email;
-
       const res = await fetch("parameter/dungeons.json");
       const dungeons = await res.json();
 
       const userRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
       const userData = await userRes.json();
-      userEmailSpan.innerText = userData.nickname || userId;
 
       const progRes = await fetch(`${API_BASE}/get_progress?user=${encodeURIComponent(userId)}`);
       const progData = await progRes.json();
@@ -92,11 +62,8 @@
           text = "進入 BOSS 關卡";
           cls = "button-boss";
         }
-        if (targetLayer === 0) {
-          text = "從第一層開始";
-        }
+        if (targetLayer === 0) text = "從第一層開始";
 
-        // 檢查條件
         let lockReason = "";
         const preTaskId = dungeon["Pre-Task"];
         const preTaskReq = dungeon["Pre-Task-ReqTime"] || 0;
@@ -113,11 +80,9 @@
           lockReason = lockReason ? `${lockReason}<br>${taskText}` : taskText;
         }
 
-        let buttonHtml = `
-          <button class="${cls}" onclick="location.href='dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}'">${text}</button>
-        `;
+        let buttonHtml = `<button class="${cls}" onclick="window.parent.loadPage('dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}')">${text}</button>`;
         if (lockReason) {
-          buttonHtml = `<p style="color:red">${lockReason}</p>`;
+          buttonHtml = `<p style=\"color:red\">${lockReason}</p>`;
         }
 
         const div = document.createElement("div");
@@ -133,27 +98,19 @@
             </div>
           </div>
         `;
-        dungeonList.appendChild(div);
+        document.getElementById("dungeonList").appendChild(div);
       }
 
       showLoading(false);
       document.getElementById("dungeonList").style.display = "block";
     }
 
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) location.href = "/SFL/login.html";
-      else await loadDungeons();
+    window.addEventListener("message", async (e) => {
+      if (e.data?.user) {
+        userId = e.data.user;
+        await loadDungeons(userId);
+      }
     });
-  </script>
-
-  <div id="footer-placeholder"></div>
-  <script>
-    fetch("footer.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("footer-placeholder").innerHTML = html;
-      })
-      .catch(err => console.warn("載入 footer 失敗", err));
   </script>
 </body>
 </html>
