@@ -35,19 +35,10 @@
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-      authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290"
-    };
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
+  <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
+    let userId = null;
+
     const userInfo = document.getElementById("userInfo");
     const equipBlock = document.getElementById("equipBlock");
     const itemBlock = document.getElementById("itemBlock");
@@ -59,6 +50,7 @@
     }
 
     async function loadInventory(userId) {
+      showLoading(true);
       try {
         const res1 = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
         const userData = await res1.json();
@@ -100,17 +92,16 @@
       } catch (err) {
         userInfo.innerText = "❌ 載入錯誤：" + err.message;
         console.error(err);
+      } finally {
+        showLoading(false);
       }
     }
 
-    // 主流程
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        showLoading(true);
-        await loadInventory(user.email);
-        showLoading(false);
-      } else {
-        window.parent.location.href = "/SFL/loading.html";
+    // 監聽來自父視窗的使用者資訊
+    window.addEventListener("message", async (e) => {
+      if (e.data?.user) {
+        userId = e.data.user;
+        await loadInventory(userId);
       }
     });
   </script>
