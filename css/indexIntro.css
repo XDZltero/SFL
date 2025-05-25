@@ -329,3 +329,27 @@
   font-size: 0.85em;
   z-index: 999;
 }
+
+#container-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #121212;
+  color: #ccc;
+  text-align: center;
+  padding: 12px 16px;
+  font-size: 0.9em;
+  z-index: 999;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#container-footer a {
+  color: #00bcd4; /* 冰藍色連結 */
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+#container-footer a:hover {
+  color: #ffcc00; /* 滑過時改為亮金色 */
+}
