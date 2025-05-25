@@ -7,8 +7,8 @@
   <link href="css/style.css" rel="stylesheet"/>
 </head>
 <body>
-  <div id="loading-placeholder"></div>
   <script src="js/loading.js"></script>
+  <div id="loading-placeholder"></div>
   <script>
     fetch("loadingOverlay.html")
       .then(res => res.text())
@@ -21,7 +21,9 @@
   </script>
 
   <h1 class="fancy-title">🎒 背包與裝備管理</h1>
+
   <div id="userInfo">(尚未載入)</div>
+
   <div id="container">
     <div id="equipped">
       <h2>🛡️ 裝備中</h2>
@@ -34,24 +36,29 @@
   </div>
 
   <script type="module">
-    const API_BASE = "https://sfl-9cb8.onrender.com";
-    let userId = null;
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const API_BASE = "https://sfl-9cb8.onrender.com";
     const userInfo = document.getElementById("userInfo");
     const equipBlock = document.getElementById("equipBlock");
     const itemBlock = document.getElementById("itemBlock");
-    const backBtn = document.getElementById("btnBack");
-    const logoutBtn = document.getElementById("btnLogout");
-
-    backBtn.onclick = () => window.parent.loadPage("index_test.html");
-    logoutBtn.onclick = () => window.parent.logout();
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
-      if (loading) loading.style.display = show ? "flex" : "none";
+      if (!loading) return;
+      loading.style.display = show ? "flex" : "none";
     }
 
-    async function loadInventory() {
+    async function loadInventory(userId) {
       try {
         const res1 = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
         const userData = await res1.json();
@@ -60,6 +67,12 @@
           userInfo.innerText = "❌ 無法取得角色資訊";
           return;
         }
+
+        // 傳遞使用者名稱給父視窗
+        window.parent.postMessage({
+          nickname: userData.nickname || userId,
+          user: userId
+        }, "*");
 
         let info = `🧍 使用者：${userData.nickname || userId}\n`;
         info += `🔢 等級：${userData.level}（EXP: ${userData.exp}）\n`;
@@ -73,7 +86,7 @@
         for (const [slot, item] of Object.entries(userData.equipment || {})) {
           equipText += `  - ${slot}：${item || "無"}\n`;
         }
-        equipBlock.innerText = equipText || "（無裝備）";
+        equipBlock.innerText = equipText;
 
         const res2 = await fetch(`${API_BASE}/inventory?user=${encodeURIComponent(userId)}`);
         const inv = await res2.json();
@@ -90,15 +103,26 @@
       }
     }
 
-    window.addEventListener("message", async (e) => {
-      /* console.log("📩 收到 parent 傳入：", e.data); */
-      if (e.data?.user) {
-        userId = e.data.user;
+    // 主流程
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
         showLoading(true);
-        await loadInventory();
+        await loadInventory(user.email);
         showLoading(false);
+      } else {
+        window.parent.location.href = "/SFL/loading.html";
       }
     });
+  </script>
+
+  <div id="footer-placeholder"></div>
+  <script>
+    fetch("footer.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("footer-placeholder").innerHTML = html;
+      })
+      .catch(err => console.warn("載入 footer 失敗", err));
   </script>
 </body>
 </html>
