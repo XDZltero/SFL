@@ -331,7 +331,6 @@
     userId = user.email;
     const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
     const data = await res.json();
-    emailSpan.innerText = data.nickname || userId;
     await loadStatus();
     await loadAllSkills();
     window.parent.postMessage({ nickname: data.nickname || userId }, "*");
