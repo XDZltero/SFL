@@ -36,15 +36,13 @@
   <pre id="statusBlock">正在載入角色資料...</pre>
 
   <div>
-    <button onclick="location.href='upgrade.html'">🧠 技能與升級頁面</button>
-    <button onclick="location.href='inventory.html'">🎒 背包與裝備管理</button>
+    <button onclick="window.parent.loadPage('upgrade.html')">🧠 技能與升級頁面</button>
+    <button onclick="window.parent.loadPage('inventory.html')">🎒 背包與裝備管理</button>
   </div>
 
   <div>
     <h3>＜副本＞</h3>
-    <button onclick="location.href='dungeons.html'">🗡️ 前往副本入口</button>
-    怪物 ID：<input id="monster_id" placeholder="輸入怪物 ID" />
-    <button onclick="goToBattle()">戰鬥開始</button>
+    <button onclick="window.parent.loadPage('dungeons.html')">🗡️ 前往副本入口</button>
   </div>
 
   <script type="module">
@@ -92,18 +90,6 @@
 剩餘能力值點數: ${data.stat_points}
 剩餘技能點: ${data.skill_points}`;
     }
-
-    function goToBattle() {
-      const user = firebase.auth().currentUser;
-      const monster = document.getElementById("monster_id").value.trim();
-      if (!user || !monster) {
-        alert("請輸入怪物 ID");
-        return;
-      }
-      window.location.href = `battle.html?user=${encodeURIComponent(user.email)}&monster=${encodeURIComponent(monster)}`;
-    }
-
-    window.goToBattle = goToBattle;
 
     async function loadStatus() {
       showLoading(true);
