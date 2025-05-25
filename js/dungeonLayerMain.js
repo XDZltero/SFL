@@ -203,7 +203,13 @@ async function loadLayer() {
   }
 }
 
-// ✅ 確保戰鬥按鈕可點擊
 window.addEventListener("DOMContentLoaded", () => {
   battleBtn?.addEventListener("click", startBattle);
+  retryBtn?.addEventListener("click", startBattle);
+  nextBtn?.addEventListener("click", () => {
+    window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
+  });
+  leaveBtn?.addEventListener("click", () => {
+    window.parent.loadPage("dungeons.html");
+  });
 });
