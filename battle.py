@@ -351,29 +351,29 @@ def simulate_battle(user, monster, user_skill_dict):
                     round_log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {mon_hp - old_hp} 點生命值（目前 HP：{mon_hp}/{monster['stats']['hp']}）")
                 elif skill_type == "buff":
                     buff = {
-                        "name": skill["description"],
+                        "name": skill["buffName"],
                         "description": skill["description"],
                         "multiplier": skill["multiplier"],
                         "effectType": skill.get("effectType", "atk"),
                         "round": skill.get("round", 3)
                     }
                     add_or_refresh_buff(mon_buffs, buff)
-                    round_log.append(f"{monster['name']} 施放了 {buff['description']}")
+                    round_log.append(f"{monster['name']} 施放了 {buff['buffName']} ，{buff['description']}")
                 elif skill_type == "debuff":
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user["base_stats"]["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
                         debuff = {
-                            "name": skill["description"],
+                            "name": skill["buffName"],
                             "description": skill["description"],
                             "multiplier": skill["multiplier"],
                             "effectType": skill.get("effectType", "atk"),
                             "round": skill.get("round", 3)
                         }
                         add_or_refresh_debuff(user_buffs, debuff)
-                        round_log.append(f"{monster['name']} 對你施放了 {debuff['description']}")
+                        round_log.append(f"{monster['name']} 對你施放了 {debuff['name']} ，{debuff['description']}")
                     else:
-                        round_log.append(f"{monster['name']} 對你施放 {skill['description']} 但未命中")
+                        round_log.append(f"{monster['name']} 對你施放 {skill['buffName']} 但未命中")
                 elif skill_type == "atk":
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user["base_stats"]["evade"] * user_stats_mod["evade"],
