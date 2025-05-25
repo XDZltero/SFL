@@ -351,10 +351,10 @@ def simulate_battle(user, monster, user_skill_dict):
                     round_log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {mon_hp - old_hp} 點生命值（目前 HP：{mon_hp}/{monster['stats']['hp']}）")
                 elif skill_type == "buff":
                     buff = {
-                        "name": skill["buffName"],
-                        "description": skill["description"],
+                        "name": skill.get("buffName", skill.get("name", skill.get("id", "未知技能"))),
+                        "description": skill.get("description", ""),
                         "multiplier": skill["multiplier"],
-                        "effectType": skill.get("effectType", "atk"),
+                        "effectType": skill.get("effectType", "attack"),
                         "round": skill.get("round", 3)
                     }
                     add_or_refresh_buff(mon_buffs, buff)
@@ -364,10 +364,10 @@ def simulate_battle(user, monster, user_skill_dict):
                                      user["base_stats"]["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
                         debuff = {
-                            "name": skill["buffName"],
-                            "description": skill["description"],
+                            "name": skill.get("buffName", skill.get("name", skill.get("id", "未知技能"))),
+                            "description": skill.get("description", ""),
                             "multiplier": skill["multiplier"],
-                            "effectType": skill.get("effectType", "atk"),
+                            "effectType": skill.get("effectType", "attack"),
                             "round": skill.get("round", 3)
                         }
                         add_or_refresh_debuff(user_buffs, debuff)
