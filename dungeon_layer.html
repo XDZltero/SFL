@@ -23,6 +23,24 @@
       });
   </script>
 
+  <!-- 戰鬥載入遮罩 (BOSS 也可套用 boss 樣式) -->
+  <div id="battleLoadingOverlay">
+    <div class="particles" id="particles"></div>
+    <div class="battle-loading-container">
+      <div class="battle-icon" id="battleIcon">⚔️</div>
+      <div class="battle-title" id="battleTitle">戰鬥準備中</div>
+      <div class="loading-text" id="loadingText">正在分析戰況...</div>
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-text" id="progressText">0%</div>
+      <div class="battle-tips" id="battleTips">
+        💡 戰鬥小提示：善用屬性克制關係可以提高勝率！<br/>
+        🛡️ 記得提升裝備來增強戰鬥力
+      </div>
+    </div>
+  </div>
+
   <!-- 主內容 -->
   <div id="content">
     <div class="section" id="userInfo">🧍 角色資訊載入中...</div>
@@ -37,52 +55,43 @@
     <button id="leaveBtn" style="display:none">離開副本</button>
   </div>
 
-  <!-- 保留 script: module 控制戰鬥流程，並監聽 window.postMessage 傳入 user 資訊 -->
   <script type="module" src="js/dungeonLayerMain.js"></script>
   <script type="module">
-  // ✅ 修正 click 綁定不觸發問題，需由 iframe 內部在 DOMContentLoaded 註冊點擊事件
-  
-  const battleBtn = document.getElementById("battleBtn");
-  const retryBtn = document.getElementById("retryBtn");
-  const nextBtn = document.getElementById("nextBtn");
-  const leaveBtn = document.getElementById("leaveBtn");
-  
-  function setupButtonHandlers() {
-    if (!battleBtn) return console.warn("找不到 battleBtn 元素");
-    battleBtn.addEventListener("click", () => {
-      console.log("⚔️ battleBtn clicked");
-      if (typeof window.startBattle === "function") {
-        window.startBattle();
-      } else {
-        console.error("❌ window.startBattle 尚未定義");
-      }
+    const battleBtn = document.getElementById("battleBtn");
+    const retryBtn = document.getElementById("retryBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const leaveBtn = document.getElementById("leaveBtn");
+
+    function setupButtonHandlers() {
+      battleBtn?.addEventListener("click", () => {
+        console.log("⚔️ battleBtn clicked");
+        if (typeof window.startBattle === "function") {
+          window.startBattle();
+        } else {
+          console.error("❌ window.startBattle 尚未定義");
+        }
+      });
+      retryBtn?.addEventListener("click", () => {
+        window.startBattle?.();
+      });
+      nextBtn?.addEventListener("click", () => {
+        const params = new URLSearchParams(location.search);
+        const dungeon = params.get("dungeon");
+        const layer = parseInt(params.get("layer") || "0") + 1;
+        window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer}`;
+      });
+      leaveBtn?.addEventListener("click", () => {
+        if (window.parent && typeof window.parent.loadPage === "function") {
+          window.parent.loadPage("dungeons.html");
+        } else {
+          window.location.href = "dungeons.html";
+        }
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      setupButtonHandlers();
     });
-  
-    retryBtn?.addEventListener("click", () => {
-      console.log("🔁 retryBtn clicked");
-      window.startBattle?.();
-    });
-  
-    nextBtn?.addEventListener("click", () => {
-      const params = new URLSearchParams(location.search);
-      const dungeon = params.get("dungeon");
-      const layer = parseInt(params.get("layer") || "0") + 1;
-      window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer}`;
-    });
-  
-    leaveBtn?.addEventListener("click", () => {
-      if (window.parent && typeof window.parent.loadPage === "function") {
-        window.parent.loadPage("dungeons.html");
-      } else {
-        window.location.href = "dungeons.html";
-      }
-    });
-  }
-  
-  // 最終保險：確保事件都在 DOMContentLoaded 後綁定
-  window.addEventListener("DOMContentLoaded", () => {
-    setupButtonHandlers();
-  });
   </script>
 </body>
 </html>
