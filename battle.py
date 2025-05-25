@@ -358,7 +358,7 @@ def simulate_battle(user, monster, user_skill_dict):
                         "round": skill.get("round", 3)
                     }
                     add_or_refresh_buff(mon_buffs, buff)
-                    round_log.append(f"{monster['name']} 施放了 {buff['description']} ，自身獲得強化")
+                    round_log.append(f"{monster['name']} 施放了 {buff['description']}")
                 elif skill_type == "debuff":
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user["base_stats"]["evade"] * user_stats_mod["evade"],
@@ -371,7 +371,7 @@ def simulate_battle(user, monster, user_skill_dict):
                             "round": skill.get("round", 3)
                         }
                         add_or_refresh_debuff(user_buffs, debuff)
-                        round_log.append(f"{monster['name']} 對你施放了 {debuff['description']} ，造成減益效果")
+                        round_log.append(f"{monster['name']} 對你施放了 {debuff['description']}")
                     else:
                         round_log.append(f"{monster['name']} 對你施放 {skill['description']} 但未命中")
                 elif skill_type == "atk":
