@@ -1,46 +1,27 @@
-// js/firebase-init.js
-
+// firebase-init.js (模組版)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-
-// ✅ 全站通用 Firebase 初始化設定
 const firebaseConfig = {
   apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
   authDomain: "sfl-api-f0290.firebaseapp.com",
   projectId: "sfl-api-f0290"
 };
 
-// ⚠️ 避免重複初始化（多次進入 iframe）
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-} else {
-  firebase.app(); // 若已初始化則使用現有實例
-} 
-
-
-// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// ✅ 驗證登入狀態（未登入會跳轉）
-export function verifyLogin() {
-  return new Promise(resolve => {
-    onAuthStateChanged(auth, user => {
-      if (!user) {
-        window.top.location.href = "loading.html"; // ✅ 統一跳轉
-      }
-      resolve(user);
-    });
-  });
-}
+// 共用登入狀態監聽
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    // 若未登入，統一跳轉至登入頁（含 iframe 容器）
+    if (window.top === window.self) {
+      window.location.href = "/SFL/loading.html";
+    } else {
+      window.top.location.href = "/SFL/loading.html";
+    }
+  }
+});
 
-// ✅ 登出函式
-export function logout() {
-  return signOut(auth);
-}
-
-// ✅ 取得目前使用者
-export function getCurrentUser() {
-  return auth.currentUser;
-}
+// 可選匯出供外部使用
+export { app, auth, signOut };
