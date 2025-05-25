@@ -275,7 +275,7 @@
 
     #mainFrame {
       width: 100%;
-      height: calc(100vh - 60px);
+      height: calc(100vh - 60px - 40px);
       border: none;
       position: absolute;
       top: 60px;
@@ -315,4 +315,17 @@
   display: flex;
   align-items: center;
   gap: 20px;
+}
+
+#container-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #111;
+  color: #ccc;
+  text-align: center;
+  padding: 10px;
+  font-size: 0.85em;
+  z-index: 999;
 }
