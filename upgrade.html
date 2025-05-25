@@ -301,8 +301,8 @@
 
   // 從 container 注入使用者資訊後開始
   window.addEventListener("message", async (e) => {
-    if (e.data?.nickname && e.origin.includes("sfl")) {
-      userId = e.data.nickname;
+    if (e.data?.user) {
+      userId = e.data.user;
       await runMain();
     }
   });
