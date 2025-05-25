@@ -109,6 +109,7 @@
       iframe.src = page;
       updateTopbar(page);
     }
+    window.loadPage = loadPage;
   
     function updateTopbar(pagePath) {
       controlButtons.innerHTML = "";
