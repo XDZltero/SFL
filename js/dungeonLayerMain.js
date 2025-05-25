@@ -1,4 +1,4 @@
-// js/dungeonLayerMain.js
+// ✅ js/dungeonLayerMain.js 最終修正版
 
 const elementMap = {
   none: "無", phy: "物理", pyro: "火", hydro: "水", electro: "雷",
@@ -86,9 +86,9 @@ function checkProgressBeforeBattle() {
   return true;
 }
 
-window.startBattle = async function () {
+async function startBattle() {
   if (!checkProgressBeforeBattle()) return;
-  showBattleLoading(true);
+  showLoading(true);
   logArea.innerHTML = "";
   retryBtn.style.display = "none";
   nextBtn.style.display = "none";
@@ -106,7 +106,7 @@ window.startBattle = async function () {
     if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
 
     setTimeout(() => {
-      showBattleLoading(false);
+      showLoading(false);
       playBattleLog(log).then(() => {
         if (data.success) {
           fetchUser(userId).then(updatedUser => userDiv.innerText = formatStats(updatedUser));
@@ -114,7 +114,6 @@ window.startBattle = async function () {
           else {
             retryBtn.style.display = "inline-block";
             nextBtn.style.display = "inline-block";
-            nextBtn.onclick = () => window.location.href = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`;
           }
         } else {
           leaveBtn.style.display = "inline-block";
@@ -122,11 +121,11 @@ window.startBattle = async function () {
       });
     }, 1000);
   } catch (err) {
-    showBattleLoading(false);
+    showLoading(false);
     logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
     leaveBtn.style.display = "inline-block";
   }
-};
+}
 
 function playBattleLog(log) {
   return new Promise((resolve) => {
@@ -154,15 +153,6 @@ function playBattleLog(log) {
     const interval = setInterval(nextLine, 400);
   });
 }
-
-window.addEventListener("message", async (e) => {
-  if (e.data?.user) {
-    userId = e.data.user;
-    await fetchProgress();
-    retryBtn.onclick = () => startBattle();
-    await loadLayer();
-  }
-});
 
 async function loadLayer() {
   try {
@@ -203,7 +193,15 @@ async function loadLayer() {
   }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("message", async (e) => {
+  if (e.data?.user) {
+    userId = e.data.user;
+    await fetchProgress();
+    await loadLayer();
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
   battleBtn?.addEventListener("click", startBattle);
   retryBtn?.addEventListener("click", startBattle);
   nextBtn?.addEventListener("click", () => {
