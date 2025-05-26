@@ -2,165 +2,308 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>背包與裝備管理</title>
+  <title>升級與技能頁面</title>
   <link rel="icon" href="favicon.ico" />
-  <link href="css/inventory.css" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet"/>
+  <link href="css/normalStyle.css" rel="stylesheet"/>
 </head>
 <body>
-  <div id="initialOverlay">⚡ 初始化裝備系統 ⚡</div>
-  <div id="loading-placeholder"></div>
-  <script src="js/loading.js"></script>
-  <script>
-    fetch("loadingOverlay.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("loading-placeholder").innerHTML = html;
-        document.getElementById("initialOverlay")?.remove();
-        if (typeof startPageLoadingProgress === "function") startPageLoadingProgress();
+<div id="initialOverlay">載入中...</div>
+<div id="loading-placeholder"></div>
+<script src="js/loading.js"></script>
+<script>
+  fetch("loadingOverlay.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("loading-placeholder").innerHTML = html;
+      document.getElementById("initialOverlay")?.remove();
+      if (typeof startPageLoadingProgress === "function") startPageLoadingProgress();
+    });
+</script>
+
+<h1 class="fancy-title">🧩 升級與技能管理</h1>
+<hr>
+
+<h2 class="fancy-subtitle"><span class="emoji">📊</span> 分配能力點</h2>
+<div class="card" style="display: flex; gap: 40px; align-items: flex-start;">
+  <div>
+    <strong>目前能力值：</strong>
+    <ul id="currentStats"></ul>
+  </div>
+  <div>
+    <div><strong>剩餘能力點數：<span id="remainingPoints" class="remaining-points">0</span></strong></div>
+    <div id="base_stats"></div>
+    <div class="btn-group">
+      <button id="btnResetStats" class="square-btn">重置</button>
+      <button id="btnSubmitLevel" class="square-btn">✅ 確認升級</button>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2 class="fancy-subtitle"><span class="emoji">🌀</span> 技能點分配</h2>
+<div class="card">
+  <div><strong>剩餘技能點數：<span id="remainingSkillPoints" class="remaining-points">0</span></strong></div>
+  <div class="btn-row">
+    <button id="btnResetSkills" class="square-btn">重置技能</button>
+    <button id="btnSubmitSkills" class="square-btn">✅ 儲存技能</button>
+  </div>
+  <div id="skillList"></div>
+</div>
+
+<script type="module">
+  const API_BASE = "https://sfl-9cb8.onrender.com";
+  const baseStatsEl = document.getElementById("base_stats");
+  const remainingPointsEl = document.getElementById("remainingPoints");
+  const skillListEl = document.getElementById("skillList");
+  const remainingSkillPointsEl = document.getElementById("remainingSkillPoints");
+
+  let userId = null;
+  let userStats = {};
+  let alloc = { hp: 0, attack: 0, luck: 0, atk_speed: 0 };
+  let skillAlloc = {};
+  let allSkills = [];
+  let remainingSkillPoints = 0;
+
+  const statFields = [
+    { key: "hp", label: "生命值（+5）" },
+    { key: "attack", label: "攻擊力" },
+    { key: "luck", label: "運氣值" },
+    { key: "atk_speed", label: "攻擊速度" }
+  ];
+
+  function showLoading(show) {
+    const loading = document.getElementById("loadingOverlay");
+    if (loading) loading.style.display = show ? "flex" : "none";
+  }
+
+  function renderStats() {
+    if (!userStats.base_stats) return;
+    const stats = userStats.base_stats;
+    document.getElementById("currentStats").innerHTML = `
+      <li>生命值：${stats.hp}</li>
+      <li>攻擊力：${stats.attack}</li>
+      <li>運氣值：${stats.luck}</li>
+      <li>攻擊速度：${stats.atk_speed}</li>
+    `;
+
+    let html = "";
+    statFields.forEach(({ key, label }) => {
+      html += `
+        <div class="stat-control" data-stat="${key}">
+          <label>${label}：</label>
+          <button class="minus">-</button>
+          <span id="val_${key}">${alloc[key]}</span>
+          <button class="plus">+</button>
+        </div>
+      `;
+    });
+    baseStatsEl.innerHTML = html;
+    remainingPointsEl.innerText = userStats.stat_points;
+
+    statFields.forEach(({ key }) => {
+      const container = baseStatsEl.querySelector(`.stat-control[data-stat="${key}"]`);
+      container.querySelector(".minus").onclick = () => adjust(key, -1);
+      container.querySelector(".plus").onclick = () => adjust(key, 1);
+    });
+  }
+
+  function adjust(stat, delta) {
+    const current = alloc[stat];
+    const totalAlloc = Object.values(alloc).reduce((a, b) => a + b, 0);
+    const remaining = userStats.stat_points - totalAlloc;
+
+    if (delta > 0 && remaining > 0) {
+      alloc[stat]++;
+    } else if (delta < 0 && current > 0) {
+      alloc[stat]--;
+    }
+
+    document.getElementById(`val_${stat}`).innerText = alloc[stat];
+    remainingPointsEl.innerText = userStats.stat_points - Object.values(alloc).reduce((a, b) => a + b, 0);
+  }
+
+  function resetStats() {
+    Object.keys(alloc).forEach(k => {
+      alloc[k] = 0;
+      document.getElementById(`val_${k}`).innerText = "0";
+    });
+    remainingPointsEl.innerText = userStats.stat_points;
+  }
+
+  async function submitLevelUp() {
+    const totalAlloc = Object.values(alloc).reduce((a, b) => a + b, 0);
+    if (totalAlloc === 0) return alert("請先分配能力點！");
+    if (!confirm("是否確定分配能力點？")) return;
+
+    showLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/levelup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: userId, allocate: alloc })
       });
-  </script>
-
-  <!-- 頂部欄位 -->
-  <div id="topbar">
-    <div class="user-info">
-      <span id="userInfo">🔌 系統連接中...</span>
-    </div>
-    <div class="controls">
-      <button onclick="location.reload()">🔄 重新載入</button>
-    </div>
-  </div>
-
-  <div class="main-container">
-    <h1 class="fancy-title">🎒 CYBER INVENTORY</h1>
-    
-    <!-- 角色屬性區域 -->
-    <div class="section">
-      <h2 class="fancy-subtitle">🧬 角色數據分析</h2>
-      <div class="stats-grid" id="statsDisplay"></div>
-    </div>
-    
-    <!-- 裝備區域 -->
-    <div class="section">
-      <h2 class="fancy-subtitle">🛡️ 裝備配置系統</h2>
-      <div class="equipment-grid" id="equipmentDisplay"></div>
-    </div>
-    
-    <!-- 道具區域 -->
-    <div class="section">
-      <h2 class="fancy-subtitle">📦 數據存儲庫</h2>
-      <div class="item-grid" id="itemGrid"></div>
-    </div>
-    
-    <!-- 操作按鈕 -->
-    <div class="action-buttons">
-      <button class="cyber-btn craft" onclick="openCraftUI()">🧪 製作終端</button>
-      <button class="cyber-btn" onclick="openEquipUI()">🔧 裝備終端</button>
-    </div>
-  </div>
-  
-  <!-- 對話框容器 -->
-  <div id="dialogContainer"></div>
-  
-  <!-- 載入動畫 -->
-  <div id="loadingSpinner" class="loading-spinner">
-    <div class="spinner-icon">⚙️</div>
-    <div>系統處理中...</div>
-  </div>
-
-  <script type="module">
-    const API_BASE = "https://sfl-9cb8.onrender.com";
-    let userId = null;
-    let userData = {};
-    let userItems = {};
-    let equipData = [];
-    let itemMeta = [];
-    let cardData = [];
-    let userCards = {};
-
-    function showLoading(show) {
-      const loading = document.getElementById("loadingOverlay");
-      const spinner = document.getElementById("loadingSpinner");
-      if (loading) loading.style.display = show ? "flex" : "none";
-      if (spinner) spinner.style.display = show ? "block" : "none";
-    }
-
-    async function loadGameData() {
-      try {
-        const [equipRes, itemRes, cardRes] = await Promise.all([
-          fetch("parameter/equips.json"),
-          fetch("parameter/items.json"),
-          fetch("parameter/cards_data.json")
-        ]);
-        
-        equipData = await equipRes.json();
-        itemMeta = await itemRes.json();
-        cardData = await cardRes.json();
-      } catch (error) {
-        console.error("載入遊戲資料失敗:", error);
-        alert("⚠️ 載入遊戲資料失敗，請重新整理頁面");
+      const data = await res.json();
+      if (res.ok) {
+        alert("能力值已分配完畢！");
+        await loadStatus();
+        resetStats();
+      } else {
+        alert(data.error || "升級失敗");
       }
+    } catch (err) {
+      alert(`錯誤：${err.message}`);
+    } finally {
+      showLoading(false);
     }
+  }
 
-    async function loadUserData() {
-      try {
-        const [statusRes, itemsRes, cardsRes] = await Promise.all([
-          fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`),
-          fetch(`${API_BASE}/user_items?user=${encodeURIComponent(userId)}`),
-          fetch(`${API_BASE}/user_cards?user=${encodeURIComponent(userId)}`)
-        ]);
-        
-        userData = await statusRes.json();
-        userItems = itemsRes.ok ? await itemsRes.json() : {};
-        userCards = cardsRes.ok ? await cardsRes.json() : {};
-        
-        // 如果 API 不存在，從 userData 中取得資料
-        if (!itemsRes.ok) {
-          userItems = userData.items || {};
+  function renderSkills() {
+    skillListEl.innerHTML = "";
+    skillListEl.className = "skill-row";
+    const typeMap = { atk: "【輸出型】", heal: "【治療型】", buff: "【增益型】" };
+    const elemMap = { pyro: "火", hydro: "水", nature: "自然", electro: "雷", light: "光", dark: "暗", all: "全", none: "無" };
+
+    allSkills.sort((a, b) => (a.sort || 999) - (b.sort || 999)).forEach(skill => {
+      const currentLevel = skillAlloc[skill.id] ?? 0;
+      const isLocked = userStats.level < skill.learnlvl;
+
+      const card = document.createElement("div");
+      card.className = "skill-card";
+      card.innerHTML = `
+        <strong>${typeMap[skill.type] || "【其他】"} ${skill.name}</strong>
+        <p>${skill.description}</p>
+        <p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>
+        <p>倍率：${(skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2)} 屬性：${skill.element.map(e => elemMap[e] || e).join("/")}</p>
+      `;
+
+      const controls = document.createElement("div");
+      controls.className = "skill-controls";
+
+      const minus = document.createElement("button");
+      minus.textContent = "-";
+      minus.disabled = currentLevel === 0 || isLocked;
+      minus.onclick = () => {
+        if (skillAlloc[skill.id] > 0) {
+          skillAlloc[skill.id]--;
+          remainingSkillPoints++;
+          renderSkills();
         }
-        if (!cardsRes.ok) {
-          userCards = userData.cards_owned || {};
+      };
+
+      const value = document.createElement("span");
+      value.textContent = currentLevel;
+      value.style.margin = "0 8px";
+      value.style.color = "#ffd93d";
+      value.style.fontWeight = "bold";
+
+      const plus = document.createElement("button");
+      plus.textContent = "+";
+      plus.disabled = isLocked || currentLevel >= skill.maxlvl || remainingSkillPoints <= 0;
+      plus.onclick = () => {
+        if (skillAlloc[skill.id] < skill.maxlvl && remainingSkillPoints > 0) {
+          skillAlloc[skill.id]++;
+          remainingSkillPoints--;
+          renderSkills();
         }
-        
-        // 更新用戶信息顯示
-        document.getElementById("userInfo").textContent = `🎮 ${userId} - Lv.${userData.level || 1}`;
-        
-        renderPage();
-      } catch (error) {
-        console.error("載入使用者資料失敗:", error);
-        alert("⚠️ 載入使用者資料失敗");
+      };
+
+      controls.appendChild(minus);
+      controls.appendChild(value);
+      controls.appendChild(plus);
+      card.appendChild(controls);
+
+      if (isLocked) {
+        const tip = document.createElement("span");
+        tip.style.color = "red";
+        tip.style.marginLeft = "10px";
+        tip.textContent = `等級達至 ${skill.learnlvl} 等解鎖`;
+        card.appendChild(tip);
       }
-    }
 
-    function calculateEquipmentBonus() {
-      const bonus = {};
-      const equipment = userData.equipment || {};
-      
-      for (let slot = 1; slot <= 5; slot++) {
-        const equippedCard = equipment[slot];
-        if (!equippedCard) continue;
-        
-        const cardId = Object.keys(equippedCard)[0];
-        const cardLevel = equippedCard[cardId];
-        const equipInfo = equipData.find(e => e.id === cardId);
-        
-        if (equipInfo && equipInfo.value && equipInfo.value[cardLevel]) {
-          const cardStats = equipInfo.value[cardLevel];
-          for (const [stat, value] of Object.entries(cardStats)) {
-            bonus[stat] = (bonus[stat] || 0) + value;
-          }
-        }
+      skillListEl.appendChild(card);
+    });
+    remainingSkillPointsEl.innerText = remainingSkillPoints;
+  }
+
+  function resetSkills() {
+    allSkills.forEach(skill => skillAlloc[skill.id] = 0);
+    const spentPoints = Object.values(userStats.skills || {}).reduce((sum, val) => sum + (val || 0), 0);
+    remainingSkillPoints = userStats.skill_points + spentPoints;
+    renderSkills();
+  }
+
+  async function submitSkills() {
+    showLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/skills_save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: userId, skills: skillAlloc })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("技能儲存成功！");
+        await loadStatus();
+        await loadAllSkills();
+      } else {
+        alert(data.error || "儲存失敗");
       }
-      
-      return bonus;
+    } catch (err) {
+      alert(`錯誤：${err.message}`);
+    } finally {
+      showLoading(false);
     }
+  }
 
-    function renderStats() {
-      const baseStats = userData.base_stats || {};
-      const equipBonus = calculateEquipmentBonus();
-      const statsEl = document.getElementById("statsDisplay");
-      
-      const statsList = [
-        { key: "hp", label: "⚡ 生命值", isPercent: false, icon: "❤️" },
-        { key: "attack", label: "⚔️ 攻擊力", isPercent: false, icon: "🗡️" },
-        { key: "shield", label: "🛡️ 護盾", isPercent: true
+  document.getElementById("btnResetStats").onclick = resetStats;
+  document.getElementById("btnSubmitLevel").onclick = submitLevelUp;
+  document.getElementById("btnResetSkills").onclick = resetSkills;
+  document.getElementById("btnSubmitSkills").onclick = submitSkills;
+
+  async function loadAllSkills() {
+    const skillRes = await fetch(`${API_BASE}/skills_full`);
+    const userRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+    allSkills = await skillRes.json();
+    userStats = await userRes.json();
+    skillAlloc = {};
+    remainingSkillPoints = userStats.skill_points;
+    allSkills.forEach(skill => {
+      skillAlloc[skill.id] = userStats.skills?.[skill.id] ?? 0;
+    });
+    renderStats();
+    renderSkills();
+  }
+
+  async function loadStatus() {
+    const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+    userStats = await res.json();
+    renderStats();
+  }
+
+  async function runMain() {
+    console.log("⚙️ runMain userId =", userId);
+    showLoading(true);
+    try {
+      await loadStatus();
+      await loadAllSkills();
+    } catch (err) {
+      console.error("runMain 錯誤：", err);
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  window.addEventListener("message", async (e) => {
+    /* console.log("📩 收到 parent 傳入：", e.data); */
+    if (e.data?.user) {
+      userId = e.data.user;
+      await runMain();
+    } else {
+      console.warn("⚠️ 未收到有效 user，無法啟動");
+    }
+  });
+</script>
+</body>
+</html>
