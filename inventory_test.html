@@ -204,31 +204,31 @@
 
     function renderItems() {
       const itemEl = document.getElementById("itemGrid");
-      
       let html = "";
+    
       Object.entries(userItems).forEach(([id, count]) => {
         const meta = itemMeta.find(m => m.id === id) || { name: id, description: "", special: 0 };
-        
+    
         let cardClass = "item-card";
-        let label = "";
-        
+        let rarityLabel = "";
+    
         if (meta.special === 1) {
           cardClass += " rare";
-          label = "【稀有】";
+          rarityLabel = "【稀有】";
         } else if (meta.special === 2) {
           cardClass += " super-rare";
-          label = "【超稀有】";
+          rarityLabel = "【超稀有】";
         }
-        
+    
         html += `
           <div class="${cardClass}">
-            ${label}${meta.name}
-            ${meta.description}
-            持有數量: ${count}
+            <div class="item-name">${rarityLabel}${meta.name}</div>
+            <div class="item-desc">${meta.description}</div>
+            <div class="item-count">持有數量: <span class="count-highlight">${count}</span></div>
           </div>
         `;
       });
-      
+    
       itemEl.innerHTML = html || '<div class="item-card">暫無道具</div>';
     }
 
