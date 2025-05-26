@@ -83,7 +83,7 @@
         equipBlock.innerText = equipText;
         
         // 載入物品資訊 - 修正：使用 user_items 端點
-        const res2 = await fetch(`${API_BASE}/user_items?user=${encodeURIComponent(userId)}`);
+        const res2 = await fetch(`${API_BASE}/inventory?user=${encodeURIComponent(userId)}`);
         const itemData = await res2.json();
         
         let itemText = "";
