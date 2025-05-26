@@ -470,13 +470,14 @@ def get_user_items():
     if not user_id:
         return jsonify({"error": "缺少使用者參數"}), 400
     
-    doc = db.collection("inventory").document(user_id).get()
+    doc = db.collection("user_items").document(user_id).get()
     if not doc.exists:
         return jsonify({"error": "找不到使用者"}), 404
     
     user_data = doc.to_dict()
     items = user_data.get("items", {})
     return jsonify(items)
+    
 
 @app.route("/user_cards", methods=["GET"])
 def get_user_cards():
