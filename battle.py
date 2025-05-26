@@ -70,6 +70,10 @@ def level_damage_modifier(attacker_level, defender_level):
         return 1.15 if diff > 0 else 0.85
     elif abs(diff) >= 5:
         return 1.20 if diff > 0 else 0.80
+    elif abs(diff) >= 6:
+        return 1.30 if diff > 0 else 0.70
+    elif abs(diff) >= 7:
+        return 1.50 if diff > 0 else 0.50
 
 # 確認是否升級
 def check_level_up(user):
