@@ -4,11 +4,135 @@
   <meta charset="UTF-8" />
   <title>背包與裝備管理</title>
   <link rel="icon" href="favicon.ico" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-<link href="css/inventory.css" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Noto Sans TC', sans-serif; padding: 20px; }
+    
+    .stats-section, .equipment-section, .items-section {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .equipment-slot {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    
+    .equipment-slot.empty {
+      background: #f5f5f5;
+      color: #666;
+      font-style: italic;
+    }
+    
+    .item-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+      gap: 15px; 
+      margin-top: 15px;
+    }
+    
+    .item-card { 
+      border: 1px solid #aaa; 
+      padding: 15px; 
+      border-radius: 10px; 
+      background: #fdfdfd; 
+      white-space: pre-wrap; 
+    }
+    
+    .item-card.rare { 
+      border-color: #4cc3ff; 
+      background: #eaf7ff; 
+    }
+    
+    .item-card.super-rare { 
+      border-color: #ff6ec7; 
+      background: #ffeafb; 
+    }
+    
+    #dialogContainer { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.6); 
+      display: none; 
+      align-items: center; 
+      justify-content: center; 
+      z-index: 1000;
+    }
+    
+    .dialog-box { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 10px; 
+      max-width: 700px; 
+      width: 90%; 
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .craft-item, .equip-item {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    
+    .materials-list {
+      color: #666;
+      font-size: 0.9em;
+      margin: 5px 0;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .square-btn {
+      padding: 8px 16px;
+      border: 1px solid #007bff;
+      background: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .square-btn:hover {
+      background: #0056b3;
+    }
+    
+    .square-btn:disabled {
+      background: #6c757d;
+      border-color: #6c757d;
+      cursor: not-allowed;
+    }
+    
+    .loading-spinner {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
 </head>
 <body>
-  <div id="initialOverlay">⚡ 初始化裝備系統 ⚡</div>
+  <div id="initialOverlay">載入中...</div>
   <div id="loading-placeholder"></div>
   <script src="js/loading.js"></script>
   <script>
@@ -21,52 +145,31 @@
       });
   </script>
 
-  <!-- 頂部欄位 -->
-  <div id="topbar">
-    <div class="user-info">
-      <span id="userInfo">🔌 系統連接中...</span>
-    </div>
-    <div class="controls">
-      <button onclick="location.reload()">🔄 重新載入</button>
-    </div>
-  </div>
-
-  <div class="main-container">
-    <h1 class="fancy-title">🎒 CYBER INVENTORY</h1>
-    
-    <!-- 角色屬性區域 -->
-    <div class="section">
-      <h2 class="fancy-subtitle">🧬 角色數據分析</h2>
-      <div class="stats-grid" id="statsDisplay"></div>
-    </div>
-    
-    <!-- 裝備區域 -->
-    <div class="section">
-      <h2 class="fancy-subtitle">🛡️ 裝備配置系統</h2>
-      <div class="equipment-grid" id="equipmentDisplay"></div>
-    </div>
-    
-    <!-- 道具區域 -->
-    <div class="section">
-      <h2 class="fancy-subtitle">📦 數據存儲庫</h2>
-      <div class="item-grid" id="itemGrid"></div>
-    </div>
-    
-    <!-- 操作按鈕 -->
-    <div class="action-buttons">
-      <button class="cyber-btn craft" onclick="openCraftUI()">🧪 製作終端</button>
-      <button class="cyber-btn" onclick="openEquipUI()">🔧 裝備終端</button>
-    </div>
+  <h1 class="fancy-title">🎒 背包與裝備管理</h1>
+  <div id="userInfo">尚未登入</div>
+  
+  <div class="stats-section">
+    <h2 class="fancy-subtitle">🧬 角色屬性</h2>
+    <div id="statsDisplay"></div>
   </div>
   
-  <!-- 對話框容器 -->
+  <div class="equipment-section">
+    <h2 class="fancy-subtitle">🛡️ 裝備中</h2>
+    <div id="equipmentDisplay"></div>
+  </div>
+  
+  <div class="items-section">
+    <h2 class="fancy-subtitle">📦 持有道具</h2>
+    <div class="item-grid" id="itemGrid"></div>
+  </div>
+  
+  <div class="btn-group">
+    <button class="square-btn" onclick="openCraftUI()">🧪 製作卡片</button>
+    <button class="square-btn" onclick="openEquipUI()">🧷 裝備卡片</button>
+  </div>
+  
   <div id="dialogContainer"></div>
-  
-  <!-- 載入動畫 -->
-  <div id="loadingSpinner" class="loading-spinner">
-    <div class="spinner-icon">⚙️</div>
-    <div>系統處理中...</div>
-  </div>
+  <div id="loadingSpinner" class="loading-spinner">處理中...</div>
 
   <script type="module">
     const API_BASE = "https://sfl-9cb8.onrender.com";
@@ -98,7 +201,7 @@
         cardData = await cardRes.json();
       } catch (error) {
         console.error("載入遊戲資料失敗:", error);
-        alert("⚠️ 載入遊戲資料失敗，請重新整理頁面");
+        alert("載入遊戲資料失敗，請重新整理頁面");
       }
     }
 
@@ -122,13 +225,10 @@
           userCards = userData.cards_owned || {};
         }
         
-        // 更新用戶信息顯示
-        document.getElementById("userInfo").textContent = `🎮 ${userId} - Lv.${userData.level || 1}`;
-        
         renderPage();
       } catch (error) {
         console.error("載入使用者資料失敗:", error);
-        alert("⚠️ 載入使用者資料失敗");
+        alert("載入使用者資料失敗");
       }
     }
 
@@ -161,6 +261,369 @@
       const statsEl = document.getElementById("statsDisplay");
       
       const statsList = [
-        { key: "hp", label: "⚡ 生命值", isPercent: false, icon: "❤️" },
-        { key: "attack", label: "⚔️ 攻擊力", isPercent: false, icon: "🗡️" },
-        { key: "shield", label: "🛡️ 護盾", isPercent: true
+        { key: "hp", label: "生命值", isPercent: false },
+        { key: "attack", label: "攻擊力", isPercent: false },
+        { key: "shield", label: "護盾", isPercent: true },
+        { key: "evade", label: "閃避", isPercent: true },
+        { key: "accuracy", label: "命中", isPercent: true },
+        { key: "other_bonus", label: "其他加成", isPercent: true },
+        { key: "luck", label: "運氣值", isPercent: false },
+        { key: "atk_speed", label: "攻擊速度", isPercent: false }
+      ];
+      
+      let html = "";
+      statsList.forEach(({ key, label, isPercent }) => {
+        const base = baseStats[key] || 0;
+        const bonus = equipBonus[key] || 0;
+        const total = base + bonus;
+        
+        const displayValue = isPercent ? `${(total * 100).toFixed(1)}%` : total;
+        const bonusDisplay = bonus > 0 ? ` (+${isPercent ? (bonus * 100).toFixed(1) + '%' : bonus})` : '';
+        
+        html += `
+          <div class="stat-item">
+            <span>${label}:</span>
+            <span>${displayValue} (${isPercent ? (base * 100).toFixed(1) + '%' : base}${bonusDisplay})</span>
+          </div>
+        `;
+      });
+      
+      statsEl.innerHTML = html;
+    }
+
+    function renderEquipment() {
+      const equipment = userData.equipment || {};
+      const equipEl = document.getElementById("equipmentDisplay");
+      
+      let html = "";
+      for (let slot = 1; slot <= 5; slot++) {
+        const equippedCard = equipment[slot];
+        
+        if (!equippedCard) {
+          html += `
+            <div class="equipment-slot empty">
+              欄位 ${slot}: 無裝備
+            </div>
+          `;
+        } else {
+          const cardId = Object.keys(equippedCard)[0];
+          const cardLevel = equippedCard[cardId];
+          const equipInfo = equipData.find(e => e.id === cardId);
+          
+          if (equipInfo) {
+            const stats = equipInfo.value[cardLevel] || {};
+            const statsText = Object.entries(stats)
+              .map(([key, value]) => `${key}: +${['shield','evade','accuracy','other_bonus'].includes(key) ? (value*100).toFixed(1)+'%' : value}`)
+              .join(", ");
+              
+            html += `
+              <div class="equipment-slot">
+                <strong>欄位 ${slot}: ${equipInfo.name} (Lv.${cardLevel})</strong><br>
+                <span class="materials-list">效果: ${statsText}</span>
+              </div>
+            `;
+          }
+        }
+      }
+      
+      equipEl.innerHTML = html;
+    }
+
+    function renderItems() {
+      const itemEl = document.getElementById("itemGrid");
+      
+      let html = "";
+      Object.entries(userItems).forEach(([id, count]) => {
+        const meta = itemMeta.find(m => m.id === id) || { name: id, description: "", special: 0 };
+        
+        let cardClass = "item-card";
+        let label = "";
+        
+        if (meta.special === 1) {
+          cardClass += " rare";
+          label = "【稀有】";
+        } else if (meta.special === 2) {
+          cardClass += " super-rare";
+          label = "【超稀有】";
+        }
+        
+        html += `
+          <div class="${cardClass}">
+            ${label}${meta.name}
+            ${meta.description}
+            持有數量: ${count}
+          </div>
+        `;
+      });
+      
+      itemEl.innerHTML = html || '<div class="item-card">暫無道具</div>';
+    }
+
+    function renderPage() {
+      renderStats();
+      renderEquipment();
+      renderItems();
+    }
+
+    async function openCraftUI() {
+      const dialog = document.getElementById("dialogContainer");
+      
+      let html = `
+        <div class='dialog-box'>
+          <h3>🧪 卡片製作與升級</h3>
+      `;
+      
+      cardData.forEach(card => {
+        const currentLevel = userCards[card.id] || 0;
+        const maxLevel = card.levels.length;
+        const isMaxed = currentLevel >= maxLevel;
+        const canCraft = userData.level >= card.require_level;
+        
+        if (!canCraft) {
+          html += `
+            <div class="craft-item">
+              <strong>${card.name}</strong> (需要等級: ${card.require_level})<br>
+              <span style="color: red;">等級不足，無法製作</span>
+            </div>
+          `;
+          return;
+        }
+        
+        const nextLevel = currentLevel + 1;
+        const levelData = card.levels[currentLevel]; // 0-based index
+        
+        if (isMaxed) {
+          html += `
+            <div class="craft-item">
+              <strong>${card.name}</strong> Lv.${currentLevel} (已滿級)<br>
+              <span class="materials-list">${card.description}</span>
+            </div>
+          `;
+        } else if (levelData) {
+          const materials = Object.entries(levelData.materials)
+            .map(([matId, qty]) => {
+              const owned = userItems[matId] || 0;
+              const color = owned >= qty ? "green" : "red";
+              return `<span style="color: ${color}">${matId} x${qty}(${owned})</span>`;
+            }).join(", ");
+          
+          const hasAllMaterials = Object.entries(levelData.materials)
+            .every(([matId, qty]) => (userItems[matId] || 0) >= qty);
+          
+          const successRate = (levelData.chance * 100).toFixed(0);
+          
+          html += `
+            <div class="craft-item">
+              <strong>${card.name}</strong> Lv.${currentLevel} → Lv.${nextLevel}<br>
+              <span class="materials-list">${card.description}</span><br>
+              <span class="materials-list">所需材料: ${materials}</span><br>
+              <span class="materials-list">成功率: ${successRate}%</span><br>
+              ${hasAllMaterials ? 
+                `<button class="square-btn" onclick="craftCard('${card.id}', ${currentLevel})">${currentLevel === 0 ? '製作' : '升級'}</button>` :
+                '<span style="color: red">材料不足</span>'
+              }
+            </div>
+          `;
+        }
+      });
+      
+      html += `
+          <div class="btn-group">
+            <button class="square-btn" onclick="closeDialog()">關閉</button>
+          </div>
+        </div>
+      `;
+      
+      dialog.innerHTML = html;
+      dialog.style.display = "flex";
+    }
+
+    async function craftCard(cardId, currentLevel) {
+      const card = cardData.find(c => c.id === cardId);
+      const levelData = card.levels[currentLevel];
+      
+      if (!levelData) {
+        alert("❌ 資料錯誤");
+        return;
+      }
+      
+      // 檢查材料
+      for (const [matId, qty] of Object.entries(levelData.materials)) {
+        if ((userItems[matId] || 0) < qty) {
+          alert("❌ 材料不足");
+          return;
+        }
+      }
+      
+      if (!confirm(`確定要${currentLevel === 0 ? '製作' : '升級'} ${card.name} 嗎？\n成功率: ${(levelData.chance * 100).toFixed(0)}%`)) {
+        return;
+      }
+      
+      showLoading(true);
+      
+      try {
+        const response = await fetch(`${API_BASE}/craft_card`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user: userId,
+            card_id: cardId,
+            materials: levelData.materials,
+            success_rate: levelData.chance
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          if (result.success) {
+            alert(`✅ ${currentLevel === 0 ? '製作' : '升級'}成功！`);
+            userCards[cardId] = currentLevel + 1;
+          } else {
+            alert(`❌ ${result.message || '製作失敗，材料已消耗'}`);
+          }
+          
+          // 重新載入使用者資料以更新道具數量
+          await loadUserData();
+          closeDialog();
+        } else {
+          alert(result.error || "製作失敗");
+        }
+      } catch (error) {
+        console.error("製作錯誤:", error);
+        alert("製作過程發生錯誤");
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function openEquipUI() {
+      const dialog = document.getElementById("dialogContainer");
+      const equipment = userData.equipment || {};
+      
+      let html = `
+        <div class='dialog-box'>
+          <h3>🧷 裝備管理</h3>
+      `;
+      
+      // 顯示裝備槽位
+      for (let slot = 1; slot <= 5; slot++) {
+        html += `
+          <div class="equip-item">
+            <label><strong>欄位 ${slot}:</strong></label><br>
+            <select id="equip_slot_${slot}" style="width: 100%; margin-top: 5px;">
+              <option value="">無裝備</option>
+        `;
+        
+        // 添加可裝備的卡片選項
+        Object.entries(userCards).forEach(([cardId, level]) => {
+          if (level > 0) {
+            const cardInfo = equipData.find(e => e.id === cardId);
+            const cardName = cardInfo ? cardInfo.name : cardId;
+            const isEquipped = equipment[slot]?.[cardId];
+            const isEquippedElsewhere = Object.values(equipment).some(eq => eq && eq[cardId] && equipment[slot] !== eq);
+            
+            if (!isEquippedElsewhere || isEquipped) {
+              html += `<option value="${cardId}" ${isEquipped ? 'selected' : ''}>${cardName} Lv.${level}</option>`;
+            }
+          }
+        });
+        
+        html += `
+            </select>
+          </div>
+        `;
+      }
+      
+      html += `
+          <div class="btn-group">
+            <button class="square-btn" onclick="saveEquipment()">✅ 儲存裝備</button>
+            <button class="square-btn" onclick="closeDialog()">取消</button>
+          </div>
+        </div>
+      `;
+      
+      dialog.innerHTML = html;
+      dialog.style.display = "flex";
+    }
+
+    async function saveEquipment() {
+      const newEquipment = {};
+      
+      for (let slot = 1; slot <= 5; slot++) {
+        const selectEl = document.getElementById(`equip_slot_${slot}`);
+        const cardId = selectEl.value;
+        
+        if (cardId && userCards[cardId]) {
+          newEquipment[slot] = { [cardId]: userCards[cardId] };
+        }
+      }
+      
+      showLoading(true);
+      
+      try {
+        const response = await fetch(`${API_BASE}/save_equipment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user: userId,
+            equipment: newEquipment
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          userData.equipment = newEquipment;
+          renderPage();
+          closeDialog();
+          alert("✅ 裝備更新成功");
+        } else {
+          alert(result.error || result.message || "裝備更新失敗");
+        }
+      } catch (error) {
+        console.error("儲存裝備錯誤:", error);
+        alert("儲存裝備時發生錯誤");
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function closeDialog() {
+      document.getElementById("dialogContainer").style.display = "none";
+    }
+
+    // 全域函數
+    window.openCraftUI = openCraftUI;
+    window.openEquipUI = openEquipUI;
+    window.closeDialog = closeDialog;
+    window.craftCard = craftCard;
+    window.saveEquipment = saveEquipment;
+
+    async function runMain() {
+      console.log("⚙️ runMain userId =", userId);
+      showLoading(true);
+      
+      try {
+        await loadGameData();
+        await loadUserData();
+      } catch (error) {
+        console.error("初始化錯誤:", error);
+        alert("頁面初始化失敗，請重新整理");
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // 監聽來自父頁面的訊息
+    window.addEventListener("message", async (e) => {
+      if (e.data?.user) {
+        userId = e.data.user;
+        await runMain();
+      } else {
+        console.warn("⚠️ 未收到有效 user，無法啟動");
+      }
+    });
+  </script>
+</body>
+</html>
