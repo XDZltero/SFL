@@ -675,8 +675,20 @@ body.dialog-open .dialog-box::before {
   pointer-events: none;
 }
 
+/* 主頁框架固定順序用 */
+.top-grid {
+  display: flex;
+  gap: 30px;
+  margin: 0 auto 30px;
+  max-width: 1400px;
+  padding: 0 20px;
+}
 
-
+.stats-section,
+.equipment-section {
+  flex: 1;
+  min-width: 0;
+}
 
 
 
