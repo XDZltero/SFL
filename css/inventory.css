@@ -560,3 +560,10 @@ body.dialog-open::before {
   color: #ffd93d;
   font-weight: bold;
 }
+
+body.dialog-open .stats-section::before,
+body.dialog-open .equipment-section::before,
+body.dialog-open .items-section::before,
+body.dialog-open .dialog-box::before {
+  animation: none !important;
+}
