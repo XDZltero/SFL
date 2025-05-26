@@ -11,22 +11,18 @@
   <script src="/js/firebase-init.js"></script>
   <style>
     body { font-family: 'Noto Sans TC', sans-serif; padding: 20px; }
-    .stats-display, .equipment-display, .item-grid { margin-bottom: 30px; }
     .item-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 15px;
+      margin-bottom: 30px;
     }
     .item-card { border: 1px solid #aaa; padding: 10px; border-radius: 10px; background: #fdfdfd; white-space: pre-wrap; }
     .item-card.rare { border-color: #4cc3ff; background: #eaf7ff; }
     .item-card.super-rare { border-color: #ff6ec7; background: #ffeafb; }
-    #craftBtn, #equipBtn {
-      padding: 10px 20px; margin-right: 10px; font-weight: bold;
-      border: none; border-radius: 8px; background: #007bff; color: white; cursor: pointer;
-    }
     #dialogContainer {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
-      display: none; align-items: center; justify-content: center;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
     }
     .dialog-box {
       background: white; padding: 20px; border-radius: 10px;
@@ -35,130 +31,118 @@
   </style>
 </head>
 <body>
-  <h1 class="fancy-title">🎒 背包與裝備管理</h1>
+  <h1>🎒 背包與裝備管理</h1>
   <div id="userInfo">(尚未載入)</div>
-  <div class="stats-display"><h2>🧬 能力值</h2><div id="statsBlock"></div></div>
-  <div class="equipment-display"><h2>🛡️ 裝備中</h2><div id="equipSlots"></div></div>
+  <div id="statsBlock"></div>
+  <div id="equipSlots"></div>
   <div class="item-grid" id="itemGrid"></div>
-  <button id="craftBtn" onclick="openCraftUI()">🧪 製作卡片</button>
-  <button id="equipBtn" onclick="openEquipUI()">🧷 裝備卡片</button>
+  <button onclick="openCraftUI()">🧪 製作卡片</button>
+  <button onclick="openEquipUI()">🧷 裝備卡片</button>
   <div id="dialogContainer"></div>
-
   <script>
-    let userId = null, userData = null, equips = null, itemMeta = null, cardData = null;
+    let userId, userData, equips, itemMeta, cardData;
 
     function renderPage() {
-      const statsBlock = document.getElementById("statsBlock");
-      const equipSlots = document.getElementById("equipSlots");
-      const itemGrid = document.getElementById("itemGrid");
       document.getElementById("userInfo").innerText = `👤 ${userData.nickname || userId}`;
-
       const base = userData.base_stats;
-      const equipped = userData.equipment;
+      const equipped = userData.equipment || {};
       const equipBonus = {};
+      const equipsMap = Object.fromEntries(equips.map(e => [e.id, e]));
 
       for (let i = 1; i <= 5; i++) {
         const e = equipped[i];
         if (!e) continue;
         const cardId = Object.keys(e)[0];
-        const lvl = parseInt(e[cardId]);
-        const card = equips.find(eq => eq.id === cardId);
+        const lvl = e[cardId];
+        const card = equipsMap[cardId];
         if (!card || !card.value[lvl]) continue;
         for (const [k, v] of Object.entries(card.value[lvl])) {
           equipBonus[k] = (equipBonus[k] || 0) + v;
         }
       }
 
-      statsBlock.innerHTML = Object.entries(base).map(([k, baseVal]) => {
-        const bonus = equipBonus[k] || 0;
-        if (["shield", "evade", "other_bonus", "accuracy"].includes(k)) {
-          const b = (baseVal * 100).toFixed(1);
-          const bonusPct = (bonus * 100).toFixed(1);
-          return `<p>${k.toUpperCase()}: ${(parseFloat(b)+parseFloat(bonusPct)).toFixed(1)}% (${b}% +${bonusPct}%)</p>`;
-        }
-        return `<p>${k.toUpperCase()}: ${baseVal + bonus} (${baseVal} +${bonus})</p>`;
-      }).join("");
+      const stats = Object.entries(base).map(([k, v]) => {
+        const b = equipBonus[k] || 0;
+        return `<p>${k.toUpperCase()}: ${['shield','evade','accuracy','other_bonus'].includes(k) ? ((v + b)*100).toFixed(1)+'%' : v + b} (${v} +${b})</p>`;
+      }).join('');
+      document.getElementById("statsBlock").innerHTML = "<h3>🧬 能力值</h3>" + stats;
 
-      equipSlots.innerHTML = "";
+      const equipHTML = [];
       for (let i = 1; i <= 5; i++) {
         const e = equipped[i];
         if (!e) {
-          equipSlots.innerHTML += `<div>欄位 ${i}：無裝備</div>`;
+          equipHTML.push(`<div>欄位 ${i}：無裝備</div>`);
         } else {
           const cardId = Object.keys(e)[0];
-          const lvl = parseInt(e[cardId]);
-          const card = equips.find(eq => eq.id === cardId);
-          if (card) {
-            const bonusStr = Object.entries(card.value[lvl]).map(([k, v]) => `${k}+${v}`).join(", ");
-            equipSlots.innerHTML += `<div>欄位 ${i}：${card.name}（Lv.${lvl}）<br>效果：${bonusStr}</div>`;
-          }
+          const lvl = e[cardId];
+          const card = equipsMap[cardId];
+          const name = card?.name || cardId;
+          const bonus = Object.entries(card.value[lvl]).map(([k,v]) => `${k}+${v}`).join(', ');
+          equipHTML.push(`<div>欄位 ${i}：${name}（Lv.${lvl}）<br>效果：${bonus}</div>`);
         }
       }
+      document.getElementById("equipSlots").innerHTML = "<h3>🛡️ 裝備中</h3>" + equipHTML.join('');
 
-      itemGrid.innerHTML = "";
-      for (const [id, count] of Object.entries(userData.items || {})) {
+      const itemHTML = Object.entries(userData.items || {}).map(([id, count]) => {
         const meta = itemMeta.find(i => i.id === id);
-        if (!meta) continue;
-        let label = "", cls = "item-card";
-        if (meta.special === 1) { label = "【稀有】"; cls += " rare"; }
-        else if (meta.special === 2) { label = "【超稀有】"; cls += " super-rare"; }
-        itemGrid.innerHTML += `<div class='${cls}'>${label}${meta.name}\n${meta.description}\n持有數量: ${count}</div>`;
-      }
+        const cls = meta?.special === 1 ? 'item-card rare' : meta?.special === 2 ? 'item-card super-rare' : 'item-card';
+        const label = meta?.special === 1 ? '【稀有】' : meta?.special === 2 ? '【超稀有】' : '';
+        return `<div class="${cls}">${label}${meta?.name || id}\\n${meta?.description || ''}\\n持有數量: ${count}</div>`;
+      }).join('');
+      document.getElementById("itemGrid").innerHTML = itemHTML;
     }
 
     function openCraftUI() {
       const dialog = document.getElementById("dialogContainer");
-      dialog.innerHTML = "";
       dialog.style.display = "flex";
-      const list = cardData.map(card => {
+      const html = cardData.map(card => {
+        const name = equips.find(e => e.id === card.id)?.name || card.id;
+        const ownedLvl = userData.cards_owned?.[card.id] || 0;
+        const maxed = ownedLvl >= 5;
         const enough = Object.entries(card.materials).every(([k, v]) => (userData.items[k] || 0) >= v);
-        const btn = enough ? `<button onclick=\"craftCard('${card.id}')\">製作</button>` : `<span style='color:red'>材料不足</span>`;
-        const matText = Object.entries(card.materials).map(([k,v]) => `${k} x${v}`).join(", ");
-        return `<li><b>${card.name}</b>：${card.description}<br>🔧 ${matText}<br>${btn}</li>`;
-      }).join("<hr>");
-      dialog.innerHTML = `<div class='dialog-box'><h3>可製作卡片</h3><ul>${list}</ul><br><button onclick='closeDialog()'>關閉</button></div>`;
+        const matList = Object.entries(card.materials).map(([k,v]) => `${k} x${v}`).join(', ');
+        const action = maxed ? "<span style='color:gray'>已達最大等級</span>" :
+                       enough ? `<button onclick="craftCard('${card.id}')">${ownedLvl ? '升級' : '製作'}</button>` :
+                       "<span style='color:red'>材料不足</span>";
+        return `<li><b>${name}</b> Lv.${ownedLvl || 0}<br>${card.description}<br>🔧 ${matList}<br>${action}</li>`;
+      }).join('<hr>');
+      dialog.innerHTML = `<div class='dialog-box'><h3>可製作/升級卡片</h3><ul>${html}</ul><br><button onclick='closeDialog()'>關閉</button></div>`;
     }
 
     async function craftCard(cardId) {
       const card = cardData.find(c => c.id === cardId);
-      if (!card) return alert("❌ 找不到卡片");
-
-      const userRef = firebase.firestore().collection("users").doc(userId);
+      const userRef = firebase.firestore().collection('users').doc(userId);
       const userSnap = await userRef.get();
       const user = userSnap.data();
-      if (!user) return alert("❌ 使用者不存在");
-
+      const currentLvl = user.cards_owned?.[cardId] || 0;
+      if (currentLvl >= 5) return alert("❌ 已達最大等級");
       for (const [mat, qty] of Object.entries(card.materials)) {
         if ((user.items?.[mat] || 0) < qty) return alert("❌ 材料不足");
         user.items[mat] -= qty;
       }
-
       if (!user.cards_owned) user.cards_owned = {};
-      if (user.cards_owned[cardId]) return alert("❌ 已擁有此卡片");
-      user.cards_owned[cardId] = 1;
+      user.cards_owned[cardId] = currentLvl + 1;
       await userRef.set(user);
-      alert("✅ 製作成功");
+      alert(currentLvl ? "✅ 升級成功" : "✅ 製作成功");
       closeDialog();
       location.reload();
     }
-
     function openEquipUI() {
-      const dialog = document.getElementById("dialogContainer");
-      dialog.innerHTML = "";
-      dialog.style.display = "flex";
-      const equip = userData.equipment || {};
       const owned = userData.cards_owned || {};
+      const equipsMap = Object.fromEntries(equips.map(e => [e.id, e]));
       let html = "<div class='dialog-box'><h3>裝備卡片</h3>";
       for (let i = 1; i <= 5; i++) {
         html += `<label>欄位 ${i}: <select id='equip_slot_${i}'><option value=''>無</option>`;
         for (const [id, lvl] of Object.entries(owned)) {
-          const sel = equip[i]?.[id] ? "selected" : "";
-          html += `<option value='${id}' ${sel}>${id} Lv.${lvl}</option>`;
+          const name = equipsMap[id]?.name || id;
+          const sel = userData.equipment?.[i]?.[id] ? "selected" : "";
+          html += `<option value='${id}' ${sel}>${name} Lv.${lvl}</option>`;
         }
         html += "</select></label><br>";
       }
       html += `<button onclick='saveEquip()'>儲存</button> <button onclick='closeDialog()'>取消</button></div>`;
-      dialog.innerHTML = html;
+      document.getElementById("dialogContainer").innerHTML = html;
+      document.getElementById("dialogContainer").style.display = "flex";
     }
 
     async function saveEquip() {
@@ -168,7 +152,7 @@
         if (val) newEquip[i] = { [val]: userData.cards_owned[val] };
       }
       await firebase.firestore().collection("users").doc(userId).update({ equipment: newEquip });
-      alert("✅ 裝備已更新");
+      alert("✅ 裝備更新成功");
       closeDialog();
       location.reload();
     }
