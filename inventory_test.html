@@ -244,6 +244,7 @@
       let html = `
         <div class='dialog-box'>
           <h3>🧪 卡片製作與升級</h3>
+          <div class="scroll-content">
       `;
       
       cardData.forEach(card => {
@@ -301,6 +302,7 @@
       });
       
       html += `
+          </div> <!-- scroll-content -->
           <div class="btn-group">
             <button class="square-btn" onclick="closeDialog()">關閉</button>
           </div>
