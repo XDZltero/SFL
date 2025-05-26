@@ -536,3 +536,27 @@ body.dialog-open::before {
   overflow-y: auto;
   padding-right: 10px;
 }
+
+.item-name {
+  font-weight: 700;
+  color: #ffd93d;
+  margin-bottom: 5px;
+  font-size: 1.1em;
+}
+
+.item-desc {
+  font-size: 0.95em;
+  color: #fff;
+  margin-bottom: 8px;
+  white-space: pre-wrap;
+}
+
+.item-count {
+  font-size: 0.95em;
+  color: #fff;
+}
+
+.item-count .count-highlight {
+  color: #ffd93d;
+  font-weight: bold;
+}
