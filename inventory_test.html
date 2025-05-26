@@ -102,7 +102,6 @@
           userCards = userData.cards_owned || {};
         }
         
-        document.getElementById("userInfo").innerText = `👤 ${userId}`;
         renderPage();
       } catch (error) {
         console.error("載入使用者資料失敗:", error);
