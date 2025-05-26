@@ -465,7 +465,7 @@ def clear_cache():
 
 # 道具與裝備製作
 @app.route("/user_items", methods=["GET"])
-def get_user_items():
+def user_items():
     user_id = request.args.get("user")
     if not user_id:
         return jsonify({"error": "缺少使用者參數"}), 400
@@ -480,7 +480,7 @@ def get_user_items():
     
 
 @app.route("/user_cards", methods=["GET"])
-def get_user_cards():
+def user_cardss():
     user_id = request.args.get("user")
     if not user_id:
         return jsonify({"error": "缺少使用者參數"}), 400
