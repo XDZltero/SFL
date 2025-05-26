@@ -34,6 +34,11 @@ def get_element_table():
         return json.load(f)
 
 @lru_cache()
+def get_item_data():
+    with open("parameter/items.json", encoding="utf-8") as f:
+        return json.load(f)
+
+@lru_cache()
 def get_level_exp():
     with open("parameter/level_exp.json", encoding="utf-8") as f:
         return json.load(f)
@@ -73,6 +78,11 @@ def exp_table():
 @app.route("/dungeon_table")
 def dungeon_table():
     return jsonify(get_dungeon_data())
+
+# 獲得物品清單
+@app.route("/item_table")
+def element_table():
+    return jsonify(get_item_data())
 
 # 確認存活用
 @app.route("/ping")
