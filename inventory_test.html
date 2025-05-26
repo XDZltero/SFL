@@ -5,12 +5,9 @@
   <title>背包與裝備管理</title>
   <link rel="icon" href="favicon.ico" />
   <link href="css/style.css" rel="stylesheet" />
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script>
-    const db = firebase.firestore();
-  </script>
+  <script src="/js/firebase-init.js"></script>
   <style>
     body { font-family: 'Noto Sans TC', sans-serif; padding: 20px; }
     .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; margin-bottom: 30px; }
@@ -32,13 +29,14 @@
   <div id="dialogContainer"></div>
 
   <script>
+    const db = firebase.firestore();
     let userId, userData, userItems, equips = [], itemMeta = [], cardData = [];
 
     async function init() {
       firebase.auth().onAuthStateChanged(async (user) => {
         if (!user) {
           alert("請先登入！");
-          window.location.href = "login.html";
+          window.parent.location.href = "/SFL/login.html";
           return;
         }
 
@@ -50,7 +48,7 @@
           db.collection("equips").get(),
           db.collection("items").get(),
           db.collection("user_items").doc(userId).get(),
-          fetch("https://你的github帳號.github.io/parameter/cards_data.json").then(r => r.json())
+          fetch("parameter/cards_data.json").then(r => r.json())
         ]);
 
         userData = userSnap.data();
