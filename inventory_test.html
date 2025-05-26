@@ -161,7 +161,7 @@
       document.getElementById("dialogContainer").style.display = "none";
     }
 
-    window.addEventListener("message", (e) => {
+    /*window.addEventListener("message", (e) => {
       if (e.data?.user && e.data?.userData && e.data?.equips && e.data?.itemMeta && e.data?.cards) {
         userId = e.data.user;
         userData = e.data.userData;
@@ -170,8 +170,16 @@
         cardData = e.data.cards;
         renderPage();
       }
-      console.log("📩 收到來自 parent 的訊息：", e.data);
-    });
+    });*/
+    window.addEventListener("message", (e) => {
+  console.log("📩 收到 parent 訊息：", e.data);
+  userId = e.data.user;
+  userData = e.data.userData;
+  equips = e.data.equips || [];
+  itemMeta = e.data.itemMeta || [];
+  cardData = e.data.cards || [];
+  renderPage(); // 即使部份缺，也先 render
+});
   </script>
 </body>
 </html>
