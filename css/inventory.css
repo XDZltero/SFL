@@ -514,3 +514,25 @@
       0%, 100% { opacity: 0.4; transform: scale(1); }
       50% { opacity: 0.8; transform: scale(1.1); }
     }
+
+/* 鎖定對話框打開時背景動畫 */
+body.dialog-open::before {
+  animation: none !important;
+}
+
+/* 停用 hover 效果提升效能 */
+.item-card:hover,
+.craft-item:hover,
+.equip-item:hover,
+.equipment-slot:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  background-color: rgba(0, 255, 255, 0.08);
+}
+
+/* 滾動區限制 */
+.dialog-box .scroll-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
