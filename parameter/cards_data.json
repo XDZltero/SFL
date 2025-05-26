@@ -2,23 +2,101 @@
   {
     "id": "card_moss",
     "name": "腐爛沼澤地卡片",
-    "materials": {
-      "slime_core": 3,
-      "swamp_core": 1
-    },
+	"quality": "稀有",
+    "levels": [
+      {
+        "level": 1,
+        "materials": {
+          "slime_core": 3,
+          "swamp_core": 1
+        },
+		"chance": 1
+      },
+      {
+        "level": 2,
+        "materials": {
+          "slime_core": 8,
+          "swamp_core": 3
+        },
+		"chance": 0.9
+      },
+      {
+        "level": 3,
+        "materials": {
+          "slime_core": 15,
+          "swamp_core": 6
+        },
+		"chance": 0.8
+      },
+      {
+        "level": 4,
+        "materials": {
+          "swamp_core": 12,
+          "slime_core": 10
+        },
+		"chance": 0.5
+      },
+      {
+        "level": 5,
+        "materials": {
+          "swamp_core": 20,
+          "slime_core": 15
+        },
+		"chance": 0.5
+      }
+    ],
     "description": "提高攻擊力與護盾，來自沼澤的詛咒。",
-    "max_level": 5,
     "require_level": 10
   },
   {
     "id": "card_skycity",
     "name": "天空之城卡片",
-    "materials": {
-      "sky_ragments": 2,
-      "silver_core": 1
-    },
+	"quality": "稀有",
+    "levels": [
+      {
+        "level": 1,
+        "materials": {
+          "sky_beaf": 2,
+          "sky_stone": 1
+        },
+		"chance": 1
+      },
+      {
+        "level": 2,
+        "materials": {
+          "sky_beaf": 5,
+          "sky_stone": 3,
+          "cloud_powder": 20,
+          "storm_shard": 2
+        },
+		"chance": 0.9
+      },
+      {
+        "level": 3,
+        "materials": {
+          "sky_beaf": 12,
+          "sky_stone": 7
+        },
+		"chance": 0.8
+      },
+      {
+        "level": 4,
+        "materials": {
+          "sky_beaf": 25,
+          "sky_stone": 15
+        },
+		"chance": 0.5
+      },
+      {
+        "level": 5,
+        "materials": {
+          "sky_beaf": 40,
+          "sky_stone": 15
+        },
+		"chance": 0.5
+      }
+    ],
     "description": "提高攻速與防護，象徵空中的遺產。",
-    "max_level": 5,
     "require_level": 20
   }
 ]
