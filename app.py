@@ -462,48 +462,111 @@ def clear_cache():
         return jsonify({"error": f"清除失敗: {str(e)}"}), 500
 
 # 道具與裝備製作
+@app.route("/user_items", methods=["GET"])
+def get_user_items():
+    user_id = request.args.get("user")
+    if not user_id:
+        return jsonify({"error": "缺少使用者參數"}), 400
+    
+    doc = db.collection("users").document(user_id).get()
+    if not doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+    
+    user_data = doc.to_dict()
+    items = user_data.get("items", {})
+    return jsonify(items)
+
+@app.route("/user_cards", methods=["GET"])
+def get_user_cards():
+    user_id = request.args.get("user")
+    if not user_id:
+        return jsonify({"error": "缺少使用者參數"}), 400
+    
+    doc = db.collection("users").document(user_id).get()
+    if not doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+    
+    user_data = doc.to_dict()
+    cards_owned = user_data.get("cards_owned", {})
+    return jsonify(cards_owned)
+
+# 修正後的 craft_card API
 @app.route("/craft_card", methods=["POST"])
 def craft_card():
     data = request.json
     user_id = data.get("user")
-    card_id = data.get("card")
-
-    user = db.collection("users").document(user_id).get().to_dict()
-    card_data = load_card_data(card_id)
-    if not user or not card_data:
-        return jsonify(success=False, message="找不到使用者或卡片")
-
-    # 材料檢查
-    for mat, qty in card_data["materials"].items():
-        if user["items"].get(mat, 0) < qty:
-            return jsonify(success=False, message="材料不足")
-
+    card_id = data.get("card_id")  # 注意參數名稱
+    materials = data.get("materials")
+    success_rate = data.get("success_rate", 1.0)
+    
+    if not user_id or not card_id or not materials:
+        return jsonify({"success": False, "error": "缺少必要參數"}), 400
+    
+    # 獲取使用者資料
+    user_ref = db.collection("users").document(user_id)
+    user_doc = user_ref.get()
+    
+    if not user_doc.exists:
+        return jsonify({"success": False, "error": "找不到使用者"}), 404
+    
+    user_data = user_doc.to_dict()
+    user_items = user_data.get("items", {})
+    cards_owned = user_data.get("cards_owned", {})
+    
+    # 檢查材料是否足夠
+    for material_id, required_qty in materials.items():
+        if user_items.get(material_id, 0) < required_qty:
+            return jsonify({"success": False, "error": f"材料 {material_id} 不足"}), 400
+    
     # 扣除材料
-    for mat, qty in card_data["materials"].items():
-        user["items"][mat] -= qty
+    for material_id, required_qty in materials.items():
+        user_items[material_id] = user_items.get(material_id, 0) - required_qty
+        if user_items[material_id] <= 0:
+            del user_items[material_id]
+    
+    # 判斷製作是否成功
+    import random
+    is_success = random.random() <= success_rate
+    
+    if is_success:
+        # 製作/升級成功
+        current_level = cards_owned.get(card_id, 0)
+        cards_owned[card_id] = current_level + 1
+        
+        # 更新使用者資料
+        user_data["items"] = user_items
+        user_data["cards_owned"] = cards_owned
+        user_ref.set(user_data)
+        
+        return jsonify({"success": True, "message": "製作成功"})
+    else:
+        # 製作失敗，但材料已經扣除
+        user_data["items"] = user_items
+        user_ref.set(user_data)
+        
+        return jsonify({"success": False, "message": "製作失敗，材料已消耗"})
 
-    # 設定卡片等級為1
-    if "cards_owned" not in user:
-        user["cards_owned"] = {}
-    if card_id in user["cards_owned"]:
-        return jsonify(success=False, message="已擁有此卡片")
-    user["cards_owned"][card_id] = 1
-
-    db.collection("users").document(user_id).set(user)
-    return jsonify(success=True)
-
+# 修正後的 save_equipment API
 @app.route("/save_equipment", methods=["POST"])
 def save_equipment():
     data = request.json
     user_id = data.get("user")
     equipment = data.get("equipment")
-
+    
+    if not user_id:
+        return jsonify({"success": False, "error": "缺少使用者參數"}), 400
+    
     user_ref = db.collection("users").document(user_id)
-    user_data = user_ref.get().to_dict()
-    if not user_data:
-        return jsonify(success=False, message="使用者不存在")
-
+    user_doc = user_ref.get()
+    
+    if not user_doc.exists:
+        return jsonify({"success": False, "error": "使用者不存在"}), 404
+    
+    user_data = user_doc.to_dict()
     user_data["equipment"] = equipment
-    user_ref.set(user_data)
-    return jsonify(success=True)
-
+    
+    try:
+        user_ref.set(user_data)
+        return jsonify({"success": True, "message": "裝備更新成功"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
