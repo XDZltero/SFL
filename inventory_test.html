@@ -21,24 +21,26 @@
   </script>
 
   <h1 class="fancy-title">🎒 背包與裝備管理</h1>
-  <div class="stats-section">
-    <h2 class="fancy-subtitle">🧬 角色屬性</h2>
-    <div id="statsDisplay"></div>
-  </div>
-  
-  <div class="equipment-section">
-    <h2 class="fancy-subtitle">🛡️ 裝備中</h2>
-    <div id="equipmentDisplay"></div>
-  </div>
-  
-  <div class="items-section">
-    <h2 class="fancy-subtitle">📦 持有道具</h2>
-    <div class="item-grid" id="itemGrid"></div>
+  <div class="top-grid">
+    <div class="stats-section">
+      <h2 class="fancy-subtitle">🧬 角色屬性</h2>
+      <div id="statsDisplay"></div>
+    </div>
+    
+    <div class="equipment-section">
+      <h2 class="fancy-subtitle">🛡️ 裝備中</h2>
+      <div id="equipmentDisplay"></div>
+    </div>
   </div>
   
   <div class="btn-group">
     <button class="square-btn" onclick="openCraftUI()">🧪 製作終端</button>
     <button class="square-btn" onclick="openEquipUI()">🧷 鑲嵌卡片</button>
+  </div>
+  
+  <div class="items-section">
+    <h2 class="fancy-subtitle">📦 持有道具</h2>
+    <div class="item-grid" id="itemGrid"></div>
   </div>
   
   <div id="dialogContainer"></div>
