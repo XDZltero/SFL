@@ -201,8 +201,6 @@ def battle():
         traceback.print_exc()
         return jsonify({"error": f"伺服器內部錯誤: {str(e)}"}), 500
 
-
-
 @app.route("/battle_dungeon", methods=["POST"])
 def battle_dungeon():
     try:
@@ -299,7 +297,6 @@ def battle_dungeon():
         traceback.print_exc()
         return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
 
-
 # 獲得副本層數
 @app.route("/get_progress", methods=["GET"])
 def get_progress():
@@ -318,17 +315,27 @@ def get_progress():
 
     return jsonify({"progress": doc.to_dict()})
 
+# 修復：這個端點應該查詢 user_items collection
 @app.route("/inventory", methods=["GET"])
 def inventory():
     user_id = request.args.get("user")
     if not user_id:
         return jsonify({"error": "缺少使用者參數"}), 400
 
+    # 先嘗試從 user_items collection 取得
     item_doc = db.collection("user_items").document(user_id).get()
-    if not item_doc.exists:
-        return jsonify({"items": {}})
-
-    return jsonify(item_doc.to_dict())
+    if item_doc.exists:
+        return jsonify(item_doc.to_dict())
+    
+    # 如果沒有，嘗試從 users collection 的 items 欄位取得
+    user_doc = db.collection("users").document(user_id).get()
+    if user_doc.exists:
+        user_data = user_doc.to_dict()
+        items = user_data.get("items", {})
+        return jsonify({"items": items})
+    
+    # 如果都沒有，回傳空的物品清單
+    return jsonify({"items": {}})
 
 @app.route("/levelup", methods=["POST"])
 def levelup():
@@ -444,11 +451,6 @@ def save_skill_distribution():
 def get_items():
     return jsonify(get_item_map())
 
-if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
-
 @app.route("/clear_cache", methods=["GET", "POST"])
 def clear_cache():
     try:
@@ -490,8 +492,8 @@ def get_user_cards():
     cards_owned = user_data.get("cards_owned", {})
     return jsonify(cards_owned)
 
-# 修正後的 craft_card API
-@app.route("/craft_card", methods=["GET"])
+# 修正：HTTP 方法應該是 POST
+@app.route("/craft_card", methods=["POST"])
 def craft_card():
     data = request.json
     user_id = data.get("user")
@@ -546,8 +548,8 @@ def craft_card():
         
         return jsonify({"success": False, "message": "製作失敗，材料已消耗"})
 
-# 修正後的 save_equipment API
-@app.route("/save_equipment", methods=["GET"])
+# 修正：HTTP 方法應該是 POST
+@app.route("/save_equipment", methods=["POST"])
 def save_equipment():
     data = request.json
     user_id = data.get("user")
@@ -570,3 +572,8 @@ def save_equipment():
         return jsonify({"success": True, "message": "裝備更新成功"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
