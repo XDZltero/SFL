@@ -425,7 +425,7 @@
 
               if (data.rewards) {
                 const { exp, leveled_up, drops } = data.rewards;
-                fetch(`${API}/item_table`).then(res => res.json()).then(itemMap => {
+                fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
                   const rewardLog = document.createElement("div");
                   rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
                     (leveled_up ? `<br><span style='color:red'>等級提升！</span>` : "") +
