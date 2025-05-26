@@ -87,7 +87,8 @@ def dungeon_table():
 # 獲得物品清單
 @app.route("/items_table")
 def items_table():
-    return jsonify(get_items_data())
+    items = get_items_data()
+    return jsonify({item["id"]: item for item in items})
 
 # 獲得裝備數值清單
 @app.route("/equips_table")
