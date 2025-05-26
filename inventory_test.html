@@ -212,8 +212,8 @@
       try {
         const [statusRes, itemsRes, cardsRes] = await Promise.all([
           fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`),
-          fetch(`${API_BASE}/get_user_items?user=${encodeURIComponent(userId)}`),
-          fetch(`${API_BASE}/get_user_cards?user=${encodeURIComponent(userId)}`)
+          fetch(`${API_BASE}/user_items?user=${encodeURIComponent(userId)}`),
+          fetch(`${API_BASE}/user_cards?user=${encodeURIComponent(userId)}`)
         ]);
         
         userData = await statusRes.json();
