@@ -6,7 +6,132 @@
   <link rel="icon" href="favicon.ico" />
   <link href="css/style.css" rel="stylesheet" />
   <link href="css/normalStyle.css" rel="stylesheet"/>
-  <link href="css/inventory.css" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Noto Sans TC', sans-serif; padding: 20px; }
+    
+    .stats-section, .equipment-section, .items-section {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .equipment-slot {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    
+    .equipment-slot.empty {
+      background: #f5f5f5;
+      color: #666;
+      font-style: italic;
+    }
+    
+    .item-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+      gap: 15px; 
+      margin-top: 15px;
+    }
+    
+    .item-card { 
+      border: 1px solid #aaa; 
+      padding: 15px; 
+      border-radius: 10px; 
+      background: #fdfdfd; 
+      white-space: pre-wrap; 
+    }
+    
+    .item-card.rare { 
+      border-color: #4cc3ff; 
+      background: #eaf7ff; 
+    }
+    
+    .item-card.super-rare { 
+      border-color: #ff6ec7; 
+      background: #ffeafb; 
+    }
+    
+    #dialogContainer { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.6); 
+      display: none; 
+      align-items: center; 
+      justify-content: center; 
+      z-index: 1000;
+    }
+    
+    .dialog-box { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 10px; 
+      max-width: 700px; 
+      width: 90%; 
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .craft-item, .equip-item {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    
+    .materials-list {
+      color: #666;
+      font-size: 0.9em;
+      margin: 5px 0;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .square-btn {
+      padding: 8px 16px;
+      border: 1px solid #007bff;
+      background: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .square-btn:hover {
+      background: #0056b3;
+    }
+    
+    .square-btn:disabled {
+      background: #6c757d;
+      border-color: #6c757d;
+      cursor: not-allowed;
+    }
+    
+    .loading-spinner {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
 </head>
 <body>
   <div id="initialOverlay">載入中...</div>
