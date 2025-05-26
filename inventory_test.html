@@ -4,528 +4,10 @@
   <meta charset="UTF-8" />
   <title>背包與裝備管理</title>
   <link rel="icon" href="favicon.ico" />
-  <link rel="stylesheet" href="style.css">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-    
-    /* 覆蓋基本樣式以符合主題 */
-    body {
-      font-family: 'Orbitron', sans-serif;
-      padding: 0;
-      margin: 0;
-      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
-      color: #fff;
-      overflow-x: hidden;
-      min-height: 100vh;
-      position: relative;
-    }
-
-    /* 動態背景效果 */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 226, 0.2) 0%, transparent 50%);
-      animation: backgroundFlow 20s ease-in-out infinite;
-      z-index: -2;
-    }
-
-    @keyframes backgroundFlow {
-      0%, 100% { transform: rotate(0deg) scale(1); }
-      33% { transform: rotate(120deg) scale(1.1); }
-      66% { transform: rotate(240deg) scale(0.9); }
-    }
-
-    /* 主標題樣式 */
-    .fancy-title {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 2.5em;
-      font-weight: 900;
-      color: #00ffff;
-      text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
-      text-align: center;
-      margin: 30px 0;
-      animation: titlePulse 2s infinite alternate;
-      position: relative;
-    }
-
-    .fancy-title::before {
-      content: '✨';
-      position: absolute;
-      left: -60px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.8em;
-      animation: sparkle 2s ease-in-out infinite;
-    }
-
-    .fancy-title::after {
-      content: '✨';
-      position: absolute;
-      right: -60px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.8em;
-      animation: sparkle 2s ease-in-out infinite reverse;
-    }
-
-    @keyframes titlePulse {
-      from { text-shadow: 0 0 20px rgba(0, 255, 255, 0.8); }
-      to { text-shadow: 0 0 40px rgba(0, 255, 255, 1), 0 0 60px rgba(0, 255, 255, 0.5); }
-    }
-
-    @keyframes sparkle {
-      0%, 100% { opacity: 0.5; transform: translateY(-50%) rotate(0deg); }
-      50% { opacity: 1; transform: translateY(-50%) rotate(180deg); }
-    }
-
-    /* 副標題樣式 */
-    .fancy-subtitle {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 1.4em;
-      font-weight: 700;
-      color: #ffd93d;
-      margin: 25px 0 15px 0;
-      text-shadow: 0 0 10px rgba(255, 217, 61, 0.6);
-      position: relative;
-      display: inline-block;
-    }
-
-    .fancy-subtitle::after {
-      content: '';
-      position: absolute;
-      bottom: -5px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #ffd93d, transparent);
-      border-radius: 1px;
-    }
-
-    /* 用戶資訊區域 */
-    #userInfo {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(25, 25, 55, 0.95) 100%);
-      backdrop-filter: blur(10px);
-      padding: 15px 20px;
-      border-radius: 15px;
-      border: 1px solid rgba(0, 255, 255, 0.3);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 600;
-      color: #00ffff;
-      text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-      z-index: 100;
-    }
-
-    /* 主要內容容器 */
-    .main-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-      margin-top: 80px;
-    }
-
-    /* 區塊樣式 */
-    .stats-section, .equipment-section, .items-section {
-      background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(0, 255, 255, 0.2);
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 25px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stats-section::before, .equipment-section::before, .items-section::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
-      animation: sectionShine 4s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes sectionShine {
-      0%, 100% { transform: translateX(-100%); }
-      50% { transform: translateX(100%); }
-    }
-
-    /* 屬性顯示 */
-    .stat-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 12px 0;
-      padding: 10px 15px;
-      background: rgba(0, 255, 255, 0.05);
-      border: 1px solid rgba(0, 255, 255, 0.1);
-      border-radius: 8px;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 600;
-      transition: all 0.3s ease;
-    }
-
-    .stat-item:hover {
-      background: rgba(0, 255, 255, 0.1);
-      border-color: rgba(0, 255, 255, 0.3);
-      transform: translateX(5px);
-    }
-
-    .stat-item span:first-child {
-      color: #ffd93d;
-      text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
-    }
-
-    .stat-item span:last-child {
-      color: #00ffff;
-      text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-      font-weight: 700;
-    }
-
-    /* 裝備槽位 */
-    .equipment-slot {
-      background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.1) 100%);
-      border: 1px solid rgba(0, 255, 255, 0.3);
-      border-radius: 10px;
-      padding: 18px;
-      margin: 15px 0;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      position: relative;
-    }
-
-    .equipment-slot:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 255, 255, 0.2);
-    }
-
-    .equipment-slot.empty {
-      background: linear-gradient(135deg, rgba(100, 100, 100, 0.1) 0%, rgba(150, 150, 150, 0.1) 100%);
-      border-color: rgba(150, 150, 150, 0.3);
-      color: #888;
-      font-style: italic;
-    }
-
-    .equipment-slot strong {
-      color: #00ffff;
-      text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-    }
-
-    .materials-list {
-      color: #ffd93d;
-      font-size: 0.9em;
-      margin: 8px 0;
-      text-shadow: 0 0 5px rgba(255, 217, 61, 0.3);
-    }
-
-    /* 道具網格 */
-    .item-grid { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-      gap: 20px; 
-      margin-top: 20px;
-    }
-
-    .item-card { 
-      background: linear-gradient(135deg, rgba(15, 15, 35, 0.9) 0%, rgba(25, 25, 55, 0.7) 100%);
-      border: 1px solid rgba(0, 255, 255, 0.3);
-      border-radius: 12px;
-      padding: 20px;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-      color: #fff;
-    }
-
-    .item-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.1) 50%, transparent 70%);
-      transform: translateX(-100%);
-      transition: transform 0.3s ease;
-    }
-
-    .item-card:hover::before {
-      transform: translateX(100%);
-    }
-
-    .item-card:hover {
-      transform: translateY(-5px) scale(1.02);
-      box-shadow: 0 12px 35px rgba(0, 255, 255, 0.3);
-    }
-
-    .item-card.rare { 
-      border-color: #4cc3ff;
-      background: linear-gradient(135deg, rgba(76, 195, 255, 0.15) 0%, rgba(15, 15, 35, 0.9) 100%);
-      box-shadow: 0 4px 20px rgba(76, 195, 255, 0.2);
-    }
-
-    .item-card.super-rare { 
-      border-color: #ff6ec7;
-      background: linear-gradient(135deg, rgba(255, 110, 199, 0.15) 0%, rgba(15, 15, 35, 0.9) 100%);
-      box-shadow: 0 4px 20px rgba(255, 110, 199, 0.2);
-      animation: rarePulse 3s ease-in-out infinite;
-    }
-
-    @keyframes rarePulse {
-      0%, 100% { box-shadow: 0 4px 20px rgba(255, 110, 199, 0.2); }
-      50% { box-shadow: 0 8px 30px rgba(255, 110, 199, 0.4); }
-    }
-
-    /* 按鈕組 */
-    .btn-group {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin: 30px 0;
-    }
-
-    .square-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      padding: 15px 30px;
-      border-radius: 25px;
-      color: white;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 700;
-      font-size: 1.1em;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .square-btn::before {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%; right: 0; bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.5s ease;
-    }
-
-    .square-btn:hover::before {
-      left: 100%;
-    }
-
-    .square-btn:hover {
-      transform: translateY(-3px) scale(1.05);
-      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
-    }
-
-    .square-btn:disabled {
-      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-      box-shadow: 0 3px 10px rgba(108, 117, 125, 0.3);
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .square-btn:disabled:hover {
-      transform: none;
-      box-shadow: 0 3px 10px rgba(108, 117, 125, 0.3);
-    }
-
-    /* 對話框 */
-    #dialogContainer { 
-      position: fixed; 
-      top: 0; left: 0; 
-      width: 100%; height: 100%; 
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(10px);
-      display: none; 
-      align-items: center; 
-      justify-content: center; 
-      z-index: 1000;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    .dialog-box { 
-      background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(25, 25, 55, 0.95) 100%);
-      backdrop-filter: blur(20px);
-      border: 2px solid rgba(0, 255, 255, 0.3);
-      border-radius: 20px;
-      padding: 30px; 
-      max-width: 800px; 
-      width: 90%; 
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      color: #fff;
-      font-family: 'Orbitron', sans-serif;
-      position: relative;
-    }
-
-    .dialog-box::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
-      animation: sectionShine 4s ease-in-out infinite;
-      pointer-events: none;
-      border-radius: 18px;
-    }
-
-    .dialog-box h3 {
-      color: #00ffff;
-      font-size: 1.8em;
-      font-weight: 900;
-      text-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    /* 製作項目和裝備項目 */
-    .craft-item, .equip-item {
-      background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.05) 100%);
-      border: 1px solid rgba(0, 255, 255, 0.2);
-      border-radius: 12px;
-      padding: 20px;
-      margin: 15px 0;
-      transition: all 0.3s ease;
-      position: relative;
-    }
-
-    .craft-item:hover, .equip-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 255, 255, 0.2);
-    }
-
-    .craft-item strong, .equip-item strong {
-      color: #ffd93d;
-      text-shadow: 0 0 8px rgba(255, 217, 61, 0.5);
-      font-size: 1.1em;
-    }
-
-    /* 下拉選單 */
-    .equip-item select {
-      width: 100%;
-      margin-top: 10px;
-      padding: 12px;
-      background: linear-gradient(135deg, rgba(15, 15, 35, 0.9) 0%, rgba(25, 25, 55, 0.9) 100%);
-      border: 1px solid rgba(0, 255, 255, 0.3);
-      border-radius: 8px;
-      color: #fff;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 600;
-    }
-
-    .equip-item select option {
-      background: #1a1a2e;
-      color: #fff;
-    }
-
-    /* 載入動畫 */
-    .loading-spinner {
-      display: none;
-      text-align: center;
-      padding: 30px;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 700;
-      color: #00ffff;
-      text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-      font-size: 1.2em;
-    }
-
-    .loading-spinner::after {
-      content: '';
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 2px solid rgba(0, 255, 255, 0.3);
-      border-top: 2px solid #00ffff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-left: 10px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* 響應式設計 */
-    @media (max-width: 768px) {
-      .fancy-title {
-        font-size: 2em;
-      }
-
-      .fancy-title::before,
-      .fancy-title::after {
-        display: none;
-      }
-
-      .item-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .btn-group {
-        flex-direction: column;
-        align-items: center;
-      }
-
-      #userInfo {
-        position: static;
-        margin: 20px;
-        text-align: center;
-      }
-
-      .main-container {
-        margin-top: 20px;
-        padding: 10px;
-      }
-    }
-
-    /* 初始載入遮罩 */
-    #initialOverlay {
-      position: fixed;
-      z-index: 9999;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
-      color: #00ffff;
-      font-family: 'Orbitron', sans-serif;
-      font-size: 2em;
-      font-weight: 700;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
-    }
-
-    #initialOverlay::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: 
-        radial-gradient(circle at 30% 40%, rgba(0, 255, 255, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 70% 60%, rgba(255, 119, 198, 0.15) 0%, transparent 50%);
-      animation: pageGlow 3s ease-in-out infinite;
-    }
-
-    @keyframes pageGlow {
-      0%, 100% { opacity: 0.4; transform: scale(1); }
-      50% { opacity: 0.8; transform: scale(1.1); }
-    }
-  </style>
+  <link href="css/inventory.css" rel="stylesheet"/>
 </head>
 <body>
-  <div id="initialOverlay">🔮 載入中...</div>
+  <div id="initialOverlay">載入中...</div>
   <div id="loading-placeholder"></div>
   <script src="js/loading.js"></script>
   <script>
@@ -538,33 +20,29 @@
       });
   </script>
 
-  <div class="main-container">
-    <h1 class="fancy-title">🎒 背包與裝備管理</h1>
-    <div id="userInfo">🔐 尚未登入</div>
-    
-    <div class="stats-section">
-      <h2 class="fancy-subtitle">🧬 角色屬性</h2>
-      <div id="statsDisplay"></div>
-    </div>
-    
-    <div class="equipment-section">
-      <h2 class="fancy-subtitle">🛡️ 裝備中</h2>
-      <div id="equipmentDisplay"></div>
-    </div>
-    
-    <div class="items-section">
-      <h2 class="fancy-subtitle">📦 持有道具</h2>
-      <div class="item-grid" id="itemGrid"></div>
-    </div>
-    
-    <div class="btn-group">
-      <button class="square-btn" onclick="openCraftUI()">🧪 製作終端</button>
-      <button class="square-btn" onclick="openEquipUI()">🧷 裝備卡片</button>
-    </div>
+  <h1 class="fancy-title">🎒 背包與裝備管理</h1>
+  <div class="stats-section">
+    <h2 class="fancy-subtitle">🧬 角色屬性</h2>
+    <div id="statsDisplay"></div>
+  </div>
+  
+  <div class="equipment-section">
+    <h2 class="fancy-subtitle">🛡️ 裝備中</h2>
+    <div id="equipmentDisplay"></div>
+  </div>
+  
+  <div class="items-section">
+    <h2 class="fancy-subtitle">📦 持有道具</h2>
+    <div class="item-grid" id="itemGrid"></div>
+  </div>
+  
+  <div class="btn-group">
+    <button class="square-btn" onclick="openCraftUI()">🧪 製作卡片</button>
+    <button class="square-btn" onclick="openEquipUI()">🧷 裝備卡片</button>
   </div>
   
   <div id="dialogContainer"></div>
-  <div id="loadingSpinner" class="loading-spinner">⚙️ 處理中</div>
+  <div id="loadingSpinner" class="loading-spinner">處理中...</div>
 
   <script type="module">
     const API_BASE = "https://sfl-9cb8.onrender.com";
@@ -620,9 +98,6 @@
           userCards = userData.cards_owned || {};
         }
         
-        // 更新用戶資訊顯示
-        document.getElementById("userInfo").textContent = `👤 ${userId} | Lv.${userData.level || 1}`;
-        
         renderPage();
       } catch (error) {
         console.error("載入使用者資料失敗:", error);
@@ -659,18 +134,18 @@
       const statsEl = document.getElementById("statsDisplay");
       
       const statsList = [
-        { key: "hp", label: "生命值", isPercent: false, icon: "❤️" },
-        { key: "attack", label: "攻擊力", isPercent: false, icon: "⚔️" },
-        { key: "shield", label: "護盾", isPercent: true, icon: "🛡️" },
-        { key: "evade", label: "閃避", isPercent: true, icon: "💨" },
-        { key: "accuracy", label: "命中", isPercent: true, icon: "🎯" },
-        { key: "other_bonus", label: "其他加成", isPercent: true, icon: "✨" },
-        { key: "luck", label: "運氣值", isPercent: false, icon: "🍀" },
-        { key: "atk_speed", label: "攻擊速度", isPercent: false, icon: "⚡" }
+        { key: "hp", label: "生命值", isPercent: false },
+        { key: "attack", label: "攻擊力", isPercent: false },
+        { key: "shield", label: "護盾", isPercent: true },
+        { key: "evade", label: "閃避", isPercent: true },
+        { key: "accuracy", label: "命中", isPercent: true },
+        { key: "other_bonus", label: "其他加成", isPercent: true },
+        { key: "luck", label: "運氣值", isPercent: false },
+        { key: "atk_speed", label: "攻擊速度", isPercent: false }
       ];
       
       let html = "";
-      statsList.forEach(({ key, label, isPercent, icon }) => {
+      statsList.forEach(({ key, label, isPercent }) => {
         const base = baseStats[key] || 0;
         const bonus = equipBonus[key] || 0;
         const total = base + bonus;
@@ -680,7 +155,7 @@
         
         html += `
           <div class="stat-item">
-            <span>${icon} ${label}</span>
+            <span>${label}:</span>
             <span>${displayValue} (${isPercent ? (base * 100).toFixed(1) + '%' : base}${bonusDisplay})</span>
           </div>
         `;
@@ -693,8 +168,6 @@
       const equipment = userData.equipment || {};
       const equipEl = document.getElementById("equipmentDisplay");
       
-      const slotIcons = ["", "⚔️", "🛡️", "💍", "👑", "🎭"];
-      
       let html = "";
       for (let slot = 1; slot <= 5; slot++) {
         const equippedCard = equipment[slot];
@@ -702,7 +175,7 @@
         if (!equippedCard) {
           html += `
             <div class="equipment-slot empty">
-              ${slotIcons[slot]} 欄位 ${slot}: 無裝備
+              欄位 ${slot}: 無裝備
             </div>
           `;
         } else {
@@ -718,5 +191,312 @@
               
             html += `
               <div class="equipment-slot">
-                <strong>${slotIcons[slot]} 欄位 ${slot}: ${equipInfo.name} (Lv.${cardLevel})</strong><br>
-                <span class="materials-list">✨ 效果
+                <strong>欄位 ${slot}: ${equipInfo.name} (Lv.${cardLevel})</strong><br>
+                <span class="materials-list">效果: ${statsText}</span>
+              </div>
+            `;
+          }
+        }
+      }
+      
+      equipEl.innerHTML = html;
+    }
+
+    function renderItems() {
+      const itemEl = document.getElementById("itemGrid");
+      
+      let html = "";
+      Object.entries(userItems).forEach(([id, count]) => {
+        const meta = itemMeta.find(m => m.id === id) || { name: id, description: "", special: 0 };
+        
+        let cardClass = "item-card";
+        let label = "";
+        
+        if (meta.special === 1) {
+          cardClass += " rare";
+          label = "【稀有】";
+        } else if (meta.special === 2) {
+          cardClass += " super-rare";
+          label = "【超稀有】";
+        }
+        
+        html += `
+          <div class="${cardClass}">
+            ${label}${meta.name}
+            ${meta.description}
+            持有數量: ${count}
+          </div>
+        `;
+      });
+      
+      itemEl.innerHTML = html || '<div class="item-card">暫無道具</div>';
+    }
+
+    function renderPage() {
+      renderStats();
+      renderEquipment();
+      renderItems();
+    }
+
+    async function openCraftUI() {
+      const dialog = document.getElementById("dialogContainer");
+      
+      let html = `
+        <div class='dialog-box'>
+          <h3>🧪 卡片製作與升級</h3>
+      `;
+      
+      cardData.forEach(card => {
+        const currentLevel = userCards[card.id] || 0;
+        const maxLevel = card.levels.length;
+        const isMaxed = currentLevel >= maxLevel;
+        const canCraft = userData.level >= card.require_level;
+        
+        if (!canCraft) {
+          html += `
+            <div class="craft-item">
+              <strong>${card.name}</strong> (需要等級: ${card.require_level})<br>
+              <span style="color: red;">等級不足，無法製作</span>
+            </div>
+          `;
+          return;
+        }
+        
+        const nextLevel = currentLevel + 1;
+        const levelData = card.levels[currentLevel]; // 0-based index
+        
+        if (isMaxed) {
+          html += `
+            <div class="craft-item">
+              <strong>${card.name}</strong> Lv.${currentLevel} (已滿級)<br>
+              <span class="materials-list">${card.description}</span>
+            </div>
+          `;
+        } else if (levelData) {
+          const materials = Object.entries(levelData.materials)
+            .map(([matId, qty]) => {
+              const owned = userItems[matId] || 0;
+              const color = owned >= qty ? "green" : "red";
+              return `<span style="color: ${color}">${matId} x${qty}(${owned})</span>`;
+            }).join(", ");
+          
+          const hasAllMaterials = Object.entries(levelData.materials)
+            .every(([matId, qty]) => (userItems[matId] || 0) >= qty);
+          
+          const successRate = (levelData.chance * 100).toFixed(0);
+          
+          html += `
+            <div class="craft-item">
+              <strong>${card.name}</strong> Lv.${currentLevel} → Lv.${nextLevel}<br>
+              <span class="materials-list">${card.description}</span><br>
+              <span class="materials-list">所需材料: ${materials}</span><br>
+              <span class="materials-list">成功率: ${successRate}%</span><br>
+              ${hasAllMaterials ? 
+                `<button class="square-btn" onclick="craftCard('${card.id}', ${currentLevel})">${currentLevel === 0 ? '製作' : '升級'}</button>` :
+                '<span style="color: red">材料不足</span>'
+              }
+            </div>
+          `;
+        }
+      });
+      
+      html += `
+          <div class="btn-group">
+            <button class="square-btn" onclick="closeDialog()">關閉</button>
+          </div>
+        </div>
+      `;
+      
+      dialog.innerHTML = html;
+      dialog.style.display = "flex";
+    }
+
+    async function craftCard(cardId, currentLevel) {
+      const card = cardData.find(c => c.id === cardId);
+      const levelData = card.levels[currentLevel];
+      
+      if (!levelData) {
+        alert("❌ 資料錯誤");
+        return;
+      }
+      
+      // 檢查材料
+      for (const [matId, qty] of Object.entries(levelData.materials)) {
+        if ((userItems[matId] || 0) < qty) {
+          alert("❌ 材料不足");
+          return;
+        }
+      }
+      
+      if (!confirm(`確定要${currentLevel === 0 ? '製作' : '升級'} ${card.name} 嗎？\n成功率: ${(levelData.chance * 100).toFixed(0)}%`)) {
+        return;
+      }
+      
+      showLoading(true);
+      
+      try {
+        const response = await fetch(`${API_BASE}/craft_card`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user: userId,
+            card_id: cardId,
+            materials: levelData.materials,
+            success_rate: levelData.chance
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          if (result.success) {
+            alert(`✅ ${currentLevel === 0 ? '製作' : '升級'}成功！`);
+            userCards[cardId] = currentLevel + 1;
+          } else {
+            alert(`❌ ${result.message || '製作失敗，材料已消耗'}`);
+          }
+          
+          // 重新載入使用者資料以更新道具數量
+          await loadUserData();
+          closeDialog();
+        } else {
+          alert(result.error || "製作失敗");
+        }
+      } catch (error) {
+        console.error("製作錯誤:", error);
+        alert("製作過程發生錯誤");
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function openEquipUI() {
+      const dialog = document.getElementById("dialogContainer");
+      const equipment = userData.equipment || {};
+      
+      let html = `
+        <div class='dialog-box'>
+          <h3>🧷 裝備管理</h3>
+      `;
+      
+      // 顯示裝備槽位
+      for (let slot = 1; slot <= 5; slot++) {
+        html += `
+          <div class="equip-item">
+            <label><strong>欄位 ${slot}:</strong></label><br>
+            <select id="equip_slot_${slot}" style="width: 100%; margin-top: 5px;">
+              <option value="">無裝備</option>
+        `;
+        
+        // 添加可裝備的卡片選項
+        Object.entries(userCards).forEach(([cardId, level]) => {
+          if (level > 0) {
+            const cardInfo = equipData.find(e => e.id === cardId);
+            const cardName = cardInfo ? cardInfo.name : cardId;
+            const isEquipped = equipment[slot]?.[cardId];
+            const isEquippedElsewhere = Object.values(equipment).some(eq => eq && eq[cardId] && equipment[slot] !== eq);
+            
+            if (!isEquippedElsewhere || isEquipped) {
+              html += `<option value="${cardId}" ${isEquipped ? 'selected' : ''}>${cardName} Lv.${level}</option>`;
+            }
+          }
+        });
+        
+        html += `
+            </select>
+          </div>
+        `;
+      }
+      
+      html += `
+          <div class="btn-group">
+            <button class="square-btn" onclick="saveEquipment()">✅ 儲存裝備</button>
+            <button class="square-btn" onclick="closeDialog()">取消</button>
+          </div>
+        </div>
+      `;
+      
+      dialog.innerHTML = html;
+      dialog.style.display = "flex";
+    }
+
+    async function saveEquipment() {
+      const newEquipment = {};
+      
+      for (let slot = 1; slot <= 5; slot++) {
+        const selectEl = document.getElementById(`equip_slot_${slot}`);
+        const cardId = selectEl.value;
+        
+        if (cardId && userCards[cardId]) {
+          newEquipment[slot] = { [cardId]: userCards[cardId] };
+        }
+      }
+      
+      showLoading(true);
+      
+      try {
+        const response = await fetch(`${API_BASE}/save_equipment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user: userId,
+            equipment: newEquipment
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          userData.equipment = newEquipment;
+          renderPage();
+          closeDialog();
+          alert("✅ 裝備更新成功");
+        } else {
+          alert(result.error || result.message || "裝備更新失敗");
+        }
+      } catch (error) {
+        console.error("儲存裝備錯誤:", error);
+        alert("儲存裝備時發生錯誤");
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function closeDialog() {
+      document.getElementById("dialogContainer").style.display = "none";
+    }
+
+    // 全域函數
+    window.openCraftUI = openCraftUI;
+    window.openEquipUI = openEquipUI;
+    window.closeDialog = closeDialog;
+    window.craftCard = craftCard;
+    window.saveEquipment = saveEquipment;
+
+    async function runMain() {
+      console.log("⚙️ runMain userId =", userId);
+      showLoading(true);
+      
+      try {
+        await loadGameData();
+        await loadUserData();
+      } catch (error) {
+        console.error("初始化錯誤:", error);
+        alert("頁面初始化失敗，請重新整理");
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // 監聽來自父頁面的訊息
+    window.addEventListener("message", async (e) => {
+      if (e.data?.user) {
+        userId = e.data.user;
+        await runMain();
+      } else {
+        console.warn("⚠️ 未收到有效 user，無法啟動");
+      }
+    });
+  </script>
+</body>
+</html>
