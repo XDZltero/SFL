@@ -1,0 +1,68 @@
+[
+  {
+    "id": "card_moss",
+    "name": "腐爛沼澤地卡片",
+    "quality": "稀有",
+    "value": {
+      "1": {
+        "attack": 10,
+        "shield": 50,
+        "accuracy": 0.1
+      },
+      "2": {
+        "attack": 15,
+        "shield": 50,
+        "accuracy": 0.1
+      },
+      "3": {
+        "attack": 20,
+        "shield": 50,
+        "accuracy": 0.1
+      },
+      "4": {
+        "attack": 25,
+        "shield": 50,
+        "accuracy": 0.1
+      },
+      "5": {
+        "attack": 30,
+        "shield": 50,
+        "accuracy": 0.1,
+        "other_bonus": 0.05
+      }
+    }
+  },
+  {
+    "id": "card_skycity",
+    "name": "天空之城卡片",
+    "quality": "稀有",
+    "value": {
+      "1": {
+        "attack": 10,
+        "shield": 50,
+        "atk_speed": 15
+      },
+      "2": {
+        "attack": 10,
+        "shield": 50,
+        "atk_speed": 20
+      },
+      "3": {
+        "attack": 10,
+        "shield": 50,
+        "atk_speed": 25
+      },
+      "4": {
+        "attack": 10,
+        "shield": 50,
+        "atk_speed": 30
+      },
+      "5": {
+        "attack": 10,
+        "shield": 50,
+        "atk_speed": 35,
+        "other_bonus": 0.05
+      }
+    }
+  }
+]
