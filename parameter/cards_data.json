@@ -1,0 +1,22 @@
+[
+  {
+    "id": "card_moss",
+    "name": "腐爛沼澤地卡片",
+    "materials": {
+      "slime_core": 3,
+      "swamp_core": 1
+    },
+    "description": "提高攻擊力與護盾，來自沼澤的詛咒。",
+    "max_level": 5
+  },
+  {
+    "id": "card_skycity",
+    "name": "天空之城卡片",
+    "materials": {
+      "sky_ragments": 2,
+      "silver_core": 1
+    },
+    "description": "提高攻速與防護，象徵空中的遺產。",
+    "max_level": 5
+  }
+]
