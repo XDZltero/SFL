@@ -30,10 +30,6 @@
       <h2>📦 背包內容</h2>
       <pre id="itemBlock">尚未載入</pre>
     </div>
-    <div id="cards">
-      <h2>🃏 持有卡片</h2>
-      <pre id="cardBlock">尚未載入</pre>
-    </div>
   </div>
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
@@ -41,85 +37,45 @@
     const userInfo = document.getElementById("userInfo");
     const equipBlock = document.getElementById("equipBlock");
     const itemBlock = document.getElementById("itemBlock");
-    const cardBlock = document.getElementById("cardBlock");
-    
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
       if (!loading) return;
       loading.style.display = show ? "flex" : "none";
     }
-    
     async function loadInventory(userId) {
       showLoading(true);
       try {
-        // 載入使用者基本資訊
-        const res1 = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+        const res1 = await fetch(${API_BASE}/status?user=${encodeURIComponent(userId)});
         const userData = await res1.json();
         if (userData.error) {
           userInfo.innerText = "❌ 無法取得角色資訊";
           return;
         }
-        
         // 傳遞使用者名稱給父視窗
         window.parent.postMessage({
           nickname: userData.nickname || userId,
           user: userId
         }, "*");
-        
-        // 顯示使用者資訊
-        let info = `🧍 使用者：${userData.nickname || userId}\n`;
-        info += `🔢 等級：${userData.level}（EXP: ${userData.exp}）\n`;
-        info += `💪 能力：\n`;
+        let info = 🧍 使用者：${userData.nickname || userId}\n;
+        info += 🔢 等級：${userData.level}（EXP: ${userData.exp}）\n;
+        info += 💪 能力：\n;
         for (const [k, v] of Object.entries(userData.base_stats || {})) {
-          info += `  - ${k.toUpperCase()}：${v}\n`;
+          info +=   - ${k.toUpperCase()}：${v}\n;
         }
         userInfo.innerText = info;
-        
-        // 顯示裝備資訊
         let equipText = "";
         for (const [slot, item] of Object.entries(userData.equipment || {})) {
-          equipText += `  - 位置${slot}：${item || "無"}\n`;
+          equipText +=   - ${slot}：${item || "無"}\n;
         }
         equipBlock.innerText = equipText;
-        
-        // 載入物品資訊 - 修正：使用 user_items 端點
-        const res2 = await fetch(`${API_BASE}/inventory?user=${encodeURIComponent(userId)}`);
-        const itemData = await res2.json();
-        
+        const res2 = await fetch(${API_BASE}/inventory?user=${encodeURIComponent(userId)});
+        const inv = await res2.json();
+        const items = inv.items || {};
         let itemText = "";
-        if (itemData.error) {
-          itemText = "（無物品或載入失敗）";
-        } else {
-          // itemData 直接就是物品字典
-          const items = itemData;
-          if (Object.keys(items).length === 0) {
-            itemText = "（無物品）";
-          } else {
-            for (const [name, count] of Object.entries(items)) {
-              itemText += `  - ${name} x ${count}\n`;
-            }
-          }
+        for (const [name, count] of Object.entries(items)) {
+          itemText +=   - ${name} x ${count}\n;
         }
-        itemBlock.innerText = itemText;
-        
-        // 載入卡片資訊
-        const res3 = await fetch(`${API_BASE}/user_cards?user=${encodeURIComponent(userId)}`);
-        const cardData = await res3.json();
-        
-        let cardText = "";
-        if (cardData.error) {
-          cardText = "（無卡片或載入失敗）";
-        } else {
-          if (Object.keys(cardData).length === 0) {
-            cardText = "（無卡片）";
-          } else {
-            for (const [cardId, level] of Object.entries(cardData)) {
-              cardText += `  - ${cardId} (Lv.${level})\n`;
-            }
-          }
-        }
-        cardBlock.innerText = cardText;
-        
+        itemBlock.innerText = itemText || "（無物品）";
       } catch (err) {
         userInfo.innerText = "❌ 載入錯誤：" + err.message;
         console.error(err);
@@ -127,7 +83,6 @@
         showLoading(false);
       }
     }
-    
     // 監聽來自父視窗的使用者資訊
     window.addEventListener("message", async (e) => {
       if (e.data?.user) {
