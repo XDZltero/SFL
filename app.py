@@ -116,11 +116,11 @@ def register():
             "atk_speed": 100
         },
         "equipment": {
-            "head": None,
-            "armor": None,
-            "gloves": None,
-            "boots": None,
-            "weapon_atk": None,
+            "1": None,
+            "2": None,
+            "3": None,
+            "4": None,
+            "5": None,
         },
         "skills": {
             "fireball": 1,
