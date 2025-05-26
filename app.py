@@ -491,7 +491,7 @@ def get_user_cards():
     return jsonify(cards_owned)
 
 # 修正後的 craft_card API
-@app.route("/craft_card", methods=["POST"])
+@app.route("/craft_card", methods=["GET"])
 def craft_card():
     data = request.json
     user_id = data.get("user")
@@ -547,7 +547,7 @@ def craft_card():
         return jsonify({"success": False, "message": "製作失敗，材料已消耗"})
 
 # 修正後的 save_equipment API
-@app.route("/save_equipment", methods=["POST"])
+@app.route("/save_equipment", methods=["GET"])
 def save_equipment():
     data = request.json
     user_id = data.get("user")
