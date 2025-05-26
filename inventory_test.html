@@ -309,6 +309,8 @@
       
       dialog.innerHTML = html;
       dialog.style.display = "flex";
+      document.body.style.overflow = "hidden";
+      document.body.classList.add("dialog-open");
     }
 
     async function craftCard(cardId, currentLevel) {
@@ -418,6 +420,8 @@
       
       dialog.innerHTML = html;
       dialog.style.display = "flex";
+      document.body.style.overflow = "hidden";
+      document.body.classList.add("dialog-open");
     }
 
     async function saveEquipment() {
@@ -463,6 +467,8 @@
     }
 
     function closeDialog() {
+      document.body.style.overflow = "";
+      document.body.classList.remove("dialog-open");
       document.getElementById("dialogContainer").style.display = "none";
     }
 
