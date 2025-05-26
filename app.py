@@ -460,3 +460,50 @@ def clear_cache():
         return jsonify({"message": "所有緩存已清除"}), 200
     except Exception as e:
         return jsonify({"error": f"清除失敗: {str(e)}"}), 500
+
+# 道具與裝備製作
+@app.route("/craft_card", methods=["POST"])
+def craft_card():
+    data = request.json
+    user_id = data.get("user")
+    card_id = data.get("card")
+
+    user = db.collection("users").document(user_id).get().to_dict()
+    card_data = load_card_data(card_id)
+    if not user or not card_data:
+        return jsonify(success=False, message="找不到使用者或卡片")
+
+    # 材料檢查
+    for mat, qty in card_data["materials"].items():
+        if user["items"].get(mat, 0) < qty:
+            return jsonify(success=False, message="材料不足")
+
+    # 扣除材料
+    for mat, qty in card_data["materials"].items():
+        user["items"][mat] -= qty
+
+    # 設定卡片等級為1
+    if "cards_owned" not in user:
+        user["cards_owned"] = {}
+    if card_id in user["cards_owned"]:
+        return jsonify(success=False, message="已擁有此卡片")
+    user["cards_owned"][card_id] = 1
+
+    db.collection("users").document(user_id).set(user)
+    return jsonify(success=True)
+
+@app.route("/save_equipment", methods=["POST"])
+def save_equipment():
+    data = request.json
+    user_id = data.get("user")
+    equipment = data.get("equipment")
+
+    user_ref = db.collection("users").document(user_id)
+    user_data = user_ref.get().to_dict()
+    if not user_data:
+        return jsonify(success=False, message="使用者不存在")
+
+    user_data["equipment"] = equipment
+    user_ref.set(user_data)
+    return jsonify(success=True)
+
