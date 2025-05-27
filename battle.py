@@ -218,11 +218,15 @@ def player_attack(user, monster, skill, multiplier, user_stats_mod, mon_stats_mo
 
 
 
+
 def simulate_battle(user, monster, user_skill_dict):
     log = []
     db = firestore.client()
 
-    # ✅ 套用裝備加成
+    # ✅ 深拷貝避免污染
+    user = copy.deepcopy(user)
+
+    # ✅ 加裝備加成
     equipment = user.get("equipment", {})
     equip_bonus = get_equipment_bonus(equipment)
     for stat, bonus in equip_bonus.items():
