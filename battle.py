@@ -3,6 +3,26 @@ from firebase_admin import firestore
 import json
 import copy
 
+# 獲得裝備卡片數值(未實作)
+with open("parameter/equips.json", "r", encoding="utf-8") as f:
+    equip_data = json.load(f)
+
+def get_equipment_bonus(equipment):
+    bonus = {}
+    for slot in equipment:
+        card_info = equipment[slot]
+        card_id = list(card_info.keys())[0]
+        level = card_info[card_id]
+        
+        card = next((c for c in equip_data if c["id"] == card_id), None)
+        if not card:
+            continue
+        
+        level_stats = card["value"].get(str(level), {})
+        for stat, val in level_stats.items():
+            bonus[stat] = bonus.get(stat, 0) + val
+    return bonus
+
 # 命中計算
 def calculate_hit(attacker_acc, defender_evade, attacker_luck):
     # 命中率 - 迴避率 + 運氣補正，每點 luck +1%
