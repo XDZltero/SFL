@@ -198,24 +198,6 @@ def get_buff_stats_only(buffs):
                 stats_mod[effect] *= multiplier
     return stats_mod
 
-# 玩家攻擊以及傷害公式
-def player_attack(user, monster, skill, multiplier, user_stats_mod, mon_stats_mod, user_level_mod, log):
-    if calculate_hit(user["base_stats"].get("accuracy", 1.0) * user_stats_mod.get("accuracy", 1.0),
-                     monster["stats"].get("evade", 0) * mon_stats_mod.get("evade", 1.0),
-                     user["base_stats"].get("luck", 0)):
-        ele_mod = get_element_multiplier(skill.get("element", []), monster.get("element", []))
-        atk = user["base_stats"].get("attack", 0) * user_stats_mod.get("attack", 1.0)
-        shield = monster["stats"].get("shield", 0) * mon_stats_mod.get("shield", 1.0)
-        dmg = calculate_damage(atk, multiplier, user["buffs"].get("phys_bonus", 0), shield)
-        dmg = round(dmg * user_level_mod * ele_mod * user_stats_mod.get("all_damage", 1.0))
-        monster_hp = max(monster["stats"]["hp"] - dmg, 0)
-        log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{monster_hp}/{monster['stats']['hp']}）")
-        return dmg
-    else:
-        log.append(f"你使用 {skill['name']} 但未命中")
-        return 0
-
-
 def simulate_battle(user, monster, user_skill_dict):
     log = []
     db = firestore.client()
@@ -394,7 +376,7 @@ def simulate_battle(user, monster, user_skill_dict):
                 
                 elif skill_type == "debuff":
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
-                                     user["base_stats"]["evade"] * user_stats_mod["evade"],
+                                     user_battle_stats["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
                         debuff = {
                             "name": skill.get("buffName", skill["description"]),
@@ -409,11 +391,11 @@ def simulate_battle(user, monster, user_skill_dict):
                         round_log.append(f"{monster['name']} 對你施放 {skill['buffName']} 但未命中")
                 elif skill_type == "atk":
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
-                                     user["base_stats"]["evade"] * user_stats_mod["evade"],
+                                     user_battle_stats["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
                         ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
                         atk = monster["stats"]["attack"] * mon_stats_mod["attack"]
-                        shield = user["base_stats"]["shield"] * user_stats_mod["shield"]
+                        shield = user_battle_stats["shield"] * user_stats_mod["shield"]
                         dmg = calculate_damage(atk, skill["multiplier"], monster["stats"].get("phys_bonus", 0), shield)
                         dmg = round(dmg * mon_level_mod * ele_mod * mon_stats_mod["all_damage"])
                         user_hp = max(user_hp - dmg, 0)
