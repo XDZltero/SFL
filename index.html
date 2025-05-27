@@ -60,27 +60,30 @@
   <!-- 行為腳本 -->
   <script type="module">
     import { auth, signOut } from "./js/firebase-init.js";
+    let currentBgm = "main";
 
     // boss關切換音樂
     window.addEventListener("message", (event) => {
       const data = event.data;
     
       if (!data || !data.command) return;
+      
     
-      if (data.command === "switchToBossMusic") {
+      if (data.command === "switchToBossMusic" && currentBgm !== "boss") {
+        currentBgm = "boss";
         bgm.pause();
-        bgm.src = bossBgmUrl;
+        bgm.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Last_Boss_Battle_theme-jZt50nIPYvq5c9YqTSAa0CUYTNVLZ5.mp3";
         bgm.load();
         bgm.play().catch(() => {});
       }
-    
-      if (data.command === "restoreMainMusic") {
+      
+      if (data.command === "restoreMainMusic" && currentBgm !== "main") {
+        currentBgm = "main";
         bgm.pause();
-        bgm.src = "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3"; // 原本主題曲
+        bgm.src = "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3";
         bgm.load();
         bgm.play().catch(() => {});
       }
-    });
 
     // Cookie 操作函數
     function setCookie(name, value, days = 30) {
@@ -178,6 +181,14 @@
     const controlButtons = document.getElementById("controlButtons");
   
     function loadPage(page) {
+      if (!page.includes("dungeon_layer") && currentBgm === "boss") {
+        currentBgm = "main";
+        bgm.pause();
+        bgm.src = "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3";
+        bgm.load();
+        bgm.play().catch(() => {});
+      }
+    
       iframe.src = page;
       updateTopbar(page);
     }
