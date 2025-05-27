@@ -20,7 +20,7 @@
       });
   </script>
 
-  <h1 class="fancy-title">🎒 背包與裝備管理</h1>
+  <h1 class="fancy-title">🌌 卡片矩陣系統</h1>
   <div class="top-grid">
     <div class="stats-section">
       <h2 class="fancy-subtitle">🧬 角色屬性</h2>
@@ -28,14 +28,14 @@
     </div>
     
     <div class="equipment-section">
-      <h2 class="fancy-subtitle">🛡️ 裝備中</h2>
+      <h2 class="fancy-subtitle">📁 卡片插槽</h2>
       <div id="equipmentDisplay"></div>
     </div>
   </div>
   
   <div class="btn-group">
-    <button class="square-btn" onclick="openCraftUI()">🧪 製作終端</button>
-    <button class="square-btn" onclick="openEquipUI()">🧷 鑲嵌卡片</button>
+    <button class="square-btn" onclick="openCraftUI()">💻 製作終端</button>
+    <button class="square-btn" onclick="openEquipUI()">🛰️ 插槽管理</button>
   </div>
   
   <div class="items-section">
@@ -197,7 +197,7 @@
           };
     
           if (equipInfo && equipInfo.value && equipInfo.value[cardLevel]) {
-            const stats = equipInfo.value[cardLevel];  // ✅ 這行是之前缺漏的
+            const stats = equipInfo.value[cardLevel]; 
             const statsText = Object.entries(stats)
               .map(([key, value]) => {
                 const label = statNameMap[key] || key;
@@ -230,7 +230,7 @@
 
         let cardClass = "item-card";
         let rarityLabel = "";
-        let nameColor = "#333"; // default for 普通道具
+        let nameColor = "#D0D0D0"; // default for 普通道具
         
         if (meta.special === 1) {
           cardClass += " rare";
@@ -265,7 +265,7 @@
       
       let html = `
         <div class='dialog-box'>
-          <h3>🧪 卡片製作與升級</h3>
+          <h3>💻 卡片製作與升級</h3>
           <div class="scroll-content">
       `;
       
@@ -415,12 +415,11 @@
     
       let html = `
         <div class='dialog-box'>
-          <h3>🧷 裝備管理</h3>
+          <h3>🛰️ 卡片鑲嵌與插槽管理</h3>
       `;
     
       const selectIds = [];
     
-      // 先建立所有欄位的選擇器（之後動態調整內容）
       for (let slot = 1; slot <= 5; slot++) {
         const equippedCardId = equipment[slot] ? Object.keys(equipment[slot])[0] : "";
         const equippedLevel = equippedCardId ? userCards[equippedCardId] : 0;
@@ -451,7 +450,7 @@
     
       html += `
           <div class="btn-group">
-            <button class="square-btn" onclick="saveEquipment()">✅ 儲存裝備</button>
+            <button class="square-btn" onclick="saveEquipment()">✅ 儲存插槽</button>
             <button class="square-btn" onclick="closeDialog()">取消</button>
           </div>
         </div>
@@ -540,13 +539,13 @@
           userData.equipment = newEquipment;
           renderPage();
           closeDialog();
-          alert("✅ 裝備更新成功");
+          alert("✅ 插槽更新成功");
         } else {
-          alert(result.error || result.message || "裝備更新失敗");
+          alert(result.error || result.message || "插槽更新失敗");
         }
       } catch (error) {
-        console.error("儲存裝備錯誤:", error);
-        alert("儲存裝備時發生錯誤");
+        console.error("儲存插槽錯誤:", error);
+        alert("儲存插槽時發生錯誤");
       } finally {
         showLoading(false);
       }
