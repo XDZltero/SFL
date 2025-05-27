@@ -664,7 +664,7 @@
         const user = await fetchUser(userId);
 
 	// 讀取裝備數值資料
-	const equipRes = await fetch(`${API}/parameter/equips.json`);
+	const equipRes = await fetch(`${API}/equips_table`);
 	const equipData = await equipRes.json();
         
         // 傳遞使用者名稱給父視窗
