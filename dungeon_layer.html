@@ -13,8 +13,8 @@
   <div class="fireworks" id="fireworksContainer"></div>
   <div class="victory-content">
     <div class="victory-icon">🏆</div>
-    <div class="victory-title">勝利！</div>
-    <div class="victory-message">恭喜你戰勝了強敵！</div>
+    <div class="victory-title">Victory</div>
+    <div class="victory-message">🌟成功通關副本🌟</div>
     <button class="effect-button" onclick="hideVictoryEffect()">繼續</button>
   </div>
 </div>
@@ -25,7 +25,7 @@
   <div class="defeat-content">
     <div class="defeat-icon">💀</div>
     <div class="defeat-title">戰敗</div>
-    <div class="defeat-message">失敗乃成功之母，再接再厲！</div>
+    <div class="defeat-message" id="defeatMessage">失敗乃成功之母，再接再厲！</div>
     <button class="effect-button" onclick="hideDefeatEffect()">繼續</button>
   </div>
 </div>
@@ -191,10 +191,26 @@
       clearFireworks();
     }
 
+    function setRandomDefeatMessage() {
+	    const messages = [
+	      "適當分配技能點數，用最優屬性克制敵人。",
+	      "等級壓制最高可達七等，準備好再來吧。",
+	      "善用屬性克制！水→火→自然→雷→水、光暗互剋。",
+	      "製作與強化卡片提升能力值再來挑戰！",
+	      "不如先試試簡單的怪物提升等級？"
+	    ];
+	    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+	    const messageDiv = document.getElementById("defeatMessage");
+	    if (messageDiv) {
+	      messageDiv.textContent = randomMsg;
+	    }
+	  }
+
     function showDefeatEffect() {
       const overlay = document.getElementById("defeatOverlay");
       overlay.style.display = "flex";
       createDebris();
+      setRandomDefeatMessage();
     }
 
     function hideDefeatEffect() {
