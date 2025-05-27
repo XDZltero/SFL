@@ -142,6 +142,8 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+    let equipData = [];
+
     const firebaseConfig = {
       apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
       authDomain: "sfl-api-f0290.firebaseapp.com",
@@ -428,7 +430,7 @@
 
 	// 讀取裝備數值資料
 	const equipRes = await fetch(`${API}/equips_table`);
-	const equipData = await equipRes.json();
+	equipData = await equipRes.json();
         
         // 傳遞使用者名稱給父視窗
         window.parent.postMessage({
