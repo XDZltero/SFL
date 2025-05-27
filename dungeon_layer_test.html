@@ -479,6 +479,7 @@
             <li>屬性：${Array.isArray(mon.element) ? mon.element.map(e => elementMap[e] || e).join("、") : (elementMap[mon.element] || mon.element)}</li>
             <li>生命值：${mon.stats.hp}</li>
             <li>攻擊力：${mon.stats.attack}</li>
+	    <li>護盾值：${mon.stats.shield}</li>
             <li>命中率：${Math.round(mon.stats.accuracy * 100)}%</li>
             <li>迴避率：${Math.round(mon.stats.evade * 100)}%</li>
             <li>攻擊速度：${mon.stats.atk_speed}</li>
