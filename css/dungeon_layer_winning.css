@@ -1,0 +1,236 @@
+/* 勝利特效 */
+.victory-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 140, 0, 0.8), rgba(255, 69, 0, 0.9));
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+  animation: victoryFadeIn 1s ease-in-out;
+}
+
+@keyframes victoryFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.victory-content {
+  text-align: center;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  position: relative;
+}
+
+.victory-title {
+  font-size: 4em;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+  margin-bottom: 20px;
+  animation: victoryTitleAnimation 2s ease-in-out infinite;
+}
+
+@keyframes victoryTitleAnimation {
+  0%, 100% { 
+    transform: scale(1) rotate(0deg);
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+  }
+  50% { 
+    transform: scale(1.1) rotate(2deg);
+    text-shadow: 0 0 50px rgba(255, 255, 255, 1), 0 0 80px rgba(255, 215, 0, 0.8);
+  }
+}
+
+.victory-icon {
+  font-size: 6em;
+  margin-bottom: 30px;
+  animation: victoryIconSpin 3s ease-in-out infinite;
+}
+
+@keyframes victoryIconSpin {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.2) rotate(90deg); }
+  50% { transform: scale(1) rotate(180deg); }
+  75% { transform: scale(1.2) rotate(270deg); }
+  100% { transform: scale(1) rotate(360deg); }
+}
+
+.victory-message {
+  font-size: 1.5em;
+  margin-bottom: 30px;
+  animation: victoryMessagePulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes victoryMessagePulse {
+  from { opacity: 0.8; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.05); }
+}
+
+/* 失敗特效 */
+.defeat-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.9), rgba(220, 20, 60, 0.8), rgba(75, 0, 130, 0.9));
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+  animation: defeatFadeIn 1s ease-in-out;
+}
+
+@keyframes defeatFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.defeat-content {
+  text-align: center;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  position: relative;
+}
+
+.defeat-title {
+  font-size: 4em;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow: 0 0 30px rgba(255, 68, 68, 0.8);
+  margin-bottom: 20px;
+  animation: defeatTitleShake 0.5s ease-in-out infinite;
+}
+
+@keyframes defeatTitleShake {
+  0%, 100% { 
+    transform: translateX(0) scale(1);
+    text-shadow: 0 0 30px rgba(255, 68, 68, 0.8);
+  }
+  25% { 
+    transform: translateX(-5px) scale(0.98);
+    text-shadow: 0 0 50px rgba(255, 68, 68, 1);
+  }
+  75% { 
+    transform: translateX(5px) scale(1.02);
+    text-shadow: 0 0 40px rgba(139, 0, 0, 0.9);
+  }
+}
+
+.defeat-icon {
+  font-size: 6em;
+  margin-bottom: 30px;
+  animation: defeatIconFall 2s ease-in-out infinite;
+}
+
+@keyframes defeatIconFall {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(10deg) scale(0.9); }
+}
+
+.defeat-message {
+  font-size: 1.5em;
+  margin-bottom: 30px;
+  color: #ffaaaa;
+  animation: defeatMessageFade 2s ease-in-out infinite alternate;
+}
+
+@keyframes defeatMessageFade {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+/* 共用特效元素 */
+.effect-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  padding: 15px 30px;
+  border-radius: 25px;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.effect-button:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
+}
+
+/* 煙花特效 */
+.fireworks {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.firework {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: fireworkExplode 2s ease-out infinite;
+}
+
+@keyframes fireworkExplode {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1) rotate(180deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* 碎片特效 */
+.debris {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.debris-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: rgba(139, 0, 0, 0.8);
+  animation: debrisFall 3s ease-out infinite;
+}
+
+@keyframes debrisFall {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* 獎勵訊息特殊樣式 */
+.reward-message {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.1));
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  border-radius: 10px;
+  padding: 15px;
+  margin: 10px 0;
+  animation: rewardGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes rewardGlow {
+  from { 
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  }
+  to { 
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  }
+}
