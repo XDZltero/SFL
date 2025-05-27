@@ -690,6 +690,14 @@ body.dialog-open .dialog-box::before {
   min-width: 0;
 }
 
+.card-slot-container {
+  overflow-y: scroll;
+  scrollbar-width: none;
+}
+
+.card-slot-container::-webkit-scrollbar {
+  display: none;
+}
 
 
 
