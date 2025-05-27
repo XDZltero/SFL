@@ -525,7 +525,7 @@ def craft_card():
     if not user_id or not card_id or not materials:
         return jsonify({"success": False, "error": "缺少必要參數"}), 400
 
-    # ✅ 取得卡片資訊（從 users）
+    # 取得卡片資訊
     user_ref = db.collection("users").document(user_id)
     user_doc = user_ref.get()
     if not user_doc.exists:
@@ -533,15 +533,18 @@ def craft_card():
     user_data = user_doc.to_dict()
     cards_owned = user_data.get("cards_owned", {})
 
-    # ✅ 改為從 user_items collection 取得道具資料
+    # 改為從 user_items collection 取得道具資料
     item_ref = db.collection("user_items").document(user_id)
     item_doc = item_ref.get()
     if not item_doc.exists:
         return jsonify({"success": False, "error": "找不到使用者道具資料"}), 404
-    user_items = item_doc.to_dict()
+
+    # ✅ 正確解析 items
+    raw_items = item_doc.to_dict()
+    user_items = raw_items.get("items", {})
     user_items = {str(k): v for k, v in user_items.items()}  # 統一 key 格式
 
-    # ✅ 檢查材料是否足夠
+    # 檢查材料是否足夠
     for material_id, required_qty in materials.items():
         owned_qty = user_items.get(str(material_id), 0)
         if owned_qty < required_qty:
@@ -550,22 +553,21 @@ def craft_card():
                 "error": f"材料 {material_id} 不足（持有 {owned_qty}，需要 {required_qty}）"
             }), 400
 
-    # ✅ 扣除材料
+    # 扣除材料
     for material_id, required_qty in materials.items():
         mat_id = str(material_id)
         user_items[mat_id] = user_items.get(mat_id, 0) - required_qty
         if user_items[mat_id] <= 0:
             del user_items[mat_id]
 
-    # ✅ 決定是否成功
+    # 判斷成功與否
     import random
     is_success = random.random() <= success_rate
 
-    # ✅ 更新道具資料
-    item_ref.set(user_items)
+    # 更新道具資料（正確格式）
+    item_ref.set({"items": user_items})
 
     if is_success:
-        # 成功則升級卡片
         current_level = cards_owned.get(card_id, 0)
         cards_owned[card_id] = current_level + 1
         user_data["cards_owned"] = cards_owned
@@ -573,8 +575,8 @@ def craft_card():
 
         return jsonify({"success": True, "message": "製作成功"})
     else:
-        # 失敗但仍要扣材料
         return jsonify({"success": False, "message": "製作失敗，材料已消耗"})
+
 
 
 
