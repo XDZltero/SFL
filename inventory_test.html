@@ -210,21 +210,24 @@
     
       Object.entries(userItems).forEach(([id, count]) => {
         const meta = itemMeta.find(m => m.id === id) || { name: id, description: "", special: 0 };
-    
+
         let cardClass = "item-card";
         let rarityLabel = "";
-    
+        let nameColor = "#333"; // default for 普通道具
+        
         if (meta.special === 1) {
           cardClass += " rare";
           rarityLabel = "【稀有】";
+          nameColor = "#00bfff"; // 淺藍色
         } else if (meta.special === 2) {
           cardClass += " super-rare";
           rarityLabel = "【超稀有】";
+          nameColor = "#ff69b4"; // 桃紅色
         }
     
         html += `
           <div class="${cardClass}">
-            <div class="item-name">${rarityLabel}${meta.name}</div>
+            <div class="item-name" style="color: ${nameColor}">${rarityLabel}${meta.name}</div>
             <div class="item-desc">${meta.description}</div>
             <div class="item-count">持有數量: <span class="count-highlight">${count}</span></div>
           </div>
