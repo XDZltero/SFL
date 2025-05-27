@@ -383,6 +383,13 @@
       margin-bottom: 25px;
     }
 
+    .dialog-box::-webkit-scrollbar {
+      display: none;
+    }
+    .dialog-box {
+      scrollbar-width: none; /* Firefox */
+    }
+
     /* 製作項目和裝備項目 */
     .craft-item, .equip-item {
       background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.05) 100%);
@@ -690,14 +697,6 @@ body.dialog-open .dialog-box::before {
   min-width: 0;
 }
 
-.card-slot-container {
-  overflow-y: scroll;
-  scrollbar-width: none;
-}
-
-.card-slot-container::-webkit-scrollbar {
-  display: none;
-}
 
 
 
