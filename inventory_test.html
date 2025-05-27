@@ -184,11 +184,28 @@
           const cardId = Object.keys(equippedCard)[0];
           const cardLevel = equippedCard[cardId];
           const equipInfo = equipData.find(e => e.id === cardId);
+
+          const statNameMap = {
+            hp: "生命值",
+            attack: "攻擊力",
+            shield: "護盾",
+            evade: "閃避",
+            accuracy: "命中",
+            luck: "運氣",
+            atk_speed: "攻擊速度",
+            other_bonus: "其他加成"
+          };
           
           if (equipInfo) {
             const stats = equipInfo.value[cardLevel] || {};
             const statsText = Object.entries(stats)
-              .map(([key, value]) => `${key}: +${['shield','evade','accuracy','other_bonus'].includes(key) ? (value*100).toFixed(1)+'%' : value}`)
+              .map(([key, value]) => {
+                const label = statNameMap[key] || key;
+                const displayValue = ['shield','evade','accuracy','other_bonus'].includes(key)
+                  ? `+${(value * 100).toFixed(1)}%`
+                  : `+${value}`;
+                return `${label}: ${displayValue}`;
+              })
               .join(", ");
               
             html += `
