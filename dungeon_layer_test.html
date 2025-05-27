@@ -742,85 +742,78 @@
       document.getElementById("leaveBtn").style.display = "none";
 
       try {
-        const res = await fetch(`${API}/battle_dungeon`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user: userId, dungeon, layer })
-        });
-        const data = await res.json();
-        const log = data.battle_log;
-        if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
-
-        // 確保進度條達到 100% 後再隱藏載入畫面
-        setTimeout(() => {
-          showBattleLoading(false);
-          playBattleLog(log).then(() => {
-            // 戰鬥 log 播放完成後的處理
-              if (data.success) {
-                // 顯示勝利特效
-                showVictoryEffect();
-                
-                fetchUser(userId).then(updatedUser => {
-                  userDiv.innerText = formatStats(updatedUser);
-                });
-
-                if (data.is_last_layer) {
-                  document.getElementById("leaveBtn").style.display = "inline-block";
-                } else {
-                  retryBtn.style.display = "inline-block";
-                  retryBtn.onclick = () => startBattle();
-                  nextBtn.style.display = "inline-block";
-                  nextBtn.onclick = () => {
-                    window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-                  };
-                }
-                
-                const winMsg = document.createElement("div");
-                winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
-                logArea.appendChild(winMsg);
-                scrollLogToBottom();
-
-                if (data.rewards) {
-                  const { exp, leveled_up, drops } = data.rewards;
-                  fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
-                    const rewardLog = document.createElement("div");
-                    rewardLog.className = "reward-message";
-                    rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
-                      (leveled_up ? `<br><span style='color:red'>🎊 等級提升！</span>` : "") +
-                      drops.filter(d => Math.random() <= d.rate).map(d => {
-                        const meta = itemMap[d.id] || { name: d.id, special: 0 };
-                        if (meta.special === 2) return `<br><span style='color:crimson'>【超稀有】${meta.name} × ${d.value}</span>`;
-                        if (meta.special === 1) return `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${d.value}</span>`;
-                        return `<br>${meta.name} × ${d.value}`;
-                      }).join("");
-                    logArea.appendChild(rewardLog);
-                    scrollLogToBottom();
-                  });
-                }
-
-              } else {
-                // 顯示失敗特效
-                showDefeatEffect();
-                
-                const loseMsg = document.createElement("div");
-                loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
-                logArea.appendChild(loseMsg);
-                const failMsg = document.createElement("div");
-                failMsg.innerHTML = `<br>❌ ${data.message}`;
-                logArea.appendChild(failMsg);
-                scrollLogToBottom();
-                document.getElementById("leaveBtn").style.display = "inline-block";
-              }
-            });
-          });
-        }, 1000); // 給一點時間讓進度條完成
-
-      } catch (err) {
-        showBattleLoading(false);
-        logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
-        document.getElementById("leaveBtn").style.display = "inline-block";
-      }
-    };
+	  const res = await fetch(`${API}/battle_dungeon`, {
+	    method: "POST",
+	    headers: { "Content-Type": "application/json" },
+	    body: JSON.stringify({ user: userId, dungeon, layer })
+	  });
+	  const data = await res.json();
+	  const log = data.battle_log;
+	  if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
+	
+	  // 確保進度條達到 100% 後再隱藏載入畫面
+	  setTimeout(() => {
+	    showBattleLoading(false);
+	    playBattleLog(log).then(() => {
+	      if (data.success) {
+	        showVictoryEffect();
+	        fetchUser(userId).then(updatedUser => {
+	          userDiv.innerText = formatStats(updatedUser);
+	        });
+	
+	        if (data.is_last_layer) {
+	          document.getElementById("leaveBtn").style.display = "inline-block";
+	        } else {
+	          retryBtn.style.display = "inline-block";
+	          retryBtn.onclick = () => startBattle();
+	          nextBtn.style.display = "inline-block";
+	          nextBtn.onclick = () => {
+	            window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
+	          };
+	        }
+	
+	        const winMsg = document.createElement("div");
+	        winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
+	        logArea.appendChild(winMsg);
+	        scrollLogToBottom();
+	
+	        if (data.rewards) {
+	          const { exp, leveled_up, drops } = data.rewards;
+	          fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
+	            const rewardLog = document.createElement("div");
+	            rewardLog.className = "reward-message";
+	            rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
+	              (leveled_up ? `<br><span style='color:red'>🎊 等級提升！</span>` : "") +
+	              drops.filter(d => Math.random() <= d.rate).map(d => {
+	                const meta = itemMap[d.id] || { name: d.id, special: 0 };
+	                if (meta.special === 2) return `<br><span style='color:crimson'>【超稀有】${meta.name} × ${d.value}</span>`;
+	                if (meta.special === 1) return `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${d.value}</span>`;
+	                return `<br>${meta.name} × ${d.value}`;
+	              }).join("");
+	            logArea.appendChild(rewardLog);
+	            scrollLogToBottom();
+	          });
+	        }
+	
+	      } else {
+	        showDefeatEffect();
+	        const loseMsg = document.createElement("div");
+	        loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
+	        logArea.appendChild(loseMsg);
+	        const failMsg = document.createElement("div");
+	        failMsg.innerHTML = `<br>❌ ${data.message}`;
+	        logArea.appendChild(failMsg);
+	        scrollLogToBottom();
+	        document.getElementById("leaveBtn").style.display = "inline-block";
+	      }
+	    });
+	  }, 1000);
+	
+	} catch (err) {
+	  showBattleLoading(false);
+	  logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
+	  document.getElementById("leaveBtn").style.display = "inline-block";
+	}
 
     function playBattleLog(log) {
       return new Promise((resolve) => {
