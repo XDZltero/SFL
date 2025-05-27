@@ -603,32 +603,55 @@
       return Math.round(num * 100) + "%";
     }
 
-    function formatStats(data) {
-      const b = data.base_stats;
-      const e = data.equipment_stats || {};
-      const total_hp = calcTotal(b.hp, e.hp);
-      const total_atk = calcTotal(b.attack, e.attack);
-      const total_shield = calcTotal(b.shield, e.shield);
-      const total_luck = calcTotal(b.luck, e.luck);
-      const total_accuracy = calcTotal(b.accuracy, e.accuracy);
-      const total_evade = calcTotal(b.evade, e.evade);
-      const levelMaxExp = levelExp[data.level] || 1;
-      const progress = percent(data.exp / levelMaxExp);
+    // 計算裝備數值
+    function calculateEquipmentBonus(equipment, equipData) {
+	  const bonus = {};
+	
+	  for (let slot = 1; slot <= 5; slot++) {
+	    const equippedCard = equipment[slot];
+	    if (!equippedCard) continue;
+	
+	    const cardId = Object.keys(equippedCard)[0];
+	    const cardLevel = equippedCard[cardId];
+	    const equipInfo = equipData.find(e => e.id === cardId);
+	
+	    if (equipInfo?.value?.[cardLevel]) {
+	      const cardStats = equipInfo.value[cardLevel];
+	      for (const [stat, value] of Object.entries(cardStats)) {
+	        bonus[stat] = (bonus[stat] || 0) + value;
+	      }
+	    }
+	  }
+	
+	  return bonus;
+	}
 
-      return `玩家名稱: ${data.nickname}
-      等級: ${data.level}
-      經驗值: ${data.exp} (${progress})
-      生命值: ${total_hp} (${b.hp} + ${e.hp || 0})
-      攻擊力: ${total_atk} (${b.attack} + ${e.attack || 0})
-      護盾值: ${total_shield} (${b.shield} + ${e.shield || 0})
-      幸運值: ${total_luck} (${b.luck} + ${e.luck || 0})
-      命中率: ${percent(total_accuracy)} (${b.accuracy} + ${e.accuracy || 0})
-      迴避率: ${percent(total_evade)} (${b.evade} + ${e.evade || 0})
-      攻擊速度: ${b.atk_speed}
-      額外傷害加成: ${b.other_bonus ?? 0}
-      剩餘能力值點數: ${data.stat_points}
-      剩餘技能點: ${data.skill_points}`;
-    }
+    function formatStats(data) {
+	  const b = data.base_stats;
+	  const e = calculateEquipmentBonus(data.equipment || {}, equipData);
+	  const levelMaxExp = levelExp[data.level] || 1;
+	  const progress = percent(data.exp / levelMaxExp);
+	
+	  const getValue = (key) => (b[key] || 0) + (e[key] || 0);
+	  const getFormatted = (key) =>
+	    ["evade", "accuracy", "other_bonus"].includes(key)
+	      ? `${percent(getValue(key))} (${percent(b[key] || 0)} + ${percent(e[key] || 0)})`
+	      : `${getValue(key)} (${b[key] || 0} + ${e[key] || 0})`;
+	
+	  return `玩家名稱: ${data.nickname}
+	等級: ${data.level}
+	經驗值: ${data.exp} (${progress})
+	生命值: ${getFormatted("hp")}
+	攻擊力: ${getFormatted("attack")}
+	護盾值: ${getFormatted("shield")}
+	幸運值: ${getFormatted("luck")}
+	命中率: ${getFormatted("accuracy")}
+	迴避率: ${getFormatted("evade")}
+	攻擊速度: ${b.atk_speed}
+	額外傷害加成: ${getFormatted("other_bonus")}
+	剩餘能力值點數: ${data.stat_points}
+	剩餘技能點: ${data.skill_points}`;
+	}
 
     let levelExp = {};
 
@@ -639,6 +662,10 @@
         levelExp = await expRes.json();
     
         const user = await fetchUser(userId);
+
+	// 讀取裝備數值資料
+	const equipRes = await fetch(`${API}/parameter/equips.json`);
+	const equipData = await equipRes.json();
         
         // 傳遞使用者名稱給父視窗
         window.parent.postMessage({
@@ -756,12 +783,12 @@
 	    showBattleLoading(false);
 	    playBattleLog(log).then(() => {
 	      if (data.success) {
-	        showVictoryEffect();
 	        fetchUser(userId).then(updatedUser => {
 	          userDiv.innerText = formatStats(updatedUser);
 	        });
 	
 	        if (data.is_last_layer) {
+		  showVictoryEffect();
 	          document.getElementById("leaveBtn").style.display = "inline-block";
 	        } else {
 	          retryBtn.style.display = "inline-block";
