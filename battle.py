@@ -222,6 +222,12 @@ def simulate_battle(user, monster, user_skill_dict):
     log = []
     db = firestore.client()
 
+    # ✅ 套用裝備加成
+    equipment = user.get("equipment", {})
+    equip_bonus = get_equipment_bonus(equipment)
+    for stat, bonus in equip_bonus.items():
+        user["base_stats"][stat] = user["base_stats"].get(stat, 0) + bonus
+
     user_hp = user["base_stats"]["hp"]
     mon_hp = monster["stats"]["hp"]
     player_skill_cd = {k: 0 for k in user.get("skills", {})}
