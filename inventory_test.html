@@ -277,11 +277,13 @@
           `;
         } else if (levelData) {
           const materials = Object.entries(levelData.materials)
-            .map(([matId, qty]) => {
-              const owned = userItems[matId] || 0;
-              const color = owned >= qty ? "green" : "red";
-              return `<span style="color: ${color}">${matId} x${qty}(${owned})</span>`;
-            }).join(", ");
+          .map(([matId, qty]) => {
+            const owned = userItems[matId] || 0;
+            const color = owned >= qty ? "green" : "red";
+            const meta = itemMeta.find(m => m.id === matId);
+            const itemName = meta ? meta.name : matId;  // 若找不到就用原 ID
+            return `<span style="color: ${color}">${itemName} x${qty} (${owned})</span>`;
+          }).join(", ");
           
           const hasAllMaterials = Object.entries(levelData.materials)
             .every(([matId, qty]) => (userItems[matId] || 0) >= qty);
