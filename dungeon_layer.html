@@ -266,6 +266,7 @@
 
     // 離開副本函數
     function leaveDungeon() {
+      window.parent.postMessage({ command: "restoreMainMusic" }, "*");
       window.parent.loadPage('dungeons.html');
     }
     window.leaveDungeon = leaveDungeon;
@@ -454,6 +455,7 @@
         if (isLastLayer) {
           // 加上整體 boss 模式樣式
           document.body.classList.add("boss-mode");
+	  window.parent.postMessage({ command: "switchToBossMusic" }, "*");
 	
           // 加上戰鬥載入畫面 boss 樣式
           document.getElementById("battleLoadingOverlay")?.classList.add("boss-battle");
