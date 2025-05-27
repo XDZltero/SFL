@@ -74,6 +74,8 @@
         bgm.pause();
         bgm.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Last_Boss_Battle_theme-jZt50nIPYvq5c9YqTSAa0CUYTNVLZ5.mp3";
         bgm.load();
+        bgm.volume = volumeSlider.value;
+        bgm.muted = muted;
         bgm.play().catch(() => {});
       }
       
@@ -82,6 +84,8 @@
         bgm.pause();
         bgm.src = "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3";
         bgm.load();
+        bgm.volume = volumeSlider.value;
+        bgm.muted = muted;
         bgm.play().catch(() => {});
       }
     });
