@@ -333,12 +333,13 @@
       
       // 檢查材料
       for (const [matId, qty] of Object.entries(levelData.materials)) {
-        if ((userItems[matId] || 0) < qty) {
-          alert("❌ 材料不足");
+        const ownedQty = userItems[String(matId)] || 0;
+        if (ownedQty < qty) {
+          alert(`❌ 材料不足：${matId} 需要 ${qty}，持有 ${ownedQty}`);
           return;
         }
       }
-      
+            
       if (!confirm(`確定要${currentLevel === 0 ? '製作' : '升級'} ${card.name} 嗎？\n成功率: ${(levelData.chance * 100).toFixed(0)}%`)) {
         return;
       }
