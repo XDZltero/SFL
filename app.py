@@ -514,7 +514,6 @@ def user_cardss():
     cards_owned = user_data.get("cards_owned", {})
     return jsonify(cards_owned)
 
-# 修正：HTTP 方法應該是 POST
 @app.route("/craft_card", methods=["POST"])
 def craft_card():
     data = request.json
@@ -534,19 +533,26 @@ def craft_card():
         return jsonify({"success": False, "error": "找不到使用者"}), 404
     
     user_data = user_doc.to_dict()
-    user_items = user_data.get("items", {})
+    
+    # ✅ 統一轉為字串 key
+    user_items = {str(k): v for k, v in user_data.get("items", {}).items()}
     cards_owned = user_data.get("cards_owned", {})
     
-    # 檢查材料是否足夠
+    # ✅ 檢查材料是否足夠
     for material_id, required_qty in materials.items():
-        if user_items.get(material_id, 0) < required_qty:
-            return jsonify({"success": False, "error": f"材料 {material_id} 不足"}), 400
+        owned_qty = user_items.get(str(material_id), 0)
+        if owned_qty < required_qty:
+            return jsonify({
+                "success": False,
+                "error": f"材料 {material_id} 不足（持有 {owned_qty}，需要 {required_qty}）"
+            }), 400
     
-    # 扣除材料
+    # ✅ 扣除材料
     for material_id, required_qty in materials.items():
-        user_items[material_id] = user_items.get(material_id, 0) - required_qty
-        if user_items[material_id] <= 0:
-            del user_items[material_id]
+        mat_id = str(material_id)
+        user_items[mat_id] = user_items.get(mat_id, 0) - required_qty
+        if user_items[mat_id] <= 0:
+            del user_items[mat_id]
     
     # 判斷製作是否成功
     import random
@@ -569,6 +575,7 @@ def craft_card():
         user_ref.set(user_data)
         
         return jsonify({"success": False, "message": "製作失敗，材料已消耗"})
+
 
 # 修正：HTTP 方法應該是 POST
 @app.route("/save_equipment", methods=["POST"])
