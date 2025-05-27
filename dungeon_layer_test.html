@@ -861,17 +861,27 @@
     }
 
     onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        userId = user.email;
-        await fetchProgress();
-        retryBtn.onclick = () => {
-          startBattle();
-        };
-        loadLayer();
-      } else {
-        window.parent.location.href = "/SFL/loading.html";
-      }
-    });
+	    if (user) {
+	      userId = user.email;
+	      await fetchProgress();
+	
+	      retryBtn.onclick = () => {
+	        hideVictoryEffect();
+	        hideDefeatEffect();
+	        startBattle();
+	      };
+	
+	      nextBtn.onclick = () => {
+	        hideVictoryEffect();
+	        hideDefeatEffect();
+	        window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
+	      };
+	
+	      loadLayer();
+	    } else {
+	      window.parent.location.href = "/SFL/loading.html";
+	    }
+	  });
   </script>
 </body>
 </html>
