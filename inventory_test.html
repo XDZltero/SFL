@@ -196,17 +196,15 @@
             other_bonus: "其他加成"
           };
           
-          if (equipInfo) {
-            const stats = equipInfo.value[cardLevel] || {};
-            const statsText = Object.entries(stats)
-            .map(([key, value]) => {
-              const label = statNameMap[key] || key;
-              const displayValue = ['evade','accuracy','other_bonus'].includes(key)
-                ? +${(value * 100).toFixed(1)}%
-                : +${value};
-              return ${label}: ${displayValue};
-            })
-            .join(", ");
+          const statsText = Object.entries(stats)
+          .map(([key, value]) => {
+            const label = statNameMap[key] || key;
+            const displayValue = ['evade','accuracy','other_bonus'].includes(key)
+              ? `+${(value * 100).toFixed(1)}%`
+              : `+${value}`;
+            return `${label}: ${displayValue}`;
+          })
+          .join(", ");
               
             html += `
               <div class="equipment-slot">
