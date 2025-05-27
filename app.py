@@ -518,26 +518,29 @@ def user_cardss():
 def craft_card():
     data = request.json
     user_id = data.get("user")
-    card_id = data.get("card_id")  # 注意參數名稱
+    card_id = data.get("card_id")
     materials = data.get("materials")
     success_rate = data.get("success_rate", 1.0)
     
     if not user_id or not card_id or not materials:
         return jsonify({"success": False, "error": "缺少必要參數"}), 400
-    
-    # 獲取使用者資料
+
+    # ✅ 取得卡片資訊（從 users）
     user_ref = db.collection("users").document(user_id)
     user_doc = user_ref.get()
-    
     if not user_doc.exists:
         return jsonify({"success": False, "error": "找不到使用者"}), 404
-    
     user_data = user_doc.to_dict()
-    
-    # ✅ 統一轉為字串 key
-    user_items = {str(k): v for k, v in user_data.get("items", {}).items()}
     cards_owned = user_data.get("cards_owned", {})
-    
+
+    # ✅ 改為從 user_items collection 取得道具資料
+    item_ref = db.collection("user_items").document(user_id)
+    item_doc = item_ref.get()
+    if not item_doc.exists:
+        return jsonify({"success": False, "error": "找不到使用者道具資料"}), 404
+    user_items = item_doc.to_dict()
+    user_items = {str(k): v for k, v in user_items.items()}  # 統一 key 格式
+
     # ✅ 檢查材料是否足夠
     for material_id, required_qty in materials.items():
         owned_qty = user_items.get(str(material_id), 0)
@@ -546,35 +549,33 @@ def craft_card():
                 "success": False,
                 "error": f"材料 {material_id} 不足（持有 {owned_qty}，需要 {required_qty}）"
             }), 400
-    
+
     # ✅ 扣除材料
     for material_id, required_qty in materials.items():
         mat_id = str(material_id)
         user_items[mat_id] = user_items.get(mat_id, 0) - required_qty
         if user_items[mat_id] <= 0:
             del user_items[mat_id]
-    
-    # 判斷製作是否成功
+
+    # ✅ 決定是否成功
     import random
     is_success = random.random() <= success_rate
-    
+
+    # ✅ 更新道具資料
+    item_ref.set(user_items)
+
     if is_success:
-        # 製作/升級成功
+        # 成功則升級卡片
         current_level = cards_owned.get(card_id, 0)
         cards_owned[card_id] = current_level + 1
-        
-        # 更新使用者資料
-        user_data["items"] = user_items
         user_data["cards_owned"] = cards_owned
         user_ref.set(user_data)
-        
+
         return jsonify({"success": True, "message": "製作成功"})
     else:
-        # 製作失敗，但材料已經扣除
-        user_data["items"] = user_items
-        user_ref.set(user_data)
-        
+        # 失敗但仍要扣材料
         return jsonify({"success": False, "message": "製作失敗，材料已消耗"})
+
 
 
 # 修正：HTTP 方法應該是 POST
