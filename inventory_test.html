@@ -402,41 +402,53 @@
     function openEquipUI() {
       const dialog = document.getElementById("dialogContainer");
       const equipment = userData.equipment || {};
-      
+    
+      // 準備目前已裝備的卡片列表
+      const equippedCardIds = new Set();
+      for (let slot = 1; slot <= 5; slot++) {
+        const slotEquip = equipment[slot];
+        if (slotEquip) {
+          const cardId = Object.keys(slotEquip)[0];
+          equippedCardIds.add(cardId);
+        }
+      }
+    
       let html = `
         <div class='dialog-box'>
           <h3>🧷 裝備管理</h3>
       `;
-      
-      // 顯示裝備槽位
+    
+      const selectIds = [];
+    
+      // 先建立所有欄位的選擇器（之後動態調整內容）
       for (let slot = 1; slot <= 5; slot++) {
+        const equippedCardId = equipment[slot] ? Object.keys(equipment[slot])[0] : "";
+        const equippedLevel = equippedCardId ? userCards[equippedCardId] : 0;
+        selectIds.push(`equip_slot_${slot}`);
+    
         html += `
           <div class="equip-item">
             <label><strong>欄位 ${slot}:</strong></label><br>
-            <select id="equip_slot_${slot}" style="width: 100%; margin-top: 5px;">
+            <select id="equip_slot_${slot}" style="width: 100%; margin-top: 5px;" data-slot="${slot}">
               <option value="">無裝備</option>
         `;
-        
-        // 添加可裝備的卡片選項
+    
+        // 此處先不過濾卡片，稍後再用 JS 動態更新每個下拉選單
         Object.entries(userCards).forEach(([cardId, level]) => {
           if (level > 0) {
             const cardInfo = equipData.find(e => e.id === cardId);
             const cardName = cardInfo ? cardInfo.name : cardId;
-            const isEquipped = equipment[slot]?.[cardId];
-            const isEquippedElsewhere = Object.values(equipment).some(eq => eq && eq[cardId] && equipment[slot] !== eq);
-            
-            if (!isEquippedElsewhere || isEquipped) {
-              html += `<option value="${cardId}" ${isEquipped ? 'selected' : ''}>${cardName} Lv.${level}</option>`;
-            }
+            const selected = (equippedCardId === cardId) ? 'selected' : '';
+            html += `<option value="${cardId}" ${selected}>${cardName} Lv.${level}</option>`;
           }
         });
-        
+    
         html += `
             </select>
           </div>
         `;
       }
-      
+    
       html += `
           <div class="btn-group">
             <button class="square-btn" onclick="saveEquipment()">✅ 儲存裝備</button>
@@ -444,27 +456,74 @@
           </div>
         </div>
       `;
-      
+    
       dialog.innerHTML = html;
       dialog.style.display = "flex";
       document.body.style.overflow = "hidden";
       document.body.classList.add("dialog-open");
+    
+      // 🔁 依照目前選擇的值，更新每個欄位可選項目（防止重複）
+      selectIds.forEach(id => {
+        const select = document.getElementById(id);
+        select.addEventListener("change", () => {
+          // 重新過濾所有欄位
+          updateEquipDropdowns(selectIds);
+        });
+      });
+    
+      // 初次載入時也執行一次篩選
+      updateEquipDropdowns(selectIds);
+    }
+
+    function updateEquipDropdowns(selectIds) {
+      const selectedValues = selectIds.map(id => document.getElementById(id).value);
+    
+      selectIds.forEach((id, idx) => {
+        const select = document.getElementById(id);
+        const currentValue = select.value;
+        const slot = select.dataset.slot;
+        
+        // 保留目前值與無裝備選項
+        const newOptions = [`<option value="">無裝備</option>`];
+    
+        Object.entries(userCards).forEach(([cardId, level]) => {
+          if (level <= 0) return;
+    
+          const cardInfo = equipData.find(e => e.id === cardId);
+          const cardName = cardInfo ? cardInfo.name : cardId;
+    
+          const isSelectedElsewhere = selectedValues.some((val, i) => i !== idx && val === cardId);
+          const isCurrent = currentValue === cardId;
+    
+          if (!isSelectedElsewhere || isCurrent) {
+            newOptions.push(`<option value="${cardId}" ${isCurrent ? "selected" : ""}>${cardName} Lv.${level}</option>`);
+          }
+        });
+    
+        select.innerHTML = newOptions.join("");
+      });
     }
 
     async function saveEquipment() {
       const newEquipment = {};
-      
+      const usedCardIds = new Set();
+    
       for (let slot = 1; slot <= 5; slot++) {
         const selectEl = document.getElementById(`equip_slot_${slot}`);
         const cardId = selectEl.value;
-        
-        if (cardId && userCards[cardId]) {
+    
+        if (cardId) {
+          if (usedCardIds.has(cardId)) {
+            alert(`❌ 同一張卡片「${cardId}」不能裝備在多個欄位`);
+            return;
+          }
+          usedCardIds.add(cardId);
           newEquipment[slot] = { [cardId]: userCards[cardId] };
         }
       }
-      
+    
       showLoading(true);
-      
+    
       try {
         const response = await fetch(`${API_BASE}/save_equipment`, {
           method: 'POST',
@@ -474,9 +533,9 @@
             equipment: newEquipment
           })
         });
-        
+    
         const result = await response.json();
-        
+    
         if (response.ok && result.success) {
           userData.equipment = newEquipment;
           renderPage();
