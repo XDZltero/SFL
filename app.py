@@ -521,6 +521,8 @@ def craft_card():
     card_id = data.get("card_id")
     materials = data.get("materials")
     success_rate = data.get("success_rate", 1.0)
+
+    
     
     if not user_id or not card_id or not materials:
         return jsonify({"success": False, "error": "缺少必要參數"}), 400
@@ -566,6 +568,10 @@ def craft_card():
 
     # 更新道具資料（正確格式）
     item_ref.set({"items": user_items})
+
+    print("✅ 從 user_items 抓到資料：", raw_items)
+    print("✅ 解開 items 欄位後：", user_items)
+    print("✅ 要求材料：", materials)
 
     if is_success:
         current_level = cards_owned.get(card_id, 0)
