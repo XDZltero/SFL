@@ -61,6 +61,27 @@
   <script type="module">
     import { auth, signOut } from "./js/firebase-init.js";
 
+    // boss關切換音樂
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+    
+      if (!data || !data.command) return;
+    
+      if (data.command === "switchToBossMusic") {
+        bgm.pause();
+        bgm.src = bossBgmUrl;
+        bgm.load();
+        bgm.play().catch(() => {});
+      }
+    
+      if (data.command === "restoreMainMusic") {
+        bgm.pause();
+        bgm.src = "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3"; // 原本主題曲
+        bgm.load();
+        bgm.play().catch(() => {});
+      }
+    });
+
     // Cookie 操作函數
     function setCookie(name, value, days = 30) {
       const expires = new Date();
