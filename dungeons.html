@@ -80,7 +80,7 @@
           lockReason = lockReason ? `${lockReason}<br>${taskText}` : taskText;
         }
 
-        let buttonHtml = `<button class="${cls}" onclick="window.parent.loadPage('dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}')">${text}</button>`;
+        let buttonHtml = `<button class="${cls}" onclick="window.parent.loadPage('dungeon_layer_test.html?dungeon=${dungeon.id}&layer=${targetLayer}')">${text}</button>`;
         if (lockReason) {
           buttonHtml = `<p style=\"color:red\">${lockReason}</p>`;
         }
