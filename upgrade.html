@@ -202,7 +202,7 @@
         // 負面效果攻擊的額外資訊
         if (skillType === "debuff_atk" && skill.debuff) {
           const debuff = skill.debuff;
-          skillDetails += `<p style="color: #ff6b6b;">附加效果：${debuff.name} (${debuff.round}回合，命中率${(debuff.hit_chance * 100).toFixed(0)}%)</p>`;
+          skillDetails += `<p style="color: #ff6b6b;">附加效果：${debuff.name} (${debuff.round}回合，命中率：${(debuff.hit_chance * 100).toFixed(0)}%)</p>`;
         }
         
         // 持續傷害攻擊的額外資訊
