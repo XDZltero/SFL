@@ -616,7 +616,8 @@ def simulate_battle(user, monster, user_skill_dict):
                         add_or_refresh_debuff(user_buffs, debuff)
                         round_log.append(f"{monster['name']} 對你施放了 {debuff['name']} ，{debuff['description']}")
                     else:
-                        round_log.append(f"{monster['name']} 對你施放 {skill['buffName']} 但未命中")
+                        skill_name = skill.get("buffInfo", {}).get("buffName", "未知技能")
+                        round_log.append(f"{monster['name']} 對你施放 {skill_name} 但未命中")
                         
                 elif skill_type == "debuff_atk":
                     target_invincible = user_invincible > 0
