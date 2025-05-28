@@ -1,7 +1,7 @@
 [
   {
     "id": "card_moss",
-    "name": "腐爛沼澤地卡片",
+    "name": "[副本卡片]腐爛沼澤地",
     "quality": "稀有",
     "value": {
       "1": {
@@ -34,7 +34,7 @@
   },
   {
     "id": "card_skycity",
-    "name": "天空之城卡片",
+    "name": "[副本卡片]天空之城",
     "quality": "稀有",
     "value": {
       "1": {
@@ -61,6 +61,34 @@
         "attack": 10,
         "shield": 50,
         "atk_speed": 35,
+        "other_bonus": 0.05
+      }
+    }
+  },
+  {
+    "id": "card_ironcity",
+    "name": "[副本卡片]鋼鐵都市",
+    "quality": "稀有",
+    "value": {
+      "1": {
+        "hp": 50,
+        "shield": 50
+      },
+      "2": {
+        "hp": 50,
+        "shield": 100
+      },
+      "3": {
+        "hp": 50,
+        "shield": 150
+      },
+      "4": {
+        "hp": 50,
+        "shield": 200
+      },
+      "5": {
+        "hp": 50,
+        "shield": 250,
         "other_bonus": 0.05
       }
     }
