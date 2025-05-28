@@ -4,13 +4,13 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_compress import Compress
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth as firebase_auth
 from battle import simulate_battle
-from functools import lru_cache
+from functools import lru_cache, wraps
 
 app = Flask(__name__)
 Compress(app)
-CORS(app, origins=["https://xdzltero.github.io"])  # 限制只允許你的 GitHub 網頁呼叫
+CORS(app, origins=["https://xdzltero.github.io"])
 
 # 從環境變數載入 Firebase 金鑰
 firebase_creds_str = os.environ["FIREBASE_CREDENTIALS"]
@@ -19,10 +19,37 @@ cred = credentials.Certificate(firebase_creds)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+# Token驗證裝飾器
+def require_auth(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header:
+            return jsonify({'error': '缺少授權標頭'}), 401
+        
+        try:
+            # 取得Bearer token
+            token = auth_header.split(' ')[1]
+            
+            # 驗證token
+            decoded_token = firebase_auth.verify_id_token(token)
+            
+            # 將使用者資訊加入request
+            request.user_id = decoded_token['email']  # 使用email作為user_id
+            request.uid = decoded_token['uid']  # Firebase UID
+            
+        except Exception as e:
+            return jsonify({'error': '無效的授權令牌'}), 401
+        
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
 def user_ref(user_id):
     return db.collection("users").document(user_id)
 
-# 🔁 快取靜態副本資料
+# 快取靜態副本資料（保持原有的快取函數）
 @lru_cache()
 def get_dungeon_data():
     with open("parameter/dungeons.json", encoding="utf-8") as f:
@@ -69,55 +96,64 @@ def get_item_map():
         }
     return result
 
-# 獲得屬性表
+# 公開路由（不需要驗證）
 @app.route("/element_table")
 def element_table():
     return jsonify(get_element_table())
 
-# 獲得升級經驗表
 @app.route("/exp_table")
 def exp_table():
     return jsonify(get_level_exp())
 
-# 獲得副本資料
 @app.route("/dungeon_table")
 def dungeon_table():
     return jsonify(get_dungeon_data())
 
-# 獲得物品清單
 @app.route("/items_table")
 def items_table():
     items = get_items_data()
     return jsonify({item["id"]: item for item in items})
 
-# 獲得裝備數值清單
 @app.route("/equips_table")
 def equips_table():
     return jsonify(get_equips_data())
 
-# 確認存活用
 @app.route("/ping")
 def ping():
     return "pong", 200
 
+# 需要驗證的路由
 @app.route("/register", methods=["POST"])
 def register():
+    """註冊不需要token，但需要驗證Google登入"""
     data = request.json
     user_id = data.get("user")
     nickname = data.get("nickname", user_id)
+    id_token = data.get("idToken")  # 從前端傳來的ID token
 
-    if not user_id:
-        return jsonify({"error": "缺少使用者 ID。"}), 400
+    if not user_id or not id_token:
+        return jsonify({"error": "缺少必要參數"}), 400
+
+    try:
+        # 驗證ID token
+        decoded_token = firebase_auth.verify_id_token(id_token)
+        
+        # 確保email匹配
+        if decoded_token['email'] != user_id:
+            return jsonify({"error": "身份驗證失敗"}), 401
+            
+    except Exception as e:
+        return jsonify({"error": "無效的身份令牌"}), 401
 
     # 檢查 user_id 是否已註冊
     ref = db.collection("users").document(user_id)
     if ref.get().exists:
-        return jsonify({"error": "使用者已存在。"}), 400
+        return jsonify({"error": "使用者已存在"}), 400
 
     # 檢查 nickname 是否被其他人使用過
     nickname_conflict = db.collection("users").where("nickname", "==", nickname).get()
     if nickname_conflict:
-        return jsonify({"error": "已經有人取過這個名字囉。"}), 400
+        return jsonify({"error": "已經有人取過這個名字囉"}), 400
 
     user_data = {
         "user_id": user_id,
@@ -149,16 +185,15 @@ def register():
         }
     }
 
-    # 文件 ID 使用 user_id 儲存
     ref.set(user_data)
     return jsonify({"message": f"使用者 {nickname} 建立完成！"})
 
 @app.route("/status", methods=["GET"])
+@require_auth
 def status():
-    user_id = request.args.get("user")
-    if not user_id:
-        return jsonify({"error": "缺少使用者參數"}), 400
-
+    """取得使用者狀態 - 現在從token中獲取user_id"""
+    user_id = request.user_id
+    
     doc = db.collection("users").document(user_id).get()
     if not doc.exists:
         return jsonify({"error": "找不到使用者"}), 404
@@ -166,9 +201,9 @@ def status():
     user_data = doc.to_dict()
     return jsonify(user_data)
 
-# 獲得怪物資訊
 @app.route("/monster", methods=["GET"])
 def get_monster():
+    """怪物資訊保持公開"""
     monster_id = request.args.get("id")
     if not monster_id:
         return jsonify({"error": "缺少 monster id"}), 400
@@ -180,14 +215,15 @@ def get_monster():
     return jsonify(mon_doc.to_dict())
 
 @app.route("/battle", methods=["POST"])
+@require_auth
 def battle():
     try:
         data = request.json
-        user_id = data.get("user")
+        user_id = request.user_id  # 從token中獲取
         monster_id = data.get("monster")
 
-        if not user_id or not monster_id:
-            return jsonify({"error": "缺少參數"}), 400
+        if not monster_id:
+            return jsonify({"error": "缺少怪物ID"}), 400
 
         user_doc = db.collection("users").document(user_id).get()
         if not user_doc.exists:
@@ -200,7 +236,7 @@ def battle():
             return jsonify({"error": "找不到怪物"}), 404
         monster_data = mon_doc.to_dict()
 
-        # ✅ 玩家技能查詢
+        # 玩家技能查詢
         user_skill_ids = list(user_data.get("skills", {}).keys())
         user_skill_list = []
         for i in range(0, len(user_skill_ids), 10):
@@ -211,7 +247,7 @@ def battle():
         user_skill_list.sort(key=lambda x: x.get("sort", 9999))
         user_skill_dict = {s["id"]: s for s in user_skill_list}
 
-        # ✅ 執行戰鬥
+        # 執行戰鬥
         result = simulate_battle(user_data, monster_data, user_skill_dict)
         db.collection("users").document(user_id).set(result["user"])
 
@@ -223,14 +259,15 @@ def battle():
         return jsonify({"error": f"伺服器內部錯誤: {str(e)}"}), 500
 
 @app.route("/battle_dungeon", methods=["POST"])
+@require_auth
 def battle_dungeon():
     try:
         data = request.json
-        user_id = data.get("user")
+        user_id = request.user_id  # 從token中獲取
         dungeon_id = data.get("dungeon")
         layer = data.get("layer")
 
-        if not user_id or not dungeon_id or layer is None:
+        if not dungeon_id or layer is None:
             return jsonify({"error": "缺少參數"}), 400
 
         user_doc = db.collection("users").document(user_id).get()
@@ -263,7 +300,7 @@ def battle_dungeon():
 
         monster_data = mon_doc.to_dict()
 
-        # ✅ 玩家技能查詢
+        # 玩家技能查詢
         user_skill_ids = list(user_data.get("skills", {}).keys())
         user_skill_list = []
         for i in range(0, len(user_skill_ids), 10):
@@ -274,7 +311,7 @@ def battle_dungeon():
         user_skill_list.sort(key=lambda x: x.get("sort", 9999))
         user_skill_dict = {s["id"]: s for s in user_skill_list}
         
-        # ✅ 傳入 simulate_battle
+        # 傳入 simulate_battle
         result = simulate_battle(user_data, monster_data, user_skill_dict)
         db.collection("users").document(user_id).set(result["user"])
 
@@ -294,7 +331,7 @@ def battle_dungeon():
 
         if result["result"] == "win":
             if is_boss:
-                # ✅ 更新 ClearLog
+                # 更新 ClearLog
                 clear_log = user_data.get("ClearLog", {})
                 clear_count = clear_log.get(dungeon_id, 0)
                 clear_log[dungeon_id] = clear_count + 1
@@ -318,14 +355,10 @@ def battle_dungeon():
         traceback.print_exc()
         return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
 
-# 獲得副本層數
 @app.route("/get_progress", methods=["GET"])
+@require_auth
 def get_progress():
-    user_id = request.args.get("user")
-    if not user_id:
-        return jsonify({"error": "缺少 user 參數"}), 400
-
-    # Firestore 不允許有 . 符號，需轉換為 _
+    user_id = request.user_id
     user_key = user_id.replace(".", "_")
 
     doc_ref = db.collection("progress").document(user_key)
@@ -336,13 +369,11 @@ def get_progress():
 
     return jsonify({"progress": doc.to_dict()})
 
-# 修復：這個端點應該查詢 user_items collection
 @app.route("/inventory", methods=["GET"])
+@require_auth
 def inventory():
-    user_id = request.args.get("user")
-    if not user_id:
-        return jsonify({"error": "缺少使用者參數"}), 400
-
+    user_id = request.user_id
+    
     # 先嘗試從 user_items collection 取得
     item_doc = db.collection("user_items").document(user_id).get()
     if item_doc.exists:
@@ -359,12 +390,13 @@ def inventory():
     return jsonify({"items": {}})
 
 @app.route("/levelup", methods=["POST"])
+@require_auth
 def levelup():
     data = request.json
-    user_id = data.get("user")
-    allocation = data.get("allocate")  # dict: {"hp": 1, "attack": 2, "luck": 2}
+    user_id = request.user_id
+    allocation = data.get("allocate")
 
-    if not user_id or not allocation:
+    if not allocation:
         return jsonify({"error": "缺少參數"}), 400
 
     ref = db.collection("users").document(user_id)
@@ -391,16 +423,14 @@ def levelup():
     ref.set(user)
     return jsonify({"message": "屬性分配完成", "status": user})
 
-# 用快取方法改寫 /skills_full
 @app.route("/skills_full", methods=["GET"])
 def get_skills_full():
     return jsonify(list(get_all_skill_data().values()))
 
 @app.route("/skills_all", methods=["GET"])
+@require_auth
 def get_all_skills():
-    user_id = request.args.get("user")
-    if not user_id:
-        return jsonify({"error": "缺少 user 參數"}), 400
+    user_id = request.user_id
 
     user_doc = db.collection("users").document(user_id).get()
     if not user_doc.exists:
@@ -424,12 +454,13 @@ def get_all_skills():
     })
 
 @app.route("/skills_save", methods=["POST"])
+@require_auth
 def save_skill_distribution():
     data = request.json
-    user_id = data.get("user")
-    new_levels = data.get("skills")  # {"fireball": 5, "slash": 0, ...}
+    user_id = request.user_id
+    new_levels = data.get("skills")
 
-    if not user_id or not isinstance(new_levels, dict):
+    if not isinstance(new_levels, dict):
         return jsonify({"error": "參數錯誤"}), 400
 
     user_ref = db.collection("users").document(user_id)
@@ -484,12 +515,10 @@ def clear_cache():
     except Exception as e:
         return jsonify({"error": f"清除失敗: {str(e)}"}), 500
 
-# 道具與裝備製作
 @app.route("/user_items", methods=["GET"])
+@require_auth
 def user_items():
-    user_id = request.args.get("user")
-    if not user_id:
-        return jsonify({"error": "缺少使用者參數"}), 400
+    user_id = request.user_id
     
     doc = db.collection("user_items").document(user_id).get()
     if not doc.exists:
@@ -498,13 +527,11 @@ def user_items():
     user_data = doc.to_dict()
     items = user_data.get("items", {})
     return jsonify(items)
-    
 
 @app.route("/user_cards", methods=["GET"])
+@require_auth
 def user_cardss():
-    user_id = request.args.get("user")
-    if not user_id:
-        return jsonify({"error": "缺少使用者參數"}), 400
+    user_id = request.user_id
     
     doc = db.collection("users").document(user_id).get()
     if not doc.exists:
@@ -515,16 +542,15 @@ def user_cardss():
     return jsonify(cards_owned)
 
 @app.route("/craft_card", methods=["POST"])
+@require_auth
 def craft_card():
     data = request.json
-    user_id = data.get("user")
+    user_id = request.user_id
     card_id = data.get("card_id")
     materials = data.get("materials")
     success_rate = data.get("success_rate", 1.0)
 
-    
-    
-    if not user_id or not card_id or not materials:
+    if not card_id or not materials:
         return jsonify({"success": False, "error": "缺少必要參數"}), 400
 
     # 取得卡片資訊
@@ -541,10 +567,10 @@ def craft_card():
     if not item_doc.exists:
         return jsonify({"success": False, "error": "找不到使用者道具資料"}), 404
 
-    # ✅ 正確解析 items
+    # 正確解析 items
     raw_items = item_doc.to_dict()
     user_items = raw_items.get("items", {})
-    user_items = {str(k): v for k, v in user_items.items()}  # 統一 key 格式
+    user_items = {str(k): v for k, v in user_items.items()}
 
     # 檢查材料是否足夠
     for material_id, required_qty in materials.items():
@@ -566,12 +592,8 @@ def craft_card():
     import random
     is_success = random.random() <= success_rate
 
-    # 更新道具資料（正確格式）
+    # 更新道具資料
     item_ref.set({"items": user_items})
-
-    print("✅ 從 user_items 抓到資料：", raw_items)
-    print("✅ 解開 items 欄位後：", user_items)
-    print("✅ 要求材料：", materials)
 
     if is_success:
         current_level = cards_owned.get(card_id, 0)
@@ -583,18 +605,12 @@ def craft_card():
     else:
         return jsonify({"success": False, "message": "製作失敗，材料已消耗"})
 
-
-
-
-# 修正：HTTP 方法應該是 POST
 @app.route("/save_equipment", methods=["POST"])
+@require_auth
 def save_equipment():
     data = request.json
-    user_id = data.get("user")
+    user_id = request.user_id
     equipment = data.get("equipment")
-    
-    if not user_id:
-        return jsonify({"success": False, "error": "缺少使用者參數"}), 400
     
     user_ref = db.collection("users").document(user_id)
     user_doc = user_ref.get()
