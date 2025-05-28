@@ -265,12 +265,14 @@ def simulate_battle(user, monster, user_skill_dict):
     while user_hp > 0 and mon_hp > 0:
         turns_used += 1
         current_round = turns_used
-        round_log = []
 
         if turns_used > turn_limit:
-            user_hp = 0
-            log.append(f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗")
+            round_log = [f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗"]
+            log.append({"round": current_round, "actions": round_log})
+            user_hp = 0  # 強制設置玩家血量為0
             break
+        
+        round_log = []
 
         # 處理回合開始的持續傷害
         if user_dot_effects:
