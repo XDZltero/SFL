@@ -230,30 +230,6 @@
         window.location.href = "/SFL/login.html";
       });
     };
-  
-    const userEmailSpan = document.getElementById("userEmail");
-    window.addEventListener("message", (e) => {
-      if (e.data?.nickname) {
-        userEmailSpan.textContent = e.data.nickname;
-      }
-    });
-
-    let currentUserInfo = null;
-
-    window.addEventListener("message", (e) => {
-      if (e.data?.user) {
-        currentUserInfo = e.data; // 包含 nickname 和 user
-        // 更新 topbar
-        document.getElementById("userEmail").innerText = e.data.nickname || e.data.user;
-      }
-    });
-
-    iframe.addEventListener("load", () => {
-      try {
-        updateTopbar(iframe.contentWindow.location.pathname);
-      } catch {
-        updateTopbar(iframe.src);
-      }
     
       // ✅ 傳遞使用者資料給 iframe 子頁面
       if (currentUserInfo) {
@@ -265,7 +241,40 @@
       createParticles();
       updateTopbar("main_page.html");
       document.getElementById("startButton").addEventListener("click", startGame);
-      loadPage("main_page.html");
+    });
+
+    // 獲得使用者資料
+    let currentUserInfo = null;
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const token = await user.getIdToken();
+        const email = user.email;
+    
+        // 🔄 向後端查詢使用者暱稱
+        const res = await fetch("/status", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        const userData = await res.json();
+    
+        const nickname = userData.nickname || email;
+    
+        currentUserInfo = { nickname, token };
+    
+        // 顯示暱稱
+        document.getElementById("userEmail").innerText = nickname;
+    
+        // 傳給 iframe
+        const iframe = document.getElementById("mainFrame");
+        iframe.contentWindow.postMessage(currentUserInfo, "*");
+        loadPage("main_page.html");
+      } else {
+      // 🔐 未登入，強制跳轉
+      window.location.href = "/SFL/loading.html";
+    }
     });
   </script>
 </body>
