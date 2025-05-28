@@ -270,6 +270,7 @@ def simulate_battle(user, monster, user_skill_dict):
             round_log = [f"⚠️ 已超過回合上限（{turn_limit} 回合），戰鬥失敗"]
             log.append({"round": current_round, "actions": round_log})
             user_hp = 0  # 強制設置玩家血量為0
+            outcome = "lose"
             break
         
         round_log = []
