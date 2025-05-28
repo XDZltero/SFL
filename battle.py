@@ -322,13 +322,17 @@ def simulate_battle(user, monster, user_skill_dict):
         user_stats_mod_preview = get_buff_stats_only(user_buffs)
         mon_stats_mod_preview = get_buff_stats_only(mon_buffs)
 
-        user_stats_mod, user_buffs, buff_log_user = apply_buffs(user_buffs, user_battle_stats, log, True, "")
-        mon_stats_mod, mon_buffs, buff_log_mon = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
+        user_stats_mod, user_buffs, buff_log_user = apply_buffs(user_stats_mod_preview, user_battle_stats, log, True, "")
+        mon_stats_mod, mon_buffs, buff_log_mon = apply_buffs(mon_stats_mod_preview, monster["stats"], log, False, monster["name"])
         round_log.extend(buff_log_user)
         round_log.extend(buff_log_mon)
         
+        # 根據 buff 後的屬性計算速度與行動次數
         user_speed = user_battle_stats["atk_speed"] * user_stats_mod["atk_speed"]
         mon_speed = monster["stats"]["atk_speed"] * mon_stats_mod["atk_speed"]
+        
+        user_turns = max(1, round(user_speed / mon_speed))
+        mon_turns = max(1, round(mon_speed / user_speed))
 
         action_order = []
         if user_speed >= mon_speed:
