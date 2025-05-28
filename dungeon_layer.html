@@ -139,18 +139,10 @@
   </script>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { auth, SecureAPI } from "./js/firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     let equipData = [];
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
-      authDomain: "sfl-api-f0290.firebaseapp.com",
-      projectId: "sfl-api-f0290"
-    };
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
 
     const elementMap = {
       "none": "無",
@@ -167,7 +159,6 @@
     const params = new URLSearchParams(location.search);
     const dungeon = params.get("dungeon");
     let layer = parseInt(params.get("layer") || "0");
-    let userId = null;
 
     const logArea = document.getElementById("logArea");
     const userDiv = document.getElementById("userInfo");
@@ -345,13 +336,12 @@
       let messageIndex = 0;
       
       const progressInterval = setInterval(() => {
-        progress += Math.random() * 15 + 5; // 每次增加 5-20%
+        progress += Math.random() * 15 + 5;
         if (progress > 100) progress = 100;
         
         progressBar.style.width = progress + "%";
         progressText.textContent = Math.round(progress) + "%";
         
-        // 更換載入文字
         if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 15) {
           messageIndex++;
           loadingText.textContent = messages[messageIndex];
@@ -363,12 +353,11 @@
         }
       }, 200);
       
-      // 儲存 interval ID 以便外部控制
       window.battleProgressInterval = progressInterval;
     }
 
-    async function fetchUser(userId) {
-      const res = await fetch(`${API}/status?user=${encodeURIComponent(userId)}`);
+    async function fetchUser() {
+      const res = await SecureAPI.get(`${API}/status`);
       return await res.json();
     }
 
@@ -443,7 +432,7 @@
         const expRes = await fetch(`${API}/exp_table`);
         levelExp = await expRes.json();
     
-        const user = await fetchUser(userId);
+        const user = await fetchUser();
 
 	// 讀取裝備數值資料
 	const equipRes = await fetch(`${API}/equips_table`);
@@ -451,8 +440,7 @@
         
         // 傳遞使用者名稱給父視窗
         window.parent.postMessage({
-          nickname: user.nickname || userId,
-          user: userId
+          nickname: user.nickname
         }, "*");
         
         userDiv.innerText = formatStats(user);
@@ -518,7 +506,7 @@
     let currentProgress = 0;
 
     async function fetchProgress() {
-      const res = await fetch(`${API}/get_progress?user=${encodeURIComponent(userId)}`);
+      const res = await SecureAPI.get(`${API}/get_progress`);
       const data = await res.json();
       currentProgress = data.progress?.[dungeon] ?? 0;
       return data;
@@ -553,10 +541,9 @@
       document.getElementById("leaveBtn").style.display = "none";
 
       try {
-	  const res = await fetch(`${API}/battle_dungeon`, {
-	    method: "POST",
-	    headers: { "Content-Type": "application/json" },
-	    body: JSON.stringify({ user: userId, dungeon, layer })
+	  const res = await SecureAPI.post(`${API}/battle_dungeon`, {
+	    dungeon: dungeon,
+	    layer: layer
 	  });
 	  const data = await res.json();
 	  const log = data.battle_log;
@@ -567,7 +554,7 @@
 	    showBattleLoading(false);
 	    playBattleLog(log).then(() => {
 	      if (data.success) {
-	        fetchUser(userId).then(updatedUser => {
+	        fetchUser().then(updatedUser => {
 	          userDiv.innerText = formatStats(updatedUser);
 	        });
 	
@@ -667,7 +654,6 @@
 
     onAuthStateChanged(auth, async (user) => {
 	    if (user) {
-	      userId = user.email;
 	      await fetchProgress();
 	
 	      retryBtn.onclick = () => {
@@ -684,7 +670,7 @@
 	
 	      loadLayer();
 	    } else {
-	      window.parent.location.href = "/SFL/loading.html";
+	      window.parent.location.href = "/SFL/login.html";
 	    }
 	  });
   </script>
