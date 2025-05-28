@@ -71,7 +71,7 @@
         "materials": {
           "sky_stone": 30,
           "griffin_claw": 10,
-          "storm_shard": 2
+          "sky_ragments": 2
         },
         "chance": 0.9
       },
@@ -81,7 +81,7 @@
           "griffin_claw": 20,
           "athena_hair": 10,
           "athena_burn_hair": 5,
-          "storm_shard": 4
+          "sky_ragments": 4
         },
         "chance": 0.8
       },
@@ -90,7 +90,7 @@
         "materials": {
           "athena_burn_hair": 20,
           "burn_sky_stone": 10,
-          "storm_shard": 6,
+          "sky_ragments": 6,
           "chaos_breath": 1
         },
         "chance": 0.5
@@ -100,7 +100,7 @@
         "materials": {
           "burn_sky_stone": 30,
           "god_book": 2,
-          "storm_shard": 10,
+          "sky_ragments": 10,
           "chaos_breath": 2
         },
         "chance": 0.5
