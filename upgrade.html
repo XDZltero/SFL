@@ -161,7 +161,16 @@
   function renderSkills() {
     skillListEl.innerHTML = "";
     skillListEl.className = "skill-row";
-    const typeMap = { atk: "【輸出型】", heal: "【治療型】", buff: "【增益型】" };
+    const typeMap = { 
+      atk: "【輸出型】", 
+      heal: "【治療型】", 
+      buff: "【增益型】",
+      debuff: "【減益型】",
+      debuff_atk: "【減益型】",
+      dot_atk: "【輸出型】",
+      invincible: "【增益型】",
+      damage_shield: "【特殊型】"
+    };
     const elemMap = { pyro: "火", hydro: "水", nature: "自然", electro: "雷", light: "光", dark: "暗", all: "全", none: "無" };
 
     allSkills.sort((a, b) => (a.sort || 999) - (b.sort || 999)).forEach(skill => {
@@ -170,11 +179,59 @@
 
       const card = document.createElement("div");
       card.className = "skill-card";
+      
+      // 構建技能描述
+      let skillDetails = "";
+      const skillType = skill.type;
+      
+      // 根據技能類型顯示不同資訊
+      if (skillType === "atk" || skillType === "debuff_atk" || skillType === "dot_atk") {
+        const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
+        skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        skillDetails += `<p>倍率：${currentMultiplier} 屬性：${skill.element.map(e => elemMap[e] || e).join("/")}</p>`;
+        
+        // 負面效果攻擊的額外資訊
+        if (skillType === "debuff_atk" && skill.debuff) {
+          const debuff = skill.debuff;
+          skillDetails += `<p style="color: #ff6b6b;">附加效果：${debuff.name} (${debuff.round}回合，命中率${(debuff.hit_chance * 100).toFixed(0)}%)</p>`;
+        }
+        
+        // 持續傷害攻擊的額外資訊
+        if (skillType === "dot_atk" && skill.dot) {
+          const dot = skill.dot;
+          skillDetails += `<p style="color: #ff6b6b;">持續傷害：${dot.name} (每回合${dot.damage_per_turn}傷害，持續${dot.round}回合)</p>`;
+        }
+      } else if (skillType === "heal") {
+        const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
+        skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        skillDetails += `<p>治療倍率：${currentMultiplier}</p>`;
+      } else if (skillType === "buff") {
+        const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
+        skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        skillDetails += `<p>效果倍率：${currentMultiplier} 持續：${skill.round || 0} 回合</p>`;
+      } else if (skillType === "invincible") {
+        const currentRounds = Math.floor(skill.round + (currentLevel - 1) * (skill.multiplierperlvl || 0));
+        skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        skillDetails += `<p style="color: #4ecdc4;">無敵時間：${currentRounds} 回合</p>`;
+      } else if (skillType === "damage_shield") {
+        const currentThreshold = Math.floor(skill.damage_threshold + (currentLevel - 1) * (skill.multiplierperlvl * 50 || 0));
+        const currentDamage = Math.floor(skill.ultimate_skill.damage + (currentLevel - 1) * (skill.multiplierperlvl * 100 || 0));
+        skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        skillDetails += `<p style="color: #ffd93d;">蓄力：${skill.shield_rounds}回合 　傷害門檻：${currentThreshold}</p>`;
+        skillDetails += `<p style="color: #ff6b6b;">終極技：${skill.ultimate_skill.name} (${currentDamage}傷害)</p>`;
+      } else {
+        // 其他類型或未知類型
+        skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd || 0} 回合</p>`;
+        if (skill.multiplier) {
+          const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
+          skillDetails += `<p>倍率：${currentMultiplier}</p>`;
+        }
+      }
+
       card.innerHTML = `
         <strong>${typeMap[skill.type] || "【其他】"} ${skill.name}</strong>
         <p>${skill.description}</p>
-        <p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>
-        <p>倍率：${(skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2)} 屬性：${skill.element.map(e => elemMap[e] || e).join("/")}</p>
+        ${skillDetails}
       `;
 
       const controls = document.createElement("div");
