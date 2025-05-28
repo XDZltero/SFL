@@ -21,7 +21,7 @@
     });
 </script>
 
-<h1 class="fancy-title">🔩 升級與技能管理</h1>
+<h1 class="fancy-title">🧩 升級與技能管理</h1>
 <hr>
 
 <h2 class="fancy-subtitle"><span class="emoji">📊</span> 分配能力點</h2>
@@ -42,7 +42,7 @@
 
 <hr>
 
-<h2 class="fancy-subtitle"><span class="emoji">🔀</span> 技能點分配</h2>
+<h2 class="fancy-subtitle"><span class="emoji">🌀</span> 技能點分配</h2>
 <div class="card">
   <div><strong>剩餘技能點數：<span id="remainingSkillPoints" class="remaining-points">0</span></strong></div>
   <div class="btn-row">
@@ -54,7 +54,12 @@
 
 <script type="module">
   const API_BASE = "https://sfl-9cb8.onrender.com";
-  let authToken = null;
+  const baseStatsEl = document.getElementById("base_stats");
+  const remainingPointsEl = document.getElementById("remainingPoints");
+  const skillListEl = document.getElementById("skillList");
+  const remainingSkillPointsEl = document.getElementById("remainingSkillPoints");
+
+  let userId = null;
   let userStats = {};
   let alloc = { hp: 0, attack: 0, luck: 0, atk_speed: 0 };
   let skillAlloc = {};
@@ -68,18 +73,13 @@
     { key: "atk_speed", label: "攻擊速度" }
   ];
 
-  async function callApi(path, method = "GET", body = null) {
-    const headers = {
-      "Authorization": `Bearer ${authToken}`,
-      "Content-Type": "application/json"
-    };
-    const options = { method, headers };
-    if (body) options.body = JSON.stringify(body);
-    const res = await fetch(`${API_BASE}${path}`, options);
-    return res.json();
+  function showLoading(show) {
+    const loading = document.getElementById("loadingOverlay");
+    if (loading) loading.style.display = show ? "flex" : "none";
   }
 
   function renderStats() {
+    if (!userStats.base_stats) return;
     const stats = userStats.base_stats;
     document.getElementById("currentStats").innerHTML = `
       <li>生命值：${stats.hp}</li>
@@ -99,11 +99,11 @@
         </div>
       `;
     });
-    base_stats.innerHTML = html;
-    remainingPoints.innerText = userStats.stat_points;
+    baseStatsEl.innerHTML = html;
+    remainingPointsEl.innerText = userStats.stat_points;
 
     statFields.forEach(({ key }) => {
-      const container = base_stats.querySelector(`.stat-control[data-stat="${key}"]`);
+      const container = baseStatsEl.querySelector(`.stat-control[data-stat="${key}"]`);
       container.querySelector(".minus").onclick = () => adjust(key, -1);
       container.querySelector(".plus").onclick = () => adjust(key, 1);
     });
@@ -113,10 +113,15 @@
     const current = alloc[stat];
     const totalAlloc = Object.values(alloc).reduce((a, b) => a + b, 0);
     const remaining = userStats.stat_points - totalAlloc;
-    if (delta > 0 && remaining > 0) alloc[stat]++;
-    else if (delta < 0 && current > 0) alloc[stat]--;
+
+    if (delta > 0 && remaining > 0) {
+      alloc[stat]++;
+    } else if (delta < 0 && current > 0) {
+      alloc[stat]--;
+    }
+
     document.getElementById(`val_${stat}`).innerText = alloc[stat];
-    remainingPoints.innerText = userStats.stat_points - Object.values(alloc).reduce((a, b) => a + b, 0);
+    remainingPointsEl.innerText = userStats.stat_points - Object.values(alloc).reduce((a, b) => a + b, 0);
   }
 
   function resetStats() {
@@ -124,22 +129,28 @@
       alloc[k] = 0;
       document.getElementById(`val_${k}`).innerText = "0";
     });
-    remainingPoints.innerText = userStats.stat_points;
+    remainingPointsEl.innerText = userStats.stat_points;
   }
 
   async function submitLevelUp() {
     const totalAlloc = Object.values(alloc).reduce((a, b) => a + b, 0);
     if (totalAlloc === 0) return alert("請先分配能力點！");
     if (!confirm("是否確定分配能力點？")) return;
+
     showLoading(true);
     try {
-      const res = await callApi("/levelup", "POST", { allocate: alloc });
-      if (res.message) {
+      const res = await fetch(`${API_BASE}/levelup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: userId, allocate: alloc })
+      });
+      const data = await res.json();
+      if (res.ok) {
         alert("能力值已分配完畢！");
-        await runMain();
+        await loadStatus();
         resetStats();
       } else {
-        alert(res.error || "升級失敗");
+        alert(data.error || "升級失敗");
       }
     } catch (err) {
       alert(`錯誤：${err.message}`);
@@ -149,20 +160,21 @@
   }
 
   function renderSkills() {
-    skillList.innerHTML = "";
-    skillList.className = "skill-row";
+    skillListEl.innerHTML = "";
+    skillListEl.className = "skill-row";
     const typeMap = { atk: "【輸出型】", heal: "【治療型】", buff: "【增益型】" };
     const elemMap = { pyro: "火", hydro: "水", nature: "自然", electro: "雷", light: "光", dark: "暗", all: "全", none: "無" };
 
     allSkills.sort((a, b) => (a.sort || 999) - (b.sort || 999)).forEach(skill => {
       const currentLevel = skillAlloc[skill.id] ?? 0;
       const isLocked = userStats.level < skill.learnlvl;
+
       const card = document.createElement("div");
       card.className = "skill-card";
       card.innerHTML = `
         <strong>${typeMap[skill.type] || "【其他】"} ${skill.name}</strong>
         <p>${skill.description}</p>
-        <p>等級上限：${skill.maxlvl} 　凍結：${skill.cd} 回合</p>
+        <p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>
         <p>倍率：${(skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2)} 屬性：${skill.element.map(e => elemMap[e] || e).join("/")}</p>
       `;
 
@@ -210,27 +222,33 @@
         card.appendChild(tip);
       }
 
-      skillList.appendChild(card);
+      skillListEl.appendChild(card);
     });
     remainingSkillPointsEl.innerText = remainingSkillPoints;
   }
 
   function resetSkills() {
     allSkills.forEach(skill => skillAlloc[skill.id] = 0);
-    const spent = Object.values(userStats.skills || {}).reduce((s, v) => s + (v || 0), 0);
-    remainingSkillPoints = userStats.skill_points + spent;
+    const spentPoints = Object.values(userStats.skills || {}).reduce((sum, val) => sum + (val || 0), 0);
+    remainingSkillPoints = userStats.skill_points + spentPoints;
     renderSkills();
   }
 
   async function submitSkills() {
     showLoading(true);
     try {
-      const res = await callApi("/skills_save", "POST", { skills: skillAlloc });
-      if (res.message) {
+      const res = await fetch(`${API_BASE}/skills_save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: userId, skills: skillAlloc })
+      });
+      const data = await res.json();
+      if (res.ok) {
         alert("技能儲存成功！");
-        await runMain();
+        await loadStatus();
+        await loadAllSkills();
       } else {
-        alert(res.error || "儲存失敗");
+        alert(data.error || "儲存失敗");
       }
     } catch (err) {
       alert(`錯誤：${err.message}`);
@@ -244,26 +262,46 @@
   document.getElementById("btnResetSkills").onclick = resetSkills;
   document.getElementById("btnSubmitSkills").onclick = submitSkills;
 
+  async function loadAllSkills() {
+    const skillRes = await fetch(`${API_BASE}/skills_full`);
+    const userRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+    allSkills = await skillRes.json();
+    userStats = await userRes.json();
+    skillAlloc = {};
+    remainingSkillPoints = userStats.skill_points;
+    allSkills.forEach(skill => {
+      skillAlloc[skill.id] = userStats.skills?.[skill.id] ?? 0;
+    });
+    renderStats();
+    renderSkills();
+  }
+
+  async function loadStatus() {
+    const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+    userStats = await res.json();
+    renderStats();
+  }
+
   async function runMain() {
+    console.log("⚙️ runMain userId =", userId);
+    showLoading(true);
     try {
-      userStats = await callApi("/status");
-      const skillRes = await fetch(`${API_BASE}/skills_full`);
-      allSkills = await skillRes.json();
-      skillAlloc = {};
-      allSkills.forEach(skill => skillAlloc[skill.id] = userStats.skills?.[skill.id] ?? 0);
-      resetSkills();
-      renderStats();
-      renderSkills();
+      await loadStatus();
+      await loadAllSkills();
     } catch (err) {
       console.error("runMain 錯誤：", err);
-      alert("載入錯誤，請重試");
+    } finally {
+      showLoading(false);
     }
   }
 
   window.addEventListener("message", async (e) => {
-    if (e.data?.token) {
-      authToken = e.data.token;
+    /* console.log("📩 收到 parent 傳入：", e.data); */
+    if (e.data?.user) {
+      userId = e.data.user;
       await runMain();
+    } else {
+      console.warn("⚠️ 未收到有效 user，無法啟動");
     }
   });
 </script>
