@@ -157,7 +157,7 @@ def apply_buffs(buffs, base_stats, log, is_user, actor_name):
             effect = buff.get("effectType", "")
             multiplier = buff.get("multiplier", 1.0)
             if effect in stats_mod:
-                stats_mod[effect] *= multiplier
+                stats_mod[effect] *= multiplier  # ✅ 確保這裡正確應用倍率
 
             buff["round"] -= 1
             if buff["round"] > 0:
@@ -391,22 +391,22 @@ def simulate_battle(user, monster, user_skill_dict):
                         round_log.append(f"你使用 {skill['name']} 回復了 {user_hp - old_hp} 點生命值（目前 HP：{user_hp}/{user_battle_stats['hp']}）")
 
                     elif skill_type == "buff":
-                        buff = {
-                            "name": skill["name"],
-                            "description": skill["description"],
-                            "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
-                            "effectType": skill.get("effectType", "attack"),
-                            "round": skill.get("round", 3)
-                        }
-                        add_or_refresh_buff(user_buffs, buff)
-                        round_log.append(f"你施放了 {buff['name']} ，下回合將獲得強化")
+                    buff = {
+                        "name": skill["name"],
+                        "description": skill["description"],
+                        "multiplier": skill.get("multiplier", 1.0),  # ✅ 修正：直接從技能獲取
+                        "effectType": skill.get("effectType", "attack"),
+                        "round": skill.get("round", 3)
+                    }
+                    add_or_refresh_buff(user_buffs, buff)
+                    round_log.append(f"你施放了 {buff['name']} ，下回合將獲得強化")
 
                     elif skill_type == "debuff":
                         if calculate_hit(user_battle_stats["accuracy"], monster["stats"].get("evade", 0), user_battle_stats["luck"]):
                             debuff = {
                                 "name": skill["name"],
                                 "description": skill["description"],
-                                "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
+                                "multiplier": skill.get("multiplier", 1.0),  # ✅ 修正：直接從技能獲取
                                 "effectType": skill.get("effectType", "attack"),
                                 "round": skill.get("round", 3)
                             }
@@ -592,15 +592,15 @@ def simulate_battle(user, monster, user_skill_dict):
                     round_log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {mon_hp - old_hp} 點生命值（目前 HP：{mon_hp}/{monster['stats']['hp']}）")
                     
                 elif skill_type == "buff":
-                    buff = {
-                        "name": skill.get("buffInfo", {}).get("buffName", "未知"),
-                        "description": skill["description"],
-                        "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
-                        "effectType": skill.get("buffInfo", {}).get("effectType", "attack"),
-                        "round": skill.get("buffInfo", {}).get("round", 3)
-                    }
-                    add_or_refresh_buff(mon_buffs, buff)
-                    round_log.append(f"{monster['name']} 施放了 {buff['name']} ，{buff['description']}")
+                buff = {
+                    "name": skill.get("buffInfo", {}).get("buffName", "未知"),
+                    "description": skill["description"],
+                    "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
+                    "effectType": skill.get("buffInfo", {}).get("effectType", "attack"),
+                    "round": skill.get("buffInfo", {}).get("round", 3)
+                }
+                add_or_refresh_buff(mon_buffs, buff)
+                round_log.append(f"{monster['name']} 施放了 {buff['name']} ，{buff['description']}")
                 
                 elif skill_type == "debuff":
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
