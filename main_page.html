@@ -21,6 +21,7 @@
   </script>
 
   <h1 class="fancy-title">👾 「此世已被遺忘，但仍有祂在覬覦著。」 👾</h1>
+
   <pre id="statusBlock">正在載入角色資料...</pre>
 
   <div>
@@ -34,15 +35,25 @@
   </div>
 
   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjhRGQyr35YhQtIxwUsNVpFkN7_AFOGYE",
+      authDomain: "sfl-api-f0290.firebaseapp.com",
+      projectId: "sfl-api-f0290"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
     const API_BASE = "https://sfl-9cb8.onrender.com";
     const statusBlock = document.getElementById("statusBlock");
     let levelExp = {};
-    let authToken = null;
-    let nickname = null;
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
-      if (loading) loading.style.display = show ? "flex" : "none";
+      if (!loading) return;
+      loading.style.display = show ? "flex" : "none";
     }
 
     function percent(val) {
@@ -80,43 +91,33 @@
 剩餘技能點: ${data.skill_points}`;
     }
 
-    async function callApi(path, method = "GET", body = null) {
-      if (!authToken) throw new Error("尚未取得驗證 token");
-      const headers = {
-        "Authorization": `Bearer ${authToken}`,
-        "Content-Type": "application/json"
-      };
-      const options = { method, headers };
-      if (body) options.body = JSON.stringify(body);
-
-      const res = await fetch(`${API_BASE}${path}`, options);
-      if (!res.ok) throw new Error("API 錯誤");
-      return res.json();
-    }
-
-    async function loadStatus() {
+    async function loadStatus(user) {
       showLoading(true);
       try {
         const expRes = await fetch("parameter/level_exp.json");
         levelExp = await expRes.json();
 
-        const data = await callApi("/status");
+        const email = user.email;
+        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        // 傳給 container.html 更新 topbar 使用者名稱
+        window.parent.postMessage({
+          nickname: data.nickname || email,
+          user: email
+        }, "*");
         statusBlock.innerText = formatStats(data);
       } catch (err) {
-        console.error("載入角色失敗", err);
+        console.error("載入失敗", err);
         statusBlock.innerText = "❌ 載入角色資料失敗，請稍後再試。";
       } finally {
         showLoading(false);
       }
     }
 
-    // ✅ 接收 index.html 傳來的 token 與 nickname
-    window.addEventListener("message", (e) => {
-      if (e.data?.token) {
-        authToken = e.data.token;
-        nickname = e.data.nickname;
-        loadStatus();
-      }
+    onAuthStateChanged(auth, (user) => {
+      if (user) loadStatus(user);
+      else window.parent.location.href = "/SFL/loading.html";
     });
   </script>
 </body>
