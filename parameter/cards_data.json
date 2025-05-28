@@ -1,102 +1,112 @@
 [
   {
     "id": "card_moss",
-    "name": "腐爛沼澤地卡片",
-	"quality": "稀有",
+    "name": "[副本卡片]腐爛沼澤地",
+    "quality": "稀有",
     "levels": [
       {
         "level": 1,
         "materials": {
-          "slime_core": 3,
+          "slime_core": 20,
+          "bone": 10,
           "swamp_core": 1
         },
-		"chance": 1
+        "chance": 1
       },
       {
         "level": 2,
         "materials": {
-          "slime_core": 8,
-          "swamp_core": 3
+          "bone": 20,
+          "moss_branches": 10,
+          "swamp_core": 2
         },
-		"chance": 0.9
+        "chance": 1
       },
       {
         "level": 3,
         "materials": {
-          "slime_core": 15,
-          "swamp_core": 6
+          "moss_branches": 20,
+          "oil_lamp": 10,
+          "swamp_core": 3
         },
-		"chance": 0.8
+        "chance": 1
       },
       {
         "level": 4,
         "materials": {
-          "swamp_core": 12,
-          "slime_core": 10
+          "oil_lamp": 20,
+          "magic_book": 1,
+          "swamp_core": 5
         },
-		"chance": 0.5
+        "chance": 0.9
       },
       {
         "level": 5,
         "materials": {
-          "swamp_core": 20,
-          "slime_core": 15
+          "magic_book": 3,
+          "swamp_core": 5,
+          "chaos_breath": 1
         },
-		"chance": 0.5
+        "chance": 0.75
       }
     ],
-    "description": "提高攻擊力與護盾，來自沼澤的詛咒。",
+    "description": "充滿詛咒的沼澤卡片。鑲嵌提升攻擊力、護盾值以及命中率。",
     "require_level": 10
   },
   {
     "id": "card_skycity",
-    "name": "天空之城卡片",
-	"quality": "稀有",
+    "name": "[副本卡片]天空之城",
+    "quality": "稀有",
     "levels": [
       {
         "level": 1,
         "materials": {
-          "sky_beaf": 2,
-          "sky_stone": 1
+          "sky_beaf": 20,
+          "sky_stone": 10
         },
-		"chance": 1
+        "chance": 1
       },
       {
         "level": 2,
         "materials": {
-          "sky_beaf": 5,
-          "sky_stone": 3,
-          "cloud_powder": 20,
+          "sky_stone": 30,
+          "griffin_claw": 10,
           "storm_shard": 2
         },
-		"chance": 0.9
+        "chance": 0.9
       },
       {
         "level": 3,
         "materials": {
-          "sky_beaf": 12,
-          "sky_stone": 7
+          "griffin_claw": 20,
+          "athena_hair": 10,
+          "athena_burn_hair": 5,
+          "storm_shard": 4
         },
-		"chance": 0.8
+        "chance": 0.8
       },
       {
         "level": 4,
         "materials": {
-          "sky_beaf": 25,
-          "sky_stone": 15
+          "athena_burn_hair": 20,
+          "burn_sky_stone": 10,
+          "storm_shard": 6,
+          "chaos_breath": 1
         },
-		"chance": 0.5
+        "chance": 0.5
       },
       {
         "level": 5,
         "materials": {
-          "sky_beaf": 40,
-          "sky_stone": 15
+          "burn_sky_stone": 30,
+          "god_book": 2,
+          "storm_shard": 10,
+          "chaos_breath": 1
         },
-		"chance": 0.5
+        "chance": 0.5
       }
     ],
-    "description": "提高攻速與防護，象徵空中的遺產。",
+    "description": "象徵空中城邦立足之人的卡片。鑲嵌提升攻擊力、護盾值以及攻擊速度。",
     "require_level": 20
   }
 ]
