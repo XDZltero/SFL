@@ -594,7 +594,7 @@ def simulate_battle(user, monster, user_skill_dict):
                         "name": skill.get("buffInfo", {}).get("buffName", "未知"),
                         "description": skill["description"],
                         "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
-                        "effectType": skill.get("effectType", "atk"),
+                        "effectType": skill.get("effectType", "attack"),
                         "round": skill.get("round", 3)
                     }
                     add_or_refresh_buff(mon_buffs, buff)
@@ -608,7 +608,7 @@ def simulate_battle(user, monster, user_skill_dict):
                             "name": skill.get("buffInfo", {}).get("buffName", "未知"),
                             "description": skill["description"],
                             "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
-                            "effectType": skill.get("effectType", "atk"),
+                            "effectType": skill.get("effectType", "attack"),
                             "round": skill.get("round", 3)
                         }
                         add_or_refresh_debuff(user_buffs, debuff)
