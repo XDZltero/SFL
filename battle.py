@@ -1,26 +1,3 @@
-
-import os
-from flask import request
-import firebase_admin
-from firebase_admin import auth as firebase_auth, credentials
-
-# 初始化 Firebase App（若尚未初始化）
-if not firebase_admin._apps:
-    cred = credentials.Certificate(os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "firebase-service-account.json"))
-    firebase_admin.initialize_app(cred)
-
-def verify_token():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise Exception("缺少或錯誤的 Authorization 標頭")
-    id_token = auth_header.split("Bearer ")[1]
-    try:
-        decoded_token = firebase_auth.verify_id_token(id_token)
-        return decoded_token["email"]
-    except Exception as e:
-        raise Exception(f"Token 驗證失敗: {str(e)}")
-
-
 import random
 from firebase_admin import firestore
 import json
