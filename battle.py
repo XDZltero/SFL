@@ -389,7 +389,7 @@ def simulate_battle(user, monster, user_skill_dict):
 
                     elif skill_type == "buff":
                         buff = {
-                            "name": skill.get("buffInfo", {}).get("buffName", "未知"),
+                            "name": skill["name"],
                             "description": skill["description"],
                             "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
                             "effectType": skill.get("effectType", "attack"),
@@ -401,7 +401,7 @@ def simulate_battle(user, monster, user_skill_dict):
                     elif skill_type == "debuff":
                         if calculate_hit(user_battle_stats["accuracy"], monster["stats"].get("evade", 0), user_battle_stats["luck"]):
                             debuff = {
-                                "name": skill.get("buffInfo", {}).get("buffName", "未知"),
+                                "name": skill["name"],
                                 "description": skill["description"],
                                 "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
                                 "effectType": skill.get("effectType", "attack"),
@@ -591,7 +591,7 @@ def simulate_battle(user, monster, user_skill_dict):
                     
                 elif skill_type == "buff":
                     buff = {
-                        "name": skill.get("buffName", skill["description"]),
+                        "name": skill.get("buffInfo", {}).get("buffName", "未知"),
                         "description": skill["description"],
                         "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
                         "effectType": skill.get("effectType", "atk"),
@@ -605,7 +605,7 @@ def simulate_battle(user, monster, user_skill_dict):
                                      user_battle_stats["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
                         debuff = {
-                            "name": skill.get("buffName", skill["description"]),
+                            "name": skill.get("buffInfo", {}).get("buffName", "未知"),
                             "description": skill["description"],
                             "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
                             "effectType": skill.get("effectType", "atk"),
