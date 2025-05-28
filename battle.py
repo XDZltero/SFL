@@ -476,9 +476,14 @@ def simulate_battle(user, monster, user_skill_dict):
                             # 處理持續傷害
                             dot_info = skill.get("dot", {})
                             if dot_info and random.random() <= dot_info.get("hit_chance", 1.0):
+                                # 計算隨等級提升的DOT傷害
+                                base_dot_damage = dot_info["damage_per_turn"]
+                                dot_damage_per_level = dot_info.get("damage_per_level", 0)
+                                current_dot_damage = base_dot_damage + (level - 1) * dot_damage_per_level
+                                
                                 dot_effect = {
                                     "name": dot_info["name"],
-                                    "damage_per_turn": dot_info["damage_per_turn"],
+                                    "damage_per_turn": int(current_dot_damage),
                                     "round": dot_info["round"]
                                 }
                                 add_dot_effect(mon_dot_effects, dot_effect)
@@ -606,10 +611,12 @@ def simulate_battle(user, monster, user_skill_dict):
                     else:
                         round_log.append(f"{monster['name']} 對你施放 {skill['buffName']} 但未命中")
                         
-                # 新技能類型處理
                 elif skill_type == "debuff_atk":
                     target_invincible = user_invincible > 0
-                    if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                    # 檢查是否必定命中（全屬性攻擊）
+                    is_guaranteed_hit = skill.get("element", []) == ["all"]
+                    
+                    if is_guaranteed_hit or calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user_battle_stats["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
                         ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
@@ -629,13 +636,16 @@ def simulate_battle(user, monster, user_skill_dict):
                                     user_damage_shield = None
                                     
                         user_hp = max(user_hp - dmg, 0)
-                        round_log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）")
+                        hit_message = f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）"
+                        if is_guaranteed_hit:
+                            hit_message += " 【必定命中】"
+                        round_log.append(hit_message)
                         
                         # 處理負面效果
                         debuff_info = skill.get("debuff", {})
-                        if debuff_info and calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                        if debuff_info and (is_guaranteed_hit or calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                                          user_battle_stats["evade"] * user_stats_mod["evade"],
-                                                         monster["stats"]["luck"]) and random.random() <= debuff_info.get("hit_chance", 1.0):
+                                                         monster["stats"]["luck"])) and random.random() <= debuff_info.get("hit_chance", 1.0):
                             debuff = {
                                 "name": debuff_info["name"],
                                 "description": debuff_info["description"],
@@ -650,7 +660,10 @@ def simulate_battle(user, monster, user_skill_dict):
                         
                 elif skill_type == "dot_atk":
                     target_invincible = user_invincible > 0
-                    if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                    # 檢查是否必定命中（全屬性攻擊）
+                    is_guaranteed_hit = skill.get("element", []) == ["all"]
+                    
+                    if is_guaranteed_hit or calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user_battle_stats["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
                         ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
@@ -670,11 +683,14 @@ def simulate_battle(user, monster, user_skill_dict):
                                     user_damage_shield = None
                                     
                         user_hp = max(user_hp - dmg, 0)
-                        round_log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）")
+                        hit_message = f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）"
+                        if is_guaranteed_hit:
+                            hit_message += " 【必定命中】"
+                        round_log.append(hit_message)
                         
                         # 處理持續傷害
                         dot_info = skill.get("dot", {})
-                        if dot_info and random.random() <= dot_info.get("hit_chance", 1.0):
+                        if dot_info and (is_guaranteed_hit or random.random() <= dot_info.get("hit_chance", 1.0)):
                             dot_effect = {
                                 "name": dot_info["name"],
                                 "damage_per_turn": dot_info["damage_per_turn"],
@@ -700,7 +716,10 @@ def simulate_battle(user, monster, user_skill_dict):
                     
                 elif skill_type == "atk":
                     target_invincible = user_invincible > 0
-                    if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                    # 檢查是否必定命中（全屬性攻擊）
+                    is_guaranteed_hit = skill.get("element", []) == ["all"]
+                    
+                    if is_guaranteed_hit or calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user_battle_stats["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
                         ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
@@ -720,7 +739,10 @@ def simulate_battle(user, monster, user_skill_dict):
                                     user_damage_shield = None
                                     
                         user_hp = max(user_hp - dmg, 0)
-                        round_log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）")
+                        hit_message = f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）"
+                        if is_guaranteed_hit:
+                            hit_message += " 【必定命中】"
+                        round_log.append(hit_message)
                     else:
                         round_log.append(f"{monster['name']} 攻擊未命中")
 
