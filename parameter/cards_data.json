@@ -101,12 +101,72 @@
           "burn_sky_stone": 30,
           "god_book": 2,
           "storm_shard": 10,
-          "chaos_breath": 1
+          "chaos_breath": 2
         },
         "chance": 0.5
       }
     ],
     "description": "象徵空中城邦立足之人的卡片。鑲嵌提升攻擊力、護盾值以及攻擊速度。",
+    "require_level": 20
+  },
+  {
+    "id": "card_ironcity",
+    "name": "[副本卡片]鋼鐵都市",
+    "quality": "稀有",
+    "levels": [
+      {
+        "level": 1,
+        "materials": {
+          "iron_scrap": 20,
+          "steel_spear": 10,
+          "metal_core": 5,
+          "chaos_breath": 1
+        },
+        "chance": 1
+      },
+      {
+        "level": 2,
+        "materials": {
+          "steel_spear": 20,
+          "radar_module": 10,
+          "metal_core": 10,
+          "chaos_breath": 1
+        },
+        "chance": 0.85
+      },
+      {
+        "level": 3,
+        "materials": {
+          "radar_module": 20,
+          "buzz_blade": 10,
+          "metal_core": 10,
+          "chaos_breath": 2
+        },
+        "chance": 0.75
+      },
+      {
+        "level": 4,
+        "materials": {
+          "buzz_blade": 20,
+          "armor_plate": 10,
+          "gray_alloy": 10,
+          "metal_core": 15,
+          "chaos_breath": 2
+        },
+        "chance": 0.45
+      },
+      {
+        "level": 5,
+        "materials": {
+          "silver_core": 5,
+          "core_fragment_destroyer": 20,
+          "metal_core": 15,
+          "chaos_breath": 2
+        },
+        "chance": 0.45
+      }
+    ],
+    "description": "摧毀次元入侵者的卡片。鑲嵌提升生命值，並提高較多護盾值。",
     "require_level": 20
   }
 ]
