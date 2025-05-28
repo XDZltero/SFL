@@ -188,7 +188,16 @@
       if (skillType === "atk" || skillType === "debuff_atk" || skillType === "dot_atk") {
         const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
         skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        if (skill.waitRound) {
+          skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+        }
         skillDetails += `<p>倍率：${currentMultiplier} 屬性：${skill.element.map(e => elemMap[e] || e).join("/")}</p>`;
+        
+        // 檢查是否必定命中
+        const isGuaranteedHit = (skill.element && skill.element.includes("all")) || skill.guaranteed_hit;
+        if (isGuaranteedHit) {
+          skillDetails += `<p style="color: #00ff00;">✓ 必定命中</p>`;
+        }
         
         // 負面效果攻擊的額外資訊
         if (skillType === "debuff_atk" && skill.debuff) {
@@ -204,24 +213,39 @@
       } else if (skillType === "heal") {
         const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
         skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        if (skill.waitRound) {
+          skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+        }
         skillDetails += `<p>治療倍率：${currentMultiplier}</p>`;
       } else if (skillType === "buff") {
         const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
         skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        if (skill.waitRound) {
+          skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+        }
         skillDetails += `<p>效果倍率：${currentMultiplier} 持續：${skill.round || 0} 回合</p>`;
       } else if (skillType === "invincible") {
         const currentRounds = Math.floor(skill.round + (currentLevel - 1) * (skill.multiplierperlvl || 0));
         skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        if (skill.waitRound) {
+          skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+        }
         skillDetails += `<p style="color: #4ecdc4;">無敵時間：${currentRounds} 回合</p>`;
       } else if (skillType === "damage_shield") {
         const currentThreshold = Math.floor(skill.damage_threshold + (currentLevel - 1) * (skill.multiplierperlvl * 50 || 0));
         const currentDamage = Math.floor(skill.ultimate_skill.damage + (currentLevel - 1) * (skill.multiplierperlvl * 100 || 0));
         skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+        if (skill.waitRound) {
+          skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+        }
         skillDetails += `<p style="color: #ffd93d;">蓄力：${skill.shield_rounds}回合 　傷害門檻：${currentThreshold}</p>`;
         skillDetails += `<p style="color: #ff6b6b;">終極技：${skill.ultimate_skill.name} (${currentDamage}傷害)</p>`;
       } else {
         // 其他類型或未知類型
         skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd || 0} 回合</p>`;
+        if (skill.waitRound) {
+          skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+        }
         if (skill.multiplier) {
           const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
           skillDetails += `<p>倍率：${currentMultiplier}</p>`;
