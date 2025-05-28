@@ -224,11 +224,9 @@
       }
     });
   
-    // ✅ 修正後的 logout
     window.logout = function () {
-	  // 使用Firebase的全域auth物件
-	  firebase.auth().signOut().then(() => {
-		window.location.href = "/SFL/login.html";
+	  signOut(auth).then(() => {
+	    window.location.href = "/SFL/login.html";
 	  });
 	};
   
@@ -256,9 +254,9 @@
 	  }
 	});
 	
-	firebase.auth().onAuthStateChanged((user) => {
+	auth.onAuthStateChanged((user) => {
 	  if (!user) {
-		window.location.href = "/SFL/login.html";
+	    window.location.href = "/SFL/login.html";
 	  }
 	});
   
