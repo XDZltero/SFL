@@ -596,8 +596,8 @@ def simulate_battle(user, monster, user_skill_dict):
                         "name": skill.get("buffInfo", {}).get("buffName", "未知"),
                         "description": skill["description"],
                         "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
-                        "effectType": skill.get("effectType", "attack"),
-                        "round": skill.get("round", 3)
+                        "effectType": skill.get("buffInfo", {}).get("effectType", "attack"),
+                        "round": skill.get("buffInfo", {}).get("round", 3)
                     }
                     add_or_refresh_buff(mon_buffs, buff)
                     round_log.append(f"{monster['name']} 施放了 {buff['name']} ，{buff['description']}")
@@ -610,8 +610,8 @@ def simulate_battle(user, monster, user_skill_dict):
                             "name": skill.get("buffInfo", {}).get("buffName", "未知"),
                             "description": skill["description"],
                             "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
-                            "effectType": skill.get("effectType", "attack"),
-                            "round": skill.get("round", 3)
+                            "effectType": skill.get("buffInfo", {}).get("effectType", "attack"),
+                            "round": skill.get("buffInfo", {}).get("round", 3)
                         }
                         add_or_refresh_debuff(user_buffs, debuff)
                         round_log.append(f"{monster['name']} 對你施放了 {debuff['name']} ，{debuff['description']}")
