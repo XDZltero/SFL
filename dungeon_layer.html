@@ -152,6 +152,13 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+    function authHeader() {
+      return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${window.authToken || ""}`
+      };
+    }
+
     const elementMap = {
       "none": "無",
       "phy": "物理",
@@ -168,6 +175,7 @@
     const dungeon = params.get("dungeon");
     let layer = parseInt(params.get("layer") || "0");
     let userId = null;
+    let userToken = null;
 
     const logArea = document.getElementById("logArea");
     const userDiv = document.getElementById("userInfo");
@@ -368,12 +376,12 @@
     }
 
     async function fetchUser(userId) {
-      const res = await fetch(`${API}/status?user=${encodeURIComponent(userId)}`);
+      const res = await fetch(`${API}/status?user=${encodeURIComponent(userId, { headers: authHeader() })}`, { headers: authHeader() });
       return await res.json();
     }
 
     async function fetchMonster(monsterId) {
-      const res = await fetch(`${API}/monster?id=${encodeURIComponent(monsterId)}`);
+      const res = await fetch(`${API}/monster?id=${encodeURIComponent(monsterId, { headers: authHeader() })}`, { headers: authHeader() });
       return await res.json();
     }
 
@@ -440,13 +448,13 @@
     async function loadLayer() {
       try {
         // 讀取升級經驗表
-        const expRes = await fetch(`${API}/exp_table`);
+        const expRes = await fetch(`${API}/exp_table`, { headers: authHeader() });
         levelExp = await expRes.json();
     
         const user = await fetchUser(userId);
 
 	// 讀取裝備數值資料
-	const equipRes = await fetch(`${API}/equips_table`);
+	const equipRes = await fetch(`${API}/equips_table`, { headers: authHeader() });
 	equipData = await equipRes.json();
         
         // 傳遞使用者名稱給父視窗
@@ -458,7 +466,7 @@
         userDiv.innerText = formatStats(user);
     
         // 讀取副本資料
-        const dungeonRes = await fetch(`${API}/dungeon_table`);
+        const dungeonRes = await fetch(`${API}/dungeon_table`, { headers: authHeader() });
         const all = await dungeonRes.json();
 		
         const current = all.find(d => d.id === dungeon);
@@ -518,7 +526,7 @@
     let currentProgress = 0;
 
     async function fetchProgress() {
-      const res = await fetch(`${API}/get_progress?user=${encodeURIComponent(userId)}`);
+      const res = await fetch(`${API}/get_progress?user=${encodeURIComponent(userId, { headers: authHeader() })}`, { headers: authHeader() });
       const data = await res.json();
       currentProgress = data.progress?.[dungeon] ?? 0;
       return data;
@@ -590,7 +598,7 @@
 	
 	        if (data.rewards) {
 	          const { exp, leveled_up, drops } = data.rewards;
-	          fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
+	          fetch(`${API}/items_table`, { headers: authHeader() }).then(res => res.json(, { headers: authHeader() }), { headers: authHeader() }).then(itemMap => {
 	            const rewardLog = document.createElement("div");
 	            rewardLog.className = "reward-message";
 	            rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
@@ -666,6 +674,8 @@
     }
 
     onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    userToken = await user.getIdToken();
 	    if (user) {
 	      userId = user.email;
 	      await fetchProgress();
