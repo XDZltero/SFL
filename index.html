@@ -226,19 +226,19 @@
   
     // ✅ 修正後的 logout
     window.logout = function () {
-      signOut(auth).then(() => {
-        window.location.href = "/SFL/login.html";
-      });
-    };
+	  // 使用Firebase的全域auth物件
+	  firebase.auth().signOut().then(() => {
+		window.location.href = "/SFL/login.html";
+	  });
+	};
   
     const userEmailSpan = document.getElementById("userEmail");
-    window.addEventListener("message", (e) => {
-      if (e.data?.nickname) {
-        userEmailSpan.textContent = e.data.nickname;
-      }
-    });
-
-    let currentUserInfo = null;
+	window.addEventListener("message", (e) => {
+	  if (e.data?.nickname) {
+		document.getElementById("userEmail").textContent = e.data.nickname;
+	  }
+	  // 移除傳遞user資訊給iframe的程式碼
+	});
 
     window.addEventListener("message", (e) => {
       if (e.data?.user) {
@@ -249,17 +249,18 @@
     });
 
     iframe.addEventListener("load", () => {
-      try {
-        updateTopbar(iframe.contentWindow.location.pathname);
-      } catch {
-        updateTopbar(iframe.src);
-      }
-    
-      // ✅ 傳遞使用者資料給 iframe 子頁面
-      if (currentUserInfo) {
-        iframe.contentWindow.postMessage(currentUserInfo, "*");
-      }
-    });
+	  try {
+		updateTopbar(iframe.contentWindow.location.pathname);
+	  } catch {
+		updateTopbar(iframe.src);
+	  }
+	});
+	
+	firebase.auth().onAuthStateChanged((user) => {
+	  if (!user) {
+		window.location.href = "/SFL/login.html";
+	  }
+	});
   
     document.addEventListener("DOMContentLoaded", () => {
       createParticles();
