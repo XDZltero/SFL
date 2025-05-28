@@ -345,7 +345,7 @@ def simulate_battle(user, monster, user_skill_dict):
                         round_log.append("你使用 普通攻擊 但未命中")
                 round_log.extend(buff_log)
 
-            else:
+            else:  # monster turn
                 for sid in monster_skill_cd:
                     if monster_skill_cd[sid] > 0:
                         monster_skill_cd[sid] -= 1
@@ -363,13 +363,15 @@ def simulate_battle(user, monster, user_skill_dict):
                     old_hp = mon_hp
                     mon_hp = min(mon_hp + heal, monster["stats"]["hp"])
                     round_log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {mon_hp - old_hp} 點生命值（目前 HP：{mon_hp}/{monster['stats']['hp']}）")
+                
                 elif skill_type == "buff":
+                    buff_info = skill.get("buffInfo", {})
                     buff = {
-                        "name": skill.get("buffName", skill["description"]),
+                        "name": buff_info.get("buffName", skill["description"]),
                         "description": skill["description"],
-                        "multiplier": skill["multiplier"],
-                        "effectType": skill.get("effectType", "atk"),
-                        "round": skill.get("round", 3)
+                        "multiplier": buff_info.get("buffMultiplier", skill.get("multiplier", 1.0)),
+                        "effectType": buff_info.get("effectType", "attack"),
+                        "round": buff_info.get("round", 3)
                     }
                     add_or_refresh_buff(mon_buffs, buff)
                     round_log.append(f"{monster['name']} 施放了 {buff['name']} ，{buff['description']}")
@@ -378,17 +380,21 @@ def simulate_battle(user, monster, user_skill_dict):
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user_battle_stats["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
+                        buff_info = skill.get("buffInfo", {})
                         debuff = {
-                            "name": skill.get("buffName", skill["description"]),
+                            "name": buff_info.get("buffName", skill["description"]),
                             "description": skill["description"],
-                            "multiplier": skill["multiplier"],
-                            "effectType": skill.get("effectType", "atk"),
-                            "round": skill.get("round", 3)
+                            "multiplier": buff_info.get("buffMultiplier", skill.get("multiplier", 1.0)),
+                            "effectType": buff_info.get("effectType", "attack"),
+                            "round": buff_info.get("round", 3)
                         }
                         add_or_refresh_debuff(user_buffs, debuff)
                         round_log.append(f"{monster['name']} 對你施放了 {debuff['name']} ，{debuff['description']}")
                     else:
-                        round_log.append(f"{monster['name']} 對你施放 {skill['buffName']} 但未命中")
+                        buff_info = skill.get("buffInfo", {})
+                        skill_name = buff_info.get("buffName", skill["description"])
+                        round_log.append(f"{monster['name']} 對你施放 {skill_name} 但未命中")
+                
                 elif skill_type == "atk":
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user_battle_stats["evade"] * user_stats_mod["evade"],
