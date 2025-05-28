@@ -9,9 +9,6 @@
   <style>
     #dungeonList { margin-top: 20px; }
   </style>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="js/firebase-init.js"></script>
 </head>
 <body>
   <div id="loading-placeholder"></div>
@@ -31,7 +28,7 @@
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
-    let currentUserInfo = null;
+    let userId = null;
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
@@ -39,20 +36,15 @@
       loading.style.display = show ? "flex" : "none";
     }
 
-    async function loadDungeons(userId, token) {
+    async function loadDungeons(userId) {
       showLoading(true);
-
       const res = await fetch("parameter/dungeons.json");
       const dungeons = await res.json();
 
-      const userRes = await fetch(`${API_BASE}/status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const userRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
       const userData = await userRes.json();
 
-      const progRes = await fetch(`${API_BASE}/get_progress`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const progRes = await fetch(`${API_BASE}/get_progress?user=${encodeURIComponent(userId)}`);
       const progData = await progRes.json();
       const progress = progData.progress || {};
 
@@ -114,9 +106,9 @@
     }
 
     window.addEventListener("message", async (e) => {
-      if (e.data?.token && e.data?.user) {
-        currentUserInfo = e.data;
-        await loadDungeons(currentUserInfo.user, currentUserInfo.token);
+      if (e.data?.user) {
+        userId = e.data.user;
+        await loadDungeons(userId);
       }
     });
   </script>
