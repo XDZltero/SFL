@@ -22,6 +22,16 @@ db = firestore.client()
 def user_ref(user_id):
     return db.collection("users").document(user_id)
 
+# 解密使用者token獲得玩家ID
+def get_authenticated_user():
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise ValueError("Missing or invalid Authorization header")
+    
+    id_token = auth_header.split("Bearer ")[-1]
+    decoded = admin_auth.verify_id_token(id_token)
+    return decoded["email"]  # 用來當作 user_id
+
 # 🔁 快取靜態副本資料
 @lru_cache()
 def get_dungeon_data():
