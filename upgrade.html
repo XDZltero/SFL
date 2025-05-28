@@ -53,13 +53,15 @@
 </div>
 
 <script type="module">
+  import { auth, SecureAPI } from "./js/firebase-init.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
   const API_BASE = "https://sfl-9cb8.onrender.com";
   const baseStatsEl = document.getElementById("base_stats");
   const remainingPointsEl = document.getElementById("remainingPoints");
   const skillListEl = document.getElementById("skillList");
   const remainingSkillPointsEl = document.getElementById("remainingSkillPoints");
 
-  let userId = null;
   let userStats = {};
   let alloc = { hp: 0, attack: 0, luck: 0, atk_speed: 0 };
   let skillAlloc = {};
@@ -139,12 +141,9 @@
 
     showLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/levelup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: userId, allocate: alloc })
-      });
+      const res = await SecureAPI.post(`${API_BASE}/levelup`, { allocate: alloc });
       const data = await res.json();
+      
       if (res.ok) {
         alert("能力值已分配完畢！");
         await loadStatus();
@@ -237,12 +236,9 @@
   async function submitSkills() {
     showLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/skills_save`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: userId, skills: skillAlloc })
-      });
+      const res = await SecureAPI.post(`${API_BASE}/skills_save`, { skills: skillAlloc });
       const data = await res.json();
+      
       if (res.ok) {
         alert("技能儲存成功！");
         await loadStatus();
@@ -264,9 +260,11 @@
 
   async function loadAllSkills() {
     const skillRes = await fetch(`${API_BASE}/skills_full`);
-    const userRes = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+    const userRes = await SecureAPI.get(`${API_BASE}/status`);
+    
     allSkills = await skillRes.json();
     userStats = await userRes.json();
+    
     skillAlloc = {};
     remainingSkillPoints = userStats.skill_points;
     allSkills.forEach(skill => {
@@ -277,13 +275,12 @@
   }
 
   async function loadStatus() {
-    const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`);
+    const res = await SecureAPI.get(`${API_BASE}/status`);
     userStats = await res.json();
     renderStats();
   }
 
   async function runMain() {
-    console.log("⚙️ runMain userId =", userId);
     showLoading(true);
     try {
       await loadStatus();
@@ -295,13 +292,12 @@
     }
   }
 
-  window.addEventListener("message", async (e) => {
-    /* console.log("📩 收到 parent 傳入：", e.data); */
-    if (e.data?.user) {
-      userId = e.data.user;
-      await runMain();
+  // 監聽登入狀態
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      runMain();
     } else {
-      console.warn("⚠️ 未收到有效 user，無法啟動");
+      window.parent.location.href = "/SFL/login.html";
     }
   });
 </script>
