@@ -225,8 +225,8 @@ def battle():
 @app.route("/battle_dungeon", methods=["POST"])
 def battle_dungeon():
     try:
-        data = request.json
         user_id = get_authenticated_user()
+        data = request.json
         dungeon_id = data.get("dungeon")
         layer = data.get("layer")
 
@@ -263,7 +263,6 @@ def battle_dungeon():
 
         monster_data = mon_doc.to_dict()
 
-        # ✅ 玩家技能查詢
         user_skill_ids = list(user_data.get("skills", {}).keys())
         user_skill_list = []
         for i in range(0, len(user_skill_ids), 10):
@@ -273,8 +272,7 @@ def battle_dungeon():
                 user_skill_list.append(doc.to_dict())
         user_skill_list.sort(key=lambda x: x.get("sort", 9999))
         user_skill_dict = {s["id"]: s for s in user_skill_list}
-        
-        # ✅ 傳入 simulate_battle
+
         result = simulate_battle(user_data, monster_data, user_skill_dict)
         db.collection("users").document(user_id).set(result["user"])
 
@@ -294,12 +292,10 @@ def battle_dungeon():
 
         if result["result"] == "win":
             if is_boss:
-                # ✅ 更新 ClearLog
                 clear_log = user_data.get("ClearLog", {})
                 clear_count = clear_log.get(dungeon_id, 0)
                 clear_log[dungeon_id] = clear_count + 1
                 db.collection("users").document(user_id).set({"ClearLog": clear_log}, merge=True)
-        
                 progress_ref.set({dungeon_id: 0}, merge=True)
             elif int(layer) >= current_layer:
                 progress_ref.set({dungeon_id: int(layer) + 1}, merge=True)
