@@ -366,6 +366,11 @@ def simulate_battle(user, monster, user_skill_dict):
                     if not skill:
                         continue
 
+                    # 檢查技能等待回合限制
+                    wait_round = skill.get("waitRound", 0)
+                    if wait_round > 0 and current_round < wait_round:
+                        continue
+
                     multiplier = skill["multiplier"] + (level - 1) * skill.get("multiplierperlvl", 0)
                     skill_type = skill.get("type", "atk")
 
@@ -496,7 +501,10 @@ def simulate_battle(user, monster, user_skill_dict):
 
                     elif skill_type == "atk":
                         target_invincible = mon_invincible > 0
-                        if calculate_hit(user_battle_stats["accuracy"] * user_stats_mod["accuracy"],
+                        # 檢查是否必定命中（全屬性攻擊或特殊標記）
+                        is_guaranteed_hit = (skill.get("element", []) == ["all"]) or skill.get("guaranteed_hit", False)
+                        
+                        if is_guaranteed_hit or calculate_hit(user_battle_stats["accuracy"] * user_stats_mod["accuracy"],
                                          monster["stats"]["evade"] * mon_stats_mod["evade"],
                                          user_battle_stats["luck"]):
                             ele_mod = get_element_multiplier(skill.get("element", []), monster.get("element", []))
@@ -516,7 +524,10 @@ def simulate_battle(user, monster, user_skill_dict):
                                         mon_damage_shield = None
                                 
                             mon_hp = max(mon_hp - dmg, 0)
-                            round_log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
+                            hit_message = f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）"
+                            if is_guaranteed_hit:
+                                hit_message += " 【必定命中】"
+                            round_log.append(hit_message)
                         else:
                             round_log.append(f"你使用 {skill['name']} 但未命中")
 
