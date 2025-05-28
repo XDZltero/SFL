@@ -159,7 +159,7 @@
         "level": 5,
         "materials": {
           "silver_core": 5,
-          "core_fragment_destroyer": 20,
+          "core_fragment_destroyer": 2,
           "metal_core": 15,
           "chaos_breath": 2
         },
