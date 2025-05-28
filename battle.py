@@ -571,8 +571,6 @@ def simulate_battle(user, monster, user_skill_dict):
                         round_log.append(f"你使用 普通攻擊 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
                     else:
                         round_log.append("你使用 普通攻擊 但未命中")
-                round_log.extend(buff_log_user)
-
             else:  # 怪物回合
                 for sid in monster_skill_cd:
                     if monster_skill_cd[sid] > 0:
@@ -753,9 +751,8 @@ def simulate_battle(user, monster, user_skill_dict):
                         round_log.append(hit_message)
                     else:
                         round_log.append(f"{monster['name']} 攻擊未命中")
-
-                round_log.extend(buff_log_mon)
-
+        round_log.extend(buff_log_user)
+        round_log.extend(buff_log_mon)
         log.append({"round": current_round, "actions": round_log})
         if user_hp <= 0 or mon_hp <= 0:
             break
