@@ -125,9 +125,18 @@
         showLoading(true);
         const email = user.email;
         try {
-          const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+          // 取得ID Token
+          const idToken = await user.getIdToken();
+          
+          // 使用token請求狀態
+          const res = await fetch(`${API_BASE}/status`, {
+            headers: {
+              'Authorization': `Bearer ${idToken}`
+            }
+          });
+          
           const data = await res.json();
-          if (!data.error) {
+          if (res.ok) {
             window.location.href = "/SFL/";
           }
         } catch (err) {
@@ -157,16 +166,29 @@
     async function checkUserExists(email) {
       try {
         showLoading(true);
-        const res = await fetch(`${API_BASE}/status?user=${encodeURIComponent(email)}`);
+        
+        // 取得當前使用者的ID Token
+        const currentUser = firebase.auth().currentUser;
+        const idToken = await currentUser.getIdToken();
+        
+        const res = await fetch(`${API_BASE}/status`, {
+          headers: {
+            'Authorization': `Bearer ${idToken}`
+          }
+        });
+        
         const data = await res.json();
 
-        if (data.error) {
+        if (res.status === 404) {
           log("⚠️ 尚未註冊，請輸入暱稱");
           document.getElementById("nicknameSection").style.display = "block";
           window.__currentUserEmail = email;
-        } else {
+          window.__currentIdToken = idToken;
+        } else if (res.ok) {
           log("🎉 登入成功，正在導向主頁...");
           setTimeout(() => window.location.href = "/SFL/", 1000);
+        } else {
+          log("❌ 錯誤：" + (data.error || "未知錯誤"));
         }
       } catch (err) {
         log("❌ 錯誤：" + err.message);
@@ -177,6 +199,7 @@
 
     async function completeRegistration() {
       const email = window.__currentUserEmail;
+      const idToken = window.__currentIdToken;
       const nickname = document.getElementById("nickname").value.trim();
     
       if (!nickname) return alert("請輸入暱稱");
@@ -189,7 +212,11 @@
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ user: email, nickname })
+          body: JSON.stringify({ 
+            user: email, 
+            nickname: nickname,
+            idToken: idToken  // 傳送ID Token進行驗證
+          })
         });
     
         const data = await res.json();
@@ -206,7 +233,7 @@
         console.error("❌ 發生例外錯誤：", err);
         alert("發生錯誤，請稍後再試。");
       } finally {
-        showLoading(false); // ✅ 無論成功或失敗都要關閉載入提示
+        showLoading(false);
       }
     }
 
