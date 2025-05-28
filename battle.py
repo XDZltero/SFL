@@ -391,7 +391,7 @@ def simulate_battle(user, monster, user_skill_dict):
                         buff = {
                             "name": skill["name"],
                             "description": skill["description"],
-                            "multiplier": skill["multiplier"],
+                            "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
                             "effectType": skill.get("effectType", "attack"),
                             "round": skill.get("round", 3)
                         }
@@ -403,7 +403,7 @@ def simulate_battle(user, monster, user_skill_dict):
                             debuff = {
                                 "name": skill["name"],
                                 "description": skill["description"],
-                                "multiplier": skill["multiplier"],
+                                "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
                                 "effectType": skill.get("effectType", "attack"),
                                 "round": skill.get("round", 3)
                             }
@@ -593,7 +593,7 @@ def simulate_battle(user, monster, user_skill_dict):
                     buff = {
                         "name": skill.get("buffName", skill["description"]),
                         "description": skill["description"],
-                        "multiplier": skill["multiplier"],
+                        "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
                         "effectType": skill.get("effectType", "atk"),
                         "round": skill.get("round", 3)
                     }
@@ -607,7 +607,7 @@ def simulate_battle(user, monster, user_skill_dict):
                         debuff = {
                             "name": skill.get("buffName", skill["description"]),
                             "description": skill["description"],
-                            "multiplier": skill["multiplier"],
+                            "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
                             "effectType": skill.get("effectType", "atk"),
                             "round": skill.get("round", 3)
                         }
