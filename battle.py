@@ -592,15 +592,15 @@ def simulate_battle(user, monster, user_skill_dict):
                     round_log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {mon_hp - old_hp} 點生命值（目前 HP：{mon_hp}/{monster['stats']['hp']}）")
                     
                 elif skill_type == "buff":
-                buff = {
-                    "name": skill.get("buffInfo", {}).get("buffName", "未知"),
-                    "description": skill["description"],
-                    "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
-                    "effectType": skill.get("buffInfo", {}).get("effectType", "attack"),
-                    "round": skill.get("buffInfo", {}).get("round", 3)
-                }
-                add_or_refresh_buff(mon_buffs, buff)
-                round_log.append(f"{monster['name']} 施放了 {buff['name']} ，{buff['description']}")
+                    buff = {
+                        "name": skill.get("buffInfo", {}).get("buffName", "未知"),
+                        "description": skill["description"],
+                        "multiplier": skill.get("buffInfo", {}).get("buffMultiplier", 1.0),
+                        "effectType": skill.get("buffInfo", {}).get("effectType", "attack"),
+                        "round": skill.get("buffInfo", {}).get("round", 3)
+                    }
+                    add_or_refresh_buff(mon_buffs, buff)
+                    round_log.append(f"{monster['name']} 施放了 {buff['name']} ，{buff['description']}")
                 
                 elif skill_type == "debuff":
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
