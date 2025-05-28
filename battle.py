@@ -338,8 +338,6 @@ def simulate_battle(user, monster, user_skill_dict):
         # ✅ Step 3: 實際扣除 buff 回合數，並取得最新倍率
         user_stats_mod, user_buffs, buff_log_user = apply_buffs(user_buffs, user_battle_stats, log, True, "")
         mon_stats_mod, mon_buffs, buff_log_mon = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
-        round_log.extend(buff_log_user)
-        round_log.extend(buff_log_mon)
 
         user_level_mod = level_damage_modifier(user["level"], monster["level"])
         mon_level_mod = level_damage_modifier(monster["level"], user["level"])
