@@ -319,26 +319,27 @@ def simulate_battle(user, monster, user_skill_dict):
                 if user_hp <= 0:
                     break
 
+        # ✅ Step 1: 預覽 buff 結果，不會扣除回合數
         user_stats_mod_preview = get_buff_stats_only(user_buffs)
         mon_stats_mod_preview = get_buff_stats_only(mon_buffs)
-
-        user_stats_mod, user_buffs, buff_log_user = apply_buffs(user_stats_mod_preview, user_battle_stats, log, True, "")
-        mon_stats_mod, mon_buffs, buff_log_mon = apply_buffs(mon_stats_mod_preview, monster["stats"], log, False, monster["name"])
-        round_log.extend(buff_log_user)
-        round_log.extend(buff_log_mon)
         
-        # 根據 buff 後的屬性計算速度與行動次數
-        user_speed = user_battle_stats["atk_speed"] * user_stats_mod["atk_speed"]
-        mon_speed = monster["stats"]["atk_speed"] * mon_stats_mod["atk_speed"]
-        
+        # ✅ Step 2: 根據預覽值決定速度與出手順序
+        user_speed = user_battle_stats["atk_speed"] * user_stats_mod_preview["atk_speed"]
+        mon_speed = monster["stats"]["atk_speed"] * mon_stats_mod_preview["atk_speed"]
         user_turns = max(1, round(user_speed / mon_speed))
         mon_turns = max(1, round(mon_speed / user_speed))
-
+        
         action_order = []
         if user_speed >= mon_speed:
             action_order.extend(["user"] * user_turns + ["mon"] * mon_turns)
         else:
             action_order.extend(["mon"] * mon_turns + ["user"] * user_turns)
+        
+        # ✅ Step 3: 實際扣除 buff 回合數，並取得最新倍率
+        user_stats_mod, user_buffs, buff_log_user = apply_buffs(user_buffs, user_battle_stats, log, True, "")
+        mon_stats_mod, mon_buffs, buff_log_mon = apply_buffs(mon_buffs, monster["stats"], log, False, monster["name"])
+        round_log.extend(buff_log_user)
+        round_log.extend(buff_log_mon)
 
         user_level_mod = level_damage_modifier(user["level"], monster["level"])
         mon_level_mod = level_damage_modifier(monster["level"], user["level"])
@@ -572,7 +573,7 @@ def simulate_battle(user, monster, user_skill_dict):
                         round_log.append(f"你使用 普通攻擊 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
                     else:
                         round_log.append("你使用 普通攻擊 但未命中")
-                round_log.extend(buff_log)
+                round_log.extend(buff_log_user)
 
             else:  # 怪物回合
                 for sid in monster_skill_cd:
@@ -754,7 +755,7 @@ def simulate_battle(user, monster, user_skill_dict):
                     else:
                         round_log.append(f"{monster['name']} 攻擊未命中")
 
-                round_log.extend(buff_log)
+                round_log.extend(buff_log_mon)
 
         log.append({"round": current_round, "actions": round_log})
         if user_hp <= 0 or mon_hp <= 0:
