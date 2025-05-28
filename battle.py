@@ -41,6 +41,7 @@ def load_element_table():
     with open("parameter/attribute_table.json", "r", encoding="utf-8") as f:
         return json.load(f)
 ELEMENT_TABLE = load_element_table()
+
 # 屬性克制計算
 def get_element_multiplier(attacker_elements, defender_elements):
     if not isinstance(attacker_elements, list):
@@ -171,7 +172,6 @@ def apply_buffs(buffs, base_stats, log, is_user, actor_name):
 
     return stats_mod, new_buffs, temp_log
 
-
 def add_or_refresh_buff(buff_list, new_buff):
     for existing in buff_list:
         if existing["name"] == new_buff["name"]:
@@ -179,13 +179,40 @@ def add_or_refresh_buff(buff_list, new_buff):
             return
     buff_list.append(new_buff)
 
-
 def add_or_refresh_debuff(debuff_list, new_debuff):
     for existing in debuff_list:
         if existing["name"] == new_debuff["name"]:
             existing["round"] = new_debuff["round"]
             return
     debuff_list.append(new_debuff)
+
+# 新增：處理持續傷害效果
+def add_dot_effect(dot_list, new_dot):
+    # 持續傷害可以疊加，最多3層
+    same_name_dots = [dot for dot in dot_list if dot["name"] == new_dot["name"]]
+    if len(same_name_dots) >= 3:
+        return  # 已達上限，不再添加
+    dot_list.append(new_dot)
+
+def apply_dot_effects(dot_effects, current_hp, max_hp, log, is_user, actor_name):
+    new_dot_effects = []
+    total_dot_damage = 0
+    
+    for dot in dot_effects:
+        if dot["round"] > 0:
+            damage = dot["damage_per_turn"]
+            total_dot_damage += damage
+            
+            dot["round"] -= 1
+            if dot["round"] > 0:
+                new_dot_effects.append(dot)
+                target = "你" if is_user else actor_name
+                log.append(f"{target}受到 {dot['name']} 的 {damage} 傷害（目前 HP：{current_hp - damage}/{max_hp}），剩餘 {dot['round']} 回合")
+            else:
+                target = "你" if is_user else actor_name
+                log.append(f"{target}受到 {dot['name']} 的 {damage} 傷害（目前 HP：{current_hp - damage}/{max_hp}），{dot['name']}效果消失")
+    
+    return new_dot_effects, total_dot_damage
 
 # 用作計算出手預設值
 def get_buff_stats_only(buffs):
@@ -220,6 +247,14 @@ def simulate_battle(user, monster, user_skill_dict):
     monster_skill_cd = {s["id"]: 0 for s in monster.get("skills", [])}
     user_buffs = []
     mon_buffs = []
+    
+    # 新增狀態追蹤
+    user_dot_effects = []  # 玩家身上的持續傷害
+    mon_dot_effects = []   # 怪物身上的持續傷害
+    user_invincible = 0    # 玩家無敵回合數
+    mon_invincible = 0     # 怪物無敵回合數
+    user_damage_shield = None  # 玩家傷害累積盾狀態
+    mon_damage_shield = None   # 怪物傷害累積盾狀態
 
     turn_limit = 20 if monster.get("is_boss") else 10
     turns_used = 0
@@ -231,6 +266,53 @@ def simulate_battle(user, monster, user_skill_dict):
         turns_used += 1
         current_round = turns_used
         round_log = []
+
+        # 處理回合開始的持續傷害
+        if user_dot_effects:
+            user_dot_effects, dot_damage = apply_dot_effects(user_dot_effects, user_hp, user_battle_stats["hp"], round_log, True, "")
+            user_hp = max(user_hp - dot_damage, 0)
+            if user_hp <= 0:
+                break
+                
+        if mon_dot_effects:
+            mon_dot_effects, dot_damage = apply_dot_effects(mon_dot_effects, mon_hp, monster["stats"]["hp"], round_log, False, monster["name"])
+            mon_hp = max(mon_hp - dot_damage, 0)
+            if mon_hp <= 0:
+                break
+
+        # 處理無敵狀態倒數
+        if user_invincible > 0:
+            user_invincible -= 1
+            if user_invincible == 0:
+                round_log.append("你的無敵狀態已消失")
+                
+        if mon_invincible > 0:
+            mon_invincible -= 1
+            if mon_invincible == 0:
+                round_log.append(f"{monster['name']} 的無敵狀態已消失")
+
+        # 處理傷害累積盾狀態
+        if user_damage_shield:
+            user_damage_shield["rounds"] -= 1
+            if user_damage_shield["rounds"] <= 0:
+                # 發動大招
+                ultimate = user_damage_shield["ultimate"]
+                round_log.append(f"你使用 {ultimate['name']} 對 {monster['name']} 造成 {ultimate['damage']} 傷害（對方 HP：{max(mon_hp - ultimate['damage'], 0)}/{monster['stats']['hp']}）")
+                mon_hp = max(mon_hp - ultimate["damage"], 0)
+                user_damage_shield = None
+                if mon_hp <= 0:
+                    break
+                    
+        if mon_damage_shield:
+            mon_damage_shield["rounds"] -= 1
+            if mon_damage_shield["rounds"] <= 0:
+                # 發動大招
+                ultimate = mon_damage_shield["ultimate"]
+                round_log.append(f"{monster['name']} 使用 {ultimate['name']} 對你造成 {ultimate['damage']} 傷害（目前 HP：{max(user_hp - ultimate['damage'], 0)}/{user_battle_stats['hp']}）")
+                user_hp = max(user_hp - ultimate["damage"], 0)
+                mon_damage_shield = None
+                if user_hp <= 0:
+                    break
 
         user_stats_mod_preview = get_buff_stats_only(user_buffs)
         mon_stats_mod_preview = get_buff_stats_only(mon_buffs)
@@ -253,6 +335,12 @@ def simulate_battle(user, monster, user_skill_dict):
         for actor in action_order:
             if user_hp <= 0 or mon_hp <= 0:
                 break
+                
+            # 檢查傷害累積盾是否阻止行動
+            if actor == "user" and user_damage_shield:
+                continue
+            if actor == "mon" and mon_damage_shield:
+                continue
 
             if actor == "user":
                 for sid in player_skill_cd:
@@ -314,7 +402,9 @@ def simulate_battle(user, monster, user_skill_dict):
                         else:
                             round_log.append(f"你對 {monster['name']} 施放 {skill['name']} 但未命中")
 
-                    elif skill_type == "atk":
+                    # 新增玩家專用技能類型
+                    elif skill_type == "debuff_atk":
+                        target_invincible = mon_invincible > 0
                         if calculate_hit(user_battle_stats["accuracy"] * user_stats_mod["accuracy"],
                                          monster["stats"]["evade"] * mon_stats_mod["evade"],
                                          user_battle_stats["luck"]):
@@ -323,6 +413,108 @@ def simulate_battle(user, monster, user_skill_dict):
                             shield = monster["stats"]["shield"] * mon_stats_mod["shield"]
                             dmg = calculate_damage(atk, multiplier, user.get("other_bonus", 0), shield)
                             dmg = round(dmg * user_level_mod * ele_mod * user_stats_mod["all_damage"])
+                            
+                            if target_invincible:
+                                dmg = 0
+                            else:
+                                # 處理傷害累積盾
+                                if mon_damage_shield:
+                                    mon_damage_shield["accumulated_damage"] += dmg
+                                    if mon_damage_shield["accumulated_damage"] >= mon_damage_shield["threshold"]:
+                                        round_log.append(f"你對 {monster['name']} 造成足夠傷害，阻止了其大招發動")
+                                        mon_damage_shield = None
+                                        
+                            mon_hp = max(mon_hp - dmg, 0)
+                            round_log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
+                            
+                            # 處理負面效果
+                            debuff_info = skill.get("debuff", {})
+                            if debuff_info and calculate_hit(user_battle_stats["accuracy"] * user_stats_mod["accuracy"],
+                                                             monster["stats"]["evade"] * mon_stats_mod["evade"],
+                                                             user_battle_stats["luck"]) and random.random() <= debuff_info.get("hit_chance", 1.0):
+                                debuff = {
+                                    "name": debuff_info["name"],
+                                    "description": debuff_info["description"],
+                                    "multiplier": debuff_info["multiplier"],
+                                    "effectType": debuff_info["effectType"],
+                                    "round": debuff_info["round"]
+                                }
+                                add_or_refresh_debuff(mon_buffs, debuff)
+                                round_log.append(f"你對 {monster['name']} 額外造成 {debuff['name']} 效果 {debuff['round']} 回合，{debuff['description']}")
+                        else:
+                            round_log.append(f"你使用 {skill['name']} 但未命中")
+                            
+                    elif skill_type == "dot_atk":
+                        target_invincible = mon_invincible > 0
+                        if calculate_hit(user_battle_stats["accuracy"] * user_stats_mod["accuracy"],
+                                         monster["stats"]["evade"] * mon_stats_mod["evade"],
+                                         user_battle_stats["luck"]):
+                            ele_mod = get_element_multiplier(skill.get("element", []), monster.get("element", []))
+                            atk = user_battle_stats["attack"] * user_stats_mod["attack"]
+                            shield = monster["stats"]["shield"] * mon_stats_mod["shield"]
+                            dmg = calculate_damage(atk, multiplier, user.get("other_bonus", 0), shield)
+                            dmg = round(dmg * user_level_mod * ele_mod * user_stats_mod["all_damage"])
+                            
+                            if target_invincible:
+                                dmg = 0
+                            else:
+                                # 處理傷害累積盾
+                                if mon_damage_shield:
+                                    mon_damage_shield["accumulated_damage"] += dmg
+                                    if mon_damage_shield["accumulated_damage"] >= mon_damage_shield["threshold"]:
+                                        round_log.append(f"你對 {monster['name']} 造成足夠傷害，阻止了其大招發動")
+                                        mon_damage_shield = None
+                                        
+                            mon_hp = max(mon_hp - dmg, 0)
+                            round_log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
+                            
+                            # 處理持續傷害
+                            dot_info = skill.get("dot", {})
+                            if dot_info and random.random() <= dot_info.get("hit_chance", 1.0):
+                                dot_effect = {
+                                    "name": dot_info["name"],
+                                    "damage_per_turn": dot_info["damage_per_turn"],
+                                    "round": dot_info["round"]
+                                }
+                                add_dot_effect(mon_dot_effects, dot_effect)
+                                round_log.append(f"{monster['name']} 陷入 {dot_effect['name']}狀態 持續 {dot_effect['round']} 回合")
+                        else:
+                            round_log.append(f"你使用 {skill['name']} 但未命中")
+                            
+                    elif skill_type == "invincible":
+                        user_invincible = skill.get("round", 2)
+                        round_log.append(f"你施放 {skill['name']} ， {user_invincible} 回合內將免疫所有傷害")
+                        
+                    elif skill_type == "damage_shield":
+                        user_damage_shield = {
+                            "rounds": skill.get("shield_rounds", 3),
+                            "threshold": skill.get("damage_threshold", 150),
+                            "accumulated_damage": 0,
+                            "ultimate": skill.get("ultimate_skill", {"name": "元素爆發", "damage": 500})
+                        }
+                        round_log.append(f"你施放 {skill['name']} ， {user_damage_shield['rounds']} 回合內若敵人沒有造成 {user_damage_shield['threshold']} 傷害將會「{user_damage_shield['ultimate']['name']}」")
+
+                    elif skill_type == "atk":
+                        target_invincible = mon_invincible > 0
+                        if calculate_hit(user_battle_stats["accuracy"] * user_stats_mod["accuracy"],
+                                         monster["stats"]["evade"] * mon_stats_mod["evade"],
+                                         user_battle_stats["luck"]):
+                            ele_mod = get_element_multiplier(skill.get("element", []), monster.get("element", []))
+                            atk = user_battle_stats["attack"] * user_stats_mod["attack"]
+                            shield = monster["stats"]["shield"] * mon_stats_mod["shield"]
+                            dmg = calculate_damage(atk, multiplier, user.get("other_bonus", 0), shield)
+                            dmg = round(dmg * user_level_mod * ele_mod * user_stats_mod["all_damage"])
+                            
+                            if target_invincible:
+                                dmg = 0
+                            else:
+                                # 處理傷害累積盾
+                                if mon_damage_shield:
+                                    mon_damage_shield["accumulated_damage"] += dmg
+                                    if mon_damage_shield["accumulated_damage"] >= mon_damage_shield["threshold"]:
+                                        round_log.append(f"你對 {monster['name']} 造成足夠傷害，阻止了其大招發動")
+                                        mon_damage_shield = None
+                                
                             mon_hp = max(mon_hp - dmg, 0)
                             round_log.append(f"你使用 {skill['name']} 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
                         else:
@@ -332,6 +524,7 @@ def simulate_battle(user, monster, user_skill_dict):
                     any_skill_used = True
 
                 if not any_skill_used:
+                    target_invincible = mon_invincible > 0
                     if calculate_hit(user_battle_stats["accuracy"] * user_stats_mod["accuracy"],
                                      monster["stats"]["evade"] * mon_stats_mod["evade"],
                                      user_battle_stats["luck"]):
@@ -339,13 +532,24 @@ def simulate_battle(user, monster, user_skill_dict):
                         shield = monster["stats"]["shield"] * mon_stats_mod["shield"]
                         dmg = calculate_damage(atk, 1.0, user.get("other_bonus", 0), shield)
                         dmg = round(dmg * user_level_mod * user_stats_mod["all_damage"])
+                        
+                        if target_invincible:
+                            dmg = 0
+                        else:
+                            # 處理傷害累積盾
+                            if mon_damage_shield:
+                                mon_damage_shield["accumulated_damage"] += dmg
+                                if mon_damage_shield["accumulated_damage"] >= mon_damage_shield["threshold"]:
+                                    round_log.append(f"你對 {monster['name']} 造成足夠傷害，阻止了其大招發動")
+                                    mon_damage_shield = None
+                            
                         mon_hp = max(mon_hp - dmg, 0)
                         round_log.append(f"你使用 普通攻擊 對 {monster['name']} 造成 {dmg} 傷害（對方 HP：{mon_hp}/{monster['stats']['hp']}）")
                     else:
                         round_log.append("你使用 普通攻擊 但未命中")
                 round_log.extend(buff_log)
 
-            else:  # monster turn
+            else:  # 怪物回合
                 for sid in monster_skill_cd:
                     if monster_skill_cd[sid] > 0:
                         monster_skill_cd[sid] -= 1
@@ -363,15 +567,14 @@ def simulate_battle(user, monster, user_skill_dict):
                     old_hp = mon_hp
                     mon_hp = min(mon_hp + heal, monster["stats"]["hp"])
                     round_log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {mon_hp - old_hp} 點生命值（目前 HP：{mon_hp}/{monster['stats']['hp']}）")
-                
+                    
                 elif skill_type == "buff":
-                    buff_info = skill.get("buffInfo", {})
                     buff = {
-                        "name": buff_info.get("buffName", skill["description"]),
+                        "name": skill.get("buffName", skill["description"]),
                         "description": skill["description"],
-                        "multiplier": buff_info.get("buffMultiplier", skill.get("multiplier", 1.0)),
-                        "effectType": buff_info.get("effectType", "attack"),
-                        "round": buff_info.get("round", 3)
+                        "multiplier": skill["multiplier"],
+                        "effectType": skill.get("effectType", "atk"),
+                        "round": skill.get("round", 3)
                     }
                     add_or_refresh_buff(mon_buffs, buff)
                     round_log.append(f"{monster['name']} 施放了 {buff['name']} ，{buff['description']}")
@@ -380,22 +583,21 @@ def simulate_battle(user, monster, user_skill_dict):
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user_battle_stats["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
-                        buff_info = skill.get("buffInfo", {})
                         debuff = {
-                            "name": buff_info.get("buffName", skill["description"]),
+                            "name": skill.get("buffName", skill["description"]),
                             "description": skill["description"],
-                            "multiplier": buff_info.get("buffMultiplier", skill.get("multiplier", 1.0)),
-                            "effectType": buff_info.get("effectType", "attack"),
-                            "round": buff_info.get("round", 3)
+                            "multiplier": skill["multiplier"],
+                            "effectType": skill.get("effectType", "atk"),
+                            "round": skill.get("round", 3)
                         }
                         add_or_refresh_debuff(user_buffs, debuff)
                         round_log.append(f"{monster['name']} 對你施放了 {debuff['name']} ，{debuff['description']}")
                     else:
-                        buff_info = skill.get("buffInfo", {})
-                        skill_name = buff_info.get("buffName", skill["description"])
-                        round_log.append(f"{monster['name']} 對你施放 {skill_name} 但未命中")
-                
-                elif skill_type == "atk":
+                        round_log.append(f"{monster['name']} 對你施放 {skill['buffName']} 但未命中")
+                        
+                # 新技能類型處理
+                elif skill_type == "debuff_atk":
+                    target_invincible = user_invincible > 0
                     if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
                                      user_battle_stats["evade"] * user_stats_mod["evade"],
                                      monster["stats"]["luck"]):
@@ -404,8 +606,110 @@ def simulate_battle(user, monster, user_skill_dict):
                         shield = user_battle_stats["shield"] * user_stats_mod["shield"]
                         dmg = calculate_damage(atk, skill["multiplier"], monster["stats"].get("phys_bonus", 0), shield)
                         dmg = round(dmg * mon_level_mod * ele_mod * mon_stats_mod["all_damage"])
+                        
+                        if target_invincible:
+                            dmg = 0
+                        else:
+                            # 處理傷害累積盾
+                            if user_damage_shield:
+                                user_damage_shield["accumulated_damage"] += dmg
+                                if user_damage_shield["accumulated_damage"] >= user_damage_shield["threshold"]:
+                                    round_log.append(f"{monster['name']} 的攻擊阻止了你的大招發動")
+                                    user_damage_shield = None
+                                    
                         user_hp = max(user_hp - dmg, 0)
-                        round_log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user['base_stats']['hp']}）")
+                        round_log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）")
+                        
+                        # 處理負面效果
+                        debuff_info = skill.get("debuff", {})
+                        if debuff_info and calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                                                         user_battle_stats["evade"] * user_stats_mod["evade"],
+                                                         monster["stats"]["luck"]) and random.random() <= debuff_info.get("hit_chance", 1.0):
+                            debuff = {
+                                "name": debuff_info["name"],
+                                "description": debuff_info["description"],
+                                "multiplier": debuff_info["multiplier"],
+                                "effectType": debuff_info["effectType"],
+                                "round": debuff_info["round"]
+                            }
+                            add_or_refresh_debuff(user_buffs, debuff)
+                            round_log.append(f"額外對你造成 {debuff['name']} 效果 {debuff['round']} 回合，{debuff['description']}")
+                    else:
+                        round_log.append(f"{monster['name']} 攻擊未命中")
+                        
+                elif skill_type == "dot_atk":
+                    target_invincible = user_invincible > 0
+                    if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                                     user_battle_stats["evade"] * user_stats_mod["evade"],
+                                     monster["stats"]["luck"]):
+                        ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
+                        atk = monster["stats"]["attack"] * mon_stats_mod["attack"]
+                        shield = user_battle_stats["shield"] * user_stats_mod["shield"]
+                        dmg = calculate_damage(atk, skill["multiplier"], monster["stats"].get("phys_bonus", 0), shield)
+                        dmg = round(dmg * mon_level_mod * ele_mod * mon_stats_mod["all_damage"])
+                        
+                        if target_invincible:
+                            dmg = 0
+                        else:
+                            # 處理傷害累積盾
+                            if user_damage_shield:
+                                user_damage_shield["accumulated_damage"] += dmg
+                                if user_damage_shield["accumulated_damage"] >= user_damage_shield["threshold"]:
+                                    round_log.append(f"{monster['name']} 的攻擊阻止了你的大招發動")
+                                    user_damage_shield = None
+                                    
+                        user_hp = max(user_hp - dmg, 0)
+                        round_log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）")
+                        
+                        # 處理持續傷害
+                        dot_info = skill.get("dot", {})
+                        if dot_info and random.random() <= dot_info.get("hit_chance", 1.0):
+                            dot_effect = {
+                                "name": dot_info["name"],
+                                "damage_per_turn": dot_info["damage_per_turn"],
+                                "round": dot_info["round"]
+                            }
+                            add_dot_effect(user_dot_effects, dot_effect)
+                            round_log.append(f"你陷入 {dot_effect['name']}狀態 持續 {dot_effect['round']} 回合")
+                    else:
+                        round_log.append(f"{monster['name']} 攻擊未命中")
+                        
+                elif skill_type == "invincible":
+                    mon_invincible = skill["round"]
+                    round_log.append(f"{monster['name']} 施放 {skill['description']} ， {skill['round']} 回合內將免疫所有傷害")
+                    
+                elif skill_type == "damage_shield":
+                    mon_damage_shield = {
+                        "rounds": skill["shield_rounds"],
+                        "threshold": skill["damage_threshold"],
+                        "accumulated_damage": 0,
+                        "ultimate": skill["ultimate_skill"]
+                    }
+                    round_log.append(f"{monster['name']} 施放 {skill['description']} ， {skill['shield_rounds']} 回合內若沒有造成 {skill['damage_threshold']} 傷害將會「{skill['ultimate_skill']['name']}」")
+                    
+                elif skill_type == "atk":
+                    target_invincible = user_invincible > 0
+                    if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                                     user_battle_stats["evade"] * user_stats_mod["evade"],
+                                     monster["stats"]["luck"]):
+                        ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
+                        atk = monster["stats"]["attack"] * mon_stats_mod["attack"]
+                        shield = user_battle_stats["shield"] * user_stats_mod["shield"]
+                        dmg = calculate_damage(atk, skill["multiplier"], monster["stats"].get("phys_bonus", 0), shield)
+                        dmg = round(dmg * mon_level_mod * ele_mod * mon_stats_mod["all_damage"])
+                        
+                        if target_invincible:
+                            dmg = 0
+                        else:
+                            # 處理傷害累積盾
+                            if user_damage_shield:
+                                user_damage_shield["accumulated_damage"] += dmg
+                                if user_damage_shield["accumulated_damage"] >= user_damage_shield["threshold"]:
+                                    round_log.append(f"{monster['name']} 的攻擊阻止了你的大招發動")
+                                    user_damage_shield = None
+                                    
+                        user_hp = max(user_hp - dmg, 0)
+                        round_log.append(f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）")
                     else:
                         round_log.append(f"{monster['name']} 攻擊未命中")
 
