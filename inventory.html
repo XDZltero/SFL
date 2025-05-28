@@ -47,8 +47,10 @@
   <div id="loadingSpinner" class="loading-spinner">處理中...</div>
 
   <script type="module">
+    import { auth, SecureAPI } from "./js/firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
     const API_BASE = "https://sfl-9cb8.onrender.com";
-    let userId = null;
     let userData = {};
     let userItems = {};
     let equipData = [];
@@ -83,9 +85,9 @@
     async function loadUserData() {
       try {
         const [statusRes, itemsRes, cardsRes] = await Promise.all([
-          fetch(`${API_BASE}/status?user=${encodeURIComponent(userId)}`),
-          fetch(`${API_BASE}/user_items?user=${encodeURIComponent(userId)}`),
-          fetch(`${API_BASE}/user_cards?user=${encodeURIComponent(userId)}`)
+          SecureAPI.get(`${API_BASE}/status`),
+          SecureAPI.get(`${API_BASE}/user_items`),
+          SecureAPI.get(`${API_BASE}/user_cards`)
         ]);
         
         userData = await statusRes.json();
@@ -230,16 +232,16 @@
 
         let cardClass = "item-card";
         let rarityLabel = "";
-        let nameColor = "#D0D0D0"; // default for 普通道具
+        let nameColor = "#D0D0D0";
         
         if (meta.special === 1) {
           cardClass += " rare";
           rarityLabel = "【稀有】";
-          nameColor = "#00bfff"; // 淺藍色
+          nameColor = "#00bfff";
         } else if (meta.special === 2) {
           cardClass += " super-rare";
           rarityLabel = "【超稀有】";
-          nameColor = "#ff69b4"; // 桃紅色
+          nameColor = "#ff69b4";
         }
     
         html += `
@@ -286,7 +288,7 @@
         }
         
         const nextLevel = currentLevel + 1;
-        const levelData = card.levels[currentLevel]; // 0-based index
+        const levelData = card.levels[currentLevel];
         
         if (isMaxed) {
           html += `
@@ -301,7 +303,7 @@
             const owned = userItems[matId] || 0;
             const color = owned >= qty ? "green" : "red";
             const meta = itemMeta.find(m => m.id === matId);
-            const itemName = meta ? meta.name : matId;  // 若找不到就用原 ID
+            const itemName = meta ? meta.name : matId;
             return `<span style="color: ${color}">${itemName} x${qty} (${owned})</span>`;
           }).join(", ");
           
@@ -326,7 +328,7 @@
       });
       
       html += `
-          </div> <!-- scroll-content -->
+          </div>
           <div class="btn-group">
             <button class="square-btn" onclick="closeDialog()">關閉</button>
           </div>
@@ -364,15 +366,10 @@
       showLoading(true);
       
       try {
-        const response = await fetch(`${API_BASE}/craft_card`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user: userId,
-            card_id: cardId,
-            materials: levelData.materials,
-            success_rate: levelData.chance
-          })
+        const response = await SecureAPI.post(`${API_BASE}/craft_card`, {
+          card_id: cardId,
+          materials: levelData.materials,
+          success_rate: levelData.chance
         });
         
         const result = await response.json();
@@ -385,7 +382,6 @@
             alert(`❌ ${result.message || '製作失敗，材料已消耗'}`);
           }
           
-          // 重新載入使用者資料以更新道具數量
           await loadUserData();
           closeDialog();
         } else {
@@ -403,7 +399,6 @@
       const dialog = document.getElementById("dialogContainer");
       const equipment = userData.equipment || {};
     
-      // 準備目前已裝備的卡片列表
       const equippedCardIds = new Set();
       for (let slot = 1; slot <= 5; slot++) {
         const slotEquip = equipment[slot];
@@ -432,7 +427,6 @@
               <option value="">無裝備</option>
         `;
     
-        // 此處先不過濾卡片，稍後再用 JS 動態更新每個下拉選單
         Object.entries(userCards).forEach(([cardId, level]) => {
           if (level > 0) {
             const cardInfo = equipData.find(e => e.id === cardId);
@@ -461,16 +455,13 @@
       document.body.style.overflow = "hidden";
       document.body.classList.add("dialog-open");
     
-      // 🔁 依照目前選擇的值，更新每個欄位可選項目（防止重複）
       selectIds.forEach(id => {
         const select = document.getElementById(id);
         select.addEventListener("change", () => {
-          // 重新過濾所有欄位
           updateEquipDropdowns(selectIds);
         });
       });
     
-      // 初次載入時也執行一次篩選
       updateEquipDropdowns(selectIds);
     }
 
@@ -482,7 +473,6 @@
         const currentValue = select.value;
         const slot = select.dataset.slot;
         
-        // 保留目前值與無裝備選項
         const newOptions = [`<option value="">無裝備</option>`];
     
         Object.entries(userCards).forEach(([cardId, level]) => {
@@ -524,13 +514,8 @@
       showLoading(true);
     
       try {
-        const response = await fetch(`${API_BASE}/save_equipment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user: userId,
-            equipment: newEquipment
-          })
+        const response = await SecureAPI.post(`${API_BASE}/save_equipment`, {
+          equipment: newEquipment
         });
     
         const result = await response.json();
@@ -565,7 +550,6 @@
     window.saveEquipment = saveEquipment;
 
     async function runMain() {
-      // console.log("⚙️ runMain userId =", userId);
       showLoading(true);
       
       try {
@@ -579,13 +563,12 @@
       }
     }
 
-    // 監聽來自父頁面的訊息
-    window.addEventListener("message", async (e) => {
-      if (e.data?.user) {
-        userId = e.data.user;
-        await runMain();
+    // 監聽登入狀態
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        runMain();
       } else {
-        console.warn("⚠️ 未收到有效 user，無法啟動");
+        window.parent.location.href = "/SFL/login.html";
       }
     });
   </script>
