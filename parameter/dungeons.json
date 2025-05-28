@@ -42,5 +42,16 @@
     "monsters": ["shadow_archmage"],
     "Pre-Task": "dungeon_moss",
     "Pre-Task-ReqTime" : 1
+  },
+  {
+    "id": "TEST",
+    "name": "測試",
+    "description": "學者、瘋子聚集在一起的王城，研究著一天突如其來壟罩整座城池的紫色魔力。",
+    "bossId": "steel_destroyer",
+    "min_level": 10,
+    "image": "https://i.postimg.cc/hG07jRbw/dungeon-skycity.png",
+    "monsters": ["silver_emissary"],
+    "Pre-Task": "dungeon_moss",
+    "Pre-Task-ReqTime" : 1
   }
 ]
