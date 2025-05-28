@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_compress import Compress
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth as admin_auth
 from battle import simulate_battle
 from functools import lru_cache
 
@@ -21,16 +21,6 @@ db = firestore.client()
 
 def user_ref(user_id):
     return db.collection("users").document(user_id)
-
-# 解密使用者token獲得玩家ID
-def get_authenticated_user():
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        raise ValueError("Missing or invalid Authorization header")
-    
-    id_token = auth_header.split("Bearer ")[-1]
-    decoded = admin_auth.verify_id_token(id_token)
-    return decoded["email"]  # 用來當作 user_id
 
 # 🔁 快取靜態副本資料
 @lru_cache()
@@ -113,7 +103,7 @@ def ping():
 @app.route("/register", methods=["POST"])
 def register():
     data = request.json
-    user_id = data.get("user")
+        user_id = get_authenticated_user()
     nickname = data.get("nickname", user_id)
 
     if not user_id:
@@ -165,7 +155,7 @@ def register():
 
 @app.route("/status", methods=["GET"])
 def status():
-    user_id = request.args.get("user")
+    user_id = get_authenticated_user()
     if not user_id:
         return jsonify({"error": "缺少使用者參數"}), 400
 
@@ -193,7 +183,7 @@ def get_monster():
 def battle():
     try:
         data = request.json
-        user_id = data.get("user")
+        user_id = get_authenticated_user()
         monster_id = data.get("monster")
 
         if not user_id or not monster_id:
@@ -236,7 +226,7 @@ def battle():
 def battle_dungeon():
     try:
         data = request.json
-        user_id = data.get("user")
+        user_id = get_authenticated_user()
         dungeon_id = data.get("dungeon")
         layer = data.get("layer")
 
@@ -331,7 +321,10 @@ def battle_dungeon():
 # 獲得副本層數
 @app.route("/get_progress", methods=["GET"])
 def get_progress():
-    user_id = request.args.get("user")
+        try:
+        user_id = get_authenticated_user()
+    except Exception:
+        return jsonify({"error": "未授權"}), 401
     if not user_id:
         return jsonify({"error": "缺少 user 參數"}), 400
 
@@ -349,7 +342,10 @@ def get_progress():
 # 修復：這個端點應該查詢 user_items collection
 @app.route("/inventory", methods=["GET"])
 def inventory():
-    user_id = request.args.get("user")
+        try:
+        user_id = get_authenticated_user()
+    except Exception:
+        return jsonify({"error": "未授權"}), 401
     if not user_id:
         return jsonify({"error": "缺少使用者參數"}), 400
 
@@ -371,7 +367,7 @@ def inventory():
 @app.route("/levelup", methods=["POST"])
 def levelup():
     data = request.json
-    user_id = data.get("user")
+        user_id = get_authenticated_user()
     allocation = data.get("allocate")  # dict: {"hp": 1, "attack": 2, "luck": 2}
 
     if not user_id or not allocation:
@@ -408,7 +404,7 @@ def get_skills_full():
 
 @app.route("/skills_all", methods=["GET"])
 def get_all_skills():
-    user_id = request.args.get("user")
+    user_id = get_authenticated_user()
     if not user_id:
         return jsonify({"error": "缺少 user 參數"}), 400
 
@@ -436,7 +432,7 @@ def get_all_skills():
 @app.route("/skills_save", methods=["POST"])
 def save_skill_distribution():
     data = request.json
-    user_id = data.get("user")
+        user_id = get_authenticated_user()
     new_levels = data.get("skills")  # {"fireball": 5, "slash": 0, ...}
 
     if not user_id or not isinstance(new_levels, dict):
@@ -497,7 +493,10 @@ def clear_cache():
 # 道具與裝備製作
 @app.route("/user_items", methods=["GET"])
 def user_items():
-    user_id = request.args.get("user")
+        try:
+        user_id = get_authenticated_user()
+    except Exception:
+        return jsonify({"error": "未授權"}), 401
     if not user_id:
         return jsonify({"error": "缺少使用者參數"}), 400
     
@@ -512,7 +511,10 @@ def user_items():
 
 @app.route("/user_cards", methods=["GET"])
 def user_cardss():
-    user_id = request.args.get("user")
+        try:
+        user_id = get_authenticated_user()
+    except Exception:
+        return jsonify({"error": "未授權"}), 401
     if not user_id:
         return jsonify({"error": "缺少使用者參數"}), 400
     
@@ -526,8 +528,11 @@ def user_cardss():
 
 @app.route("/craft_card", methods=["POST"])
 def craft_card():
+    try:
+        user_id = get_authenticated_user()
+    except Exception:
+        return jsonify({"success": False, "error": "未授權"}), 401
     data = request.json
-    user_id = data.get("user")
     card_id = data.get("card_id")
     materials = data.get("materials")
     success_rate = data.get("success_rate", 1.0)
@@ -599,8 +604,11 @@ def craft_card():
 # 修正：HTTP 方法應該是 POST
 @app.route("/save_equipment", methods=["POST"])
 def save_equipment():
+    try:
+        user_id = get_authenticated_user()
+    except Exception:
+        return jsonify({"success": False, "error": "未授權"}), 401
     data = request.json
-    user_id = data.get("user")
     equipment = data.get("equipment")
     
     if not user_id:
