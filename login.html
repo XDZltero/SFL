@@ -182,14 +182,19 @@
     }
 
     .login-button:disabled {
-      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
       cursor: not-allowed;
       transform: none;
+      opacity: 0.8;
     }
 
     .login-button:disabled:hover {
-      transform: none;
-      box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+      transform: none !important;
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4) !important;
+    }
+
+    .login-button:disabled::before {
+      display: none;
     }
 
     /* 暱稱輸入區 */
@@ -337,7 +342,7 @@
     <div class="nickname-section" id="nicknameSection">
       <p>👋 歡迎新冒險者！請輸入你的暱稱：</p>
       <input class="nickname-input" id="nickname" placeholder="輸入暱稱" />
-      <button class="login-button" onclick="completeRegistration()">完成註冊</button>
+      <button class="login-button" id="registerButton" onclick="completeRegistration(event)">完成註冊</button>
     </div>
 
     <div class="manual-redirect" id="manualRedirect">
@@ -351,6 +356,9 @@
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
+    
+    // 🔒 防重複點擊標誌
+    let isAuthInProgress = false;
 
     // 創建粒子效果
     function createParticles() {
@@ -386,20 +394,44 @@
         loginBtn.disabled = true;
         loginBtn.innerHTML = `<span class="loading-dots">${message}</span>`;
       } else {
-        loginBtn.disabled = false;
-        loginBtn.textContent = "使用 Google 登入";
+        // 🔒 只有在沒有認證進行中且用戶未登入時才重新啟用按鈕
+        try {
+          const currentUser = firebase.auth().currentUser;
+          if (!currentUser && !isAuthInProgress) {
+            loginBtn.disabled = false;
+            loginBtn.textContent = "使用 Google 登入";
+            loginBtn.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+          }
+        } catch (error) {
+          // Firebase 可能還未初始化，保持按鈕禁用狀態
+          console.log("Firebase auth not ready:", error);
+        }
       }
     }
 
     // 顯示手動跳轉按鈕
     function showManualRedirect() {
       document.getElementById("manualRedirect").style.display = "block";
-      document.getElementById("loginButton").style.display = "none";
+      
+      // 🔒 隱藏登入按鈕，確保不會被再次點擊
+      const loginBtn = document.getElementById("loginButton");
+      loginBtn.style.display = "none";
+      
       updateStatus("登入成功！請點擊上方按鈕進入遊戲", "success");
     }
 
     // 手動跳轉
     function manualJump() {
+      const manualBtn = document.getElementById("manualRedirect").querySelector("button");
+      
+      // 🔒 防止重複點擊
+      if (manualBtn.disabled) {
+        return;
+      }
+      
+      manualBtn.disabled = true;
+      manualBtn.innerHTML = '<span class="loading-dots">跳轉中</span>';
+      
       updateStatus("正在跳轉，請稍後...", "success");
       
       const methods = [
@@ -425,6 +457,9 @@
           }
         } else {
           updateStatus("自動跳轉失敗，請手動前往：https://xdzltero.github.io/SFL/", "error");
+          // 🔓 所有方法都失敗時重新啟用按鈕
+          manualBtn.disabled = false;
+          manualBtn.textContent = "重試跳轉";
         }
       }
       
@@ -433,6 +468,15 @@
 
     // Google 登入
     async function signInWithGoogle() {
+      const loginBtn = document.getElementById("loginButton");
+      
+      // 🔒 防止重複點擊，立即禁用按鈕
+      if (loginBtn.disabled || isAuthInProgress) {
+        return;
+      }
+      
+      isAuthInProgress = true;
+      
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
@@ -464,6 +508,10 @@
         
         if (result && result.user) {
           updateStatus("認證成功！", "success");
+          // 🔒 登入成功後保持按鈕禁用狀態
+          loginBtn.disabled = true;
+          loginBtn.textContent = "✅ 認證成功";
+          loginBtn.style.background = "linear-gradient(135deg, #4CAF50 0%, #45a049 100%)";
         }
         
       } catch (error) {
@@ -476,8 +524,15 @@
           updateStatus("請求過於頻繁，請稍後再試", "error");
         }
         
-      } finally {
+        // 🔓 登入失敗時重新啟用按鈕
+        isAuthInProgress = false;
+        loginBtn.disabled = false;
+        loginBtn.textContent = "使用 Google 登入";
+        loginBtn.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
         showLoading(false);
+        
+      } finally {
+        // 不在這裡重新啟用按鈕，讓 onAuthStateChanged 處理成功的情況
       }
     }
 
@@ -497,6 +552,13 @@
     // 監聽登入狀態
     firebase.auth().onAuthStateChanged(async (user) => {
       if (user) {
+        // 🔒 立即鎖住登入按鈕，防止重複點擊
+        const loginBtn = document.getElementById("loginButton");
+        loginBtn.disabled = true;
+        loginBtn.textContent = "✅ 認證成功";
+        loginBtn.style.background = "linear-gradient(135deg, #4CAF50 0%, #45a049 100%)";
+        isAuthInProgress = true;
+        
         showLoading(true, "驗證中");
         updateStatus("正在驗證身份...");
         
@@ -542,10 +604,16 @@
         } catch (err) {
           console.error("驗證錯誤:", err);
           updateStatus("驗證過程發生錯誤", "error");
+          // 🔓 如果驗證失敗，重新啟用按鈕和重置標誌
+          isAuthInProgress = false;
+          loginBtn.disabled = false;
+          loginBtn.textContent = "使用 Google 登入";
+          loginBtn.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
         } finally {
           showLoading(false);
         }
       } else {
+        isAuthInProgress = false;
         await handleRedirectResult();
       }
     });
@@ -555,6 +623,7 @@
       const email = window.__currentUserEmail;
       const idToken = window.__currentIdToken;
       const nickname = document.getElementById("nickname").value.trim();
+      const registerBtn = event.target; // 註冊按鈕
     
       if (!nickname) {
         updateStatus("請輸入暱稱", "error");
@@ -567,6 +636,10 @@
       }
 
       try {
+        // 🔒 禁用註冊按鈕防止重複點擊
+        registerBtn.disabled = true;
+        registerBtn.innerHTML = `<span class="loading-dots">註冊中</span>`;
+        
         showLoading(true, "註冊中");
         updateStatus("正在建立帳號...");
     
@@ -586,6 +659,9 @@
     
         if (res.ok) {
           updateStatus("註冊成功，正在跳轉...", "success");
+          registerBtn.textContent = "✅ 註冊成功";
+          registerBtn.style.background = "linear-gradient(135deg, #4CAF50 0%, #45a049 100%)";
+          // 🔒 註冊成功，保持標誌為 true
           
           setTimeout(() => {
             try {
@@ -608,11 +684,21 @@
           }, 1000);
         } else {
           updateStatus(data.error || "註冊失敗", "error");
+          // 🔓 註冊失敗時重新啟用按鈕和重置標誌
+          isAuthInProgress = false;
+          registerBtn.disabled = false;
+          registerBtn.textContent = "完成註冊";
+          registerBtn.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
         }
     
       } catch (err) {
         console.error("註冊錯誤:", err);
         updateStatus("註冊過程發生錯誤", "error");
+        // 🔓 發生錯誤時重新啟用按鈕和重置標誌
+        isAuthInProgress = false;
+        registerBtn.disabled = false;
+        registerBtn.textContent = "完成註冊";
+        registerBtn.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
       } finally {
         showLoading(false);
       }
@@ -622,6 +708,20 @@
     document.addEventListener('DOMContentLoaded', function() {
       createParticles();
       updateStatus("準備登入系統");
+      
+      // 🔒 頁面可見性變化時檢查認證狀態
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && firebase.auth().currentUser && !isAuthInProgress) {
+          // 頁面重新可見且已登入，但沒有在進行認證流程
+          // 可能是從 popup 返回，確保按鈕狀態正確
+          const loginBtn = document.getElementById("loginButton");
+          if (!loginBtn.disabled) {
+            loginBtn.disabled = true;
+            loginBtn.textContent = "✅ 認證成功";
+            loginBtn.style.background = "linear-gradient(135deg, #4CAF50 0%, #45a049 100%)";
+          }
+        }
+      });
     });
   </script>
 </body>
