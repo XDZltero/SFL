@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>登入頁面</title>
+  <title>SFL - 登入</title>
   <link rel="icon" href="favicon.ico" />
-  <!-- 更新到最新版本的 Firebase SDK -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
 
@@ -19,209 +21,391 @@
   </script>
 
   <style>
+    * { 
+      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+    }
+    
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #f9f9f9, #e0f7fa);
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+      color: #fff;
+      overflow: hidden;
+      position: relative;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 20px;
-      box-sizing: border-box;
+    }
+    
+    /* 動態背景效果 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 226, 0.3) 0%, transparent 50%);
+      animation: backgroundFlow 20s ease-in-out infinite;
+      z-index: -2;
+    }
+    
+    @keyframes backgroundFlow {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      33% { transform: rotate(120deg) scale(1.1); }
+      66% { transform: rotate(240deg) scale(0.9); }
     }
 
-    #loginBox {
-      background: white;
-      padding: 2em 2.5em;
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    /* 粒子背景效果 */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(0, 255, 255, 0.6);
+      border-radius: 50%;
+      animation: float 6s infinite linear;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-100px) scale(1);
+        opacity: 0;
+      }
+    }
+
+    /* 登入容器 */
+    .login-container {
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 40px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
       width: 100%;
       max-width: 400px;
       text-align: center;
-      animation: fadeIn 0.4s ease;
     }
 
-    h1 {
-      margin-bottom: 1em;
-      color: #00796b;
-      font-size: 1.5em;
-    }
-
-    button {
-      background: #00796b;
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1em;
-      margin-top: 1em;
-      width: 100%;
-      transition: background-color 0.3s;
-      min-height: 44px; /* 確保觸控友善 */
-    }
-
-    button:hover {
-      background: #005a4f;
-    }
-
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    input {
-      padding: 12px;
-      margin-top: 1em;
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1em;
-      box-sizing: border-box;
-      min-height: 44px; /* 確保觸控友善 */
-    }
-
-    #nicknameSection {
-      margin-top: 1em;
-      display: none;
-    }
-
-    #log {
-      margin-top: 1.5em;
-      font-size: 0.9em;
-      color: #444;
-      white-space: pre-wrap;
-      text-align: left;
-      background: #f5f5f5;
-      padding: 10px;
-      border-radius: 4px;
-      min-height: 40px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    #loadingOverlay {
-      position: fixed;
+    .login-container::before {
+      content: '';
+      position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
+      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
+      animation: sectionShine 4s ease-in-out infinite;
+    }
+    
+    @keyframes sectionShine {
+      0%, 100% { transform: translateX(-100%); }
+      50% { transform: translateX(100%); }
+    }
+
+    /* 標題 */
+    .game-title {
+      font-size: 2.5rem;
+      font-weight: 900;
+      margin-bottom: 2rem;
+      background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+      background-size: 400% 400%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease-in-out infinite;
+      text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+      letter-spacing: 0.1em;
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* 登入按鈕 */
+    .login-button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      padding: 15px 40px;
+      border-radius: 25px;
       color: white;
-      font-size: 1.5em;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      margin: 20px 0;
+      z-index: 1;
+    }
+
+    .login-button::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .login-button:hover::before {
+      left: 100%;
+    }
+
+    .login-button:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
+    }
+
+    .login-button:disabled {
+      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .login-button:disabled:hover {
+      transform: none;
+      box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+    }
+
+    /* 暱稱輸入區 */
+    .nickname-section {
       display: none;
-      justify-content: center;
+      margin-top: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .nickname-section p {
+      color: #ffd93d;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .nickname-input {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      width: 100%;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1em;
+      margin-bottom: 15px;
+    }
+
+    .nickname-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .nickname-input:focus {
+      outline: none;
+      border-color: rgba(0, 255, 255, 0.6);
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
+
+    /* 狀態訊息 */
+    .status-message {
+      background: rgba(0, 255, 255, 0.1);
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 20px;
+      color: #00ffff;
+      font-weight: 600;
+      position: relative;
+      z-index: 1;
+      min-height: 50px;
+      display: flex;
       align-items: center;
-      z-index: 9999;
+      justify-content: center;
     }
 
-    .device-info {
-      font-size: 0.8em;
-      color: #666;
-      margin-bottom: 1em;
+    .status-message.success {
+      background: rgba(0, 255, 0, 0.1);
+      border-color: rgba(0, 255, 0, 0.3);
+      color: #00ff00;
     }
 
-    .debug-info {
-      font-size: 0.7em;
-      color: #999;
-      margin-top: 1em;
-      padding: 8px;
-      background: #f8f9fa;
-      border-radius: 4px;
-      text-align: left;
+    .status-message.error {
+      background: rgba(255, 0, 0, 0.1);
+      border-color: rgba(255, 0, 0, 0.3);
+      color: #ff6b6b;
     }
 
-    /* 手機優化 */
+    /* 載入動畫 */
+    .loading-dots {
+      display: inline-block;
+    }
+
+    .loading-dots::after {
+      content: '';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: ''; }
+      40% { content: '.'; }
+      60% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+
+    /* 手動跳轉按鈕 */
+    .manual-redirect {
+      display: none;
+      margin-top: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .manual-button {
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      border: none;
+      padding: 15px 30px;
+      border-radius: 25px;
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+      width: 100%;
+    }
+
+    .manual-button:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 10px 30px rgba(76, 175, 80, 0.6);
+    }
+
+    /* 響應式設計 */
     @media (max-width: 480px) {
-      #loginBox {
-        margin: 10px;
-        padding: 1.5em;
+      .login-container {
+        margin: 20px;
+        padding: 30px 25px;
       }
       
-      button, input {
+      .game-title {
+        font-size: 2rem;
+      }
+      
+      .login-button, .manual-button {
+        font-size: 16px; /* 防止 iOS 縮放 */
+      }
+      
+      .nickname-input {
         font-size: 16px; /* 防止 iOS 縮放 */
       }
     }
   </style>
 </head>
 <body>
-  <div id="loadingOverlay">⏳ 載入中，請稍候...</div>
+  <!-- 粒子背景 -->
+  <div class="particles" id="particles"></div>
 
-  <div id="loginBox">
-    <h1>🔐 Dungeon，登入</h1>
-    <div class="device-info" id="deviceInfo">檢測設備中...</div>
-    <button onclick="signInWithGoogle()" id="loginButton">使用 Google 登入</button>
-
-    <div id="nicknameSection">
-      <p>👋 歡迎新冒險者！請輸入你的暱稱：</p>
-      <input id="nickname" placeholder="輸入暱稱" />
-      <button onclick="completeRegistration()">完成註冊</button>
-    </div>
-
-    <div id="manualRedirect" style="display: none;">
-      <p style="color: #00796b; font-weight: bold;">✅ 登入成功！</p>
-      <button onclick="manualJump()" style="background: #4CAF50;">進入遊戲</button>
-    </div>
-
-    <div id="log">準備登入系統...</div>
+  <div class="login-container">
+    <h1 class="game-title">SFL</h1>
     
-    <div class="debug-info" id="debugInfo">
-      User Agent: <span id="userAgent"></span><br>
-      Support Touch: <span id="touchSupport"></span><br>
-      Screen Size: <span id="screenSize"></span>
+    <button class="login-button" id="loginButton" onclick="signInWithGoogle()">
+      使用 Google 登入
+    </button>
+
+    <div class="nickname-section" id="nicknameSection">
+      <p>👋 歡迎新冒險者！請輸入你的暱稱：</p>
+      <input class="nickname-input" id="nickname" placeholder="輸入暱稱" />
+      <button class="login-button" onclick="completeRegistration()">完成註冊</button>
+    </div>
+
+    <div class="manual-redirect" id="manualRedirect">
+      <button class="manual-button" onclick="manualJump()">進入遊戲</button>
+    </div>
+
+    <div class="status-message" id="statusMessage">
+      準備登入系統
     </div>
   </div>
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
 
-    // 增強設備檢測
+    // 創建粒子效果
+    function createParticles() {
+      const container = document.getElementById("particles");
+      const count = 50;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement("div");
+        p.className = "particle";
+        p.style.left = Math.random() * 100 + "%";
+        p.style.animationDelay = Math.random() * 6 + "s";
+        p.style.animationDuration = (Math.random() * 3 + 3) + "s";
+        container.appendChild(p);
+      }
+    }
+
+    // 檢測移動設備
     function isMobileDevice() {
-      const userAgent = navigator.userAgent;
-      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(userAgent);
-      const isSmallScreen = window.innerWidth <= 768 && window.innerHeight <= 1024;
-      const hasTouchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      
-      // 更新調試資訊
-      document.getElementById('userAgent').textContent = userAgent.substring(0, 50) + '...';
-      document.getElementById('touchSupport').textContent = hasTouchSupport ? 'Yes' : 'No';
-      document.getElementById('screenSize').textContent = `${window.innerWidth}x${window.innerHeight}`;
-      
-      return isMobileUA || (isSmallScreen && hasTouchSupport);
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent) ||
+             (window.innerWidth <= 768 && 'ontouchstart' in window);
     }
 
-    // 更新設備資訊顯示
-    function updateDeviceInfo() {
-      const deviceInfo = document.getElementById("deviceInfo");
-      const isMobile = isMobileDevice();
-      deviceInfo.textContent = isMobile ? "📱 手機登入模式" : "💻 電腦登入模式";
-      
-      // 記錄到控制台方便調試
-      console.log('Device Detection:', {
-        isMobile,
-        userAgent: navigator.userAgent,
-        screenSize: `${window.innerWidth}x${window.innerHeight}`,
-        touchSupport: 'ontouchstart' in window
-      });
+    // 更新狀態訊息
+    function updateStatus(message, type = 'normal') {
+      const statusEl = document.getElementById("statusMessage");
+      statusEl.textContent = message;
+      statusEl.className = `status-message ${type}`;
     }
 
+    // 顯示載入狀態
+    function showLoading(show, message = "處理中") {
+      const loginBtn = document.getElementById("loginButton");
+      if (show) {
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = `<span class="loading-dots">${message}</span>`;
+      } else {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "使用 Google 登入";
+      }
+    }
+
+    // 顯示手動跳轉按鈕
     function showManualRedirect() {
       document.getElementById("manualRedirect").style.display = "block";
       document.getElementById("loginButton").style.display = "none";
+      updateStatus("登入成功！請點擊上方按鈕進入遊戲", "success");
     }
 
+    // 手動跳轉
     function manualJump() {
-      log("🔄 手動跳轉到遊戲...");
+      updateStatus("正在跳轉，請稍後...", "success");
       
-      // 多種跳轉方式
       const methods = [
         () => window.location.href = "/SFL/",
         () => window.location.replace("/SFL/"),
-        () => window.location.assign("/SFL/"),
-        () => window.open("/SFL/", "_self")
+        () => window.location.assign("/SFL/")
       ];
       
       let methodIndex = 0;
@@ -230,98 +414,66 @@
           try {
             methods[methodIndex]();
             methodIndex++;
-            // 如果3秒後還在登入頁面，嘗試下一個方法
             setTimeout(() => {
               if (window.location.pathname.includes('login')) {
                 tryNextMethod();
               }
-            }, 3000);
+            }, 2000);
           } catch (error) {
-            log(`跳轉方法 ${methodIndex + 1} 失敗: ${error.message}`);
             methodIndex++;
             tryNextMethod();
           }
         } else {
-          log("❌ 所有跳轉方法都失敗了，請手動輸入網址：https://xdzltero.github.io/SFL/");
-          alert("自動跳轉失敗，請手動前往：https://xdzltero.github.io/SFL/");
+          updateStatus("自動跳轉失敗，請手動前往：https://xdzltero.github.io/SFL/", "error");
         }
       }
       
       tryNextMethod();
     }
 
-    function showLoading(show) {
-      document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
-      document.getElementById("loginButton").disabled = show;
-    }
-
-    function log(msg) {
-      const logEl = document.getElementById("log");
-      const timestamp = new Date().toLocaleTimeString();
-      const newMsg = `[${timestamp}] ${msg}\n`;
-      logEl.textContent += newMsg;
-      logEl.scrollTop = logEl.scrollHeight;
-      
-      // 同時記錄到控制台
-      console.log(`[LOGIN] ${msg}`);
-    }
-
-    // 改進的登入函數 - 優先使用 popup，失敗時才用 redirect
+    // Google 登入
     async function signInWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
-      const isMobile = isMobileDevice();
-      
-      // 設置額外的作用域（可選）
       provider.addScope('email');
       provider.addScope('profile');
       
       try {
-        showLoading(true);
-        log("🔄 開始 Google 登入流程...");
-        log(`📋 設備類型: ${isMobile ? '手機' : '電腦'}`);
+        showLoading(true, "認證中");
+        updateStatus("正在連接 Google 服務...");
         
         let result;
+        const isMobile = isMobileDevice();
         
         if (isMobile) {
-          // 手機：先嘗試 popup，失敗則用 redirect
           try {
-            log("📱 嘗試彈出視窗登入...");
             result = await firebase.auth().signInWithPopup(provider);
-            log("✅ 彈出視窗登入成功");
           } catch (popupError) {
-            log(`❌ 彈出視窗失敗: ${popupError.message}`);
-            
             if (popupError.code === 'auth/popup-blocked' || 
                 popupError.code === 'auth/popup-closed-by-user' ||
                 popupError.code === 'auth/cancelled-popup-request') {
-              log("🔄 改用重導向方式...");
+              updateStatus("改用重導向方式登入...");
               await firebase.auth().signInWithRedirect(provider);
-              return; // redirect 會跳轉頁面
+              return;
             } else {
               throw popupError;
             }
           }
         } else {
-          // 電腦：直接使用 popup
-          log("💻 使用彈出視窗登入...");
           result = await firebase.auth().signInWithPopup(provider);
         }
         
         if (result && result.user) {
-          log(`✅ 登入成功: ${result.user.email}`);
+          updateStatus("認證成功！", "success");
         }
         
       } catch (error) {
-        log(`❌ 登入失敗: ${error.message}`);
-        console.error("詳細錯誤:", error);
+        console.error("登入錯誤:", error);
+        updateStatus("登入失敗，請重試", "error");
         
-        // 根據錯誤類型提供不同的處理
         if (error.code === 'auth/network-request-failed') {
-          log("🌐 網路連線問題，請檢查網路後重試");
+          updateStatus("網路連線問題，請檢查網路", "error");
         } else if (error.code === 'auth/too-many-requests') {
-          log("⏳ 請求過於頻繁，請稍後再試");
-        } else if (error.code === 'auth/unauthorized-domain') {
-          log("🚫 網域未授權，請聯繫管理員");
+          updateStatus("請求過於頻繁，請稍後再試", "error");
         }
         
       } finally {
@@ -329,32 +481,27 @@
       }
     }
 
-    // 處理 redirect 結果
+    // 處理重導向結果
     async function handleRedirectResult() {
       try {
-        log("🔍 檢查重導向結果...");
         const result = await firebase.auth().getRedirectResult();
-        
         if (result && result.user) {
-          log("✅ 重導向登入成功");
-        } else if (result && result.credential === null) {
-          log("📋 等待使用者登入");
+          updateStatus("重導向登入成功！", "success");
         }
       } catch (error) {
-        log("❌ 處理重導向結果時發生錯誤: " + error.message);
-        console.error("Redirect error:", error);
+        console.error("重導向錯誤:", error);
+        updateStatus("登入過程發生錯誤", "error");
       }
     }
 
-    // 監聽登入狀態變化
+    // 監聽登入狀態
     firebase.auth().onAuthStateChanged(async (user) => {
       if (user) {
-        log("✅ 使用者已登入，驗證狀態...");
-        showLoading(true);
+        showLoading(true, "驗證中");
+        updateStatus("正在驗證身份...");
         
         try {
-          const idToken = await user.getIdToken(true); // 強制刷新 token
-          log("🔑 取得身份令牌成功");
+          const idToken = await user.getIdToken(true);
           
           const res = await fetch(`${API_BASE}/status`, {
             headers: {
@@ -363,51 +510,42 @@
             }
           });
           
-          log(`📡 API 請求狀態: ${res.status}`);
-          
           if (res.ok) {
-            const data = await res.json();
-            log("✅ 驗證成功，正在跳轉...");
+            updateStatus("驗證成功，正在跳轉...", "success");
             
-            // 立即跳轉，不使用 setTimeout
-            try {
-              window.location.href = "/SFL/";
-              // 備用跳轉方法
-              setTimeout(() => {
-                if (window.location.pathname.includes('login')) {
-                  window.location.replace("/SFL/");
-                }
-              }, 500);
-              
-              // 如果3秒後還在登入頁面，顯示手動跳轉按鈕
-              setTimeout(() => {
-                if (window.location.pathname.includes('login')) {
-                  log("⚠️ 自動跳轉可能失敗，請點擊下方按鈕手動進入");
-                  showManualRedirect();
-                }
-              }, 3000);
-              
-            } catch (error) {
-              log("❌ 跳轉失敗，請手動點擊下方按鈕");
-              showManualRedirect();
-            }
+            setTimeout(() => {
+              try {
+                window.location.href = "/SFL/";
+                setTimeout(() => {
+                  if (window.location.pathname.includes('login')) {
+                    window.location.replace("/SFL/");
+                  }
+                }, 500);
+                
+                setTimeout(() => {
+                  if (window.location.pathname.includes('login')) {
+                    showManualRedirect();
+                  }
+                }, 3000);
+                
+              } catch (error) {
+                showManualRedirect();
+              }
+            }, 1000);
           } else {
-            const errorData = await res.json();
-            log("⚠️ 帳號未註冊或需要完成設定");
-            
+            updateStatus("需要完成註冊設定");
             document.getElementById("nicknameSection").style.display = "block";
             window.__currentUserEmail = user.email;
             window.__currentIdToken = idToken;
           }
           
         } catch (err) {
-          log("❌ 驗證過程錯誤: " + err.message);
           console.error("驗證錯誤:", err);
+          updateStatus("驗證過程發生錯誤", "error");
         } finally {
           showLoading(false);
         }
       } else {
-        log("👤 使用者未登入");
         await handleRedirectResult();
       }
     });
@@ -419,18 +557,18 @@
       const nickname = document.getElementById("nickname").value.trim();
     
       if (!nickname) {
-        alert("請輸入暱稱");
+        updateStatus("請輸入暱稱", "error");
         return;
       }
     
       if (!email || !idToken) {
-        alert("登入資訊無效，請重新登入");
+        updateStatus("登入資訊無效，請重新登入", "error");
         return;
       }
 
       try {
-        showLoading(true);
-        log("🔄 正在註冊帳號...");
+        showLoading(true, "註冊中");
+        updateStatus("正在建立帳號...");
     
         const res = await fetch(`${API_BASE}/register`, {
           method: "POST",
@@ -445,66 +583,46 @@
         });
     
         const data = await res.json();
-        log(`📡 註冊請求狀態: ${res.status}`);
     
         if (res.ok) {
-          log("✅ 註冊成功！正在跳轉...");
+          updateStatus("註冊成功，正在跳轉...", "success");
           
-          // 立即跳轉，不使用 setTimeout
-          try {
-            window.location.href = "/SFL/";
-            // 備用跳轉方法
-            setTimeout(() => {
-              if (window.location.pathname.includes('login')) {
-                window.location.replace("/SFL/");
-              }
-            }, 500);
-            
-            // 如果3秒後還在登入頁面，顯示手動跳轉按鈕
-            setTimeout(() => {
-              if (window.location.pathname.includes('login')) {
-                log("⚠️ 自動跳轉可能失敗，請點擊下方按鈕手動進入");
-                showManualRedirect();
-              }
-            }, 3000);
-            
-          } catch (error) {
-            log("❌ 跳轉失敗，請手動點擊下方按鈕");
-            showManualRedirect();
-          }
+          setTimeout(() => {
+            try {
+              window.location.href = "/SFL/";
+              setTimeout(() => {
+                if (window.location.pathname.includes('login')) {
+                  window.location.replace("/SFL/");
+                }
+              }, 500);
+              
+              setTimeout(() => {
+                if (window.location.pathname.includes('login')) {
+                  showManualRedirect();
+                }
+              }, 3000);
+              
+            } catch (error) {
+              showManualRedirect();
+            }
+          }, 1000);
         } else {
-          log("❌ 註冊失敗: " + (data.error || "未知錯誤"));
-          alert(data.error || "註冊失敗");
+          updateStatus(data.error || "註冊失敗", "error");
         }
     
       } catch (err) {
-        log("❌ 註冊過程發生錯誤: " + err.message);
         console.error("註冊錯誤:", err);
-        alert("發生錯誤，請稍後再試");
+        updateStatus("註冊過程發生錯誤", "error");
       } finally {
         showLoading(false);
       }
     }
 
-    // 頁面載入完成後初始化
+    // 初始化
     document.addEventListener('DOMContentLoaded', function() {
-      updateDeviceInfo();
-      log("🚀 登入系統初始化完成");
-      
-      // 檢查是否有儲存的錯誤資訊
-      const urlParams = new URLSearchParams(window.location.search);
-      const error = urlParams.get('error');
-      if (error) {
-        log("⚠️ URL 錯誤參數: " + decodeURIComponent(error));
-      }
+      createParticles();
+      updateStatus("準備登入系統");
     });
-
-    // 監聽視窗大小變化
-    window.addEventListener('resize', updateDeviceInfo);
-    
-    // 監聽網路狀態變化
-    window.addEventListener('online', () => log("🌐 網路已連線"));
-    window.addEventListener('offline', () => log("📵 網路已斷線"));
   </script>
 </body>
 </html>
