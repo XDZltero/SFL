@@ -265,6 +265,52 @@
       renderItems();
     }
 
+    async function syncEquippedCardLevels(upgradedCardId, newLevel) {
+      const equipment = userData.equipment || {};
+      let needsUpdate = false;
+      const newEquipment = { ...equipment };
+      
+      // 檢查每個裝備插槽
+      for (let slot = 1; slot <= 5; slot++) {
+        const slotEquip = equipment[slot];
+        if (slotEquip && typeof slotEquip === 'object') {
+          const equippedCardId = Object.keys(slotEquip)[0];
+          if (equippedCardId === upgradedCardId) {
+            // 找到已裝備的卡片，更新其等級
+            newEquipment[slot] = { [upgradedCardId]: newLevel };
+            needsUpdate = true;
+            console.log(`更新插槽 ${slot} 的 ${upgradedCardId} 等級至 ${newLevel}`);
+          }
+        }
+      }
+      
+      // 如果有需要更新的裝備，發送到後端
+      if (needsUpdate) {
+        try {
+          const response = await SecureAPI.post(`${API_BASE}/save_equipment`, {
+            equipment: newEquipment
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok && result.success) {
+            userData.equipment = newEquipment;
+            console.log("✅ 已同步更新裝備卡片等級");
+            
+            // 重新渲染裝備區域以顯示更新後的數值
+            renderEquipment();
+            renderStats(); // 同時更新屬性顯示
+          } else {
+            console.error("❌ 同步裝備等級失敗:", result.error || result.message);
+            // 不拋出錯誤，因為卡片升級本身是成功的
+          }
+        } catch (error) {
+          console.error("❌ 同步裝備等級時發生錯誤:", error);
+          // 不拋出錯誤，因為卡片升級本身是成功的
+        }
+      }
+    }
+
     async function openCraftUI() {
       const dialog = document.getElementById("dialogContainer");
       
@@ -383,8 +429,13 @@
             const newLevel = currentLevel + 1;
             userCards[cardId] = newLevel;
             
-            // 同步更新已裝備的卡片等級
-            await syncEquippedCardLevels(cardId, newLevel);
+            // 🔧 修改：使用 try-catch 包裝同步邏輯，避免影響主流程
+            try {
+              await syncEquippedCardLevels(cardId, newLevel);
+            } catch (syncError) {
+              console.error("同步裝備等級時發生錯誤:", syncError);
+              // 不顯示錯誤給用戶，因為主要的製作/升級操作已經成功
+            }
             
           } else {
             alert(`❌ ${result.message || '製作失敗，材料已消耗'}`);
