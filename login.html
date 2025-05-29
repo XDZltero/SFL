@@ -203,7 +203,7 @@
           // 這裡不需要做額外處理，onAuthStateChanged會處理
         } else if (result.credential === null && !firebase.auth().currentUser) {
           // 沒有進行中的登入流程
-          log("👋 請點擊下方按鈕登入");
+          log("請點擊按鈕登入");
         }
       } catch (error) {
         log("❌ 登入過程發生錯誤：" + error.message);
