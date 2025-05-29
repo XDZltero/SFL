@@ -239,7 +239,7 @@
       if (remainingSeconds > 0) {
         buttonElement.classList.add("cooldown-button");
         buttonElement.disabled = true;
-        buttonElement.innerHTML = `<span class="cooldown-text">冷卻中 (${remainingSeconds}s)</span>`;
+        buttonElement.innerHTML = `<span class="cooldown-text">冷卻中 (${Math.ceil(remainingSeconds)}s)</span>`;
       } else {
         buttonElement.classList.remove("cooldown-button");
         buttonElement.disabled = false;
