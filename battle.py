@@ -321,19 +321,25 @@ def apply_dot_effects(dot_effects, current_hp, max_hp, log, is_user, actor_name)
     new_dot_effects = []
     total_dot_damage = 0
     
+    # ✅ 修正：使用累積HP來正確顯示
+    running_hp = current_hp  # 追蹤當前HP
+    
     for dot in dot_effects:
         if dot["round"] > 0:
             damage = dot["damage_per_turn"]
             total_dot_damage += damage
             
+            # ✅ 修正：每次DOT傷害後更新running_hp
+            running_hp = max(running_hp - damage, 0)
+            
             dot["round"] -= 1
             if dot["round"] > 0:
                 new_dot_effects.append(dot)
                 target = "你" if is_user else actor_name
-                log.append(f"{target}受到 {dot['name']} 的 {damage} 傷害（目前 HP：{current_hp - damage}/{max_hp}），剩餘 {dot['round']} 回合")
+                log.append(f"{target}受到 {dot['name']} 的 {damage} 傷害（目前 HP：{running_hp}/{max_hp}），剩餘 {dot['round']} 回合")
             else:
                 target = "你" if is_user else actor_name
-                log.append(f"{target}受到 {dot['name']} 的 {damage} 傷害（目前 HP：{current_hp - damage}/{max_hp}），{dot['name']}效果消失")
+                log.append(f"{target}受到 {dot['name']} 的 {damage} 傷害（目前 HP：{running_hp}/{max_hp}），{dot['name']}效果消失")
     
     return new_dot_effects, total_dot_damage
 
