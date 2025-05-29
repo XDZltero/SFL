@@ -221,19 +221,20 @@
 
     // 戰鬥冷卻相關函數
     function checkBattleCooldown(lastBattleTime) {
-      if (!lastBattleTime) return { ready: true, remaining: 0 };
-      
-      const currentTime = Math.floor(Date.now() / 1000); // 當前時間戳（秒）
-      const cooldownSeconds = 30;
-      const timeDiff = currentTime - lastBattleTime;
-      
-      if (timeDiff >= cooldownSeconds) {
-        return { ready: true, remaining: 0 };
-      } else {
-        const remaining = cooldownSeconds - timeDiff;
-        return { ready: false, remaining: Math.max(0, remaining) };
-      }
-    }
+	  if (!lastBattleTime) return { ready: true, remaining: 0 };
+	  
+	  // ✅ 保持浮點精度，不要用 Math.floor
+	  const currentTime = Date.now() / 1000;
+	  const cooldownSeconds = 30;
+	  const timeDiff = currentTime - lastBattleTime;
+	  
+	  if (timeDiff >= cooldownSeconds) {
+	    return { ready: true, remaining: 0 };
+	  } else {
+	    const remaining = cooldownSeconds - timeDiff;
+	    return { ready: false, remaining: Math.max(0, Math.ceil(remaining)) }; // ✅ 使用 Math.ceil 向上取整
+	  }
+	}
 
     function updateBattleButton(buttonElement, remainingSeconds, buttonText = "開始戰鬥") {
       if (remainingSeconds > 0) {
