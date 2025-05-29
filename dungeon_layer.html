@@ -74,10 +74,57 @@
 
 <div id="footer">
 <button id="battleBtn" onclick="startBattle()">開始戰鬥</button>
-<button id="retryBtn" style="display:none">再戰一次</button>
+<button id="retryBtn" style="display:none" onclick="retryBattle()">再戰一次</button>
 <button id="nextBtn" style="display:none">下一層</button>
 <button id="leaveBtn" onclick="leaveDungeon()" style="display:none">離開副本</button>
 </div>
+
+<style>
+/* 冷卻按鈕樣式 */
+.cooldown-button {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+  color: #adb5bd !important;
+  cursor: not-allowed !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.cooldown-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(255,255,255,0.1) 25%, 
+    transparent 25%, 
+    transparent 50%, 
+    rgba(255,255,255,0.1) 50%, 
+    rgba(255,255,255,0.1) 75%, 
+    transparent 75%
+  );
+  background-size: 20px 20px;
+  animation: cooldownStripes 1s linear infinite;
+}
+
+@keyframes cooldownStripes {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 0; }
+}
+
+.cooldown-button:hover {
+  transform: none !important;
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4) !important;
+}
+
+.cooldown-text {
+  position: relative;
+  z-index: 1;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+</style>
 
 <script>
 	  (function() {
@@ -143,6 +190,8 @@
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     let equipData = [];
+    let cooldownTimer = null;
+    let userData = null;
 
     const elementMap = {
       "none": "無",
@@ -166,8 +215,72 @@
     const loading = document.getElementById("loadingOverlay");
     const battleLoading = document.getElementById("battleLoadingOverlay");
 
+    const battleBtn = document.getElementById("battleBtn");
     const retryBtn = document.getElementById("retryBtn");
     const nextBtn = document.getElementById("nextBtn");
+
+    // 戰鬥冷卻相關函數
+    function checkBattleCooldown(lastBattleTime) {
+      if (!lastBattleTime) return { ready: true, remaining: 0 };
+      
+      const currentTime = Math.floor(Date.now() / 1000); // 當前時間戳（秒）
+      const cooldownSeconds = 30;
+      const timeDiff = currentTime - lastBattleTime;
+      
+      if (timeDiff >= cooldownSeconds) {
+        return { ready: true, remaining: 0 };
+      } else {
+        const remaining = cooldownSeconds - timeDiff;
+        return { ready: false, remaining: Math.max(0, remaining) };
+      }
+    }
+
+    function updateBattleButton(buttonElement, remainingSeconds, buttonText = "開始戰鬥") {
+      if (remainingSeconds > 0) {
+        buttonElement.classList.add("cooldown-button");
+        buttonElement.disabled = true;
+        buttonElement.innerHTML = `<span class="cooldown-text">冷卻中 (${remainingSeconds}s)</span>`;
+      } else {
+        buttonElement.classList.remove("cooldown-button");
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = buttonText;
+      }
+    }
+
+    function startCooldownTimer(lastBattleTime) {
+      if (cooldownTimer) {
+        clearInterval(cooldownTimer);
+      }
+      
+      cooldownTimer = setInterval(() => {
+        const cooldownInfo = checkBattleCooldown(lastBattleTime);
+        
+        if (cooldownInfo.ready) {
+          // 冷卻完成，恢復按鈕
+          updateBattleButton(battleBtn, 0, "開始戰鬥");
+          updateBattleButton(retryBtn, 0, "再戰一次");
+          clearInterval(cooldownTimer);
+          cooldownTimer = null;
+        } else {
+          // 更新倒數
+          updateBattleButton(battleBtn, cooldownInfo.remaining, "開始戰鬥");
+          if (retryBtn.style.display !== "none") {
+            updateBattleButton(retryBtn, cooldownInfo.remaining, "再戰一次");
+          }
+        }
+      }, 1000);
+    }
+
+    function initializeBattleButtons(lastBattleTime) {
+      const cooldownInfo = checkBattleCooldown(lastBattleTime);
+      
+      if (!cooldownInfo.ready) {
+        updateBattleButton(battleBtn, cooldownInfo.remaining, "開始戰鬥");
+        startCooldownTimer(lastBattleTime);
+      } else {
+        updateBattleButton(battleBtn, 0, "開始戰鬥");
+      }
+    }
 
     // 特效控制函數
     function showVictoryEffect() {
@@ -347,7 +460,7 @@
           loadingText.textContent = messages[messageIndex];
         }
         
-        if (progress >= 100) {
+        if progress >= 100) {
           clearInterval(progressInterval);
           loadingText.textContent = messages[messages.length - 1];
         }
@@ -433,6 +546,7 @@
         levelExp = await expRes.json();
     
         const user = await fetchUser();
+        userData = user; // 儲存使用者資料
 
 	// 讀取裝備數值資料
 	const equipRes = await fetch(`${API}/equips_table`);
@@ -442,6 +556,9 @@
         window.parent.postMessage({
           nickname: user.nickname
         }, "*");
+        
+        // 初始化戰鬥按鈕冷卻狀態
+        initializeBattleButtons(user.last_battle);
         
         userDiv.innerText = formatStats(user);
     
@@ -528,8 +645,16 @@
       }, 50);
     }
 
-    window.startBattle = async function () {
+    // 執行戰鬥
+    async function executeBattle() {
       if (!checkProgressBeforeBattle()) return;
+      
+      // 檢查冷卻時間
+      const cooldownInfo = checkBattleCooldown(userData?.last_battle);
+      if (!cooldownInfo.ready) {
+        alert(`戰鬥冷卻中，請等待 ${cooldownInfo.remaining} 秒`);
+        return;
+      }
       
       // 顯示戰鬥載入畫面
       showBattleLoading(true);
@@ -545,9 +670,29 @@
 	    dungeon: dungeon,
 	    layer: layer
 	  });
+	  
+	  if (!res.ok) {
+	    const errorData = await res.json();
+	    if (errorData.cooldown_remaining) {
+	      // 如果是冷卻錯誤，更新本地狀態
+	      alert(`戰鬥冷卻中，請等待 ${errorData.cooldown_remaining} 秒`);
+	      const fakeLastBattle = Math.floor(Date.now() / 1000) - (30 - errorData.cooldown_remaining);
+	      initializeBattleButtons(fakeLastBattle);
+	      showBattleLoading(false);
+	      battleBtn.style.display = "inline-block";
+	      return;
+	    }
+	    throw new Error(errorData.error || '戰鬥失敗');
+	  }
+	  
 	  const data = await res.json();
 	  const log = data.battle_log;
 	  if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
+	
+	  // 更新本地使用者資料
+	  if (data.user) {
+	    userData = data.user;
+	  }
 	
 	  // 確保進度條達到 100% 後再隱藏載入畫面
 	  setTimeout(() => {
@@ -555,7 +700,10 @@
 	    playBattleLog(log).then(() => {
 	      if (data.success) {
 	        fetchUser().then(updatedUser => {
+	          userData = updatedUser;
 	          userDiv.innerText = formatStats(updatedUser);
+	          // 初始化冷卻按鈕
+	          initializeBattleButtons(updatedUser.last_battle);
 	        });
 	
 	        if (data.is_last_layer) {
@@ -563,11 +711,16 @@
 	          document.getElementById("leaveBtn").style.display = "inline-block";
 	        } else {
 	          retryBtn.style.display = "inline-block";
-	          retryBtn.onclick = () => startBattle();
 	          nextBtn.style.display = "inline-block";
 	          nextBtn.onclick = () => {
 	            window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
 	          };
+	          
+	          // 初始化重試按鈕的冷卻狀態
+	          const cooldownInfo = checkBattleCooldown(userData?.last_battle);
+	          if (!cooldownInfo.ready) {
+	            updateBattleButton(retryBtn, cooldownInfo.remaining, "再戰一次");
+	          }
 	        }
 	
 	        const winMsg = document.createElement("div");
@@ -611,8 +764,20 @@
 	  showBattleLoading(false);
 	  logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
 	  document.getElementById("leaveBtn").style.display = "inline-block";
+	  battleBtn.style.display = "inline-block";
 	}
-	};
+    }
+
+    // 開始戰鬥函數
+    window.startBattle = executeBattle;
+
+    // 重試戰鬥函數
+    function retryBattle() {
+      hideVictoryEffect();
+      hideDefeatEffect();
+      executeBattle();
+    }
+    window.retryBattle = retryBattle;
 
     function playBattleLog(log) {
       return new Promise((resolve) => {
@@ -655,19 +820,6 @@
     onAuthStateChanged(auth, async (user) => {
 	    if (user) {
 	      await fetchProgress();
-	
-	      retryBtn.onclick = () => {
-	        hideVictoryEffect();
-	        hideDefeatEffect();
-	        startBattle();
-	      };
-	
-	      nextBtn.onclick = () => {
-	        hideVictoryEffect();
-	        hideDefeatEffect();
-	        window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-	      };
-	
 	      loadLayer();
 	    } else {
 	      window.parent.location.href = "/SFL/login.html";
