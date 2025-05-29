@@ -8,6 +8,7 @@ from firebase_admin import credentials, firestore, auth as firebase_auth
 from battle import simulate_battle
 from functools import lru_cache, wraps
 import time
+import re
 
 app = Flask(__name__)
 Compress(app)
@@ -143,7 +144,41 @@ def equips_table():
 def ping():
     return "pong", 200
 
-# 需要驗證的路由
+# 暱稱驗證函數
+def validate_nickname(nickname):
+    """
+    驗證暱稱是否符合規則
+    返回 (is_valid, error_message)
+    """
+    if not nickname:
+        return False, "暱稱不能為空"
+    
+    # 去除前後空格進行驗證
+    nickname = nickname.strip()
+    
+    # 檢查長度
+    if len(nickname) < 2:
+        return False, "暱稱至少需要 2 個字符"
+    
+    if len(nickname) > 12:
+        return False, "暱稱最多 12 個字符"
+    
+    # 檢查允許的字符（中文、英文、數字、底線、連字號、空格）
+    allowed_pattern = re.compile(r'^[\u4e00-\u9fa5a-zA-Z0-9_\-\s]+$')
+    if not allowed_pattern.match(nickname):
+        return False, "暱稱只能包含中文、英文、數字、底線、連字號和空格"
+    
+    # 檢查開頭和結尾不能有空格
+    if nickname.startswith(' ') or nickname.endswith(' '):
+        return False, "暱稱開頭和結尾不能有空格"
+    
+    # 檢查不能包含連續空格
+    if '  ' in nickname:
+        return False, "暱稱不能包含連續空格"
+    
+    return True, ""
+
+
 @app.route("/register", methods=["POST"])
 def register():
     """註冊不需要token，但需要驗證Google登入"""
@@ -154,6 +189,11 @@ def register():
 
     if not user_id or not id_token:
         return jsonify({"error": "缺少必要參數"}), 400
+
+    # 🔒 後端暱稱驗證，防止前端被竄改
+    is_valid, error_message = validate_nickname(nickname)
+    if not is_valid:
+        return jsonify({"error": f"暱稱驗證失敗：{error_message}"}), 400
 
     try:
         # 驗證ID token
@@ -171,14 +211,15 @@ def register():
     if ref.get().exists:
         return jsonify({"error": "使用者已存在"}), 400
 
-    # 檢查 nickname 是否被其他人使用過
-    nickname_conflict = db.collection("users").where("nickname", "==", nickname).get()
+    # 檢查 nickname 是否被其他人使用過（使用 trim 後的暱稱）
+    trimmed_nickname = nickname.strip()
+    nickname_conflict = db.collection("users").where("nickname", "==", trimmed_nickname).get()
     if nickname_conflict:
         return jsonify({"error": "已經有人取過這個名字囉"}), 400
 
     user_data = {
         "user_id": user_id,
-        "nickname": nickname,
+        "nickname": trimmed_nickname,  # 🔧 使用 trim 後的暱稱
         "level": 1,
         "exp": 0,
         "stat_points": 0,
@@ -208,7 +249,7 @@ def register():
     }
 
     ref.set(user_data)
-    return jsonify({"message": f"使用者 {nickname} 建立完成！"})
+    return jsonify({"message": f"使用者 {trimmed_nickname} 建立完成！"})
 
 @app.route("/status", methods=["GET"])
 @require_auth
