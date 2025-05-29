@@ -101,7 +101,15 @@ def apply_drops(db, user_id, drops):
         if random.random() <= drop["rate"]:
             item_id = drop["id"]
             qty = drop["value"]
-            current["items"][item_id] = current["items"].get(item_id, 0) + qty
+            # 🔧 加入道具上限999限制
+            current_amount = current["items"].get(item_id, 0)
+            new_amount = current_amount + qty
+            
+            # 如果新數量超過999，就設定為999
+            if new_amount > 999:
+                current["items"][item_id] = 999
+            else:
+                current["items"][item_id] = new_amount
 
     ref.set(current)
 
