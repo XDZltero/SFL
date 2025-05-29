@@ -56,7 +56,7 @@ def get_equipment_bonus(equipment):
 # 命中計算
 def calculate_hit(attacker_acc, defender_evade, attacker_luck):
     # 命中率 - 迴避率 + 運氣補正，每點 luck +1%
-    hit_chance = attacker_acc - defender_evade + (attacker_luck * 0.01)
+    hit_chance = attacker_acc - defender_evade + (attacker_luck * 0.002)
     hit_chance = min(max(hit_chance, 0.05), 0.99)
     return random.random() < hit_chance
 
@@ -93,20 +93,69 @@ def get_element_multiplier(attacker_elements, defender_elements):
 def get_user_item_ref(db, user_id):
     return db.collection("user_items").document(user_id)
 
-def apply_drops(db, user_id, drops):
+def apply_drops(db, user_id, drops, user_luck=0):
     ref = get_user_item_ref(db, user_id)
     snap = ref.get()
     current = snap.to_dict() if snap.exists else {"id": user_id, "items": {}}
 
+    # 🎲 第一輪：基礎掉落（有幸運加成）
+    # 每點幸運 +0.25% 乘法加成，上限50%
+    luck_multiplier = 1 + (user_luck * 0.0025)
+    luck_multiplier = min(luck_multiplier, 1.5)  # 上限1.5倍
+    
+    # 🍀 第二輪：額外掉落機率計算（純幸運）
+    # 每5點幸運 +1% 額外掉落機率，上限25%
+    extra_drop_chance = min(user_luck * 0.002, 0.25)  # 每點幸運+0.2%，上限25%
+    
+    # 記錄第一輪成功掉落的道具
+    first_round_drops = []
+
+    # 🎯 第一輪：基礎掉落判定
     for drop in drops:
-        if random.random() <= drop["rate"]:
+        # 計算幸運值影響後的掉落率
+        enhanced_rate = min(drop["rate"] * luck_multiplier, 0.95)  # 上限95%
+        
+        if random.random() <= enhanced_rate:
             item_id = drop["id"]
             qty = drop["value"]
-            # 🔧 加入道具上限999限制
             current_amount = current["items"].get(item_id, 0)
             new_amount = current_amount + qty
             
-            # 如果新數量超過999，就設定為999
+            if new_amount > 999:
+                current["items"][item_id] = 999
+            else:
+                current["items"][item_id] = new_amount
+            
+            # 記錄成功掉落的道具，供第二輪使用
+            first_round_drops.append(drop)
+
+    # 🎁 第二輪：額外掉落判定（只針對第一輪掉落的道具）
+    if extra_drop_chance > 0 and first_round_drops:
+        for drop in first_round_drops:
+            # 只有在第一輪掉落的道具才有機會額外掉落
+            if random.random() <= extra_drop_chance:
+                item_id = drop["id"]
+                qty = drop["value"]
+                current_amount = current["items"].get(item_id, 0)
+                new_amount = current_amount + qty
+                
+                if new_amount > 999:
+                    current["items"][item_id] = 999
+                else:
+                    current["items"][item_id] = new_amount
+
+    ref.set(current)
+
+    # 🆕 新增：幸運值額外掉落判定
+    for drop in drops:
+        # 計算幸運值帶來的額外掉落機會
+        extra_chance = drop["rate"] * (luck_multiplier - 1)
+        if extra_chance > 0 and random.random() <= extra_chance:
+            item_id = drop["id"]
+            qty = drop["value"]
+            current_amount = current["items"].get(item_id, 0)
+            new_amount = current_amount + qty
+            
             if new_amount > 999:
                 current["items"][item_id] = 999
             else:
@@ -807,7 +856,7 @@ def simulate_battle(user, monster, user_skill_dict):
     if outcome == "win":
         user["exp"] += monster["exp"]
         leveled = check_level_up(user)
-        apply_drops(db, user["user_id"], monster["drops"])
+        apply_drops(db, user["user_id"], monster["drops"], user_battle_stats["luck"])
         rewards = {
             "exp": monster["exp"],
             "leveled_up": leveled,
