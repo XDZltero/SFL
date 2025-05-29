@@ -651,14 +651,24 @@
       
       console.log("執行戰鬥，當前使用者資料:", userData); // 調試信息
       
-      // 檢查冷卻時間 - 使用伺服器提供的狀態
-      const remaining = userData?.battle_cooldown_remaining || 0;
-      const isReady = userData?.battle_ready !== false;
-      
-      console.log("戰鬥前檢查 - 冷卻剩餘:", remaining, "是否準備好:", isReady); // 調試信息
-      
-      if (!isReady && remaining > 0) {
-        alert(`戰鬥冷卻中，請等待 ${Math.ceil(remaining)} 秒`);
+      // 🔒 戰鬥前再次從伺服器確認狀態
+      try {
+        const latestUser = await fetchUser();
+        userData = latestUser;
+        
+        const remaining = userData?.battle_cooldown_remaining || 0;
+        const isReady = userData?.battle_ready !== false;
+        
+        console.log("戰鬥前最新檢查 - 冷卻剩餘:", remaining, "是否準備好:", isReady); // 調試信息
+        
+        if (!isReady && remaining > 0) {
+          alert(`戰鬥冷卻中，請等待 ${Math.ceil(remaining)} 秒`);
+          initializeBattleButtons(userData); // 更新按鈕狀態
+          return;
+        }
+      } catch (error) {
+        console.error("獲取最新狀態失敗:", error);
+        alert("無法確認戰鬥狀態，請重新整理頁面");
         return;
       }
       
