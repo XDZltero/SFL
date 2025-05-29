@@ -68,7 +68,7 @@ def check_battle_cooldown(user_data):
         return True, 0
     else:
         remaining = cooldown_seconds - time_diff
-        return False, max(0, int(remaining))
+        return False, max(0, remaining)  # 保持浮點數精度
 
 # 快取靜態副本資料（保持原有的快取函數）
 @lru_cache()
@@ -226,6 +226,11 @@ def status():
     if "last_battle" not in user_data:
         user_data["last_battle"] = 0
         db.collection("users").document(user_id).set({"last_battle": 0}, merge=True)
+    
+    # 計算戰鬥冷卻剩餘時間
+    is_ready, remaining_seconds = check_battle_cooldown(user_data)
+    user_data["battle_cooldown_remaining"] = remaining_seconds
+    user_data["battle_ready"] = is_ready
     
     return jsonify(user_data)
 
