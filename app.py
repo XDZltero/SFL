@@ -7,6 +7,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
 from battle import simulate_battle
 from functools import lru_cache, wraps
+import time
 
 app = Flask(__name__)
 Compress(app)
@@ -48,6 +49,27 @@ def require_auth(f):
 
 def user_ref(user_id):
     return db.collection("users").document(user_id)
+
+# 檢查戰鬥冷卻時間
+def check_battle_cooldown(user_data):
+    """
+    檢查戰鬥冷卻時間
+    返回 (is_ready, remaining_seconds)
+    """
+    last_battle = user_data.get("last_battle")
+    if not last_battle:
+        return True, 0
+    
+    # 使用 UTC 時間戳
+    current_timestamp = time.time()
+    cooldown_seconds = 30
+    
+    time_diff = current_timestamp - last_battle
+    if time_diff >= cooldown_seconds:
+        return True, 0
+    else:
+        remaining = cooldown_seconds - time_diff
+        return False, int(remaining) + 1  # 加1確保不會有小數點問題
 
 # 快取靜態副本資料（保持原有的快取函數）
 @lru_cache()
@@ -162,6 +184,7 @@ def register():
         "exp": 0,
         "stat_points": 0,
         "skill_points": 0,
+        "last_battle": 0,  # 初始化戰鬥冷卻時間
         "base_stats": {
             "hp": 100,
             "attack": 20,
@@ -199,6 +222,12 @@ def status():
         return jsonify({"error": "找不到使用者"}), 404
 
     user_data = doc.to_dict()
+    
+    # 如果沒有 last_battle 欄位，初始化為 0
+    if "last_battle" not in user_data:
+        user_data["last_battle"] = 0
+        db.collection("users").document(user_id).set({"last_battle": 0}, merge=True)
+    
     return jsonify(user_data)
 
 @app.route("/monster", methods=["GET"])
@@ -231,6 +260,14 @@ def battle():
         user_data = user_doc.to_dict()
         user_data["user_id"] = user_id
 
+        # 檢查戰鬥冷卻時間
+        is_ready, remaining_seconds = check_battle_cooldown(user_data)
+        if not is_ready:
+            return jsonify({
+                "error": f"戰鬥冷卻中，請等待 {remaining_seconds} 秒",
+                "cooldown_remaining": remaining_seconds
+            }), 400
+
         mon_doc = db.collection("monsters").document(monster_id).get()
         if not mon_doc.exists:
             return jsonify({"error": "找不到怪物"}), 404
@@ -249,6 +286,11 @@ def battle():
 
         # 執行戰鬥
         result = simulate_battle(user_data, monster_data, user_skill_dict)
+        
+        # 更新 last_battle 時間
+        current_timestamp = time.time()
+        result["user"]["last_battle"] = current_timestamp
+        
         db.collection("users").document(user_id).set(result["user"])
 
         return jsonify(result)
@@ -276,6 +318,14 @@ def battle_dungeon():
 
         user_data = user_doc.to_dict()
         user_data["user_id"] = user_id
+
+        # 檢查戰鬥冷卻時間
+        is_ready, remaining_seconds = check_battle_cooldown(user_data)
+        if not is_ready:
+            return jsonify({
+                "error": f"戰鬥冷卻中，請等待 {remaining_seconds} 秒",
+                "cooldown_remaining": remaining_seconds
+            }), 400
 
         with open("parameter/dungeons.json", encoding="utf-8") as f:
             dungeons = json.load(f)
@@ -313,6 +363,11 @@ def battle_dungeon():
         
         # 傳入 simulate_battle
         result = simulate_battle(user_data, monster_data, user_skill_dict)
+        
+        # 更新 last_battle 時間
+        current_timestamp = time.time()
+        result["user"]["last_battle"] = current_timestamp
+        
         db.collection("users").document(user_id).set(result["user"])
 
         user_key = user_id.replace(".", "_")
