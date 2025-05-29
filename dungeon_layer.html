@@ -786,7 +786,8 @@
 			    exp_luck_bonus, 
 			    leveled_up, 
 			    actual_drops, 
-			    drop_luck_bonus 
+			    drop_luck_bonus,
+			    drops 
 			  } = data.rewards;
 			  
 			  fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
@@ -808,14 +809,16 @@
 			    
 			    let dropText = "";
 			    
-			    // 🎯 顯示實際獲得的物品
-			    if (actual_drops && Object.keys(actual_drops).length > 0) {
+			    // 🎯 處理掉落物品顯示
+			    const hasActualDrops = actual_drops && Object.keys(actual_drops).length > 0;
+			    const originalDrops = drops || [];
+			    
+			    if (hasActualDrops) {
 			      dropText += "<br><strong>📦 獲得物品：</strong>";
 			      
 			      for (const [itemId, quantity] of Object.entries(actual_drops)) {
 			        const meta = itemMap[itemId] || { name: itemId, special: 0 };
 			        const luckBonus = drop_luck_bonus[itemId] || 0;
-			        const baseQuantity = quantity - luckBonus;
 			        
 			        let itemText = "";
 			        
@@ -836,7 +839,24 @@
 			        dropText += itemText;
 			      }
 			    } else {
-			      dropText += "<br>本次沒有掉落物品";
+			      // ✅ 修正：檢查是否因為背包滿了而無法獲得物品
+			      let hasFullInventoryItems = false;
+			      
+			      // 檢查原始掉落表中100%掉落的物品
+			      for (const drop of originalDrops) {
+			        if (drop.rate >= 1.0) {
+			          // 這是100%掉落的物品，但沒有在actual_drops中
+			          // 很可能是背包滿了
+			          hasFullInventoryItems = true;
+			          break;
+			        }
+			      }
+			      
+			      if (hasFullInventoryItems) {
+			        dropText += "<br><span style='color:orange'>⚠️ 背包已滿，部分物品無法獲得</span>";
+			      } else {
+			        dropText += "<br>本次沒有掉落物品";
+			      }
 			    }
 			    
 			    rewardLog.innerHTML = expText + dropText;
