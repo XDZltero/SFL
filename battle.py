@@ -2,6 +2,7 @@ import random
 from firebase_admin import firestore
 import json
 import copy
+import time
 
 # 獲得裝備卡片數值
 with open("parameter/equips.json", "r", encoding="utf-8") as f:
@@ -799,6 +800,10 @@ def simulate_battle(user, monster, user_skill_dict):
 
     outcome = "win" if user_hp > 0 and mon_hp <= 0 else "lose"
     rewards = {}
+    
+    # ✅ 更新最後戰鬥時間戳（無論勝負）
+    user["last_battle"] = time.time()
+    
     if outcome == "win":
         user["exp"] += monster["exp"]
         leveled = check_level_up(user)
