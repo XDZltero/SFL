@@ -34,7 +34,15 @@
 
     <div class="nickname-section" id="nicknameSection">
       <p>👋 歡迎新冒險者！請輸入你的暱稱：</p>
-      <input class="nickname-input" id="nickname" placeholder="輸入暱稱" />
+      <input 
+        class="nickname-input" 
+        id="nickname" 
+        placeholder="輸入暱稱 (2-12個字符)" 
+        maxlength="12"
+        oninput="validateNickname()" 
+      />
+      <div class="nickname-counter" id="nicknameCounter">0 / 12</div>
+      <div class="nickname-error" id="nicknameError"></div>
       <button class="login-button" id="registerButton" onclick="completeRegistration(event)">完成註冊</button>
     </div>
 
@@ -52,6 +60,80 @@
     
     // 🔒 防重複點擊標誌
     let isAuthInProgress = false;
+    
+    // 暱稱驗證設定
+    const NICKNAME_CONFIG = {
+      minLength: 2,
+      maxLength: 12,
+      allowedChars: /^[\u4e00-\u9fa5a-zA-Z0-9_\-\s]+$/, // 中文、英文、數字、底線、連字號、空格
+    };
+
+    // 計算字符長度（中文算1個字符）
+    function getCharacterCount(str) {
+      return str.length;
+    }
+
+    // 驗證暱稱
+    function validateNickname() {
+      const nicknameInput = document.getElementById("nickname");
+      const counter = document.getElementById("nicknameCounter");
+      const errorDiv = document.getElementById("nicknameError");
+      const registerBtn = document.getElementById("registerButton");
+      
+      const nickname = nicknameInput.value.trim();
+      const length = getCharacterCount(nickname);
+      
+      // 更新字數統計
+      counter.textContent = `${length} / ${NICKNAME_CONFIG.maxLength}`;
+      counter.style.color = length > NICKNAME_CONFIG.maxLength ? "#ff6b6b" : "#ffd93d";
+      
+      // 清除之前的錯誤樣式
+      nicknameInput.style.borderColor = "rgba(0, 255, 255, 0.3)";
+      errorDiv.textContent = "";
+      errorDiv.style.display = "none";
+      
+      let isValid = true;
+      let errorMessage = "";
+      
+      if (nickname.length === 0) {
+        // 空白時不顯示錯誤，但禁用註冊
+        isValid = false;
+      } else if (length < NICKNAME_CONFIG.minLength) {
+        isValid = false;
+        errorMessage = `暱稱至少需要 ${NICKNAME_CONFIG.minLength} 個字符`;
+      } else if (length > NICKNAME_CONFIG.maxLength) {
+        isValid = false;
+        errorMessage = `暱稱最多 ${NICKNAME_CONFIG.maxLength} 個字符`;
+      } else if (!NICKNAME_CONFIG.allowedChars.test(nickname)) {
+        isValid = false;
+        errorMessage = "暱稱只能包含中文、英文、數字、底線、連字號和空格";
+      } else if (nickname.startsWith(" ") || nickname.endsWith(" ")) {
+        isValid = false;
+        errorMessage = "暱稱開頭和結尾不能有空格";
+      } else if (nickname.includes("  ")) {
+        isValid = false;
+        errorMessage = "暱稱不能包含連續空格";
+      }
+      
+      // 顯示錯誤訊息
+      if (errorMessage) {
+        nicknameInput.style.borderColor = "rgba(255, 107, 107, 0.6)";
+        errorDiv.textContent = errorMessage;
+        errorDiv.style.display = "block";
+      }
+      
+      // 控制註冊按鈕狀態
+      if (!isAuthInProgress) {
+        registerBtn.disabled = !isValid;
+        if (!isValid && nickname.length > 0) {
+          registerBtn.style.opacity = "0.5";
+        } else {
+          registerBtn.style.opacity = "1";
+        }
+      }
+      
+      return isValid;
+    }
 
     // 創建粒子效果
     function createParticles() {
@@ -292,6 +374,15 @@
             document.getElementById("nicknameSection").style.display = "block";
             window.__currentUserEmail = user.email;
             window.__currentIdToken = idToken;
+            
+            // 🔧 初始化暱稱驗證
+            setTimeout(() => {
+              const nicknameInput = document.getElementById("nickname");
+              if (nicknameInput) {
+                nicknameInput.focus();
+                validateNickname(); // 初始化按鈕狀態
+              }
+            }, 100);
           }
           
         } catch (err) {
