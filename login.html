@@ -161,6 +161,11 @@
       <button onclick="completeRegistration()">完成註冊</button>
     </div>
 
+    <div id="manualRedirect" style="display: none;">
+      <p style="color: #00796b; font-weight: bold;">✅ 登入成功！</p>
+      <button onclick="manualJump()" style="background: #4CAF50;">進入遊戲</button>
+    </div>
+
     <div id="log">準備登入系統...</div>
     
     <div class="debug-info" id="debugInfo">
@@ -201,6 +206,48 @@
         screenSize: `${window.innerWidth}x${window.innerHeight}`,
         touchSupport: 'ontouchstart' in window
       });
+    }
+
+    function showManualRedirect() {
+      document.getElementById("manualRedirect").style.display = "block";
+      document.getElementById("loginButton").style.display = "none";
+    }
+
+    function manualJump() {
+      log("🔄 手動跳轉到遊戲...");
+      
+      // 多種跳轉方式
+      const methods = [
+        () => window.location.href = "/SFL/",
+        () => window.location.replace("/SFL/"),
+        () => window.location.assign("/SFL/"),
+        () => window.open("/SFL/", "_self")
+      ];
+      
+      let methodIndex = 0;
+      function tryNextMethod() {
+        if (methodIndex < methods.length) {
+          try {
+            methods[methodIndex]();
+            methodIndex++;
+            // 如果3秒後還在登入頁面，嘗試下一個方法
+            setTimeout(() => {
+              if (window.location.pathname.includes('login')) {
+                tryNextMethod();
+              }
+            }, 3000);
+          } catch (error) {
+            log(`跳轉方法 ${methodIndex + 1} 失敗: ${error.message}`);
+            methodIndex++;
+            tryNextMethod();
+          }
+        } else {
+          log("❌ 所有跳轉方法都失敗了，請手動輸入網址：https://xdzltero.github.io/SFL/");
+          alert("自動跳轉失敗，請手動前往：https://xdzltero.github.io/SFL/");
+        }
+      }
+      
+      tryNextMethod();
     }
 
     function showLoading(show) {
@@ -322,9 +369,28 @@
             const data = await res.json();
             log("✅ 驗證成功，正在跳轉...");
             
-            setTimeout(() => {
+            // 立即跳轉，不使用 setTimeout
+            try {
               window.location.href = "/SFL/";
-            }, 1000);
+              // 備用跳轉方法
+              setTimeout(() => {
+                if (window.location.pathname.includes('login')) {
+                  window.location.replace("/SFL/");
+                }
+              }, 500);
+              
+              // 如果3秒後還在登入頁面，顯示手動跳轉按鈕
+              setTimeout(() => {
+                if (window.location.pathname.includes('login')) {
+                  log("⚠️ 自動跳轉可能失敗，請點擊下方按鈕手動進入");
+                  showManualRedirect();
+                }
+              }, 3000);
+              
+            } catch (error) {
+              log("❌ 跳轉失敗，請手動點擊下方按鈕");
+              showManualRedirect();
+            }
           } else {
             const errorData = await res.json();
             log("⚠️ 帳號未註冊或需要完成設定");
@@ -383,9 +449,29 @@
     
         if (res.ok) {
           log("✅ 註冊成功！正在跳轉...");
-          setTimeout(() => {
+          
+          // 立即跳轉，不使用 setTimeout
+          try {
             window.location.href = "/SFL/";
-          }, 1000);
+            // 備用跳轉方法
+            setTimeout(() => {
+              if (window.location.pathname.includes('login')) {
+                window.location.replace("/SFL/");
+              }
+            }, 500);
+            
+            // 如果3秒後還在登入頁面，顯示手動跳轉按鈕
+            setTimeout(() => {
+              if (window.location.pathname.includes('login')) {
+                log("⚠️ 自動跳轉可能失敗，請點擊下方按鈕手動進入");
+                showManualRedirect();
+              }
+            }, 3000);
+            
+          } catch (error) {
+            log("❌ 跳轉失敗，請手動點擊下方按鈕");
+            showManualRedirect();
+          }
         } else {
           log("❌ 註冊失敗: " + (data.error || "未知錯誤"));
           alert(data.error || "註冊失敗");
