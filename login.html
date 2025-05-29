@@ -24,8 +24,10 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
     }
 
     #loginBox {
@@ -33,7 +35,8 @@
       padding: 2em 2.5em;
       border-radius: 10px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-      width: 360px;
+      width: 100%;
+      max-width: 400px;
       text-align: center;
       animation: fadeIn 0.4s ease;
     }
@@ -41,17 +44,20 @@
     h1 {
       margin-bottom: 1em;
       color: #00796b;
+      font-size: 1.5em;
     }
 
     button {
       background: #00796b;
       color: white;
       border: none;
-      padding: 10px 16px;
-      border-radius: 4px;
+      padding: 12px 20px;
+      border-radius: 6px;
       cursor: pointer;
       font-size: 1em;
       margin-top: 1em;
+      width: 100%;
+      transition: background-color 0.3s;
     }
 
     button:hover {
@@ -59,12 +65,13 @@
     }
 
     input {
-      padding: 8px;
+      padding: 12px;
       margin-top: 1em;
       width: 100%;
       border: 1px solid #ccc;
       border-radius: 4px;
       font-size: 1em;
+      box-sizing: border-box;
     }
 
     #nicknameSection {
@@ -77,6 +84,11 @@
       font-size: 0.9em;
       color: #444;
       white-space: pre-wrap;
+      text-align: left;
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      min-height: 40px;
     }
 
     @keyframes fadeIn {
@@ -95,6 +107,12 @@
       align-items: center;
       z-index: 9999;
     }
+
+    .device-info {
+      font-size: 0.8em;
+      color: #666;
+      margin-bottom: 1em;
+    }
   </style>
 </head>
 <body>
@@ -102,7 +120,8 @@
 
   <div id="loginBox">
     <h1>🔐 Dungeon，登入</h1>
-    <button onclick="signInWithGoogle()">使用 Google 登入</button>
+    <div class="device-info" id="deviceInfo">檢測設備中...</div>
+    <button onclick="signInWithGoogle()" id="loginButton">使用 Google 登入</button>
 
     <div id="nicknameSection">
       <p>👋 歡迎新冒險者！請輸入你的暱稱：</p>
@@ -110,18 +129,34 @@
       <button onclick="completeRegistration()">完成註冊</button>
     </div>
 
-    <div id="log"></div>
+    <div id="log">準備登入系統...</div>
   </div>
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
 
+    // 檢測是否為手機設備
+    function isMobileDevice() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+             (window.innerWidth <= 768) ||
+             ('ontouchstart' in window);
+    }
+
+    // 更新設備資訊顯示
+    function updateDeviceInfo() {
+      const deviceInfo = document.getElementById("deviceInfo");
+      const isMobile = isMobileDevice();
+      deviceInfo.textContent = isMobile ? "📱 手機設備 - 使用重導向登入" : "💻 桌面設備 - 使用彈出視窗登入";
+    }
+
     function showLoading(show) {
       document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
     }
 
+    // 監聽登入狀態變化
     firebase.auth().onAuthStateChanged(async (user) => {
       if (user) {
+        log("✅ 已登入，驗證使用者狀態...");
         showLoading(true);
         const email = user.email;
         try {
@@ -137,61 +172,80 @@
           
           const data = await res.json();
           if (res.ok) {
-            window.location.href = "/SFL/";
+            log("🎉 登入成功，正在跳轉...");
+            setTimeout(() => {
+              window.location.href = "/SFL/";
+            }, 1000);
+          } else {
+            log("⚠️ 尚未註冊，請輸入暱稱");
+            document.getElementById("nicknameSection").style.display = "block";
+            window.__currentUserEmail = email;
+            window.__currentIdToken = idToken;
           }
         } catch (err) {
           log("⚠️ 錯誤：" + err.message);
         } finally {
           showLoading(false);
         }
+      } else {
+        // 檢查是否是redirect回來的結果
+        handleRedirectResult();
       }
     });
 
-    async function signInWithGoogle() {
-      const provider = new firebase.auth.GoogleAuthProvider();
+    // 處理redirect登入結果
+    async function handleRedirectResult() {
       try {
-        showLoading(true);
-        const result = await firebase.auth().signInWithPopup(provider);
-        const user = result.user;
-        const email = user.email;
-        log(`✅ 登入成功：${email}`);
-        await checkUserExists(email);
+        const result = await firebase.auth().getRedirectResult();
+        if (result.user) {
+          // 用戶已通過redirect登入
+          log("✅ 重導向登入成功");
+          // 這裡不需要做額外處理，onAuthStateChanged會處理
+        } else if (result.credential === null && !firebase.auth().currentUser) {
+          // 沒有進行中的登入流程
+          log("👋 請點擊下方按鈕登入");
+        }
       } catch (error) {
-        log("❌ 登入失敗：" + error.message);
-      } finally {
-        showLoading(false);
+        log("❌ 登入過程發生錯誤：" + error.message);
+        console.error("Redirect result error:", error);
       }
     }
 
-    async function checkUserExists(email) {
+    async function signInWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      const isMobile = isMobileDevice();
+      
       try {
         showLoading(true);
+        log("🔄 正在進行 Google 登入...");
         
-        // 取得當前使用者的ID Token
-        const currentUser = firebase.auth().currentUser;
-        const idToken = await currentUser.getIdToken();
-        
-        const res = await fetch(`${API_BASE}/status`, {
-          headers: {
-            'Authorization': `Bearer ${idToken}`
-          }
-        });
-        
-        const data = await res.json();
-
-        if (res.status === 404) {
-          log("⚠️ 尚未註冊，請輸入暱稱");
-          document.getElementById("nicknameSection").style.display = "block";
-          window.__currentUserEmail = email;
-          window.__currentIdToken = idToken;
-        } else if (res.ok) {
-          log("🎉 登入成功，正在導向主頁...");
-          setTimeout(() => window.location.href = "/SFL/", 1000);
+        if (isMobile) {
+          // 手機使用redirect
+          log("📱 使用重導向方式登入...");
+          await firebase.auth().signInWithRedirect(provider);
+          // redirect會跳轉頁面，所以這裡不會繼續執行
         } else {
-          log("❌ 錯誤：" + (data.error || "未知錯誤"));
+          // 桌面使用popup
+          log("💻 使用彈出視窗登入...");
+          const result = await firebase.auth().signInWithPopup(provider);
+          const user = result.user;
+          const email = user.email;
+          log(`✅ 登入成功：${email}`);
+          // onAuthStateChanged會處理後續流程
         }
-      } catch (err) {
-        log("❌ 錯誤：" + err.message);
+      } catch (error) {
+        log("❌ 登入失敗：" + error.message);
+        console.error("Sign in error:", error);
+        
+        // 如果popup被阻擋，嘗試使用redirect
+        if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+          log("🔄 彈出視窗被阻擋，改用重導向方式...");
+          try {
+            await firebase.auth().signInWithRedirect(provider);
+          } catch (redirectError) {
+            log("❌ 重導向登入也失敗：" + redirectError.message);
+          }
+        }
       } finally {
         showLoading(false);
       }
@@ -202,10 +256,14 @@
       const idToken = window.__currentIdToken;
       const nickname = document.getElementById("nickname").value.trim();
     
-      if (!nickname) return alert("請輸入暱稱");
+      if (!nickname) {
+        alert("請輸入暱稱");
+        return;
+      }
     
       try {
         showLoading(true);
+        log("🔄 正在註冊...");
     
         const res = await fetch(`${API_BASE}/register`, {
           method: "POST",
@@ -215,7 +273,7 @@
           body: JSON.stringify({ 
             user: email, 
             nickname: nickname,
-            idToken: idToken  // 傳送ID Token進行驗證
+            idToken: idToken
           })
         });
     
@@ -223,14 +281,18 @@
     
         if (!res.ok) {
           alert(data.error || "註冊失敗");
+          log("❌ 註冊失敗：" + (data.error || "未知錯誤"));
           return;
         }
     
-        alert(data.message);
-        window.location.href = "index.html";
+        log("✅ 註冊成功！正在跳轉...");
+        setTimeout(() => {
+          window.location.href = "/SFL/";
+        }, 1000);
     
       } catch (err) {
         console.error("❌ 發生例外錯誤：", err);
+        log("❌ 註冊過程發生錯誤，請稍後再試");
         alert("發生錯誤，請稍後再試。");
       } finally {
         showLoading(false);
@@ -238,8 +300,16 @@
     }
 
     function log(msg) {
-      document.getElementById("log").innerText = msg;
+      const logEl = document.getElementById("log");
+      const timestamp = new Date().toLocaleTimeString();
+      logEl.textContent = `[${timestamp}] ${msg}`;
     }
+
+    // 頁面載入完成後初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      updateDeviceInfo();
+      log("🚀 系統初始化完成");
+    });
   </script>
 </body>
 </html>
