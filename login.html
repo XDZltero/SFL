@@ -2,11 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>登入頁面</title>
   <link rel="icon" href="favicon.ico" />
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <!-- 更新到最新版本的 Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -58,10 +59,16 @@
       margin-top: 1em;
       width: 100%;
       transition: background-color 0.3s;
+      min-height: 44px; /* 確保觸控友善 */
     }
 
     button:hover {
       background: #005a4f;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
     }
 
     input {
@@ -72,6 +79,7 @@
       border-radius: 4px;
       font-size: 1em;
       box-sizing: border-box;
+      min-height: 44px; /* 確保觸控友善 */
     }
 
     #nicknameSection {
@@ -89,6 +97,8 @@
       padding: 10px;
       border-radius: 4px;
       min-height: 40px;
+      max-height: 200px;
+      overflow-y: auto;
     }
 
     @keyframes fadeIn {
@@ -113,6 +123,28 @@
       color: #666;
       margin-bottom: 1em;
     }
+
+    .debug-info {
+      font-size: 0.7em;
+      color: #999;
+      margin-top: 1em;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      text-align: left;
+    }
+
+    /* 手機優化 */
+    @media (max-width: 480px) {
+      #loginBox {
+        margin: 10px;
+        padding: 1.5em;
+      }
+      
+      button, input {
+        font-size: 16px; /* 防止 iOS 縮放 */
+      }
+    }
   </style>
 </head>
 <body>
@@ -130,127 +162,191 @@
     </div>
 
     <div id="log">準備登入系統...</div>
+    
+    <div class="debug-info" id="debugInfo">
+      User Agent: <span id="userAgent"></span><br>
+      Support Touch: <span id="touchSupport"></span><br>
+      Screen Size: <span id="screenSize"></span>
+    </div>
   </div>
 
   <script>
     const API_BASE = "https://sfl-9cb8.onrender.com";
 
-    // 檢測是否為手機設備
+    // 增強設備檢測
     function isMobileDevice() {
-      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-             (window.innerWidth <= 768) ||
-             ('ontouchstart' in window);
+      const userAgent = navigator.userAgent;
+      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(userAgent);
+      const isSmallScreen = window.innerWidth <= 768 && window.innerHeight <= 1024;
+      const hasTouchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      // 更新調試資訊
+      document.getElementById('userAgent').textContent = userAgent.substring(0, 50) + '...';
+      document.getElementById('touchSupport').textContent = hasTouchSupport ? 'Yes' : 'No';
+      document.getElementById('screenSize').textContent = `${window.innerWidth}x${window.innerHeight}`;
+      
+      return isMobileUA || (isSmallScreen && hasTouchSupport);
     }
 
     // 更新設備資訊顯示
     function updateDeviceInfo() {
       const deviceInfo = document.getElementById("deviceInfo");
       const isMobile = isMobileDevice();
-      deviceInfo.textContent = isMobile ? "📱 手機登入" : "💻 電腦登入";
+      deviceInfo.textContent = isMobile ? "📱 手機登入模式" : "💻 電腦登入模式";
+      
+      // 記錄到控制台方便調試
+      console.log('Device Detection:', {
+        isMobile,
+        userAgent: navigator.userAgent,
+        screenSize: `${window.innerWidth}x${window.innerHeight}`,
+        touchSupport: 'ontouchstart' in window
+      });
     }
 
     function showLoading(show) {
       document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
+      document.getElementById("loginButton").disabled = show;
     }
 
-    // 監聽登入狀態變化
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (user) {
-        log("✅ 已登入，驗證使用者狀態...");
-        showLoading(true);
-        const email = user.email;
-        try {
-          // 取得ID Token
-          const idToken = await user.getIdToken();
-          
-          // 使用token請求狀態
-          const res = await fetch(`${API_BASE}/status`, {
-            headers: {
-              'Authorization': `Bearer ${idToken}`
-            }
-          });
-          
-          const data = await res.json();
-          if (res.ok) {
-            log("登入成功，正在跳轉...");
-            setTimeout(() => {
-              window.location.href = "/SFL/";
-            }, 1000);
-          } else {
-            log("⚠️ 尚未註冊，請輸入暱稱");
-            document.getElementById("nicknameSection").style.display = "block";
-            window.__currentUserEmail = email;
-            window.__currentIdToken = idToken;
-          }
-        } catch (err) {
-          log("⚠️ 錯誤：" + err.message);
-        } finally {
-          showLoading(false);
-        }
-      } else {
-        // 檢查是否是redirect回來的結果
-        handleRedirectResult();
-      }
-    });
-
-    // 處理redirect登入結果
-    async function handleRedirectResult() {
-      try {
-        const result = await firebase.auth().getRedirectResult();
-        if (result.user) {
-          // 用戶已通過redirect登入
-          log("✅ 重導向登入成功");
-          // 這裡不需要做額外處理，onAuthStateChanged會處理
-        } else if (result.credential === null && !firebase.auth().currentUser) {
-          // 沒有進行中的登入流程
-          log("請點擊按鈕登入");
-        }
-      } catch (error) {
-        log("❌ 登入過程發生錯誤：" + error.message);
-        console.error("Redirect result error:", error);
-      }
+    function log(msg) {
+      const logEl = document.getElementById("log");
+      const timestamp = new Date().toLocaleTimeString();
+      const newMsg = `[${timestamp}] ${msg}\n`;
+      logEl.textContent += newMsg;
+      logEl.scrollTop = logEl.scrollHeight;
+      
+      // 同時記錄到控制台
+      console.log(`[LOGIN] ${msg}`);
     }
 
+    // 改進的登入函數 - 優先使用 popup，失敗時才用 redirect
     async function signInWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
       const isMobile = isMobileDevice();
       
+      // 設置額外的作用域（可選）
+      provider.addScope('email');
+      provider.addScope('profile');
+      
       try {
         showLoading(true);
-        log("🔄 正在進行 Google 登入...");
+        log("🔄 開始 Google 登入流程...");
+        log(`📋 設備類型: ${isMobile ? '手機' : '電腦'}`);
+        
+        let result;
         
         if (isMobile) {
-          // 手機使用redirect
-          log("📱 使用重導向方式登入...");
-          await firebase.auth().signInWithRedirect(provider);
-          // redirect會跳轉頁面，所以這裡不會繼續執行
-        } else {
-          // 桌面使用popup
-          log("💻 使用彈出視窗登入...");
-          const result = await firebase.auth().signInWithPopup(provider);
-          const user = result.user;
-          const email = user.email;
-          log(`✅ 登入成功：${email}`);
-          // onAuthStateChanged會處理後續流程
-        }
-      } catch (error) {
-        log("❌ 登入失敗：" + error.message);
-        console.error("Sign in error:", error);
-        
-        // 如果popup被阻擋，嘗試使用redirect
-        if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-          log("🔄 彈出視窗被阻擋，改用重導向方式...");
+          // 手機：先嘗試 popup，失敗則用 redirect
           try {
-            await firebase.auth().signInWithRedirect(provider);
-          } catch (redirectError) {
-            log("❌ 重導向登入也失敗：" + redirectError.message);
+            log("📱 嘗試彈出視窗登入...");
+            result = await firebase.auth().signInWithPopup(provider);
+            log("✅ 彈出視窗登入成功");
+          } catch (popupError) {
+            log(`❌ 彈出視窗失敗: ${popupError.message}`);
+            
+            if (popupError.code === 'auth/popup-blocked' || 
+                popupError.code === 'auth/popup-closed-by-user' ||
+                popupError.code === 'auth/cancelled-popup-request') {
+              log("🔄 改用重導向方式...");
+              await firebase.auth().signInWithRedirect(provider);
+              return; // redirect 會跳轉頁面
+            } else {
+              throw popupError;
+            }
           }
+        } else {
+          // 電腦：直接使用 popup
+          log("💻 使用彈出視窗登入...");
+          result = await firebase.auth().signInWithPopup(provider);
         }
+        
+        if (result && result.user) {
+          log(`✅ 登入成功: ${result.user.email}`);
+        }
+        
+      } catch (error) {
+        log(`❌ 登入失敗: ${error.message}`);
+        console.error("詳細錯誤:", error);
+        
+        // 根據錯誤類型提供不同的處理
+        if (error.code === 'auth/network-request-failed') {
+          log("🌐 網路連線問題，請檢查網路後重試");
+        } else if (error.code === 'auth/too-many-requests') {
+          log("⏳ 請求過於頻繁，請稍後再試");
+        } else if (error.code === 'auth/unauthorized-domain') {
+          log("🚫 網域未授權，請聯繫管理員");
+        }
+        
       } finally {
         showLoading(false);
       }
     }
 
+    // 處理 redirect 結果
+    async function handleRedirectResult() {
+      try {
+        log("🔍 檢查重導向結果...");
+        const result = await firebase.auth().getRedirectResult();
+        
+        if (result && result.user) {
+          log("✅ 重導向登入成功");
+        } else if (result && result.credential === null) {
+          log("📋 等待使用者登入");
+        }
+      } catch (error) {
+        log("❌ 處理重導向結果時發生錯誤: " + error.message);
+        console.error("Redirect error:", error);
+      }
+    }
+
+    // 監聽登入狀態變化
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        log("✅ 使用者已登入，驗證狀態...");
+        showLoading(true);
+        
+        try {
+          const idToken = await user.getIdToken(true); // 強制刷新 token
+          log("🔑 取得身份令牌成功");
+          
+          const res = await fetch(`${API_BASE}/status`, {
+            headers: {
+              'Authorization': `Bearer ${idToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          log(`📡 API 請求狀態: ${res.status}`);
+          
+          if (res.ok) {
+            const data = await res.json();
+            log("✅ 驗證成功，正在跳轉...");
+            
+            setTimeout(() => {
+              window.location.href = "/SFL/";
+            }, 1000);
+          } else {
+            const errorData = await res.json();
+            log("⚠️ 帳號未註冊或需要完成設定");
+            
+            document.getElementById("nicknameSection").style.display = "block";
+            window.__currentUserEmail = user.email;
+            window.__currentIdToken = idToken;
+          }
+          
+        } catch (err) {
+          log("❌ 驗證過程錯誤: " + err.message);
+          console.error("驗證錯誤:", err);
+        } finally {
+          showLoading(false);
+        }
+      } else {
+        log("👤 使用者未登入");
+        await handleRedirectResult();
+      }
+    });
+
+    // 完成註冊
     async function completeRegistration() {
       const email = window.__currentUserEmail;
       const idToken = window.__currentIdToken;
@@ -261,9 +357,14 @@
         return;
       }
     
+      if (!email || !idToken) {
+        alert("登入資訊無效，請重新登入");
+        return;
+      }
+
       try {
         showLoading(true);
-        log("🔄 正在註冊...");
+        log("🔄 正在註冊帳號...");
     
         const res = await fetch(`${API_BASE}/register`, {
           method: "POST",
@@ -278,38 +379,46 @@
         });
     
         const data = await res.json();
+        log(`📡 註冊請求狀態: ${res.status}`);
     
-        if (!res.ok) {
+        if (res.ok) {
+          log("✅ 註冊成功！正在跳轉...");
+          setTimeout(() => {
+            window.location.href = "/SFL/";
+          }, 1000);
+        } else {
+          log("❌ 註冊失敗: " + (data.error || "未知錯誤"));
           alert(data.error || "註冊失敗");
-          log("❌ 註冊失敗：" + (data.error || "未知錯誤"));
-          return;
         }
     
-        log("✅ 註冊成功！正在跳轉...");
-        setTimeout(() => {
-          window.location.href = "/SFL/";
-        }, 1000);
-    
       } catch (err) {
-        console.error("❌ 發生例外錯誤：", err);
-        log("❌ 註冊過程發生錯誤，請稍後再試");
-        alert("發生錯誤，請稍後再試。");
+        log("❌ 註冊過程發生錯誤: " + err.message);
+        console.error("註冊錯誤:", err);
+        alert("發生錯誤，請稍後再試");
       } finally {
         showLoading(false);
       }
     }
 
-    function log(msg) {
-      const logEl = document.getElementById("log");
-      const timestamp = new Date().toLocaleTimeString();
-      logEl.textContent = `[${timestamp}] ${msg}`;
-    }
-
     // 頁面載入完成後初始化
     document.addEventListener('DOMContentLoaded', function() {
       updateDeviceInfo();
-      log("🚀 系統初始化完成");
+      log("🚀 登入系統初始化完成");
+      
+      // 檢查是否有儲存的錯誤資訊
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get('error');
+      if (error) {
+        log("⚠️ URL 錯誤參數: " + decodeURIComponent(error));
+      }
     });
+
+    // 監聽視窗大小變化
+    window.addEventListener('resize', updateDeviceInfo);
+    
+    // 監聽網路狀態變化
+    window.addEventListener('online', () => log("🌐 網路已連線"));
+    window.addEventListener('offline', () => log("📵 網路已斷線"));
   </script>
 </body>
 </html>
