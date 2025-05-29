@@ -233,17 +233,21 @@
     }
 
     function startCooldownTimer(initialRemaining) {
+      console.log("開始冷卻計時器，初始剩餘時間:", initialRemaining); // 調試信息
+      
       if (cooldownTimer) {
         clearInterval(cooldownTimer);
       }
       
-      let remaining = initialRemaining;
+      let remaining = Math.ceil(initialRemaining); // 向上取整確保顯示正確
       
       cooldownTimer = setInterval(() => {
         remaining -= 1;
+        console.log("冷卻倒數:", remaining); // 調試信息
         
         if (remaining <= 0) {
           // 冷卻完成，恢復按鈕
+          console.log("冷卻完成，恢復按鈕"); // 調試信息
           updateBattleButton(battleBtn, 0, "開始戰鬥");
           updateBattleButton(retryBtn, 0, "再戰一次");
           clearInterval(cooldownTimer);
@@ -259,13 +263,19 @@
     }
 
     function initializeBattleButtons(userData) {
+      console.log("初始化戰鬥按鈕，使用者資料:", userData); // 調試信息
+      
       const remaining = userData.battle_cooldown_remaining || 0;
       const isReady = userData.battle_ready !== false;
       
+      console.log("冷卻剩餘時間:", remaining, "是否準備好:", isReady); // 調試信息
+      
       if (!isReady && remaining > 0) {
+        console.log("開始冷卻倒數:", remaining); // 調試信息
         updateBattleButton(battleBtn, remaining, "開始戰鬥");
         startCooldownTimer(remaining);
       } else {
+        console.log("戰鬥按鈕已準備好"); // 調試信息
         updateBattleButton(battleBtn, 0, "開始戰鬥");
       }
     }
@@ -535,6 +545,8 @@
     
         const user = await fetchUser();
         userData = user; // 儲存使用者資料
+        
+        console.log("載入的使用者資料:", user); // 調試信息
 
 	// 讀取裝備數值資料
 	const equipRes = await fetch(`${API}/equips_table`);
@@ -602,8 +614,8 @@
         // 所有資料載入完成後隱藏頁面載入畫面
         hidePageLoading();
       } catch (err) {
+        console.error("載入層級失敗:", err); // 調試信息
         monsterDiv.innerHTML = "❌ 載入資料失敗";
-        console.error(err);
         hidePageLoading();
       }
     }
@@ -637,12 +649,16 @@
     async function executeBattle() {
       if (!checkProgressBeforeBattle()) return;
       
+      console.log("執行戰鬥，當前使用者資料:", userData); // 調試信息
+      
       // 檢查冷卻時間 - 使用伺服器提供的狀態
       const remaining = userData?.battle_cooldown_remaining || 0;
       const isReady = userData?.battle_ready !== false;
       
+      console.log("戰鬥前檢查 - 冷卻剩餘:", remaining, "是否準備好:", isReady); // 調試信息
+      
       if (!isReady && remaining > 0) {
-        alert(`戰鬥冷卻中，請等待 ${remaining} 秒`);
+        alert(`戰鬥冷卻中，請等待 ${Math.ceil(remaining)} 秒`);
         return;
       }
       
@@ -661,13 +677,18 @@
 	    layer: layer
 	  });
 	  
+	  console.log("戰鬥請求回應狀態:", res.status); // 調試信息
+	  
 	  if (!res.ok) {
 	    const errorData = await res.json();
+	    console.log("戰鬥錯誤資料:", errorData); // 調試信息
+	    
 	    if (errorData.cooldown_remaining) {
 	      // 如果是冷卻錯誤，重新獲取使用者狀態來更新冷卻顯示
-	      alert(`戰鬥冷卻中，請等待 ${errorData.cooldown_remaining} 秒`);
+	      alert(`戰鬥冷卻中，請等待 ${Math.ceil(errorData.cooldown_remaining)} 秒`);
 	      try {
 	        const updatedUser = await fetchUser();
+	        console.log("重新獲取的使用者資料:", updatedUser); // 調試信息
 	        userData = updatedUser;
 	        initializeBattleButtons(updatedUser);
 	      } catch (e) {
@@ -687,6 +708,7 @@
 	  // 更新本地使用者資料
 	  if (data.user) {
 	    userData = data.user;
+	    console.log("戰鬥後更新的使用者資料:", userData); // 調試信息
 	  }
 	
 	  // 確保進度條達到 100% 後再隱藏載入畫面
@@ -696,6 +718,7 @@
 	      if (data.success) {
 	        fetchUser().then(updatedUser => {
 	          userData = updatedUser;
+	          console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser); // 調試信息
 	          userDiv.innerText = formatStats(updatedUser);
 	          // 使用伺服器最新的冷卻狀態初始化按鈕
 	          initializeBattleButtons(updatedUser);
@@ -756,6 +779,7 @@
 	  }, 1000);
 	
 	} catch (err) {
+	  console.error("戰鬥執行錯誤:", err); // 調試信息
 	  showBattleLoading(false);
 	  logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
 	  document.getElementById("leaveBtn").style.display = "inline-block";
