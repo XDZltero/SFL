@@ -146,7 +146,7 @@
     function updateDeviceInfo() {
       const deviceInfo = document.getElementById("deviceInfo");
       const isMobile = isMobileDevice();
-      deviceInfo.textContent = isMobile ? "📱 手機設備 - 使用重導向登入" : "💻 桌面設備 - 使用彈出視窗登入";
+      deviceInfo.textContent = isMobile ? "📱 手機登入" : "💻 電腦登入";
     }
 
     function showLoading(show) {
@@ -172,7 +172,7 @@
           
           const data = await res.json();
           if (res.ok) {
-            log("🎉 登入成功，正在跳轉...");
+            log("登入成功，正在跳轉...");
             setTimeout(() => {
               window.location.href = "/SFL/";
             }, 1000);
