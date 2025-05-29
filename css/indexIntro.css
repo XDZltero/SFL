@@ -295,8 +295,10 @@
 
     /* 響應式設計 */
     @media (max-width: 768px) {
-      .game-title {
-        font-size: 2.5rem;
+      /* 重新計算 topbar 高度並調整 mainFrame */
+      #mainFrame {
+        height: calc(100vh - 50px - 40px); /* 調整為手機版 topbar 高度 */
+        top: 50px; /* 調整為實際的手機版 topbar 高度 */
       }
       
       .start-button {
@@ -306,10 +308,13 @@
     }
 
 #topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    padding: 8px 12px;
+    font-size: 0.75em;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 50px; /* 固定最小高度 */
+    box-sizing: border-box;
+  }
 
 .topbar-right {
   display: flex;
@@ -343,135 +348,152 @@
 
 
 @media (max-width: 768px) {
+  /* 重新計算 topbar 高度並調整 mainFrame */
+  #mainFrame {
+    height: calc(100vh - 50px - 40px); /* 調整為手機版 topbar 高度 */
+    top: 50px; /* 調整為實際的手機版 topbar 高度 */
+  }
+  
   /* topbar 整體調整 */
   #topbar {
-    padding: 8px 12px; /* 縮小內邊距 */
-    font-size: 0.75em; /* 縮小整體字體 */
-    flex-wrap: wrap; /* 允許換行 */
+    padding: 8px 12px;
+    font-size: 0.75em;
+    flex-wrap: wrap;
     gap: 8px;
+    min-height: 50px; /* 固定最小高度 */
+    box-sizing: border-box;
   }
   
-  /* 玩家資訊區域 */
-  #topbar .user-info {
-    gap: 6px; /* 縮小間距 */
-    font-size: 0.9em; /* 進一步縮小字體 */
-    text-shadow: 0 0 5px rgba(0, 255, 255, 0.3); /* 減弱發光效果 */
-  }
-  
-  /* 右側區域調整 */
+  /* 確保 topbar 內容垂直居中 */
+  #topbar .user-info,
   .topbar-right {
-    gap: 8px; /* 縮小間距 */
     align-items: center;
+    min-height: 34px; /* 確保按鈕有足夠空間 */
   }
   
-  /* 控制按鈕群組 */
-  #topbar .controls {
-    gap: 6px; /* 縮小按鈕間距 */
-  }
-  
-  /* topbar 按鈕樣式調整 */
+  /* 調整按鈕大小確保觸摸友好 */
   #topbar button {
-    padding: 6px 10px; /* 縮小按鈕內邊距 */
-    border-radius: 12px; /* 調整圓角 */
-    font-size: 0.85em; /* 縮小按鈕字體 */
-    font-weight: 500; /* 調整字重 */
-    min-width: auto; /* 移除最小寬度限制 */
-    white-space: nowrap; /* 防止文字換行 */
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); /* 減弱陰影 */
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+    min-height: 32px; /* 觸摸友好的最小高度 */
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
   }
   
-  #topbar button:hover {
-    transform: translateY(-1px); /* 減少懸停效果 */
-    box-shadow: 0 3px 12px rgba(102, 126, 234, 0.4);
-  }
-  
-  /* 音頻控制區域 */
+  /* 音頻控制調整 */
   .audio-controls {
-    margin-left: 8px; /* 縮小左邊距 */
-    gap: 6px; /* 縮小間距 */
+    margin-left: 8px;
+    gap: 6px;
   }
   
   .audio-controls input[type=range] {
-    width: 60px; /* 縮小滑桿寬度 */
-    height: 20px; /* 調整高度 */
+    width: 60px;
+    height: 20px;
   }
   
-  /* 音量按鈕調整 */
   #toggleSound {
-    padding: 4px 8px !important; /* 更小的音量按鈕 */
+    padding: 4px 8px !important;
     font-size: 0.9em !important;
     min-width: 32px;
+    min-height: 32px;
   }
+}
+
   
   /* 極小屏幕優化 (小於 480px) */
   @media (max-width: 480px) {
-    #topbar {
-      padding: 6px 8px;
-      font-size: 0.7em;
-      min-height: 44px; /* 確保觸摸友好的最小高度 */
-    }
-    
-    #topbar .user-info {
-      font-size: 0.85em;
-      flex: 1; /* 佔據可用空間 */
-      min-width: 0; /* 允許收縮 */
-    }
-    
-    #topbar .user-info span {
-      overflow: hidden;
-      text-overflow: ellipsis; /* 文字過長時顯示省略號 */
-      white-space: nowrap;
-    }
-    
-    .topbar-right {
-      flex-shrink: 0; /* 防止右側區域被壓縮 */
-    }
-    
-    #topbar button {
-      padding: 4px 8px;
-      font-size: 0.8em;
-      border-radius: 8px;
-    }
-    
-    .audio-controls {
-      margin-left: 4px;
-    }
-    
-    .audio-controls input[type=range] {
-      width: 50px;
-    }
-    
-    #toggleSound {
-      padding: 3px 6px !important;
-      font-size: 0.85em !important;
-      min-width: 28px;
-    }
+  #mainFrame {
+    height: calc(100vh - 48px - 40px);
+    top: 48px;
   }
   
-  /* 橫屏手機優化 */
-  @media (max-width: 768px) and (orientation: landscape) {
-    #topbar {
-      padding: 4px 10px; /* 橫屏時進一步縮小 */
-      font-size: 0.7em;
-    }
-    
-    #topbar button {
-      padding: 4px 8px;
-      font-size: 0.8em;
-    }
+  #topbar {
+    padding: 6px 8px;
+    font-size: 0.7em;
+    min-height: 48px;
+  }
+  
+  #topbar .user-info {
+    font-size: 0.85em;
+    flex: 1;
+    min-width: 0;
+    min-height: 36px;
+  }
+  
+  /* 用戶名可能過長時的處理 */
+  #topbar .user-info span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 150px; /* 限制最大寬度 */
+  }
+  
+  .topbar-right {
+    flex-shrink: 0;
+    min-height: 36px;
+  }
+  
+  #topbar button {
+    padding: 4px 8px;
+    font-size: 0.8em;
+    border-radius: 8px;
+    min-height: 30px;
+  }
+  
+  .audio-controls {
+    margin-left: 4px;
+  }
+  
+  .audio-controls input[type=range] {
+    width: 50px;
+  }
+  
+  #toggleSound {
+    padding: 3px 6px !important;
+    font-size: 0.85em !important;
+    min-width: 28px;
+    min-height: 30px;
+  }
+}
+  
+ /* 橫屏手機優化 */
+@media (max-width: 768px) and (orientation: landscape) {
+  #mainFrame {
+    height: calc(100vh - 45px - 20px); /* 橫屏時縮小 footer 空間 */
+    top: 45px;
+  }
+  
+  #topbar {
+    padding: 4px 10px;
+    font-size: 0.7em;
+    min-height: 45px;
+  }
+  
+  #topbar button {
+    padding: 4px 8px;
+    font-size: 0.8em;
+    min-height: 28px;
+  }
+  
+  /* 橫屏時頁尾調整 */
+  #container-footer {
+    padding: 8px 16px;
+    font-size: 0.8em;
   }
 }
 
 /* 針對觸控設備的額外優化 */
 @media (hover: none) and (pointer: coarse) {
   #topbar button {
-    min-height: 32px; /* 確保觸摸友好的按鈕高度 */
-    min-width: 44px; /* 確保觸摸友好的按鈕寬度 */
+    min-height: 32px;
+    min-width: 44px; /* Apple 建議的最小觸控面積 */
   }
   
   #toggleSound {
-    min-height: 28px !important;
-    min-width: 28px !important;
+    min-height: 32px !important;
+    min-width: 32px !important;
   }
 }
 
@@ -486,5 +508,20 @@
   #topbar button {
     padding: 8px 16px;
     border-radius: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 移除可能造成間隙的 margin */
+  #content {
+    margin-top: 0 !important; /* 移除原本的 2.5px margin */
+    padding: 15px 10px; /* 縮小手機版 padding */
+    gap: 15px;
+  }
+  
+  /* 確保內容區域從頂部開始 */
+  body {
+    padding-top: 0;
+    margin-top: 0;
   }
 }
