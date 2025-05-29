@@ -644,168 +644,199 @@
         logArea.scrollTop = logArea.scrollHeight;
       }, 50);
     }
-
+	
+    let isBattleInProgress = false;
     // 執行戰鬥
     async function executeBattle() {
-      if (!checkProgressBeforeBattle()) return;
-      
-      console.log("執行戰鬥，當前使用者資料:", userData); // 調試信息
-      
-      // 🔒 戰鬥前再次從伺服器確認狀態
-      try {
-        const latestUser = await fetchUser();
-        userData = latestUser;
-        
-        const remaining = userData?.battle_cooldown_remaining || 0;
-        const isReady = userData?.battle_ready !== false;
-        
-        console.log("戰鬥前最新檢查 - 冷卻剩餘:", remaining, "是否準備好:", isReady); // 調試信息
-        
-        if (!isReady && remaining > 0) {
-          alert(`戰鬥冷卻中，請等待 ${Math.ceil(remaining)} 秒`);
-          initializeBattleButtons(userData); // 更新按鈕狀態
-          return;
-        }
-      } catch (error) {
-        console.error("獲取最新狀態失敗:", error);
-        alert("無法確認戰鬥狀態，請重新整理頁面");
-        return;
-      }
-      
-      // 顯示戰鬥載入畫面
-      showBattleLoading(true);
-      
-      logArea.innerHTML = "";
-      retryBtn.style.display = "none";
-      nextBtn.style.display = "none";
-      battleBtn.style.display = "none";
-      document.getElementById("leaveBtn").style.display = "none";
-
-      try {
-	  const res = await SecureAPI.post(`${API}/battle_dungeon`, {
-	    dungeon: dungeon,
-	    layer: layer
-	  });
+	  // 防止重複執行
+	  if (isBattleInProgress) {
+	    console.log("戰鬥已在進行中，忽略重複點擊");
+	    return;
+	  }
 	  
-	  console.log("戰鬥請求回應狀態:", res.status); // 調試信息
+	  if (!checkProgressBeforeBattle()) return;
 	  
-	  if (!res.ok) {
-	    const errorData = await res.json();
-	    console.log("戰鬥錯誤資料:", errorData); // 調試信息
+	  // 設置執行標誌並立即禁用按鈕
+	  isBattleInProgress = true;
+	  battleBtn.disabled = true;
+	  retryBtn.disabled = true;
+	  
+	  console.log("執行戰鬥，當前使用者資料:", userData);
+	  
+	  // 🔒 戰鬥前再次從伺服器確認狀態
+	  try {
+	    const latestUser = await fetchUser();
+	    userData = latestUser;
 	    
-	    if (errorData.cooldown_remaining) {
-	      // 如果是冷卻錯誤，重新獲取使用者狀態來更新冷卻顯示
-	      alert(`戰鬥冷卻中，請等待 ${Math.ceil(errorData.cooldown_remaining)} 秒`);
-	      try {
-	        const updatedUser = await fetchUser();
-	        console.log("重新獲取的使用者資料:", updatedUser); // 調試信息
-	        userData = updatedUser;
-	        initializeBattleButtons(updatedUser);
-	      } catch (e) {
-	        console.error("更新使用者狀態失敗:", e);
-	      }
-	      showBattleLoading(false);
-	      battleBtn.style.display = "inline-block";
+	    const remaining = userData?.battle_cooldown_remaining || 0;
+	    const isReady = userData?.battle_ready !== false;
+	    
+	    console.log("戰鬥前最新檢查 - 冷卻剩餘:", remaining, "是否準備好:", isReady);
+	    
+	    if (!isReady && remaining > 0) {
+	      alert(`戰鬥冷卻中，請等待 ${Math.ceil(remaining)} 秒`);
+	      initializeBattleButtons(userData);
+	      // 重置執行標誌
+	      isBattleInProgress = false;
 	      return;
 	    }
-	    throw new Error(errorData.error || '戰鬥失敗');
+	  } catch (error) {
+	    console.error("獲取最新狀態失敗:", error);
+	    alert("無法確認戰鬥狀態，請重新整理頁面");
+	    // 重置執行標誌
+	    isBattleInProgress = false;
+	    battleBtn.disabled = false;
+	    retryBtn.disabled = false;
+	    return;
 	  }
 	  
-	  const data = await res.json();
-	  const log = data.battle_log;
-	  if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
+	  // 顯示戰鬥載入畫面
+	  showBattleLoading(true);
+	  
+	  logArea.innerHTML = "";
+	  retryBtn.style.display = "none";
+	  nextBtn.style.display = "none";
+	  battleBtn.style.display = "none";
+	  document.getElementById("leaveBtn").style.display = "none";
 	
-	  // 更新本地使用者資料
-	  if (data.user) {
-	    userData = data.user;
-	    console.log("戰鬥後更新的使用者資料:", userData); // 調試信息
-	  }
-	
-	  // 確保進度條達到 100% 後再隱藏載入畫面
-	  setTimeout(() => {
-	    showBattleLoading(false);
-	    playBattleLog(log).then(() => {
-	      if (data.success) {
-	        fetchUser().then(updatedUser => {
-	          userData = updatedUser;
-	          console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser); // 調試信息
-	          userDiv.innerText = formatStats(updatedUser);
-	          // 使用伺服器最新的冷卻狀態初始化按鈕
-	          initializeBattleButtons(updatedUser);
-	        });
-	
-	        if (data.is_last_layer) {
-		  showVictoryEffect();
-	          document.getElementById("leaveBtn").style.display = "inline-block";
-	        } else {
-	          retryBtn.style.display = "inline-block";
-	          nextBtn.style.display = "inline-block";
-	          nextBtn.onclick = () => {
-	            window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-	          };
-	          
-	          // 使用伺服器最新的冷卻狀態初始化重試按鈕
-	          const remaining = userData?.battle_cooldown_remaining || 0;
-	          if (remaining > 0) {
-	            updateBattleButton(retryBtn, remaining, "再戰一次");
-	          }
-	        }
-	
-	        const winMsg = document.createElement("div");
-	        winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
-	        logArea.appendChild(winMsg);
-	        scrollLogToBottom();
-	
-	        if (data.rewards) {
-	          const { exp, leveled_up, drops } = data.rewards;
-	          fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
-	            const rewardLog = document.createElement("div");
-	            rewardLog.className = "reward-message";
-	            rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
-	              (leveled_up ? `<br><span style='color:red'>🎊 等級提升！</span>` : "") +
-	              drops.filter(d => Math.random() <= d.rate).map(d => {
-	                const meta = itemMap[d.id] || { name: d.id, special: 0 };
-	                if (meta.special === 2) return `<br><span style='color:crimson'>【超稀有】${meta.name} × ${d.value}</span>`;
-	                if (meta.special === 1) return `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${d.value}</span>`;
-	                return `<br>${meta.name} × ${d.value}`;
-	              }).join("");
-	            logArea.appendChild(rewardLog);
-	            scrollLogToBottom();
-	          });
-	        }
-	
-	      } else {
-	        showDefeatEffect();
-	        const loseMsg = document.createElement("div");
-	        loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
-	        logArea.appendChild(loseMsg);
-	        const failMsg = document.createElement("div");
-	        failMsg.innerHTML = `<br>❌ ${data.message}`;
-	        logArea.appendChild(failMsg);
-	        scrollLogToBottom();
-	        document.getElementById("leaveBtn").style.display = "inline-block";
-	      }
+	  try {
+	    const res = await SecureAPI.post(`${API}/battle_dungeon`, {
+	      dungeon: dungeon,
+	      layer: layer
 	    });
-	  }, 1000);
+	    
+	    console.log("戰鬥請求回應狀態:", res.status);
+	    
+	    if (!res.ok) {
+	      const errorData = await res.json();
+	      console.log("戰鬥錯誤資料:", errorData);
+	      
+	      if (errorData.cooldown_remaining) {
+	        alert(`戰鬥冷卻中，請等待 ${Math.ceil(errorData.cooldown_remaining)} 秒`);
+	        try {
+	          const updatedUser = await fetchUser();
+	          console.log("重新獲取的使用者資料:", updatedUser);
+	          userData = updatedUser;
+	          initializeBattleButtons(updatedUser);
+	        } catch (e) {
+	          console.error("更新使用者狀態失敗:", e);
+	        }
+	        showBattleLoading(false);
+	        battleBtn.style.display = "inline-block";
+	        // 重置執行標誌
+	        isBattleInProgress = false;
+	        return;
+	      }
+	      throw new Error(errorData.error || '戰鬥失敗');
+	    }
+	    
+	    const data = await res.json();
+	    const log = data.battle_log;
+	    if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
 	
-	} catch (err) {
-	  console.error("戰鬥執行錯誤:", err); // 調試信息
-	  showBattleLoading(false);
-	  logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
-	  document.getElementById("leaveBtn").style.display = "inline-block";
-	  battleBtn.style.display = "inline-block";
+	    // 更新本地使用者資料
+	    if (data.user) {
+	      userData = data.user;
+	      console.log("戰鬥後更新的使用者資料:", userData);
+	    }
+	
+	    // 確保進度條達到 100% 後再隱藏載入畫面
+	    setTimeout(() => {
+	      showBattleLoading(false);
+	      playBattleLog(log).then(() => {
+	        // 戰鬥完成，重置執行標誌
+	        isBattleInProgress = false;
+	        
+	        if (data.success) {
+	          fetchUser().then(updatedUser => {
+	            userData = updatedUser;
+	            console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser);
+	            userDiv.innerText = formatStats(updatedUser);
+	            initializeBattleButtons(updatedUser);
+	          });
+	
+	          if (data.is_last_layer) {
+	            showVictoryEffect();
+	            document.getElementById("leaveBtn").style.display = "inline-block";
+	          } else {
+	            retryBtn.style.display = "inline-block";
+	            nextBtn.style.display = "inline-block";
+	            nextBtn.onclick = () => {
+	              window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
+	            };
+	            
+	            const remaining = userData?.battle_cooldown_remaining || 0;
+	            if (remaining > 0) {
+	              updateBattleButton(retryBtn, remaining, "再戰一次");
+	            } else {
+	              retryBtn.disabled = false;
+	            }
+	          }
+	
+	          const winMsg = document.createElement("div");
+	          winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
+	          logArea.appendChild(winMsg);
+	          scrollLogToBottom();
+	
+	          if (data.rewards) {
+	            const { exp, leveled_up, drops } = data.rewards;
+	            fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
+	              const rewardLog = document.createElement("div");
+	              rewardLog.className = "reward-message";
+	              rewardLog.innerHTML = `<br><strong>🎁 戰利品：</strong><br>EXP + ${exp}` +
+	                (leveled_up ? `<br><span style='color:red'>🎊 等級提升！</span>` : "") +
+	                drops.filter(d => Math.random() <= d.rate).map(d => {
+	                  const meta = itemMap[d.id] || { name: d.id, special: 0 };
+	                  if (meta.special === 2) return `<br><span style='color:crimson'>【超稀有】${meta.name} × ${d.value}</span>`;
+	                  if (meta.special === 1) return `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${d.value}</span>`;
+	                  return `<br>${meta.name} × ${d.value}`;
+	                }).join("");
+	              logArea.appendChild(rewardLog);
+	              scrollLogToBottom();
+	            });
+	          }
+	
+	        } else {
+	          showDefeatEffect();
+	          const loseMsg = document.createElement("div");
+	          loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
+	          logArea.appendChild(loseMsg);
+	          const failMsg = document.createElement("div");
+	          failMsg.innerHTML = `<br>❌ ${data.message}`;
+	          logArea.appendChild(failMsg);
+	          scrollLogToBottom();
+	          document.getElementById("leaveBtn").style.display = "inline-block";
+	        }
+	      });
+	    }, 1000);
+	
+	  } catch (err) {
+	    console.error("戰鬥執行錯誤:", err);
+	    showBattleLoading(false);
+	    logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
+	    document.getElementById("leaveBtn").style.display = "inline-block";
+	    battleBtn.style.display = "inline-block";
+	    battleBtn.disabled = false;
+	    // 重置執行標誌
+	    isBattleInProgress = false;
+	  }
 	}
-    }
 
     // 開始戰鬥函數
     window.startBattle = executeBattle;
 
     // 重試戰鬥函數
     function retryBattle() {
-      hideVictoryEffect();
-      hideDefeatEffect();
-      executeBattle();
-    }
+	  // 防止在戰鬥進行中重試
+	  if (isBattleInProgress) {
+	    console.log("戰鬥已在進行中，忽略重試請求");
+	    return;
+	  }
+	  
+	  hideVictoryEffect();
+	  hideDefeatEffect();
+	  executeBattle();
+	}
     window.retryBattle = retryBattle;
 
     function playBattleLog(log) {
