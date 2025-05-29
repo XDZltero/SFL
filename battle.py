@@ -94,6 +94,13 @@ def get_user_item_ref(db, user_id):
     return db.collection("user_items").document(user_id)
 
 def apply_drops(db, user_id, drops, user_luck=0):
+    """
+    處理掉落物品，並回傳實際掉落資訊
+    回傳格式：{
+        "items": {"item_id": final_quantity, ...},
+        "luck_bonus": {"item_id": bonus_quantity, ...}
+    }
+    """
     ref = get_user_item_ref(db, user_id)
     snap = ref.get()
     current = snap.to_dict() if snap.exists else {"id": user_id, "items": {}}
@@ -104,13 +111,15 @@ def apply_drops(db, user_id, drops, user_luck=0):
     luck_multiplier = min(luck_multiplier, 1.5)  # 上限1.5倍
     
     # 🍀 第二輪：額外掉落機率計算（純幸運）
-    # 每5點幸運 +1% 額外掉落機率，上限25%
-    extra_drop_chance = min(user_luck * 0.002, 0.25)  # 每點幸運+0.2%，上限25%
+    # 每點幸運 +0.2% 額外掉落機率，上限25%
+    extra_drop_chance = min(user_luck * 0.002, 0.25)
     
-    # 記錄第一輪成功掉落的道具
-    first_round_drops = []
-
+    # 記錄實際掉落
+    actual_drops = {}
+    luck_bonus_items = {}
+    
     # 🎯 第一輪：基礎掉落判定
+    first_round_drops = []
     for drop in drops:
         # 計算幸運值影響後的掉落率
         enhanced_rate = min(drop["rate"] * luck_multiplier, 0.95)  # 上限95%
@@ -123,8 +132,10 @@ def apply_drops(db, user_id, drops, user_luck=0):
             
             if new_amount > 999:
                 current["items"][item_id] = 999
+                actual_drops[item_id] = actual_drops.get(item_id, 0) + (999 - current_amount)
             else:
                 current["items"][item_id] = new_amount
+                actual_drops[item_id] = actual_drops.get(item_id, 0) + qty
             
             # 記錄成功掉落的道具，供第二輪使用
             first_round_drops.append(drop)
@@ -140,13 +151,18 @@ def apply_drops(db, user_id, drops, user_luck=0):
                 new_amount = current_amount + qty
                 
                 if new_amount > 999:
+                    bonus_qty = 999 - current_amount
                     current["items"][item_id] = 999
                 else:
+                    bonus_qty = qty
                     current["items"][item_id] = new_amount
+                
+                # 記錄幸運加成獲得的數量
+                if bonus_qty > 0:
+                    luck_bonus_items[item_id] = luck_bonus_items.get(item_id, 0) + bonus_qty
+                    actual_drops[item_id] = actual_drops.get(item_id, 0) + bonus_qty
 
-    ref.set(current)
-
-    # 🆕 新增：幸運值額外掉落判定
+    # 🆕 第三輪：基於幸運倍率差值的額外掉落
     for drop in drops:
         # 計算幸運值帶來的額外掉落機會
         extra_chance = drop["rate"] * (luck_multiplier - 1)
@@ -157,11 +173,23 @@ def apply_drops(db, user_id, drops, user_luck=0):
             new_amount = current_amount + qty
             
             if new_amount > 999:
+                bonus_qty = 999 - current_amount
                 current["items"][item_id] = 999
             else:
+                bonus_qty = qty
                 current["items"][item_id] = new_amount
+            
+            # 記錄幸運加成獲得的數量
+            if bonus_qty > 0:
+                luck_bonus_items[item_id] = luck_bonus_items.get(item_id, 0) + bonus_qty
+                actual_drops[item_id] = actual_drops.get(item_id, 0) + bonus_qty
 
     ref.set(current)
+    
+    return {
+        "items": actual_drops,
+        "luck_bonus": luck_bonus_items
+    }
 
 # 等差增減傷計算
 def level_damage_modifier(attacker_level, defender_level):
@@ -854,13 +882,35 @@ def simulate_battle(user, monster, user_skill_dict):
     user["last_battle"] = time.time()
     
     if outcome == "win":
-        user["exp"] += monster["exp"]
+        base_exp = monster["exp"]
+        
+        # 💎 新增：經驗值幸運加成邏輯（與掉落物相同）
+        # 每點幸運 +0.2% 額外經驗機率，上限25%
+        exp_extra_chance = min(user_battle_stats["luck"] * 0.002, 0.25)
+        
+        # 基礎經驗值
+        final_exp = base_exp
+        exp_luck_bonus = 0
+        
+        # 🎲 判定是否獲得額外經驗（雙倍經驗）
+        if random.random() <= exp_extra_chance:
+            exp_luck_bonus = base_exp
+            final_exp += exp_luck_bonus
+        
+        user["exp"] += final_exp
         leveled = check_level_up(user)
-        apply_drops(db, user["user_id"], monster["drops"], user_battle_stats["luck"])
+        
+        # 處理掉落物（修改為回傳實際掉落資訊）
+        drop_result = apply_drops(db, user["user_id"], monster["drops"], user_battle_stats["luck"])
+        
         rewards = {
-            "exp": monster["exp"],
+            "exp": final_exp,
+            "base_exp": base_exp,
+            "exp_luck_bonus": exp_luck_bonus,
             "leveled_up": leveled,
-            "drops": monster["drops"]
+            "drops": monster["drops"],  # 原始掉落表
+            "actual_drops": drop_result["items"],  # 實際獲得的物品
+            "drop_luck_bonus": drop_result["luck_bonus"]  # 幸運加成獲得的物品
         }
 
     return {
