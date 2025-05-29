@@ -10,12 +10,12 @@
     "none": "無"
   },
   "advantage": {
-    "hydro": { "electro": 0.75, "pyro": 1.25, "none": 1.0 },
-    "pyro": { "hydro": 0.75, "nature": 1.25, "none": 1.0 },
-    "nature": { "pyro": 0.75, "electro": 1.25, "none": 1.0 },
-    "electro": { "nature": 0.75, "hydro": 1.25, "none": 1.0 },
-    "light": { "dark": 1.25, "none": 1.0 },
-    "dark": { "light": 1.25, "none": 1.0 },
+    "hydro": { "electro": 0.75, "pyro": 1.25, "none": 1.0 , "all": 0.75},
+    "pyro": { "hydro": 0.75, "nature": 1.25, "none": 1.0 , "all": 0.75},
+    "nature": { "pyro": 0.75, "electro": 1.25, "none": 1.0 , "all": 0.75},
+    "electro": { "nature": 0.75, "hydro": 1.25, "none": 1.0 , "all": 0.75},
+    "light": { "dark": 1.25, "none": 1.0 , "all": 0.75},
+    "dark": { "light": 1.25, "none": 1.0 , "all": 0.75},
     
     "all": {
       "pyro": 1.25,
@@ -35,7 +35,7 @@
       "electro": 1.0,
       "light": 1.0,
       "dark": 1.0,
-      "all": 1.0,
+      "all": 0.75,
       "none": 1.0
     }
   }
