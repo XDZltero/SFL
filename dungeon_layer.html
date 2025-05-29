@@ -219,23 +219,7 @@
     const retryBtn = document.getElementById("retryBtn");
     const nextBtn = document.getElementById("nextBtn");
 
-    // 戰鬥冷卻相關函數
-    function checkBattleCooldown(lastBattleTime) {
-	  if (!lastBattleTime) return { ready: true, remaining: 0 };
-	  
-	  // ✅ 保持浮點精度，不要用 Math.floor
-	  const currentTime = Date.now() / 1000;
-	  const cooldownSeconds = 30;
-	  const timeDiff = currentTime - lastBattleTime;
-	  
-	  if (timeDiff >= cooldownSeconds) {
-	    return { ready: true, remaining: 0 };
-	  } else {
-	    const remaining = cooldownSeconds - timeDiff;
-	    return { ready: false, remaining: Math.max(0, Math.ceil(remaining)) }; // ✅ 使用 Math.ceil 向上取整
-	  }
-	}
-
+    // 戰鬥冷卻相關函數 - 改為直接使用伺服器提供的冷卻時間
     function updateBattleButton(buttonElement, remainingSeconds, buttonText = "開始戰鬥") {
       if (remainingSeconds > 0) {
         buttonElement.classList.add("cooldown-button");
@@ -248,15 +232,17 @@
       }
     }
 
-    function startCooldownTimer(lastBattleTime) {
+    function startCooldownTimer(initialRemaining) {
       if (cooldownTimer) {
         clearInterval(cooldownTimer);
       }
       
+      let remaining = initialRemaining;
+      
       cooldownTimer = setInterval(() => {
-        const cooldownInfo = checkBattleCooldown(lastBattleTime);
+        remaining -= 1;
         
-        if (cooldownInfo.ready) {
+        if (remaining <= 0) {
           // 冷卻完成，恢復按鈕
           updateBattleButton(battleBtn, 0, "開始戰鬥");
           updateBattleButton(retryBtn, 0, "再戰一次");
@@ -264,20 +250,21 @@
           cooldownTimer = null;
         } else {
           // 更新倒數
-          updateBattleButton(battleBtn, cooldownInfo.remaining, "開始戰鬥");
+          updateBattleButton(battleBtn, remaining, "開始戰鬥");
           if (retryBtn.style.display !== "none") {
-            updateBattleButton(retryBtn, cooldownInfo.remaining, "再戰一次");
+            updateBattleButton(retryBtn, remaining, "再戰一次");
           }
         }
       }, 1000);
     }
 
-    function initializeBattleButtons(lastBattleTime) {
-      const cooldownInfo = checkBattleCooldown(lastBattleTime);
+    function initializeBattleButtons(userData) {
+      const remaining = userData.battle_cooldown_remaining || 0;
+      const isReady = userData.battle_ready !== false;
       
-      if (!cooldownInfo.ready) {
-        updateBattleButton(battleBtn, cooldownInfo.remaining, "開始戰鬥");
-        startCooldownTimer(lastBattleTime);
+      if (!isReady && remaining > 0) {
+        updateBattleButton(battleBtn, remaining, "開始戰鬥");
+        startCooldownTimer(remaining);
       } else {
         updateBattleButton(battleBtn, 0, "開始戰鬥");
       }
@@ -559,7 +546,7 @@
         }, "*");
         
         // 初始化戰鬥按鈕冷卻狀態
-        initializeBattleButtons(user.last_battle);
+        initializeBattleButtons(user);
         
         userDiv.innerText = formatStats(user);
     
@@ -650,10 +637,12 @@
     async function executeBattle() {
       if (!checkProgressBeforeBattle()) return;
       
-      // 檢查冷卻時間
-      const cooldownInfo = checkBattleCooldown(userData?.last_battle);
-      if (!cooldownInfo.ready) {
-        alert(`戰鬥冷卻中，請等待 ${cooldownInfo.remaining} 秒`);
+      // 檢查冷卻時間 - 使用伺服器提供的狀態
+      const remaining = userData?.battle_cooldown_remaining || 0;
+      const isReady = userData?.battle_ready !== false;
+      
+      if (!isReady && remaining > 0) {
+        alert(`戰鬥冷卻中，請等待 ${remaining} 秒`);
         return;
       }
       
@@ -675,10 +664,15 @@
 	  if (!res.ok) {
 	    const errorData = await res.json();
 	    if (errorData.cooldown_remaining) {
-	      // 如果是冷卻錯誤，更新本地狀態
+	      // 如果是冷卻錯誤，重新獲取使用者狀態來更新冷卻顯示
 	      alert(`戰鬥冷卻中，請等待 ${errorData.cooldown_remaining} 秒`);
-	      const fakeLastBattle = Math.floor(Date.now() / 1000) - (30 - errorData.cooldown_remaining);
-	      initializeBattleButtons(fakeLastBattle);
+	      try {
+	        const updatedUser = await fetchUser();
+	        userData = updatedUser;
+	        initializeBattleButtons(updatedUser);
+	      } catch (e) {
+	        console.error("更新使用者狀態失敗:", e);
+	      }
 	      showBattleLoading(false);
 	      battleBtn.style.display = "inline-block";
 	      return;
@@ -703,8 +697,8 @@
 	        fetchUser().then(updatedUser => {
 	          userData = updatedUser;
 	          userDiv.innerText = formatStats(updatedUser);
-	          // 初始化冷卻按鈕
-	          initializeBattleButtons(updatedUser.last_battle);
+	          // 使用伺服器最新的冷卻狀態初始化按鈕
+	          initializeBattleButtons(updatedUser);
 	        });
 	
 	        if (data.is_last_layer) {
@@ -717,10 +711,10 @@
 	            window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
 	          };
 	          
-	          // 初始化重試按鈕的冷卻狀態
-	          const cooldownInfo = checkBattleCooldown(userData?.last_battle);
-	          if (!cooldownInfo.ready) {
-	            updateBattleButton(retryBtn, cooldownInfo.remaining, "再戰一次");
+	          // 使用伺服器最新的冷卻狀態初始化重試按鈕
+	          const remaining = userData?.battle_cooldown_remaining || 0;
+	          if (remaining > 0) {
+	            updateBattleButton(retryBtn, remaining, "再戰一次");
 	          }
 	        }
 	
