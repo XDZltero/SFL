@@ -105,13 +105,11 @@ def apply_drops(db, user_id, drops, user_luck=0):
     snap = ref.get()
     current = snap.to_dict() if snap.exists else {"id": user_id, "items": {}}
 
-    # 🎲 第一輪：基礎掉落（有幸運加成）
-    # 每點幸運 +0.25% 乘法加成，上限50%
+    # 🎲 幸運值計算
     luck_multiplier = 1 + (user_luck * 0.0025)
     luck_multiplier = min(luck_multiplier, 1.5)  # 上限1.5倍
     
-    # 🍀 第二輪：額外掉落機率計算（純幸運）
-    # 每點幸運 +0.2% 額外掉落機率，上限25%
+    # 🍀 額外掉落機率
     extra_drop_chance = min(user_luck * 0.002, 0.25)
     
     # 記錄實際掉落
@@ -121,8 +119,14 @@ def apply_drops(db, user_id, drops, user_luck=0):
     # 🎯 第一輪：基礎掉落判定
     first_round_drops = []
     for drop in drops:
-        # 計算幸運值影響後的掉落率
-        enhanced_rate = min(drop["rate"] * luck_multiplier, 0.95)  # 上限95%
+        # ✅ 修正：100%掉落率不應該被降低
+        base_rate = drop["rate"]
+        if base_rate >= 1.0:
+            # 如果原本就是100%，保持100%
+            enhanced_rate = 1.0
+        else:
+            # 只對非100%的掉落率進行幸運加成，並限制95%上限
+            enhanced_rate = min(base_rate * luck_multiplier, 0.95)
         
         if random.random() <= enhanced_rate:
             item_id = drop["id"]
@@ -131,8 +135,11 @@ def apply_drops(db, user_id, drops, user_luck=0):
             new_amount = current_amount + qty
             
             if new_amount > 999:
+                # ✅ 修正：即使背包滿了，也要正確記錄掉落
+                actual_received = 999 - current_amount  # 實際能接收的數量
                 current["items"][item_id] = 999
-                actual_drops[item_id] = actual_drops.get(item_id, 0) + (999 - current_amount)
+                if actual_received > 0:
+                    actual_drops[item_id] = actual_drops.get(item_id, 0) + actual_received
             else:
                 current["items"][item_id] = new_amount
                 actual_drops[item_id] = actual_drops.get(item_id, 0) + qty
@@ -143,7 +150,6 @@ def apply_drops(db, user_id, drops, user_luck=0):
     # 🎁 第二輪：額外掉落判定（只針對第一輪掉落的道具）
     if extra_drop_chance > 0 and first_round_drops:
         for drop in first_round_drops:
-            # 只有在第一輪掉落的道具才有機會額外掉落
             if random.random() <= extra_drop_chance:
                 item_id = drop["id"]
                 qty = drop["value"]
@@ -151,7 +157,7 @@ def apply_drops(db, user_id, drops, user_luck=0):
                 new_amount = current_amount + qty
                 
                 if new_amount > 999:
-                    bonus_qty = 999 - current_amount
+                    bonus_qty = max(0, 999 - current_amount)  # 能額外獲得的數量
                     current["items"][item_id] = 999
                 else:
                     bonus_qty = qty
@@ -164,25 +170,27 @@ def apply_drops(db, user_id, drops, user_luck=0):
 
     # 🆕 第三輪：基於幸運倍率差值的額外掉落
     for drop in drops:
-        # 計算幸運值帶來的額外掉落機會
-        extra_chance = drop["rate"] * (luck_multiplier - 1)
-        if extra_chance > 0 and random.random() <= extra_chance:
-            item_id = drop["id"]
-            qty = drop["value"]
-            current_amount = current["items"].get(item_id, 0)
-            new_amount = current_amount + qty
-            
-            if new_amount > 999:
-                bonus_qty = 999 - current_amount
-                current["items"][item_id] = 999
-            else:
-                bonus_qty = qty
-                current["items"][item_id] = new_amount
-            
-            # 記錄幸運加成獲得的數量
-            if bonus_qty > 0:
-                luck_bonus_items[item_id] = luck_bonus_items.get(item_id, 0) + bonus_qty
-                actual_drops[item_id] = actual_drops.get(item_id, 0) + bonus_qty
+        base_rate = drop["rate"]
+        # ✅ 修正：只對非100%掉落率進行差值計算
+        if base_rate < 1.0:
+            extra_chance = base_rate * (luck_multiplier - 1)
+            if extra_chance > 0 and random.random() <= extra_chance:
+                item_id = drop["id"]
+                qty = drop["value"]
+                current_amount = current["items"].get(item_id, 0)
+                new_amount = current_amount + qty
+                
+                if new_amount > 999:
+                    bonus_qty = max(0, 999 - current_amount)
+                    current["items"][item_id] = 999
+                else:
+                    bonus_qty = qty
+                    current["items"][item_id] = new_amount
+                
+                # 記錄幸運加成獲得的數量
+                if bonus_qty > 0:
+                    luck_bonus_items[item_id] = luck_bonus_items.get(item_id, 0) + bonus_qty
+                    actual_drops[item_id] = actual_drops.get(item_id, 0) + bonus_qty
 
     ref.set(current)
     
