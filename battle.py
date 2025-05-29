@@ -9,18 +9,47 @@ with open("parameter/equips.json", "r", encoding="utf-8") as f:
 
 def get_equipment_bonus(equipment):
     bonus = {}
+    
+    # 確保 equipment 不是 None
+    if not equipment:
+        return bonus
+        
     for slot in equipment:
         card_info = equipment[slot]
-        card_id = list(card_info.keys())[0]
-        level = card_info[card_id]
         
-        card = next((c for c in equip_data if c["id"] == card_id), None)
-        if not card:
+        # 檢查槽位是否為空 (None 或 空字典)
+        if not card_info:
             continue
-        
-        level_stats = card["value"].get(str(level), {})
-        for stat, val in level_stats.items():
-            bonus[stat] = bonus.get(stat, 0) + val
+            
+        # 確保 card_info 是字典類型
+        if not isinstance(card_info, dict):
+            continue
+            
+        # 檢查是否有卡片資訊
+        if not card_info.keys():
+            continue
+            
+        try:
+            card_id = list(card_info.keys())[0]
+            level = card_info[card_id]
+            
+            # 檢查等級是否有效
+            if not level or level <= 0:
+                continue
+            
+            card = next((c for c in equip_data if c["id"] == card_id), None)
+            if not card:
+                continue
+            
+            level_stats = card["value"].get(str(level), {})
+            for stat, val in level_stats.items():
+                bonus[stat] = bonus.get(stat, 0) + val
+                
+        except (IndexError, KeyError, TypeError) as e:
+            # 如果處理單個裝備時出錯，跳過這個裝備但繼續處理其他裝備
+            print(f"警告：處理裝備槽位 {slot} 時出錯: {e}")
+            continue
+    
     return bonus
 
 # 命中計算
