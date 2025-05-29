@@ -760,6 +760,8 @@
 	            document.getElementById("leaveBtn").style.display = "inline-block";
 	          } else {
 	            retryBtn.style.display = "inline-block";
+	            updateBattleButton(retryBtn, 30, "再戰一次");
+	            startCooldownTimer(30);
 	            nextBtn.style.display = "inline-block";
 	            nextBtn.onclick = () => {
 	              window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
