@@ -102,6 +102,9 @@
           userCards = userData.cards_owned || {};
         }
         
+        // 驗證並修復裝備等級不一致問題
+        await validateAndFixEquipmentLevels();
+        
         renderPage();
       } catch (error) {
         console.error("載入使用者資料失敗:", error);
@@ -377,7 +380,12 @@
         if (response.ok) {
           if (result.success) {
             alert(`✅ ${currentLevel === 0 ? '製作' : '升級'}成功！`);
-            userCards[cardId] = currentLevel + 1;
+            const newLevel = currentLevel + 1;
+            userCards[cardId] = newLevel;
+            
+            // 同步更新已裝備的卡片等級
+            await syncEquippedCardLevels(cardId, newLevel);
+            
           } else {
             alert(`❌ ${result.message || '製作失敗，材料已消耗'}`);
           }
@@ -392,6 +400,47 @@
         alert("製作過程發生錯誤");
       } finally {
         showLoading(false);
+      }
+    }
+    
+    // 在頁面載入完成後也檢查並修復裝備等級不一致的問題
+    async function validateAndFixEquipmentLevels() {
+      const equipment = userData.equipment || {};
+      let needsUpdate = false;
+      const newEquipment = { ...equipment };
+      
+      for (let slot = 1; slot <= 5; slot++) {
+        const slotEquip = equipment[slot];
+        if (slotEquip && typeof slotEquip === 'object') {
+          const equippedCardId = Object.keys(slotEquip)[0];
+          const equippedLevel = slotEquip[equippedCardId];
+          const actualLevel = userCards[equippedCardId] || 0;
+          
+          // 如果裝備中的等級低於實際擁有的等級，自動修復
+          if (actualLevel > 0 && equippedLevel < actualLevel) {
+            newEquipment[slot] = { [equippedCardId]: actualLevel };
+            needsUpdate = true;
+            console.log(`修復插槽 ${slot} 的 ${equippedCardId} 等級：${equippedLevel} → ${actualLevel}`);
+          }
+        }
+      }
+      
+      if (needsUpdate) {
+        try {
+          const response = await SecureAPI.post(`${API_BASE}/save_equipment`, {
+            equipment: newEquipment
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok && result.success) {
+            userData.equipment = newEquipment;
+            console.log("✅ 已自動修復裝備等級不一致問題");
+            renderPage(); // 重新渲染整個頁面
+          }
+        } catch (error) {
+          console.error("❌ 自動修復裝備等級時發生錯誤:", error);
+        }
       }
     }
 
