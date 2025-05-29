@@ -60,7 +60,6 @@ def check_battle_cooldown(user_data):
     if not last_battle:
         return True, 0
     
-    # 使用 UTC 時間戳
     current_timestamp = time.time()
     cooldown_seconds = 30
     
@@ -69,7 +68,7 @@ def check_battle_cooldown(user_data):
         return True, 0
     else:
         remaining = cooldown_seconds - time_diff
-        return False, int(remaining) + 1  # 加1確保不會有小數點問題
+        return False, max(0, int(remaining))
 
 # 快取靜態副本資料（保持原有的快取函數）
 @lru_cache()
