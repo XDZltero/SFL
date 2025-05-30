@@ -121,7 +121,7 @@
       "5": {
         "attack": 30,
         "shield": 50,
-        "evade": 15
+        "evade": 15,
         "other_bonus": 0.05
       }
     }
