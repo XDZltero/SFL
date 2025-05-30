@@ -388,6 +388,7 @@ def battle():
             return jsonify({"error": "缺少怪物ID"}), 400
 
         # 🚀 戰鬥前清除使用者快取
+        print(f"🔄 戰鬥前清除使用者 {user_id} 的快取...")
         invalidate_user_cache(user_id)
 
         # ... 原有戰鬥邏輯 ...
@@ -424,9 +425,11 @@ def battle():
         current_timestamp = time.time()
         result["user"]["last_battle"] = current_timestamp
         
+        print(f"🕒 設定戰鬥時間戳: {current_timestamp}")
         db.collection("users").document(user_id).set(result["user"])
 
         # 🚀 戰鬥後再次清除快取以確保資料一致性
+        print(f"✅ 戰鬥勝利，強制清除所有快取...")
         invalidate_user_cache(user_id)
 
         return jsonify(result)
@@ -449,6 +452,7 @@ def battle_dungeon():
             return jsonify({"error": "缺少參數"}), 400
 
         # 🚀 戰鬥前清除使用者快取
+        print(f"🔄 戰鬥前清除使用者 {user_id} 的快取...")
         invalidate_user_cache(user_id)
 
         # ... 原有戰鬥邏輯保持不變 ...
@@ -503,6 +507,7 @@ def battle_dungeon():
         current_timestamp = time.time()
         result["user"]["last_battle"] = current_timestamp
         
+        print(f"🕒 設定戰鬥時間戳: {current_timestamp}")
         db.collection("users").document(user_id).set(result["user"])
 
         user_key = user_id.replace(".", "_")
@@ -514,6 +519,7 @@ def battle_dungeon():
         if result["result"] == "lose":
             progress_ref.set({dungeon_id: 0}, merge=True)
             # 🚀 失敗後清除相關快取
+            print(f"❌ 戰鬥失敗，清除快取...")
             invalidate_user_cache(user_id, ['progress'])
             return jsonify({
                 "success": False,
@@ -532,7 +538,8 @@ def battle_dungeon():
             elif int(layer) >= current_layer:
                 progress_ref.set({dungeon_id: int(layer) + 1}, merge=True)
 
-        # 🚀 勝利後清除所有相關快取
+        # 🚀 勝利後強制清除所有相關快取
+        print(f"✅ 戰鬥勝利，強制清除所有快取...")
         invalidate_user_cache(user_id)
 
         return jsonify({
@@ -944,18 +951,36 @@ def save_equipment():
         return jsonify({"success": False, "error": str(e)}), 500
 
 def invalidate_user_cache(user_id, cache_patterns=None):
+    """清除使用者相關的所有快取"""
     if cache_patterns is None:
         cache_patterns = ['status', 'inventory', 'user_items', 'user_cards', 'progress']
     
     cleared_count = 0
+    # 🎯 修正：改進快取清除邏輯，正確匹配快取鍵
     for key in list(cache_manager._cache.keys()):
-        for pattern in cache_patterns:
-            if f"{pattern}_{user_id}_" in key or key == f"user_status" and user_id in key:
-                cache_manager.delete(key)
-                cleared_count += 1
-                break
+        should_clear = False
+        
+        # 檢查是否包含使用者ID
+        if user_id in key:
+            # 檢查是否匹配任何快取模式
+            for pattern in cache_patterns:
+                if pattern in key:
+                    should_clear = True
+                    break
+            
+            # 🚀 新增：額外檢查完整的API端點名稱
+            api_endpoints = ['status_', 'get_progress_', 'inventory_', 'user_items_', 'user_cards_']
+            for endpoint in api_endpoints:
+                if endpoint in key:
+                    should_clear = True
+                    break
+        
+        if should_clear:
+            cache_manager.delete(key)
+            cleared_count += 1
+            print(f"🧹 清除快取: {key}")
     
-    print(f"已清除使用者 {user_id} 的 {cleared_count} 個快取項目")
+    print(f"✅ 已清除使用者 {user_id} 的 {cleared_count} 個快取項目")
     return cleared_count
 
 if __name__ == "__main__":
