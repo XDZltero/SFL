@@ -724,24 +724,53 @@ function percent(val) {
 	  const progress = percent(data.exp / levelMaxExp);
 	
 	  const getValue = (key) => (b[key] || 0) + (e[key] || 0);
-	  const getFormatted = (key) =>
-	    ["evade", "accuracy", "other_bonus"].includes(key)
-	      ? `${percent(getValue(key))} (${percent(b[key] || 0)} + ${percent(e[key] || 0)})`
-	      : `${getValue(key)} (${b[key] || 0} + ${e[key] || 0})`;
+	  const getFormatted = (key) => {
+	    const isPercent = ["evade", "accuracy", "other_bonus"].includes(key);
+	    const total = getValue(key);
+	    const base = b[key] || 0;
+	    const bonus = e[key] || 0;
+	    
+	    if (isPercent) {
+	      return {
+	        total: `${percent(total)}`,
+	        detail: `${percent(base)} + ${percent(bonus)}`
+	      };
+	    } else {
+	      return {
+	        total: total.toString(),
+	        detail: `${base} + ${bonus}`
+	      };
+	    }
+	  };
 	
-	  return `玩家名稱: ${data.nickname}
-	等級: ${data.level}
-	經驗值: ${data.exp} (${progress})
-	生命值: ${getFormatted("hp")}
-	攻擊力: ${getFormatted("attack")}
-	護盾值: ${getFormatted("shield")}
-	幸運值: ${getFormatted("luck")}
-	命中率: ${getFormatted("accuracy")}
-	迴避率: ${getFormatted("evade")}
-	攻擊速度: ${getFormatted("atk_speed")}
-	額外傷害加成: ${getFormatted("other_bonus")}
-	剩餘能力值點數: ${data.stat_points}
-	剩餘技能點: ${data.skill_points}`;
+	  const statsList = [
+	    { key: "level", label: "等級", value: data.level },
+	    { key: "exp", label: "經驗值", value: `${data.exp} (${progress})` },
+	    { key: "hp", label: "生命值" },
+	    { key: "attack", label: "攻擊力" },
+	    { key: "shield", label: "護盾值" },
+	    { key: "luck", label: "幸運值" },
+	    { key: "accuracy", label: "命中率" },
+	    { key: "evade", label: "迴避率" },
+	    { key: "atk_speed", label: "攻擊速度" },
+	    { key: "other_bonus", label: "額外傷害加成" },
+	    { key: "stat_points", label: "剩餘能力值點數", value: data.stat_points },
+	    { key: "skill_points", label: "剩餘技能點", value: data.skill_points }
+	  ];
+	
+	  let html = `<h3 class="player-name">👤 ${data.nickname}</h3><div class="stats-container">`;
+	  
+	  statsList.forEach(({ key, label, value }) => {
+	    if (value !== undefined) {
+	      html += `<div class="stat-item"><span>${label}:</span><span>${value}</span></div>`;
+	    } else if (["hp", "attack", "shield", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
+	      const formatted = getFormatted(key);
+	      html += `<div class="stat-item"><span>${label}:</span><span>${formatted.total} (${formatted.detail})</span></div>`;
+	    }
+	  });
+	  
+	  html += '</div>';
+	  return html;
 	}
 
     
