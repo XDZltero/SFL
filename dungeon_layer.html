@@ -881,7 +881,8 @@ function percent(val) {
   
   // 🔒 戰鬥前再次從伺服器確認狀態
   try {
-    const latestUser = await fetchUser();
+    console.log("🔄 強制從伺服器獲取最新戰鬥狀態...");
+    const latestUser = await fetchUser(true); // ✅ 強制重新獲取，不使用快取
     userData = latestUser;
     
     const remaining = userData?.battle_cooldown_remaining || 0;
