@@ -1,6 +1,6 @@
 [
   { "id": "healing_potion", "name": "回復藥水", "special": 1, "description": "heal 50 HP" },
-  { "id": "evitina_staff_fragment", "name": "艾畢蒂娜的法杖碎片", "special": 1, "description": "紫魔女巫艾畢蒂娜法杖的珍貴碎片，蘊含著極其強大的魔法力量。" },
+  { "id": "evitina_staff_fragment", "name": "艾畢蒂娜的法杖碎片", "special": 0, "description": "紫魔女巫艾畢蒂娜法杖的珍貴碎片，蘊含著極其強大的魔法力量。" },
   { "id": "forbidden_tome_page", "name": "禁忌書頁", "special": 0, "description": "從禁忌魔法書中撕下的書頁，上面記載著被禁止的危險魔法。\n即使只是碎片也散發著不祥的氣息。" },
   { "id": "upper_magic_essence", "name": "上級魔法精華", "special": 0, "description": "相比起魔力獵食者的精華，魔力殘饕者體內提煉出的魔法精華更加稀有珍貴。" },
   { "id": "magic_essence", "name": "魔法精華", "special": 0, "description": "從魔力獵食者體內提煉出的純淨魔法精華，是煉製高級魔法道具的珍貴材料。" },
