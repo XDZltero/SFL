@@ -118,24 +118,22 @@ def cached_response(ttl=300):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
+            # ✅ 若加了 ?force=1 則不使用快取
+            if request.args.get("force") == "1":
+                return f(*args, **kwargs)
+
             user_id = getattr(request, 'user_id', 'anonymous')
             cache_key = f"{f.__name__}_{user_id}_{request.endpoint}"
-            
-            # 檢查快取
+
             cached_data = cache_manager.get(cache_key)
             if cached_data is not None:
                 return jsonify(cached_data)
-            
-            # 執行原函數
+
             result = f(*args, **kwargs)
-            
-            # ✅ 修復：正確處理不同返回類型
             if isinstance(result, dict):
-                # 直接返回字典的情況
                 cache_manager.set(cache_key, result, ttl)
                 return jsonify(result)
             elif hasattr(result, 'status_code') and result.status_code == 200:
-                # 返回Response物件的情況
                 response_data = result.get_json()
                 cache_manager.set(cache_key, response_data, ttl)
                 return result
@@ -143,6 +141,7 @@ def cached_response(ttl=300):
                 return result
         return wrapper
     return decorator
+
 
 # 檢查戰鬥冷卻時間
 def check_battle_cooldown(user_data):
