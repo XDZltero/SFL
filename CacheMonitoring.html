@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>快取監控儀表板</title>
+  <link rel="icon" href="favicon.ico" />
+  <link href="css/style.css" rel="stylesheet"/>
+  <style>
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+    
+    .metric-card {
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .metric-value {
+      font-size: 2.5em;
+      font-weight: 900;
+      color: #00ffff;
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+      margin: 10px 0;
+    }
+    
+    .metric-label {
+      font-size: 1em;
+      color: #ffd93d;
+      margin-bottom: 5px;
+    }
+    
+    .metric-subtitle {
+      font-size: 0.8em;
+      color: #aaa;
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-healthy { background: #4ecdc4; }
+    .status-warning { background: #ffd93d; }
+    .status-critical { background: #ff6b6b; }
+    
+    .cache-list {
+      max-height: 300px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 10px;
+      margin: 10px 0;
+    }
+    
+    .cache-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .cache-key {
+      color: #00ffff;
+      font-family: monospace;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .cache-size {
+      color: #ffd93d;
+      margin-left: 10px;
+      min-width: 80px;
+      text-align: right;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4ecdc4, #44a08d);
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 0.8em;
+    }
+    
+    .control-panel {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    
+    .control-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .control-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+    
+    .control-btn.danger {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    }
+    
+    .recommendations {
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    
+    .recommendations ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .recommendations li {
+      color: #ffd93d;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="fancy-title">📊 快取監控儀表板</h1>
+  
+  <div class="control-panel">
+    <button class="control-btn" onclick="refreshStats()">🔄 重新整理</button>
+    <button class="control-btn" onclick="clearFrontendCache()">🧹 清除前端快取</button>
+    <button class="control-btn" onclick="clearBackendCache()">🗑️ 清除後端快取</button>
+    <button class="control-btn danger" onclick="clearAllCaches()">💣 全部清除</button>
+    <button class="control-btn" onclick="runCacheTest()">🧪 快取測試</button>
+  </div>
+  
+  <div class="dashboard-grid">
+    <!-- 前端快取狀態 -->
+    <div class="metric-card">
+      <div class="metric-label">
+        <span class="status-indicator" id="frontendStatus"></span>
+        前端快取
+      </div>
+      <div class="metric-value" id="frontendHitRate">0%</div>
+      <div class="metric-subtitle">命中率</div>
+      <div style="margin: 10px 0;">
+        <small>項目: <span id="frontendItems">0</span></small><br>
+        <small>記憶體: <span id="frontendMemory">0KB</span></small>
+      </div>
+    </div>
+    
+    <!-- 後端快取狀態 -->
+    <div class="metric-card">
+      <div class="metric-label">
+        <span class="status-indicator" id="backendStatus"></span>
+        後端快取
+      </div>
+      <div class="metric-value" id="backendHitRate">0%</div>
+      <div class="metric-subtitle">命中率</div>
+      <div style="margin: 10px 0;">
+        <small>項目: <span id="backendItems">0</span></small><br>
+        <small>總命中: <span id="backendHits">0</span></small>
+      </div>
+    </div>
+    
+    <!-- 整體效能 -->
+    <div class="metric-card">
+      <div class="metric-label">
+        <span class="status-indicator" id="performanceStatus"></span>
+        整體效能
+      </div>
+      <div class="metric-value" id="overallScore">100</div>
+      <div class="metric-subtitle">效能分數</div>
+      <div style="margin: 10px 0;">
+        <small>載入時間: <span id="avgLoadTime">0ms</span></small><br>
+        <small>最後更新: <span id="lastUpdate">-</span></small>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 記憶體使用情況 -->
+  <div class="section">
+    <h2 class="fancy-subtitle">💾 記憶體使用情況</h2>
+    <div class="progress-bar">
+      <div class="progress-fill" id="memoryProgress" style="width: 0%;">0%</div>
+    </div>
+    <p>前端快取記憶體使用量 / 50MB 限制</p>
+  </div>
+  
+  <!-- 快取項目列表 -->
+  <div class="section">
+    <h2 class="fancy-subtitle">📋 快取項目列表</h2>
+    <div class="cache-list" id="cacheList">
+      載入中...
+    </div>
+  </div>
+  
+  <!-- 建議和警告 -->
+  <div class="section">
+    <h2 class="fancy-subtitle">💡 優化建議</h2>
+    <div class="recommendations" id="recommendations">
+      <ul id="recommendationList">
+        <li>正在分析快取狀態...</li>
+      </ul>
+    </div>
+  </div>
+  
+  <!-- LRU 快取詳情 -->
+  <div class="section">
+    <h2 class="fancy-subtitle">⚙️ LRU 快取詳情</h2>
+    <div id="lruCacheDetails">載入中...</div>
+  </div>
+  
+  <!-- 測試結果 -->
+  <div class="section" id="testResults" style="display: none;">
+    <h2 class="fancy-subtitle">🧪 快取測試結果</h2>
+    <div id="testOutput"></div>
+  </div>
+
+  <script type="module">
+    import { auth, SecureAPI, getCacheStats } from "./js/firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const API_BASE = "https://sfl-9cb8.onrender.com";
+    let loadTimes = [];
+
+    // 🚀 刷新統計資料
+    async function refreshStats() {
+      const startTime = Date.now();
+      
+      try {
+        // 前端快取統計
+        const frontendStats = getCacheStats();
+        updateFrontendStats(frontendStats);
+        
+        // 後端快取統計
+        try {
+          const backendRes = await fetch(`${API_BASE}/cache_stats_detailed`);
+          const backendStats = await backendRes.json();
+          updateBackendStats(backendStats);
+          updateLRUDetails(backendStats.lru_cache);
+        } catch (error) {
+          console.error('取得後端統計失敗:', error);
+          updateBackendStats(null);
+        }
+        
+        // 記錄載入時間
+        const loadTime = Date.now() - startTime;
+        loadTimes.push(loadTime);
+        if (loadTimes.length > 10) loadTimes.shift();
+        
+        updatePerformanceStats();
+        updateRecommendations();
+        updateLastUpdate();
+        
+      } catch (error) {
+        console.error('刷新統計失敗:', error);
+      }
+    }
+
+    // 更新前端統計
+    function updateFrontendStats(stats) {
+      document.getElementById('frontendHitRate').textContent = stats.hit_rate + '%';
+      document.getElementById('frontendItems').textContent = stats.total;
+      document.getElementById('frontendMemory').textContent = Math.round(stats.memory / 1024) + 'KB';
+      
+      // 狀態指示器
+      const statusEl = document.getElementById('frontendStatus');
+      if (stats.hit_rate >= 70) {
+        statusEl.className = 'status-indicator status-healthy';
+      } else if (stats.hit_rate >= 40) {
+        statusEl.className = 'status-indicator status-warning';
+      } else {
+        statusEl.className = 'status-indicator status-critical';
+      }
+      
+      // 記憶體進度條
+      const memoryPercent = Math.min((stats.memory / (50 * 1024 * 1024)) * 100, 100);
+      const progressEl = document.getElementById('memoryProgress');
+      progressEl.style.width = memoryPercent + '%';
+      progressEl.textContent = Math.round(memoryPercent) + '%';
+      
+      if (memoryPercent > 80) {
+        progressEl.style.background = 'linear-gradient(90deg, #ff6b6b, #ee5a24)';
+      } else if (memoryPercent > 60) {
+        progressEl.style.background = 'linear-gradient(90deg, #ffd93d, #ff9500)';
+      } else {
+        progressEl.style.background = 'linear-gradient(90deg, #4ecdc4, #44a08d)';
+      }
+      
+      // 快取項目列表
+      updateCacheList(stats.keys || []);
+    }
+
+    // 更新後端統計
+    function updateBackendStats(stats) {
+      if (!stats) {
+        document.getElementById('backendHitRate').textContent = 'N/A';
+        document.getElementById('backendItems').textContent = '0';
+        document.getElementById('backendHits').textContent = '0';
+        document.getElementById('backendStatus').className = 'status-indicator status-critical';
+        return;
+      }
+      
+      const overallStats = stats.overall || stats.memory_cache;
+      document.getElementById('backendHitRate').textContent = overallStats.overall_hit_rate + '%';
+      document.getElementById('backendItems').textContent = overallStats.total_cached_items || stats.memory_cache.total_items;
+      document.getElementById('backendHits').textContent = overallStats.total_hits || stats.memory_cache.hits;
+      
+      // 狀態指示器
+      const statusEl = document.getElementById('backendStatus');
+      const hitRate = overallStats.overall_hit_rate || stats.memory_cache.hit_rate;
+      if (hitRate >= 70) {
+        statusEl.className = 'status-indicator status-healthy';
+      } else if (hitRate >= 40) {
+        statusEl.className = 'status-indicator status-warning';
+      } else {
+        statusEl.className = 'status-indicator status-critical';
+      }
+    }
+
+    // 更新效能統計
+    function updatePerformanceStats() {
+      const avgLoadTime = loadTimes.length > 0 ? 
+        Math.round(loadTimes.reduce((a, b) => a + b, 0) / loadTimes.length) : 0;
+      
+      document.getElementById('avgLoadTime').textContent = avgLoadTime + 'ms';
+      
+      // 計算效能分數
+      let score = 100;
+      if (avgLoadTime > 1000) score -= 30;
+      else if (avgLoadTime > 500) score -= 15;
+      
+      const frontendStats = getCacheStats();
+      if (frontendStats.hit_rate < 50) score -= 20;
+      if (frontendStats.memory > 40 * 1024 * 1024) score -= 15;
+      
+      document.getElementById('overallScore').textContent = Math.max(0, score);
+      
+      // 狀態指示器
+      const statusEl = document.getElementById('performanceStatus');
+      if (score >= 80) {
+        statusEl.className = 'status-indicator status-healthy';
+      } else if (score >= 60) {
+        statusEl.className = 'status-indicator status-warning';
+      } else {
+        statusEl.className = 'status-indicator status-critical';
+      }
+    }
+
+    // 更新快取項目列表
+    function updateCacheList(keys) {
+      const listEl = document.getElementById('cacheList');
+      
+      if (keys.length === 0) {
+        listEl.innerHTML = '<p style="color: #888; text-align: center;">無快取項目</p>';
+        return;
+      }
+      
+      let html = '';
+      keys.forEach(key => {
+        const size = Math.round(Math.random() * 50 + 10); // 模擬大小
+        html += `
+          <div class="cache-item">
+            <div class="cache-key">${key}</div>
+            <div class="cache-size">${size}KB</div>
+          </div>
+        `;
+      });
+      
+      listEl.innerHTML = html;
+    }
+
+    // 更新 LRU 快取詳情
+    function updateLRUDetails(lruStats) {
+      const detailsEl = document.getElementById('lruCacheDetails');
+      
+      if (!lruStats) {
+        detailsEl.innerHTML = '<p style="color: #888;">無法取得 LRU 快取詳情</p>';
+        return;
+      }
+      
+      let html = '<div class="dashboard-grid">';
+      
+      Object.entries(lruStats).forEach(([name, stats]) => {
+        html += `
+          <div class="metric-card">
+            <div class="metric-label">${name}</div>
+            <div class="metric-value" style="font-size: 1.5em;">${stats.hit_rate}%</div>
+            <div class="metric-subtitle">命中率</div>
+            <div style="margin: 10px 0;">
+              <small>命中: ${stats.hits}</small><br>
+              <small>未命中: ${stats.misses}</small><br>
+              <small>項目: ${stats.currsize}/${stats.maxsize}</small>
+            </div>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      detailsEl.innerHTML = html;
+    }
+
+    // 更新建議
+    function updateRecommendations() {
+      const stats = getCacheStats();
+      const recommendations = [];
+      
+      if (stats.hit_rate < 50) {
+        recommendations.push('快取命中率偏低，建議增加預載入或調整快取策略');
+      }
+      
+      if (stats.memory > 40 * 1024 * 1024) {
+        recommendations.push('記憶體使用量較高，建議清理過期快取');
+      }
+      
+      if (stats.expired > stats.total * 0.3) {
+        recommendations.push('過期快取項目過多，建議手動清理');
+      }
+      
+      if (stats.total === 0) {
+        recommendations.push('無快取項目，建議啟用預載入功能');
+      }
+      
+      if (recommendations.length === 0) {
+        recommendations.push('快取狀態良好，無需特別優化');
+      }
+      
+      const listEl = document.getElementById('recommendationList');
+      listEl.innerHTML = recommendations.map(rec => `<li>${rec}</li>`).join('');
+    }
+
+    // 更新最後更新時間
+    function updateLastUpdate() {
+      const now = new Date();
+      document.getElementById('lastUpdate').textContent = 
+        now.toLocaleTimeString('zh-TW', { hour12: false });
+    }
+
+    // 清除前端快取
+    window.clearFrontendCache = function() {
+      if (confirm('確定要清除前端快取嗎？')) {
+        SecureAPI.clearCache();
+        alert('前端快取已清除');
+        refreshStats();
+      }
+    };
+
+    // 清除後端快取
+    window.clearBackendCache = async function() {
+      if (confirm('確定要清除後端快取嗎？')) {
+        try {
+          const response = await fetch(`${API_BASE}/clear_cache`, { method: 'POST' });
+          const result = await response.json();
+          alert('後端快取已清除: ' + result.message);
+          refreshStats();
+        } catch (error) {
+          alert('清除後端快取失敗: ' + error.message);
+        }
+      }
+    };
+
+    // 清除全部快取
+    window.clearAllCaches = function() {
+      if (confirm('確定要清除所有快取嗎？這會影響效能！')) {
+        clearFrontendCache();
+        clearBackendCache();
+      }
+    };
+
+    // 執行快取測試
+    window.runCacheTest = async function() {
+      const testResultsEl = document.getElementById('testResults');
+      const testOutputEl = document.getElementById('testOutput');
+      
+      testResultsEl.style.display = 'block';
+      testOutputEl.innerHTML = '正在執行快取測試...';
+      
+      const startTime = Date.now();
+      const testResults = [];
+      
+      try {
+        // 測試 1: API 回應時間（第一次）
+        const start1 = Date.now();
+        await SecureAPI.getStaticData('exp_table', true); // 強制重新載入
+        const time1 = Date.now() - start1;
+        testResults.push(`首次載入經驗值表: ${time1}ms`);
+        
+        // 測試 2: API 回應時間（快取）
+        const start2 = Date.now();
+        await SecureAPI.getStaticData('exp_table', false); // 使用快取
+        const time2 = Date.now() - start2;
+        testResults.push(`快取載入經驗值表: ${time2}ms`);
+        
+        // 測試 3: 使用者狀態
+        const start3 = Date.now();
+        await SecureAPI.getStatus(false);
+        const time3 = Date.now() - start3;
+        testResults.push(`載入使用者狀態: ${time3}ms`);
+        
+        // 計算快取效能提升
+        const improvement = Math.round(((time1 - time2) / time1) * 100);
+        testResults.push(`快取效能提升: ${improvement}%`);
+        
+        const totalTime = Date.now() - startTime;
+        testResults.push(`總測試時間: ${totalTime}ms`);
+        
+        testOutputEl.innerHTML = `
+          <div style="background: rgba(0, 255, 0, 0.1); padding: 15px; border-radius: 10px;">
+            <h4 style="color: #4ecdc4; margin-bottom: 10px;">測試結果：</h4>
+            ${testResults.map(result => `<p>✅ ${result}</p>`).join('')}
+          </div>
+        `;
+        
+      } catch (error) {
+        testOutputEl.innerHTML = `
+          <div style="background: rgba(255, 0, 0, 0.1); padding: 15px; border-radius: 10px;">
+            <h4 style="color: #ff6b6b; margin-bottom: 10px;">測試失敗：</h4>
+            <p>❌ ${error.message}</p>
+          </div>
+        `;
+      }
+    };
+
+    // 全域函數
+    window.refreshStats = refreshStats;
+
+    // 自動刷新
+    setInterval(refreshStats, 30000); // 每30秒自動刷新
+
+    // 初始化
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        refreshStats();
+      } else {
+        window.parent.location.href = "/SFL/login.html";
+      }
+    });
+  </script>
+</body>
+</html>
