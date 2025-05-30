@@ -194,7 +194,40 @@
     let userData = null;
 	let levelExp = {};
 	let dungeonData = null; // 🚀 新增：快取副本資料
-let monsterCache = new Map(); // 🚀 新增：怪物資料快取
+	class BoundedMonsterCache {
+	  constructor(maxSize = 50) {
+	    this.cache = new Map();
+	    this.maxSize = maxSize;
+	  }
+	  
+	  set(key, value) {
+	    if (this.cache.size >= this.maxSize) {
+	      const firstKey = this.cache.keys().next().value;
+	      this.cache.delete(firstKey);
+	    }
+	    this.cache.set(key, value);
+	  }
+	  
+	  get(key) {
+	    const value = this.cache.get(key);
+	    if (value) {
+	      // LRU: 重新插入到末尾
+	      this.cache.delete(key);
+	      this.cache.set(key, value);
+	    }
+	    return value;
+	  }
+	  
+	  clear() {
+	    this.cache.clear();
+	  }
+	  
+	  get size() {
+	    return this.cache.size;
+	  }
+	}
+	
+	let monsterCache = new BoundedMonsterCache(50);
 
     const elementMap = {
       "none": "無",
