@@ -127,6 +127,10 @@
 </style>
 
 <script>
+function percent(val) {
+  return (val * 100).toFixed(1) + '%';
+}
+
 	  (function() {
 		function createPageParticles() {
 		  const particlesContainer = document.getElementById("pageParticles");
