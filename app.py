@@ -611,7 +611,13 @@ def get_progress():
     if not doc.exists:
         return {"progress": {}}
 
-    return doc.to_dict()
+    progress_data = doc.to_dict() or {}
+
+    # 確保格式正確，避免回傳字串或 None
+    if not isinstance(progress_data, dict):
+        progress_data = {}
+
+    return {"progress": progress_data}
 
 @app.route("/inventory", methods=["GET"])
 @require_auth
