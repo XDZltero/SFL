@@ -118,7 +118,7 @@ def cached_response(ttl=300):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            # ✅ 若加了 ?force=1 則不使用快取
+            # ✅ 如果有 force=1 就不使用快取
             if request.args.get("force") == "1":
                 return f(*args, **kwargs)
 
@@ -141,6 +141,7 @@ def cached_response(ttl=300):
                 return result
         return wrapper
     return decorator
+
 
 
 # 檢查戰鬥冷卻時間
