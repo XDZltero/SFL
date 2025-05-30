@@ -155,6 +155,71 @@
       }
     }
 
+    async function loadUserData(forceRefresh = true) {
+      PerformanceMonitor.startTiming('loadUserData');
+      
+      try {
+        console.log(`🔄 載入使用者資料 ${forceRefresh ? '(強制刷新)' : '(允許快取)'}`);
+        
+        // 🎯 強制從伺服器重新獲取資料
+        const promises = [
+          SecureAPI.getStatus(forceRefresh),
+          SecureAPI.get(`${API_BASE}/user_items`, !forceRefresh), // 如果forceRefresh=true，則useCache=false
+          SecureAPI.get(`${API_BASE}/user_cards`, !forceRefresh)
+        ];
+        
+        const [statusRes, itemsRes, cardsRes] = await Promise.all(promises);
+        
+        // 處理使用者狀態
+        userData = await statusRes.json();
+        console.log("✅ 使用者狀態已載入");
+        
+        // 處理使用者道具
+        if (itemsRes && itemsRes.ok) {
+          userItems = await itemsRes.json();
+          console.log("✅ 使用者道具已載入");
+        } else {
+          userItems = userData.items || {};
+          console.log("⚠️ 使用備用道具資料");
+        }
+        
+        // 處理使用者卡片
+        if (cardsRes && cardsRes.ok) {
+          userCards = await cardsRes.json();
+          console.log("✅ 使用者卡片已載入");
+        } else {
+          userCards = userData.cards_owned || {};
+          console.log("⚠️ 使用備用卡片資料");
+        }
+        
+        // 🔧 驗證並修復裝備等級不一致問題
+        await validateAndFixEquipmentLevels();
+        
+        renderPage();
+        
+        console.log('✅ 使用者資料載入完成');
+        
+      } catch (error) {
+        console.error("載入使用者資料失敗:", error);
+        
+        // 如果載入失敗，嘗試重新載入但允許快取
+        if (forceRefresh) {
+          console.log("🔄 強制載入失敗，嘗試使用快取資料...");
+          try {
+            await loadUserData(false);
+          } catch (fallbackError) {
+            console.error("連快取載入也失敗:", fallbackError);
+            alert("載入使用者資料失敗，請重新整理頁面");
+          }
+        } else {
+          alert("載入使用者資料失敗");
+          throw error;
+        }
+      } finally {
+        PerformanceMonitor.endTiming('loadUserData');
+      }
+    }
+
     function calculateEquipmentBonus() {
       const bonus = {};
       const equipment = userData.equipment || {};
@@ -321,13 +386,15 @@
           if (equippedCardId === upgradedCardId) {
             newEquipment[slot] = { [upgradedCardId]: newLevel };
             needsUpdate = true;
-            console.log(`更新插槽 ${slot} 的 ${upgradedCardId} 等級至 ${newLevel}`);
+            console.log(`📝 準備更新插槽 ${slot} 的 ${upgradedCardId} 等級至 ${newLevel}`);
           }
         }
       }
       
       if (needsUpdate) {
         try {
+          console.log("🔄 正在同步裝備等級到伺服器...");
+          
           const response = await SecureAPI.post(`${API_BASE}/save_equipment`, {
             equipment: newEquipment
           });
@@ -336,18 +403,25 @@
           
           if (response.ok && result.success) {
             userData.equipment = newEquipment;
-            console.log("✅ 已同步更新裝備卡片等級");
+            console.log("✅ 已同步更新裝備卡片等級到伺服器");
             
-            // 🧹 清除相關快取
-            SecureAPI.clearUserCache();
-            
+            // 🔄 立即重新渲染一次確保顯示正確
             renderEquipment();
             renderStats();
+            
           } else {
             console.error("❌ 同步裝備等級失敗:", result.error || result.message);
+            
+            // 如果同步失敗，回滾本地資料
+            console.log("🔄 同步失敗，重新載入伺服器資料...");
+            await loadUserData();
           }
         } catch (error) {
           console.error("❌ 同步裝備等級時發生錯誤:", error);
+          
+          // 如果同步失敗，重新載入伺服器資料
+          console.log("🔄 同步錯誤，重新載入伺服器資料...");
+          await loadUserData();
         }
       }
     }
@@ -435,7 +509,7 @@
       PerformanceMonitor.endTiming('openCraftUI');
     }
 
-    // 🚀 優化的製作卡片功能
+    // 卡片製作
     async function craftCard(cardId, currentLevel) {
       const card = cardData.find(c => c.id === cardId);
       const levelData = card.levels[currentLevel];
@@ -474,20 +548,26 @@
             const newLevel = currentLevel + 1;
             userCards[cardId] = newLevel;
             
-            // 🔧 同步裝備等級
+            // 🚀 立即更新本地裝備資料
+            updateLocalEquipmentLevels(cardId, newLevel);
+            
+            // 🔧 同步裝備等級到伺服器
             try {
               await syncEquippedCardLevels(cardId, newLevel);
             } catch (syncError) {
               console.error("同步裝備等級時發生錯誤:", syncError);
             }
             
+            // 🧹 強制清除所有相關快取
+            await forceRefreshAllData();
+            
           } else {
             alert(`❌ ${result.message || '製作失敗，材料已消耗'}`);
+            
+            // 製作失敗也要清除快取並重新載入，因為材料已經被消耗
+            await forceRefreshAllData();
           }
           
-          // 🧹 清除快取並重新載入
-          SecureAPI.clearUserCache();
-          await loadUserData();
           closeDialog();
           
         } else {
@@ -500,6 +580,43 @@
         showLoading(false);
       }
     }
+
+    async function forceRefreshAllData() {
+      console.log("🧹 強制刷新所有相關資料...");
+      
+      try {
+        // 1. 清除前端所有快取
+        SecureAPI.clearCache();
+        console.log("✅ 前端快取已清除");
+        
+        // 2. 發送後端快取清除請求（可選，針對嚴重快取問題）
+        try {
+          await fetch(`${API_BASE}/clear_cache`, { method: 'POST' });
+          console.log("✅ 後端快取清除請求已發送");
+        } catch (cacheError) {
+          console.warn("後端快取清除失敗:", cacheError);
+        }
+        
+        // 3. 等待一小段時間確保快取清除完成
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // 4. 強制重新載入所有使用者資料
+        await loadUserData();
+        console.log("✅ 使用者資料已強制重新載入");
+        
+        // 5. 重新渲染所有顯示
+        renderPage();
+        console.log("✅ 頁面已重新渲染");
+        
+      } catch (error) {
+        console.error("強制刷新資料時發生錯誤:", error);
+        // 如果自動刷新失敗，提示使用者手動重新整理
+        if (confirm("資料同步可能有問題，是否要重新整理頁面確保資料一致性？")) {
+          window.location.reload();
+        }
+      }
+    }
+
     
     // 🔧 驗證裝備等級一致性
     async function validateAndFixEquipmentLevels() {
@@ -612,6 +729,33 @@
     
       updateEquipDropdowns(selectIds);
       PerformanceMonitor.endTiming('openEquipUI');
+    }
+
+    function updateLocalEquipmentLevels(cardId, newLevel) {
+      console.log(`🔄 立即更新本地裝備資料：${cardId} -> Lv.${newLevel}`);
+      
+      const equipment = userData.equipment || {};
+      let updated = false;
+      
+      for (let slot = 1; slot <= 5; slot++) {
+        const equippedCard = equipment[slot];
+        if (equippedCard && typeof equippedCard === 'object') {
+          const equippedCardId = Object.keys(equippedCard)[0];
+          if (equippedCardId === cardId) {
+            // 立即更新本地資料
+            userData.equipment[slot] = { [cardId]: newLevel };
+            updated = true;
+            console.log(`✅ 已更新插槽 ${slot} 的 ${cardId} 等級至 ${newLevel}`);
+          }
+        }
+      }
+      
+      if (updated) {
+        // 立即重新渲染頁面
+        renderEquipment();
+        renderStats();
+        console.log("🔄 已立即更新顯示");
+      }
     }
 
     function updateEquipDropdowns(selectIds) {
@@ -735,6 +879,72 @@
         window.parent.location.href = "/SFL/login.html";
       }
     });
+
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        console.log("🔄 頁面重新可見，檢查資料一致性...");
+        
+        // 頁面重新可見時，輕量級檢查資料是否需要更新
+        setTimeout(async () => {
+          try {
+            // 只重新載入使用者狀態，不強制刷新快取
+            const latestUser = await SecureAPI.getStatus(false);
+            const latestUserData = await latestUser.json();
+            
+            // 比較裝備資料是否有變化
+            const currentEquipment = JSON.stringify(userData.equipment);
+            const latestEquipment = JSON.stringify(latestUserData.equipment);
+            
+            if (currentEquipment !== latestEquipment) {
+              console.log("⚠️ 檢測到裝備資料變化，更新顯示...");
+              userData = latestUserData;
+              renderEquipment();
+              renderStats();
+            }
+          } catch (error) {
+            console.warn("頁面可見性檢查失敗:", error);
+          }
+        }, 1000);
+      }
+    });
+    
+    // 🚀 新增：開發者偵錯工具
+    if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+      window.inventoryDebug = {
+        // 強制刷新所有資料
+        forceRefresh: () => forceRefreshAllData(),
+        
+        // 檢查資料一致性
+        checkConsistency: () => {
+          console.log("🔍 檢查資料一致性...");
+          console.log("使用者卡片:", userCards);
+          console.log("裝備狀態:", userData.equipment);
+          
+          // 檢查裝備中的卡片等級是否與擁有的卡片等級一致
+          for (let slot = 1; slot <= 5; slot++) {
+            const equippedCard = userData.equipment[slot];
+            if (equippedCard) {
+              const cardId = Object.keys(equippedCard)[0];
+              const equippedLevel = equippedCard[cardId];
+              const ownedLevel = userCards[cardId] || 0;
+              
+              if (equippedLevel !== ownedLevel) {
+                console.warn(`⚠️ 插槽 ${slot} 等級不一致: 裝備=${equippedLevel}, 擁有=${ownedLevel}`);
+              }
+            }
+          }
+        },
+        
+        // 手動同步裝備等級
+        syncAll: async () => {
+          for (const [cardId, level] of Object.entries(userCards)) {
+            await syncEquippedCardLevels(cardId, level);
+          }
+        }
+      };
+      
+      console.log("🔧 背包偵錯工具已啟用，使用 inventoryDebug 存取");
+    }
   </script>
 </body>
 </html>
