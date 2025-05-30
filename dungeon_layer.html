@@ -208,7 +208,11 @@
 	    this.cache.set(key, value);
 	  }
 	  
-	  get(key) {
+	  has(key) {
+    return this.cache.has(key);
+  }
+
+  get(key) {
 	    const value = this.cache.get(key);
 	    if (value) {
 	      // LRU: 重新插入到末尾
@@ -218,7 +222,11 @@
 	    return value;
 	  }
 	  
-	  clear() {
+	  delete(key) {
+    return this.cache.delete(key);
+  }
+
+  clear() {
 	    this.cache.clear();
 	  }
 	  
