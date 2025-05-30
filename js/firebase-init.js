@@ -103,39 +103,35 @@ class SecureAPI {
 
   // 🚀 新增：取得靜態資料（長期快取）
   static async getStaticData(endpoint, forceRefresh = false) {
-    const url = `https://sfl-9cb8.onrender.com/${endpoint}`;
+    const cacheKey = `static_${endpoint}`;
     
     if (!forceRefresh) {
-      const cached = cacheManager.get(`static_${endpoint}`);
+      const cached = cacheManager.get(cacheKey);
       if (cached) {
-        return {
-          ok: true,
-          cached: true,
-          json: () => Promise.resolve(cached)
-        };
+        console.log(`🎯 靜態資料快取命中: ${endpoint}`);
+        return cached; // ✅ 統一返回資料
       }
     }
-
+  
     try {
+      const url = `https://sfl-9cb8.onrender.com/${endpoint}`;
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        // 🎯 靜態資料使用長期快取（1小時）
-        cacheManager.set(`static_${endpoint}`, data, 60 * 60 * 1000);
-        return data;
+        cacheManager.set(cacheKey, data, 60 * 60 * 1000);
+        return data; // ✅ 統一返回資料
       } else {
         throw new Error(`API請求失敗: ${response.status}`);
       }
     } catch (error) {
-      console.error(`載入靜態資料失敗 (${endpoint}):`, error);
-      
-      // 🔄 嘗試使用過期快取作為備用
-      const expired = cacheManager.cache.get(`static_${endpoint}`);
-      if (expired) {
+      // 降級：嘗試使用過期快取
+      const allKeys = Array.from(cacheManager.cache.keys());
+      const expiredKey = allKeys.find(key => key === cacheKey);
+      if (expiredKey) {
+        const expiredData = cacheManager.cache.get(expiredKey);
         console.warn(`使用過期快取作為備用: ${endpoint}`);
-        return expired.data;
+        return expiredData.data;
       }
-      
       throw error;
     }
   }
