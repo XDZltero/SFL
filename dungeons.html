@@ -51,7 +51,7 @@
         const userData = await userRes.json();
 
         // 取得進度
-        const progRes = await SecureAPI.get(`${API_BASE}/get_progress`);
+        const progRes = await SecureAPI.get(`${API_BASE}/get_progress?force=1`);
         const progData = await progRes.json();
         const progress = progData.progress || {};
 
