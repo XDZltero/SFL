@@ -517,31 +517,32 @@ function percent(val) {
       window.battleProgressInterval = progressInterval;
     }
 
-    async function fetchUser() {
+    async function fetchUser(force = false) {
 	  PerformanceMonitor.startTiming('fetchUser');
-	  
+	
 	  try {
-	    const res = await SecureAPI.getStatus(false); // 使用快取
+	    const res = force ? await SecureAPI.getStatus(true) : await SecureAPI.getStatus(false);
 	    const data = await res.json();
-	    
+	
 	    console.log('✅ 使用者資料載入完成' + (res.cached ? ' (來自快取)' : ' (API呼叫)'));
 	    return data;
-	    
+	
 	  } catch (error) {
 	    console.error('載入使用者資料失敗:', error);
-	    
-	    // 🔄 降級機制：嘗試使用過期快取
-	    try {
-	      const fallbackRes = await SecureAPI.getWithRetry(API + '/status', 1, true);
-	      return await fallbackRes.json();
-	    } catch (fallbackError) {
-	      console.error('降級載入也失敗:', fallbackError);
-	      throw new Error('無法載入使用者資料');
-	    }
+		    
+		// 🔄 降級機制：嘗試使用過期快取
+		try {
+		  const fallbackRes = await SecureAPI.getWithRetry(API + '/status', 1, true);
+		  return await fallbackRes.json();
+		} catch (fallbackError) {
+		  console.error('降級載入也失敗:', fallbackError);
+		  throw new Error('無法載入使用者資料');
+		}
 	  } finally {
 	    PerformanceMonitor.endTiming('fetchUser');
 	  }
 	}
+	
 
     async function fetchMonster(monsterId) {
 	  PerformanceMonitor.startTiming('fetchMonster');
@@ -695,7 +696,7 @@ function percent(val) {
 	  try {
 	    // 🎯 並行載入使用者資料和靜態資料
 	    const [userDataPromise, staticDataPromise] = await Promise.allSettled([
-	      fetchUser(),
+	      fetchUser(true),
 	      loadStaticData()
 	    ]);
 	    
@@ -956,7 +957,7 @@ function percent(val) {
 		  // ⏳ 等動畫結束後跳轉
 		  setTimeout(() => {
 		    window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-		  }, 1500);
+		  }, 500);
 		};
 		            
             const remaining = userData?.battle_cooldown_remaining || 0;
