@@ -1011,6 +1011,98 @@ def save_equipment():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+# 重置能力值
+@app.route("/reset_stats", methods=["POST"])
+@require_auth
+def reset_stats():
+    """
+    重置玩家的所有能力值到初始狀態
+    需要消耗一個能力值重置券
+    """
+    try:
+        user_id = request.user_id
+        
+        # 1. 獲取使用者資料
+        user_ref = db.collection("users").document(user_id)
+        user_doc = user_ref.get()
+        
+        if not user_doc.exists:
+            return jsonify({"error": "找不到使用者"}), 404
+        
+        user_data = user_doc.to_dict()
+        current_level = user_data.get("level", 1)
+        
+        # 2. 檢查使用者道具
+        item_ref = db.collection("user_items").document(user_id)
+        item_doc = item_ref.get()
+        
+        if not item_doc.exists:
+            return jsonify({"error": "找不到使用者道具資料"}), 404
+        
+        item_data = item_doc.to_dict()
+        user_items = item_data.get("items", {})
+        
+        # 3. 檢查是否有重置券
+        reset_tickets = user_items.get("reset_stats_ticket", 0)
+        if reset_tickets < 1:
+            return jsonify({"error": "沒有「能力值重置券」，無法進行重置"}), 400
+        
+        # 4. 扣除重置券
+        user_items["reset_stats_ticket"] = reset_tickets - 1
+        if user_items["reset_stats_ticket"] <= 0:
+            del user_items["reset_stats_ticket"]
+        
+        # 5. 計算返還的能力值點數
+        # 公式：(等級 - 1) × 5
+        points_to_return = max(0, (current_level - 1) * 5)
+        
+        # 6. 重置能力值到初始狀態
+        initial_base_stats = {
+            "hp": 100,
+            "attack": 20,
+            "shield": 0,
+            "evade": 0.1,
+            "other_bonus": 0,
+            "accuracy": 1.0,
+            "luck": 10,
+            "atk_speed": 100
+        }
+        
+        # 7. 更新使用者資料
+        user_data["base_stats"] = initial_base_stats
+        user_data["stat_points"] = user_data.get("stat_points", 0) + points_to_return
+        
+        # 8. 儲存更新後的資料到資料庫
+        # 使用批次寫入確保資料一致性
+        batch = db.batch()
+        
+        # 更新使用者資料
+        batch.set(user_ref, user_data)
+        
+        # 更新道具資料
+        item_data["items"] = user_items
+        batch.set(item_ref, item_data)
+        
+        # 提交批次操作
+        batch.commit()
+        
+        # 9. 清除相關快取
+        invalidate_user_cache(user_id)
+        
+        # 10. 回傳成功結果
+        return jsonify({
+            "success": True,
+            "message": "能力值重置成功",
+            "points_returned": points_to_return,
+            "new_stat_points": user_data["stat_points"],
+            "tickets_remaining": user_items.get("reset_stats_ticket", 0)
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
+
 def invalidate_user_cache(user_id, cache_patterns=None):
     """清除使用者相關的所有快取"""
     if cache_patterns is None:
