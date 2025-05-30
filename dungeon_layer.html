@@ -936,10 +936,16 @@ function percent(val) {
         
         if (data.success) {
           // 🚀 戰鬥勝利後重新載入使用者資料（強制刷新）
-          fetchUser().then(updatedUser => {
+          fetchUser(true).then(updatedUser => {
             userData = updatedUser;
             console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser);
             userDiv.innerText = formatStats(updatedUser);
+            
+            // ✅ 修正：使用伺服器返回的實際冷卻時間
+            const serverCooldown = updatedUser.battle_cooldown_remaining || 0;
+            console.log("伺服器返回的冷卻時間:", serverCooldown);
+            
+            // 初始化按鈕狀態
             initializeBattleButtons(updatedUser);
           }).catch(error => {
             console.error('重新載入使用者資料失敗:', error);
@@ -950,25 +956,37 @@ function percent(val) {
             document.getElementById("leaveBtn").style.display = "inline-block";
           } else {
             retryBtn.style.display = "inline-block";
-            updateBattleButton(retryBtn, 30, "再戰一次");
-            startCooldownTimer(30);
             nextBtn.style.display = "inline-block";
+            
+            // ✅ 修正：移除硬編碼的30秒，等待使用者資料載入完成後設定
+            setTimeout(() => {
+              const currentCooldown = userData?.battle_cooldown_remaining || 0;
+              if (currentCooldown > 0) {
+                updateBattleButton(retryBtn, currentCooldown, "再戰一次");
+                // 只有在有冷卻時間時才啟動計時器
+                if (!cooldownTimer) {
+                  startCooldownTimer(currentCooldown);
+                }
+              } else {
+                updateBattleButton(retryBtn, 0, "再戰一次");
+              }
+            }, 500); // 等待使用者資料更新完成
+            
             nextBtn.onclick = async () => {
-		  // 🔄 先強制刷新一次進度，避免快取
-		  await fetchProgress();
-		
-		  // ⏳ 等動畫結束後跳轉
-		  setTimeout(() => {
-		    window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-		  }, 500);
-		};
-		            
-            const remaining = userData?.battle_cooldown_remaining || 0;
-            if (remaining > 0) {
-              updateBattleButton(retryBtn, remaining, "再戰一次");
-            } else {
-              retryBtn.disabled = false;
-            }
+              // 🔄 先強制刷新一次進度，避免快取
+              await fetchProgress();
+              
+              // ⚠️ 清除當前頁面的計時器，避免影響下一頁
+              if (cooldownTimer) {
+                clearInterval(cooldownTimer);
+                cooldownTimer = null;
+              }
+              
+              // ⏳ 等動畫結束後跳轉
+              setTimeout(() => {
+                window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
+              }, 500);
+            };
           }
 
           const winMsg = document.createElement("div");
