@@ -1222,7 +1222,9 @@ function percent(val) {
 			  itemText = `<br><span style='color:crimson'>【超稀有】${meta.name} × ${quantity}</span>`;
 			} else if (meta.special === 1) {
 			  itemText = `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${quantity}</span>`;
-			} else {
+			} else if (meta.special === 3) {
+			  itemText = `<br><span style='color:##FFD306'>【罕見】${meta.name} × ${quantity}</span>`;
+			}else {
 			  itemText = `<br>${meta.name} × ${quantity}`;
 			}
 			
