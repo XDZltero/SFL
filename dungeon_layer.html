@@ -329,37 +329,60 @@ function percent(val) {
         }
       }, 1000);
     }
+    function validateCooldownTime(serverTime, inheritedTime) {
+	  console.log(`🔍 驗證冷卻時間 - 服務器: ${serverTime}s, 繼承: ${inheritedTime}s`);
+	  
+	  // 如果服務器返回異常大的數值（超過35秒），可能是錯誤
+	  if (serverTime > 35) {
+	    console.warn(`⚠️ 服務器冷卻時間異常: ${serverTime}s，使用繼承時間: ${inheritedTime}s`);
+	    return Math.max(0, inheritedTime);
+	  }
+	  
+	  // 如果有繼承時間且服務器時間明顯不合理
+	  if (inheritedTime > 0 && Math.abs(serverTime - inheritedTime) > 10) {
+	    console.warn(`⚠️ 服務器與繼承時間差異過大，優先使用繼承時間`);
+	    return Math.max(0, inheritedTime);
+	  }
+	  
+	  // 如果服務器時間小於1秒，視為已冷卻完成
+	  if (serverTime < 1) {
+	    console.log(`✅ 服務器冷卻時間很短，視為已完成`);
+	    return 0;
+	  }
+	  
+	  return Math.max(0, Math.round(serverTime));
+	}
 
     function initializeBattleButtons(userData) {
-      console.log("初始化戰鬥按鈕，使用者資料:", userData);
-      
-      // 🎯 優先使用URL參數傳遞的冷卻時間，避免網路延遲造成的時間偏差
-      let remaining = 0;
-      let isReady = true;
-      
-      if (inheritedCooldown > 0) {
-        // 使用從上一頁傳遞的冷卻時間
-        remaining = inheritedCooldown;
-        isReady = false;
-        console.log("使用URL參數的冷卻時間:", remaining);
-      } else {
-        // 使用伺服器返回的冷卻時間
-        remaining = userData.battle_cooldown_remaining || 0;
-        isReady = userData.battle_ready !== false;
-        console.log("使用伺服器的冷卻時間:", remaining);
-      }
-      
-      console.log("最終冷卻剩餘時間:", remaining, "是否準備好:", isReady);
-      
-      if (!isReady && remaining > 0) {
-        console.log("開始冷卻倒數:", remaining);
-        updateBattleButton(battleBtn, remaining, "開始戰鬥");
-        startCooldownTimer(remaining);
-      } else {
-        console.log("戰鬥按鈕已準備好");
-        updateBattleButton(battleBtn, 0, "開始戰鬥");
-      }
-    }
+	  console.log("初始化戰鬥按鈕，使用者資料:", userData);
+	  
+	  let remaining = 0;
+	  let isReady = true;
+	  
+	  const serverCooldown = userData.battle_cooldown_remaining || 0;
+	  const serverReady = userData.battle_ready !== false;
+	  
+	  if (inheritedCooldown > 0) {
+	    // 🚀 使用智能驗證
+	    remaining = validateCooldownTime(serverCooldown, inheritedCooldown);
+	    isReady = remaining <= 0;
+	    console.log(`📊 冷卻驗證結果 - 最終剩餘: ${remaining}s, 準備狀態: ${isReady}`);
+	  } else {
+	    // 沒有繼承冷卻時，信任服務器數據但做基本驗證
+	    remaining = validateCooldownTime(serverCooldown, 0);
+	    isReady = remaining <= 0 && serverReady;
+	    console.log(`📊 使用服務器數據 - 剩餘: ${remaining}s, 準備狀態: ${isReady}`);
+	  }
+	  
+	  if (!isReady && remaining > 0) {
+	    console.log(`🕒 開始冷卻倒數: ${remaining}秒`);
+	    updateBattleButton(battleBtn, remaining, "開始戰鬥");
+	    startCooldownTimer(remaining);
+	  } else {
+	    console.log("✅ 戰鬥按鈕已準備好");
+	    updateBattleButton(battleBtn, 0, "開始戰鬥");
+	  }
+	}
 
     // 特效控制函數
     function showVictoryEffect() {
@@ -855,7 +878,6 @@ function percent(val) {
     let isBattleInProgress = false;
     // 執行戰鬥
     async function executeBattle() {
-  // 防止重複執行
   if (isBattleInProgress) {
     console.log("戰鬥已在進行中，忽略重複點擊");
     return;
@@ -863,42 +885,79 @@ function percent(val) {
   
   if (!checkProgressBeforeBattle()) return;
   
-  // 設置執行標誌並立即禁用按鈕
   isBattleInProgress = true;
   battleBtn.disabled = true;
   retryBtn.disabled = true;
   
-  console.log("執行戰鬥，當前使用者資料:", userData);
+  console.log("🔍 執行戰鬥前的完整檢查...");
   
-  // 🔒 戰鬥前再次從伺服器確認狀態
   try {
-    console.log("🔄 強制從伺服器獲取最新戰鬥狀態...");
-    const latestUser = await fetchUser(true); // ✅ 強制重新獲取，不使用快取
+    // 🚀 修正：更詳細的狀態檢查
+    console.log("🔄 獲取最新戰鬥狀態...");
+    const latestUser = await fetchUser(true); // 強制重新獲取
     userData = latestUser;
     
-    const remaining = userData?.battle_cooldown_remaining || 0;
-    const isReady = userData?.battle_ready !== false;
+    const serverRemaining = userData?.battle_cooldown_remaining || 0;
+    const serverReady = userData?.battle_ready !== false;
     
-    console.log("戰鬥前最新檢查 - 冷卻剩餘:", remaining, "是否準備好:", isReady);
+    // 🚀 使用智能驗證來判斷是否真的需要等待
+    const validatedRemaining = validateCooldownTime(serverRemaining, 0);
+    const shouldAllowBattle = validatedRemaining <= 0;
     
-    if (!isReady && remaining > 0) {
-      alert(`戰鬥冷卻中，請等待 ${Math.ceil(remaining)} 秒`);
+    console.log(`🔍 戰鬥前檢查結果:`);
+    console.log(`   服務器冷卻: ${serverRemaining}s`);
+    console.log(`   驗證後冷卻: ${validatedRemaining}s`);
+    console.log(`   服務器準備狀態: ${serverReady}`);
+    console.log(`   最終允許戰鬥: ${shouldAllowBattle}`);
+    
+    if (!shouldAllowBattle && validatedRemaining > 0) {
+      console.warn(`❌ 戰鬥被冷卻阻止，剩餘: ${validatedRemaining}秒`);
+      
+      // 🚀 如果冷卻時間過長，顯示額外的重置選項
+      if (validatedRemaining > 30) {
+        const shouldReset = confirm(`檢測到冷卻時間異常 (${validatedRemaining}秒)，這可能是系統錯誤。\n\n是否要重新整理頁面來重置狀態？`);
+        if (shouldReset) {
+          window.location.reload();
+          return;
+        }
+      } else {
+        alert(`戰鬥冷卻中，請等待 ${validatedRemaining} 秒`);
+      }
+      
+      // 重新初始化按鈕狀態
       initializeBattleButtons(userData);
       isBattleInProgress = false;
       return;
     }
+    
+    // 🚀 如果冷卻檢查通過，但服務器數據看起來有問題，給出警告但允許繼續
+    if (serverRemaining > 30 && shouldAllowBattle) {
+      console.warn(`⚠️ 服務器冷卻數據異常但允許戰鬥，可能需要檢查後端邏輯`);
+    }
+    
   } catch (error) {
     console.error("獲取最新狀態失敗:", error);
-    alert("無法確認戰鬥狀態，請重新整理頁面");
-    isBattleInProgress = false;
-    battleBtn.disabled = false;
-    retryBtn.disabled = false;
-    return;
+    
+    // 🚀 網路錯誤時的寬鬆處理
+    if (error.message.includes('fetch') || error.message.includes('network')) {
+      const shouldProceed = confirm("無法確認戰鬥狀態（網路問題），是否仍要嘗試戰鬥？");
+      if (!shouldProceed) {
+        isBattleInProgress = false;
+        battleBtn.disabled = false;
+        retryBtn.disabled = false;
+        return;
+      }
+    } else {
+      alert("無法確認戰鬥狀態，請重新整理頁面");
+      isBattleInProgress = false;
+      battleBtn.disabled = false;
+      retryBtn.disabled = false;
+      return;
+    }
   }
   
-  // 顯示戰鬥載入畫面
+  // 繼續原有的戰鬥邏輯...
   showBattleLoading(true);
-  
   logArea.innerHTML = "";
   retryBtn.style.display = "none";
   nextBtn.style.display = "none";
@@ -906,6 +965,7 @@ function percent(val) {
   document.getElementById("leaveBtn").style.display = "none";
 
   try {
+    console.log("🚀 發送戰鬥請求...");
     const res = await SecureAPI.post(`${API}/battle_dungeon`, {
       dungeon: dungeon,
       layer: layer
@@ -918,10 +978,20 @@ function percent(val) {
       console.log("戰鬥錯誤資料:", errorData);
       
       if (errorData.cooldown_remaining) {
-        alert(`戰鬥冷卻中，請等待 ${Math.ceil(errorData.cooldown_remaining)} 秒`);
+        const cooldownTime = validateCooldownTime(errorData.cooldown_remaining, 0);
+        
+        if (cooldownTime > 30) {
+          const shouldReset = confirm(`服務器返回異常冷卻時間 (${cooldownTime}秒)，這可能是系統錯誤。\n\n是否要重新整理頁面？`);
+          if (shouldReset) {
+            window.location.reload();
+            return;
+          }
+        }
+        
+        alert(`戰鬥冷卻中，請等待 ${cooldownTime} 秒`);
+        
         try {
           const updatedUser = await fetchUser();
-          console.log("重新獲取的使用者資料:", updatedUser);
           userData = updatedUser;
           initializeBattleButtons(updatedUser);
         } catch (e) {
@@ -936,6 +1006,8 @@ function percent(val) {
     }
     
     const data = await res.json();
+    console.log("✅ 戰鬥成功完成");
+    
     const log = data.battle_log;
     if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
 
@@ -1154,7 +1226,7 @@ function percent(val) {
         }
       });
     }, 1000);
-
+    
   } catch (err) {
     console.error("戰鬥執行錯誤:", err);
     showBattleLoading(false);
@@ -1297,6 +1369,41 @@ if (window.location.hostname === 'localhost' || window.location.search.includes(
     },
     preloadAll: preloadDungeonData
   };
+}
+
+window.emergencyResetCooldown = function() {
+  if (confirm('緊急重置冷卻狀態？（僅限開發測試）')) {
+    if (cooldownTimer) {
+      clearInterval(cooldownTimer);
+      cooldownTimer = null;
+    }
+    updateBattleButton(battleBtn, 0, "開始戰鬥");
+    updateBattleButton(retryBtn, 0, "再戰一次");
+    console.log('🚨 緊急重置完成');
+  }
+};
+
+if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+  // 每10秒檢查一次狀態
+  setInterval(async () => {
+    if (userData) {
+      try {
+        const currentUser = await fetchUser(false); // 使用緩存
+        const serverCooldown = currentUser.battle_cooldown_remaining || 0;
+        const currentCooldown = currentRemainingTime;
+        
+        console.log(`🔍 狀態監控 - 服務器: ${serverCooldown.toFixed(2)}s, 本地: ${currentCooldown}s`);
+        
+        if (Math.abs(serverCooldown - currentCooldown) > 5 && serverCooldown > 0) {
+          console.warn(`⚠️ 冷卻時間差異較大，可能需要同步`);
+        }
+      } catch (error) {
+        console.warn('狀態監控失敗:', error);
+      }
+    }
+  }, 10000);
+  
+  console.log('🔧 開發模式已啟用，使用 emergencyResetCooldown() 來緊急重置冷卻');
 }
   </script>
 </body>
