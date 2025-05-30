@@ -6,6 +6,41 @@
   <link rel="icon" href="favicon.ico" />
   <link href="css/style.css" rel="stylesheet"/>
   <link href="css/normalStyle.css" rel="stylesheet"/>
+  <style>
+    /* 能力值重置按鈕樣式 */
+    .reset-stats-btn {
+      background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(233, 30, 99, 0.4);
+      margin-top: 15px;
+      width: 100%;
+    }
+
+    .reset-stats-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(233, 30, 99, 0.6);
+    }
+
+    .reset-stats-btn:disabled {
+      background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: 0 2px 8px rgba(158, 158, 158, 0.3);
+    }
+
+    .reset-stats-btn:disabled:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(158, 158, 158, 0.3);
+    }
+  </style>
 </head>
 <body>
 <div id="initialOverlay">載入中...</div>
@@ -29,6 +64,10 @@
   <div>
     <strong>目前能力值：</strong>
     <ul id="currentStats"></ul>
+    <!-- 新增能力值重置按鈕 -->
+    <button id="btnResetAllStats" class="reset-stats-btn" onclick="showResetConfirmation()">
+      🔄 全部重製
+    </button>
   </div>
   <div>
     <div><strong>剩餘能力點數：<span id="remainingPoints" class="remaining-points">0</span></strong></div>
@@ -67,6 +106,7 @@
   let skillAlloc = {};
   let allSkills = [];
   let remainingSkillPoints = 0;
+  let userItems = {}; // 用於存儲玩家道具
 
   const statFields = [
     { key: "hp", label: "生命值（+5）" },
@@ -90,6 +130,9 @@
       <li>攻擊速度：${stats.atk_speed}</li>
     `;
 
+    // 檢查是否有重置券並更新按鈕狀態
+    updateResetButtonState();
+
     let html = "";
     statFields.forEach(({ key, label }) => {
       html += `
@@ -109,6 +152,66 @@
       container.querySelector(".minus").onclick = () => adjust(key, -1);
       container.querySelector(".plus").onclick = () => adjust(key, 1);
     });
+  }
+
+  // 更新重置按鈕狀態
+  function updateResetButtonState() {
+    const resetBtn = document.getElementById("btnResetAllStats");
+    const hasResetTicket = (userItems["reset_stats_ticket"] || 0) > 0;
+    
+    if (!hasResetTicket) {
+      resetBtn.disabled = true;
+      resetBtn.textContent = "🔄 全部重製 (需要重置券)";
+    } else {
+      resetBtn.disabled = false;
+      resetBtn.textContent = "🔄 全部重製";
+    }
+  }
+
+  // 顯示重置確認對話框
+  window.showResetConfirmation = function() {
+    const hasResetTicket = (userItems["reset_stats_ticket"] || 0) > 0;
+    
+    if (!hasResetTicket) {
+      alert("❌ 您沒有「能力值重置券」，無法進行重置！");
+      return;
+    }
+
+    const level = userStats.level || 1;
+    const pointsToReturn = Math.max(0, (level - 1) * 5);
+    
+    const confirmMessage = `確定要重置所有能力值嗎？\n\n• 將消耗：1個「能力值重置券」\n• 能力值將重置為初始狀態\n• 將返還：${pointsToReturn} 點能力值點數\n\n此操作無法復原！`;
+    
+    if (confirm(confirmMessage)) {
+      executeStatsReset();
+    }
+  };
+
+  // 執行能力值重置
+  async function executeStatsReset() {
+    showLoading(true);
+    PerformanceMonitor.startTiming('resetAllStats');
+    
+    try {
+      const res = await SecureAPI.post(`${API_BASE}/reset_stats`, {});
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert("✅ 能力值重置成功！");
+        
+        // 重新載入使用者資料和道具
+        await performCompleteRefresh('stats_reset');
+        
+      } else {
+        alert(data.error || "重置失敗");
+      }
+    } catch (err) {
+      console.error("重置錯誤:", err);
+      alert(`重置過程發生錯誤：${err.message}`);
+    } finally {
+      showLoading(false);
+      PerformanceMonitor.endTiming('resetAllStats');
+    }
   }
 
   function adjust(stat, delta) {
@@ -163,7 +266,6 @@
       PerformanceMonitor.endTiming('submitLevelUp');
     }
   }
-
 
   function renderSkills() {
     PerformanceMonitor.startTiming('renderSkills');
@@ -417,6 +519,23 @@
     }
   }
 
+  // 🚀 載入使用者道具
+  async function loadUserItems(forceRefresh = false) {
+    try {
+      const res = await SecureAPI.get(`${API_BASE}/user_items`, !forceRefresh);
+      if (res && res.ok) {
+        userItems = await res.json();
+        console.log('✅ 使用者道具載入完成');
+      } else {
+        console.warn('⚠️ 載入使用者道具失敗，使用空物品庫');
+        userItems = {};
+      }
+    } catch (error) {
+      console.error('載入使用者道具失敗:', error);
+      userItems = {};
+    }
+  }
+
   // 🚀 優化的狀態載入
   async function loadStatus(forceRefresh = false) {
       PerformanceMonitor.startTiming('loadStatus');
@@ -445,10 +564,11 @@
     PerformanceMonitor.startTiming('upgradePageInit');
     
     try {
-      // 🎯 並行載入狀態和技能資料
+      // 🎯 並行載入狀態、技能資料和道具
       await Promise.all([
         loadStatus(),
-        loadAllSkills()
+        loadAllSkills(),
+        loadUserItems()
       ]);
       
       console.log('🎉 升級頁面初始化完成');
@@ -511,11 +631,17 @@
         await loadAllSkills(true);
       }
       
-      // 5. 強制更新顯示
+      // 5. 如果是能力值重置，需要重新載入道具資料
+      if (type === 'stats_reset') {
+        await loadUserItems(true);
+        await loadAllSkills(true);
+      }
+      
+      // 6. 強制更新顯示
       forceUpdateDisplay();
       
-      // 6. 重置分配狀態
-      if (type === 'level') {
+      // 7. 重置分配狀態
+      if (type === 'level' || type === 'stats_reset') {
         resetStats();
       }
       
