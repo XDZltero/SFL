@@ -379,12 +379,10 @@ def battle():
         if not monster_id:
             return jsonify({"error": "缺少怪物ID"}), 400
 
-        # 🚀 戰鬥後清除使用者快取
-        user_cache_pattern = f"status_{user_id}_"
-        for key in list(cache_manager._cache.keys()):
-            if key.startswith(user_cache_pattern):
-                cache_manager.delete(key)
+        # 🚀 戰鬥前清除使用者快取
+        invalidate_user_cache(user_id)
 
+        # ... 原有戰鬥邏輯 ...
         user_doc = db.collection("users").document(user_id).get()
         if not user_doc.exists:
             return jsonify({"error": "找不到使用者"}), 404
@@ -420,6 +418,9 @@ def battle():
         
         db.collection("users").document(user_id).set(result["user"])
 
+        # 🚀 戰鬥後再次清除快取以確保資料一致性
+        invalidate_user_cache(user_id)
+
         return jsonify(result)
 
     except Exception as e:
@@ -439,12 +440,10 @@ def battle_dungeon():
         if not dungeon_id or layer is None:
             return jsonify({"error": "缺少參數"}), 400
 
-        # 🚀 戰鬥後清除使用者快取
-        user_cache_pattern = f"status_{user_id}_"
-        for key in list(cache_manager._cache.keys()):
-            if key.startswith(user_cache_pattern):
-                cache_manager.delete(key)
+        # 🚀 戰鬥前清除使用者快取
+        invalidate_user_cache(user_id)
 
+        # ... 原有戰鬥邏輯保持不變 ...
         user_doc = db.collection("users").document(user_id).get()
         if not user_doc.exists:
             return jsonify({"error": "找不到使用者"}), 404
@@ -506,6 +505,8 @@ def battle_dungeon():
 
         if result["result"] == "lose":
             progress_ref.set({dungeon_id: 0}, merge=True)
+            # 🚀 失敗後清除相關快取
+            invalidate_user_cache(user_id, ['progress'])
             return jsonify({
                 "success": False,
                 "message": "你被擊敗了，進度已重設為第一層。",
@@ -523,6 +524,9 @@ def battle_dungeon():
             elif int(layer) >= current_layer:
                 progress_ref.set({dungeon_id: int(layer) + 1}, merge=True)
 
+        # 🚀 勝利後清除所有相關快取
+        invalidate_user_cache(user_id)
+
         return jsonify({
             "success": True,
             "message": "戰鬥勝利",
@@ -537,7 +541,55 @@ def battle_dungeon():
         traceback.print_exc()
         return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
 
-# 🚀 優化其他端點...
+@app.route("/cache_health")
+def cache_health():
+    """檢查快取系統健康狀態"""
+    try:
+        stats = cache_manager.get_stats()
+        
+        # 計算健康分數
+        health_score = 100
+        issues = []
+        
+        # 檢查命中率
+        if stats['hit_rate'] < 50:
+            health_score -= 30
+            issues.append("快取命中率過低")
+        
+        # 檢查記憶體使用
+        memory_mb = stats.get('memory', 0) / (1024 * 1024)
+        if memory_mb > 40:  # 40MB 警告線
+            health_score -= 20
+            issues.append("記憶體使用量過高")
+        
+        # 檢查過期項目比例
+        if stats.get('expired', 0) > stats.get('total_items', 0) * 0.3:
+            health_score -= 15
+            issues.append("過期快取項目過多")
+        
+        status = "healthy" if health_score >= 80 else "warning" if health_score >= 60 else "critical"
+        
+        return jsonify({
+            "status": status,
+            "health_score": max(0, health_score),
+            "issues": issues,
+            "recommendations": [
+                "定期清理過期快取" if "過期" in str(issues) else None,
+                "增加快取TTL時間" if "命中率" in str(issues) else None,
+                "減少快取項目數量" if "記憶體" in str(issues) else None
+            ],
+            "stats": stats,
+            "timestamp": time.time()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error", 
+            "error": str(e),
+            "timestamp": time.time()
+        }), 500
+
+
 @app.route("/get_progress", methods=["GET"])
 @require_auth
 @cached_response(ttl=60)  # 1分鐘快取
@@ -555,7 +607,7 @@ def get_progress():
 
 @app.route("/inventory", methods=["GET"])
 @require_auth
-@cached_response(ttl=60)  # 1分鐘快取
+@cached_response(ttl=60)
 def inventory():
     user_id = request.user_id
     
@@ -702,6 +754,7 @@ def save_skill_distribution():
 
 @app.route("/user_items", methods=["GET"])
 @require_auth
+@cached_response(ttl=60)  # 🚀 新增：1分鐘快取
 def user_items():
     user_id = request.user_id
     
@@ -711,20 +764,71 @@ def user_items():
     
     user_data = doc.to_dict()
     items = user_data.get("items", {})
-    return jsonify(items)
+    return items  # 直接返回資料，讓快取裝飾器處理 jsonify
 
 @app.route("/user_cards", methods=["GET"])
 @require_auth
+@cached_response(ttl=60)  # 🚀 新增：1分鐘快取
 def user_cardss():
     user_id = request.user_id
     
     doc = db.collection("users").document(user_id).get()
     if not doc.exists:
-        return jsonify({"error": "找不到使用者"}), 404
+        return {"error": "找不到使用者"}, 404
     
     user_data = doc.to_dict()
     cards_owned = user_data.get("cards_owned", {})
-    return jsonify(cards_owned)
+    return cards_owned  # 直接返回資料
+
+@app.route("/cache_stats_detailed")
+def cache_stats_detailed():
+    """提供詳細的快取統計資訊"""
+    try:
+        # 取得自定義快取統計
+        cache_stats = cache_manager.get_stats()
+        
+        # 取得 LRU 快取統計
+        lru_stats = {}
+        lru_functions = [
+            ('dungeon_data', get_dungeon_data),
+            ('element_table', get_element_table),
+            ('level_exp', get_level_exp),
+            ('items_data', get_items_data),
+            ('equips_data', get_equips_data),
+            ('all_skill_data', get_all_skill_data),
+            ('item_map', get_item_map)
+        ]
+        
+        for name, func in lru_functions:
+            if hasattr(func, 'cache_info'):
+                info = func.cache_info()
+                lru_stats[name] = {
+                    'hits': info.hits,
+                    'misses': info.misses,
+                    'maxsize': info.maxsize,
+                    'currsize': info.currsize,
+                    'hit_rate': round(info.hits / (info.hits + info.misses) * 100, 2) if (info.hits + info.misses) > 0 else 0
+                }
+        
+        # 計算總體統計
+        total_hits = cache_stats['hits'] + sum(stat['hits'] for stat in lru_stats.values())
+        total_misses = cache_stats['misses'] + sum(stat['misses'] for stat in lru_stats.values())
+        overall_hit_rate = round(total_hits / (total_hits + total_misses) * 100, 2) if (total_hits + total_misses) > 0 else 0
+        
+        return jsonify({
+            "memory_cache": cache_stats,
+            "lru_cache": lru_stats,
+            "overall": {
+                "total_hits": total_hits,
+                "total_misses": total_misses,
+                "overall_hit_rate": overall_hit_rate,
+                "total_cached_items": cache_stats['total_items'] + sum(stat['currsize'] for stat in lru_stats.values())
+            },
+            "timestamp": time.time()
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"取得快取統計失敗: {str(e)}"}), 500
 
 @app.route("/items", methods=["GET"])
 def get_items():
@@ -815,6 +919,24 @@ def save_equipment():
         return jsonify({"success": True, "message": "裝備更新成功"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+def invalidate_user_cache(user_id, cache_patterns=None):
+    """智能清除特定使用者的快取"""
+    if cache_patterns is None:
+        cache_patterns = ['status', 'inventory', 'user_items', 'user_cards', 'progress']
+    
+    cleared_count = 0
+    for pattern in cache_patterns:
+        cache_key_pattern = f"{pattern}_{user_id}_"
+        
+        # 清除匹配模式的快取
+        keys_to_clear = [key for key in cache_manager._cache.keys() if cache_key_pattern in key]
+        for key in keys_to_clear:
+            cache_manager.delete(key)
+            cleared_count += 1
+    
+    print(f"已清除使用者 {user_id} 的 {cleared_count} 個快取項目")
+    return cleared_count
 
 if __name__ == "__main__":
     import os
