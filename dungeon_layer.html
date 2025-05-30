@@ -186,12 +186,15 @@
   </script>
 
 <script type="module">
-    import { auth, SecureAPI } from "./js/firebase-init.js";
+    import { auth, SecureAPI, PerformanceMonitor } from "./js/firebase-init.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     let equipData = [];
     let cooldownTimer = null;
     let userData = null;
+	let levelExp = {};
+	let dungeonData = null; // 🚀 新增：快取副本資料
+let monsterCache = new Map(); // 🚀 新增：怪物資料快取
 
     const elementMap = {
       "none": "無",
@@ -468,22 +471,124 @@
     }
 
     async function fetchUser() {
-      const res = await SecureAPI.get(`${API}/status`);
-      return await res.json();
-    }
+	  PerformanceMonitor.startTiming('fetchUser');
+	  
+	  try {
+	    const res = await SecureAPI.getStatus(false); // 使用快取
+	    const data = await res.json();
+	    
+	    console.log('✅ 使用者資料載入完成' + (res.cached ? ' (來自快取)' : ' (API呼叫)'));
+	    return data;
+	    
+	  } catch (error) {
+	    console.error('載入使用者資料失敗:', error);
+	    
+	    // 🔄 降級機制：嘗試使用過期快取
+	    try {
+	      const fallbackRes = await SecureAPI.getWithRetry(API + '/status', 1, true);
+	      return await fallbackRes.json();
+	    } catch (fallbackError) {
+	      console.error('降級載入也失敗:', fallbackError);
+	      throw new Error('無法載入使用者資料');
+	    }
+	  } finally {
+	    PerformanceMonitor.endTiming('fetchUser');
+	  }
+	}
 
     async function fetchMonster(monsterId) {
-      const res = await fetch(`${API}/monster?id=${encodeURIComponent(monsterId)}`);
-      return await res.json();
-    }
+	  PerformanceMonitor.startTiming('fetchMonster');
+	  
+	  try {
+	    // 檢查前端快取
+	    if (monsterCache.has(monsterId)) {
+	      console.log(`🎯 怪物資料快取命中: ${monsterId}`);
+	      return monsterCache.get(monsterId);
+	    }
+	    
+	    const res = await fetch(`${API}/monster?id=${encodeURIComponent(monsterId)}`);
+	    if (!res.ok) {
+	      throw new Error(`載入怪物失敗: ${res.status}`);
+	    }
+	    
+	    const monsterData = await res.json();
+	    
+	    // 🚀 儲存到前端快取（10分鐘）
+	    monsterCache.set(monsterId, monsterData);
+	    setTimeout(() => {
+	      monsterCache.delete(monsterId);
+	      console.log(`🗑️ 怪物快取過期: ${monsterId}`);
+	    }, 10 * 60 * 1000);
+	    
+	    console.log(`💾 怪物資料已快取: ${monsterId}`);
+	    return monsterData;
+	    
+	  } catch (error) {
+	    console.error(`載入怪物 ${monsterId} 失敗:`, error);
+	    throw error;
+	  } finally {
+	    PerformanceMonitor.endTiming('fetchMonster');
+	  }
+	}
 
-    function calcTotal(base, equip) {
-      return (base || 0) + (equip || 0);
-    }
-    
-    function percent(num) {
-      return Math.round(num * 100) + "%";
-    }
+	async function loadStaticData() {
+	  PerformanceMonitor.startTiming('loadStaticData');
+	  
+	  try {
+	    // 🎯 並行載入靜態資料，優先使用快取
+	    const [levelExpRes, equipRes, dungeonRes] = await Promise.all([
+	      SecureAPI.getStaticData('exp_table'),
+	      SecureAPI.getStaticData('equips_table'),
+	      SecureAPI.getStaticData('dungeon_table')
+	    ]);
+	    
+	    levelExp = levelExpRes;
+	    equipData = Array.isArray(equipRes) ? equipRes : Object.values(equipRes);
+	    dungeonData = dungeonRes;
+	    
+	    console.log('✅ 靜態資料載入完成');
+	    
+	  } catch (error) {
+	    console.error('載入靜態資料失敗:', error);
+	    
+	    // 🔄 降級方案：逐個載入
+	    try {
+	      console.log('🔄 嘗試降級載入...');
+	      
+	      // 經驗值表（最重要）
+	      try {
+	        const expRes = await fetch(`${API}/exp_table`);
+	        levelExp = await expRes.json();
+	      } catch (e) {
+	        console.warn('經驗值表載入失敗:', e);
+	      }
+	      
+	      // 裝備資料
+	      try {
+	        const equipResponse = await fetch(`${API}/equips_table`);
+	        const equipResult = await equipResponse.json();
+	        equipData = Array.isArray(equipResult) ? equipResult : Object.values(equipResult);
+	      } catch (e) {
+	        console.warn('裝備資料載入失敗:', e);
+	        equipData = [];
+	      }
+	      
+	      // 副本資料
+	      try {
+	        const dungeonResponse = await fetch(`${API}/dungeon_table`);
+	        dungeonData = await dungeonResponse.json();
+	      } catch (e) {
+	        console.warn('副本資料載入失敗:', e);
+	      }
+	      
+	    } catch (fallbackError) {
+	      console.error('降級載入也失敗:', fallbackError);
+	      alert('載入基礎資料失敗，部分功能可能受限');
+	    }
+	  } finally {
+	    PerformanceMonitor.endTiming('loadStaticData');
+	  }
+	}
 
     // 計算裝備數值
     function calculateEquipmentBonus(equipment, equipData) {
@@ -535,90 +640,107 @@
 	剩餘技能點: ${data.skill_points}`;
 	}
 
-    let levelExp = {};
+    
 
     async function loadLayer() {
-      try {
-        // 讀取升級經驗表
-        const expRes = await fetch(`${API}/exp_table`);
-        levelExp = await expRes.json();
-    
-        const user = await fetchUser();
-        userData = user; // 儲存使用者資料
-        
-        console.log("載入的使用者資料:", user); // 調試信息
-
-	// 讀取裝備數值資料
-	const equipRes = await fetch(`${API}/equips_table`);
-	equipData = await equipRes.json();
-        
-        // 傳遞使用者名稱給父視窗
-        window.parent.postMessage({
-          nickname: user.nickname
-        }, "*");
-        
-        // 初始化戰鬥按鈕冷卻狀態
-        initializeBattleButtons(user);
-        
-        userDiv.innerText = formatStats(user);
-    
-        // 讀取副本資料
-        const dungeonRes = await fetch(`${API}/dungeon_table`);
-        const all = await dungeonRes.json();
-		
-        const current = all.find(d => d.id === dungeon);
-        if (!current) throw new Error("副本不存在");
-    
-        const isLastLayer = (layer === current.monsters.length);
-        const monsterId = isLastLayer ? current.bossId : current.monsters[layer];
-        const mon = await fetchMonster(monsterId);
+	  PerformanceMonitor.startTiming('loadLayer');
+	  
+	  try {
+	    // 🎯 並行載入使用者資料和靜態資料
+	    const [userDataPromise, staticDataPromise] = await Promise.allSettled([
+	      fetchUser(),
+	      loadStaticData()
+	    ]);
+	    
+	    // 處理使用者資料
+	    if (userDataPromise.status === 'fulfilled') {
+	      userData = userDataPromise.value;
+	      console.log("✅ 使用者資料載入完成:", userData.nickname);
+	    } else {
+	      throw new Error('使用者資料載入失敗: ' + userDataPromise.reason);
+	    }
+	    
+	    // 處理靜態資料結果
+	    if (staticDataPromise.status === 'rejected') {
+	      console.warn('靜態資料載入失敗:', staticDataPromise.reason);
+	    }
+	    
+	    // 傳遞使用者名稱給父視窗
+	    window.parent.postMessage({
+	      nickname: userData.nickname
+	    }, "*");
+	    
+	    // 初始化戰鬥按鈕冷卻狀態
+	    initializeBattleButtons(userData);
+	    
+	    userDiv.innerText = formatStats(userData);
 	
-        if (isLastLayer) {
-          // 加上整體 boss 模式樣式
-          document.body.classList.add("boss-mode");
-	  window.parent.postMessage({ command: "switchToBossMusic" }, "*");
+	    // 🚀 使用快取的副本資料或API載入
+	    let current;
+	    if (dungeonData) {
+	      current = dungeonData.find(d => d.id === dungeon);
+	    } else {
+	      // 降級：直接API載入
+	      const dungeonRes = await fetch(`${API}/dungeon_table`);
+	      const allDungeons = await dungeonRes.json();
+	      current = allDungeons.find(d => d.id === dungeon);
+	    }
+	    
+	    if (!current) throw new Error("副本不存在");
 	
-          // 加上戰鬥載入畫面 boss 樣式
-          document.getElementById("battleLoadingOverlay")?.classList.add("boss-battle");
-          document.getElementById("battleIcon")?.classList.add("boss");
-          document.getElementById("battleTitle")?.classList.add("boss");
-          document.getElementById("loadingText")?.classList.add("boss");
-          document.getElementById("progressContainer")?.classList.add("boss");
-          document.getElementById("progressText")?.classList.add("boss");
-          document.getElementById("battleTips")?.classList.add("boss");
+	    const isLastLayer = (layer === current.monsters.length);
+	    const monsterId = isLastLayer ? current.bossId : current.monsters[layer];
+	    const mon = await fetchMonster(monsterId);
 	
-          // 選擇怪物區塊也可以加強
-          document.getElementById("monsterInfo")?.classList.add("boss");
-        }
-    
-        retryBtn.style.display = "none";
-        nextBtn.style.display = "none";
-        document.getElementById("leaveBtn").style.display = "none";
-    
-        monsterDiv.innerHTML = `
-          <h2>${mon.name}</h2>
-          <img src="${mon.image_url}" width="200"><br>
-          <p>${mon.info}</p>
-          <ul>
-            <li>等級：${mon.level}</li>
-            <li>屬性：${Array.isArray(mon.element) ? mon.element.map(e => elementMap[e] || e).join("、") : (elementMap[mon.element] || mon.element)}</li>
-            <li>生命值：${mon.stats.hp}</li>
-            <li>攻擊力：${mon.stats.attack}</li>
-	    <li>護盾值：${mon.stats.shield}</li>
-            <li>命中率：${Math.round(mon.stats.accuracy * 100)}%</li>
-            <li>迴避率：${Math.round(mon.stats.evade * 100)}%</li>
-            <li>攻擊速度：${mon.stats.atk_speed}</li>
-          </ul>
-        `;
-        
-        // 所有資料載入完成後隱藏頁面載入畫面
-        hidePageLoading();
-      } catch (err) {
-        console.error("載入層級失敗:", err); // 調試信息
-        monsterDiv.innerHTML = "❌ 載入資料失敗";
-        hidePageLoading();
-      }
-    }
+	    if (isLastLayer) {
+	      // 加上整體 boss 模式樣式
+	      document.body.classList.add("boss-mode");
+	      window.parent.postMessage({ command: "switchToBossMusic" }, "*");
+	
+	      // 加上戰鬥載入畫面 boss 樣式
+	      document.getElementById("battleLoadingOverlay")?.classList.add("boss-battle");
+	      document.getElementById("battleIcon")?.classList.add("boss");
+	      document.getElementById("battleTitle")?.classList.add("boss");
+	      document.getElementById("loadingText")?.classList.add("boss");
+	      document.getElementById("progressContainer")?.classList.add("boss");
+	      document.getElementById("progressText")?.classList.add("boss");
+	      document.getElementById("battleTips")?.classList.add("boss");
+	
+	      // 選擇怪物區塊也可以加強
+	      document.getElementById("monsterInfo")?.classList.add("boss");
+	    }
+	
+	    retryBtn.style.display = "none";
+	    nextBtn.style.display = "none";
+	    document.getElementById("leaveBtn").style.display = "none";
+	
+	    monsterDiv.innerHTML = `
+	      <h2>${mon.name}</h2>
+	      <img src="${mon.image_url}" width="200"><br>
+	      <p>${mon.info}</p>
+	      <ul>
+	        <li>等級：${mon.level}</li>
+	        <li>屬性：${Array.isArray(mon.element) ? mon.element.map(e => elementMap[e] || e).join("、") : (elementMap[mon.element] || mon.element)}</li>
+	        <li>生命值：${mon.stats.hp}</li>
+	        <li>攻擊力：${mon.stats.attack}</li>
+	        <li>護盾值：${mon.stats.shield}</li>
+	        <li>命中率：${Math.round(mon.stats.accuracy * 100)}%</li>
+	        <li>迴避率：${Math.round(mon.stats.evade * 100)}%</li>
+	        <li>攻擊速度：${mon.stats.atk_speed}</li>
+	      </ul>
+	    `;
+	    
+	    // 所有資料載入完成後隱藏頁面載入畫面
+	    hidePageLoading();
+	    
+	  } catch (err) {
+	    console.error("載入層級失敗:", err);
+	    monsterDiv.innerHTML = "❌ 載入資料失敗";
+	    hidePageLoading();
+	  } finally {
+	    PerformanceMonitor.endTiming('loadLayer');
+	  }
+	}
 
     let currentProgress = 0;
 
@@ -648,248 +770,262 @@
     let isBattleInProgress = false;
     // 執行戰鬥
     async function executeBattle() {
-	  // 防止重複執行
-	  if (isBattleInProgress) {
-	    console.log("戰鬥已在進行中，忽略重複點擊");
-	    return;
-	  }
-	  
-	  if (!checkProgressBeforeBattle()) return;
-	  
-	  // 設置執行標誌並立即禁用按鈕
-	  isBattleInProgress = true;
-	  battleBtn.disabled = true;
-	  retryBtn.disabled = true;
-	  
-	  console.log("執行戰鬥，當前使用者資料:", userData);
-	  
-	  // 🔒 戰鬥前再次從伺服器確認狀態
-	  try {
-	    const latestUser = await fetchUser();
-	    userData = latestUser;
-	    
-	    const remaining = userData?.battle_cooldown_remaining || 0;
-	    const isReady = userData?.battle_ready !== false;
-	    
-	    console.log("戰鬥前最新檢查 - 冷卻剩餘:", remaining, "是否準備好:", isReady);
-	    
-	    if (!isReady && remaining > 0) {
-	      alert(`戰鬥冷卻中，請等待 ${Math.ceil(remaining)} 秒`);
-	      initializeBattleButtons(userData);
-	      // 重置執行標誌
-	      isBattleInProgress = false;
-	      return;
-	    }
-	  } catch (error) {
-	    console.error("獲取最新狀態失敗:", error);
-	    alert("無法確認戰鬥狀態，請重新整理頁面");
-	    // 重置執行標誌
-	    isBattleInProgress = false;
-	    battleBtn.disabled = false;
-	    retryBtn.disabled = false;
-	    return;
-	  }
-	  
-	  // 顯示戰鬥載入畫面
-	  showBattleLoading(true);
-	  
-	  logArea.innerHTML = "";
-	  retryBtn.style.display = "none";
-	  nextBtn.style.display = "none";
-	  battleBtn.style.display = "none";
-	  document.getElementById("leaveBtn").style.display = "none";
-	
-	  try {
-	    const res = await SecureAPI.post(`${API}/battle_dungeon`, {
-	      dungeon: dungeon,
-	      layer: layer
-	    });
-	    
-	    console.log("戰鬥請求回應狀態:", res.status);
-	    
-	    if (!res.ok) {
-	      const errorData = await res.json();
-	      console.log("戰鬥錯誤資料:", errorData);
-	      
-	      if (errorData.cooldown_remaining) {
-	        alert(`戰鬥冷卻中，請等待 ${Math.ceil(errorData.cooldown_remaining)} 秒`);
-	        try {
-	          const updatedUser = await fetchUser();
-	          console.log("重新獲取的使用者資料:", updatedUser);
-	          userData = updatedUser;
-	          initializeBattleButtons(updatedUser);
-	        } catch (e) {
-	          console.error("更新使用者狀態失敗:", e);
-	        }
-	        showBattleLoading(false);
-	        battleBtn.style.display = "inline-block";
-	        // 重置執行標誌
-	        isBattleInProgress = false;
-	        return;
-	      }
-	      throw new Error(errorData.error || '戰鬥失敗');
-	    }
-	    
-	    const data = await res.json();
-	    const log = data.battle_log;
-	    if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
-	
-	    // 更新本地使用者資料
-	    if (data.user) {
-	      userData = data.user;
-	      console.log("戰鬥後更新的使用者資料:", userData);
-	    }
-	
-	    // 確保進度條達到 100% 後再隱藏載入畫面
-	    setTimeout(() => {
-	      showBattleLoading(false);
-	      playBattleLog(log).then(() => {
-	        // 戰鬥完成，重置執行標誌
-	        isBattleInProgress = false;
-	        
-	        if (data.success) {
-	          fetchUser().then(updatedUser => {
-	            userData = updatedUser;
-	            console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser);
-	            userDiv.innerText = formatStats(updatedUser);
-	            initializeBattleButtons(updatedUser);
-	          });
-	
-	          if (data.is_last_layer) {
-	            showVictoryEffect();
-	            document.getElementById("leaveBtn").style.display = "inline-block";
-	          } else {
-	            retryBtn.style.display = "inline-block";
-	            updateBattleButton(retryBtn, 30, "再戰一次");
-	            startCooldownTimer(30);
-	            nextBtn.style.display = "inline-block";
-	            nextBtn.onclick = () => {
-	              window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-	            };
-	            
-	            const remaining = userData?.battle_cooldown_remaining || 0;
-	            if (remaining > 0) {
-	              updateBattleButton(retryBtn, remaining, "再戰一次");
-	            } else {
-	              retryBtn.disabled = false;
-	            }
-	          }
-	
-	          const winMsg = document.createElement("div");
-	          winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
-	          logArea.appendChild(winMsg);
-	          scrollLogToBottom();
-	
-	          if (data.rewards) {
-			  const { 
-			    base_exp, 
-			    exp_luck_bonus, 
-			    leveled_up, 
-			    actual_drops, 
-			    drop_luck_bonus,
-			    drops 
-			  } = data.rewards;
-			  
-			  fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
-			    const rewardLog = document.createElement("div");
-			    rewardLog.className = "reward-message";
-			    
-			    // 💎 經驗值顯示
-			    let expText = `<br><strong>🎁 戰利品：</strong><br>獲得 ${base_exp} 經驗值`;
-			    
-			    // 🌟 經驗值幸運加成
-			    if (exp_luck_bonus > 0) {
-			      expText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>🍀 幸運加成！額外獲得 ${exp_luck_bonus} 經驗值！</span>`;
-			    }
-			    
-			    // 🎊 等級提升
-			    if (leveled_up) {
-			      expText += `<br><span style='color:red'>🎊 等級提升！</span>`;
-			    }
-			    
-			    let dropText = "";
-			    
-			    // 🎯 處理掉落物品顯示
-			    const hasActualDrops = actual_drops && Object.keys(actual_drops).length > 0;
-			    const originalDrops = drops || [];
-			    
-			    if (hasActualDrops) {
-			      dropText += "<br><strong>📦 獲得物品：</strong>";
-			      
-			      for (const [itemId, quantity] of Object.entries(actual_drops)) {
-			        const meta = itemMap[itemId] || { name: itemId, special: 0 };
-			        const luckBonus = drop_luck_bonus[itemId] || 0;
-			        
-			        let itemText = "";
-			        
-			        // 根據稀有度設定顏色
-			        if (meta.special === 2) {
-			          itemText = `<br><span style='color:crimson'>【超稀有】${meta.name} × ${quantity}</span>`;
-			        } else if (meta.special === 1) {
-			          itemText = `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${quantity}</span>`;
-			        } else {
-			          itemText = `<br>${meta.name} × ${quantity}`;
-			        }
-			        
-			        // 🌟 如果有幸運加成，額外顯示
-			        if (luckBonus > 0) {
-			          itemText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;margin-left:20px;'>🍀 幸運加成！額外獲得 ${luckBonus} 個！</span>`;
-			        }
-			        
-			        dropText += itemText;
-			      }
-			    } else {
-			      // ✅ 修正：檢查是否因為背包滿了而無法獲得物品
-			      let hasFullInventoryItems = false;
-			      
-			      // 檢查原始掉落表中100%掉落的物品
-			      for (const drop of originalDrops) {
-			        if (drop.rate >= 1.0) {
-			          // 這是100%掉落的物品，但沒有在actual_drops中
-			          // 很可能是背包滿了
-			          hasFullInventoryItems = true;
-			          break;
-			        }
-			      }
-			      
-			      if (hasFullInventoryItems) {
-			        dropText += "<br><span style='color:orange'>⚠️ 背包已滿，部分物品無法獲得</span>";
-			      } else {
-			        dropText += "<br>本次沒有掉落物品";
-			      }
-			    }
-			    
-			    rewardLog.innerHTML = expText + dropText;
-			    logArea.appendChild(rewardLog);
-			    scrollLogToBottom();
-			  });
+  // 防止重複執行
+  if (isBattleInProgress) {
+    console.log("戰鬥已在進行中，忽略重複點擊");
+    return;
+  }
+  
+  if (!checkProgressBeforeBattle()) return;
+  
+  // 設置執行標誌並立即禁用按鈕
+  isBattleInProgress = true;
+  battleBtn.disabled = true;
+  retryBtn.disabled = true;
+  
+  console.log("執行戰鬥，當前使用者資料:", userData);
+  
+  // 🔒 戰鬥前再次從伺服器確認狀態
+  try {
+    const latestUser = await fetchUser();
+    userData = latestUser;
+    
+    const remaining = userData?.battle_cooldown_remaining || 0;
+    const isReady = userData?.battle_ready !== false;
+    
+    console.log("戰鬥前最新檢查 - 冷卻剩餘:", remaining, "是否準備好:", isReady);
+    
+    if (!isReady && remaining > 0) {
+      alert(`戰鬥冷卻中，請等待 ${Math.ceil(remaining)} 秒`);
+      initializeBattleButtons(userData);
+      isBattleInProgress = false;
+      return;
+    }
+  } catch (error) {
+    console.error("獲取最新狀態失敗:", error);
+    alert("無法確認戰鬥狀態，請重新整理頁面");
+    isBattleInProgress = false;
+    battleBtn.disabled = false;
+    retryBtn.disabled = false;
+    return;
+  }
+  
+  // 顯示戰鬥載入畫面
+  showBattleLoading(true);
+  
+  logArea.innerHTML = "";
+  retryBtn.style.display = "none";
+  nextBtn.style.display = "none";
+  battleBtn.style.display = "none";
+  document.getElementById("leaveBtn").style.display = "none";
+
+  try {
+    const res = await SecureAPI.post(`${API}/battle_dungeon`, {
+      dungeon: dungeon,
+      layer: layer
+    });
+    
+    console.log("戰鬥請求回應狀態:", res.status);
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.log("戰鬥錯誤資料:", errorData);
+      
+      if (errorData.cooldown_remaining) {
+        alert(`戰鬥冷卻中，請等待 ${Math.ceil(errorData.cooldown_remaining)} 秒`);
+        try {
+          const updatedUser = await fetchUser();
+          console.log("重新獲取的使用者資料:", updatedUser);
+          userData = updatedUser;
+          initializeBattleButtons(updatedUser);
+        } catch (e) {
+          console.error("更新使用者狀態失敗:", e);
+        }
+        showBattleLoading(false);
+        battleBtn.style.display = "inline-block";
+        isBattleInProgress = false;
+        return;
+      }
+      throw new Error(errorData.error || '戰鬥失敗');
+    }
+    
+    const data = await res.json();
+    const log = data.battle_log;
+    if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
+
+    // 更新本地使用者資料
+    if (data.user) {
+      userData = data.user;
+      console.log("戰鬥後更新的使用者資料:", userData);
+    }
+
+    // 🚀 戰鬥完成後清除相關快取
+    try {
+      // 清除使用者相關快取
+      if (window.devTools?.cache) {
+        window.devTools.clearUserCache();
+      }
+      
+      // 清除怪物快取（如果怪物狀態可能改變）
+      if (data.success) {
+        monsterCache.clear();
+        console.log('🧹 已清除怪物快取');
+      }
+    } catch (cacheError) {
+      console.warn('清除快取失敗:', cacheError);
+    }
+
+    // 確保進度條達到 100% 後再隱藏載入畫面
+    setTimeout(() => {
+      showBattleLoading(false);
+      playBattleLog(log).then(() => {
+        // 戰鬥完成，重置執行標誌
+        isBattleInProgress = false;
+        
+        if (data.success) {
+          // 🚀 戰鬥勝利後重新載入使用者資料（強制刷新）
+          fetchUser().then(updatedUser => {
+            userData = updatedUser;
+            console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser);
+            userDiv.innerText = formatStats(updatedUser);
+            initializeBattleButtons(updatedUser);
+          }).catch(error => {
+            console.error('重新載入使用者資料失敗:', error);
+          });
+
+          if (data.is_last_layer) {
+            showVictoryEffect();
+            document.getElementById("leaveBtn").style.display = "inline-block";
+          } else {
+            retryBtn.style.display = "inline-block";
+            updateBattleButton(retryBtn, 30, "再戰一次");
+            startCooldownTimer(30);
+            nextBtn.style.display = "inline-block";
+            nextBtn.onclick = () => {
+              window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
+            };
+            
+            const remaining = userData?.battle_cooldown_remaining || 0;
+            if (remaining > 0) {
+              updateBattleButton(retryBtn, remaining, "再戰一次");
+            } else {
+              retryBtn.disabled = false;
+            }
+          }
+
+          const winMsg = document.createElement("div");
+          winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
+          logArea.appendChild(winMsg);
+          scrollLogToBottom();
+
+          	if (data.rewards) {
+		  const { 
+		    base_exp, 
+		    exp_luck_bonus, 
+		    leveled_up, 
+		    actual_drops, 
+		    drop_luck_bonus,
+		    drops 
+		  } = data.rewards;
+		  
+		  fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
+		    const rewardLog = document.createElement("div");
+		    rewardLog.className = "reward-message";
+		    
+		    // 💎 經驗值顯示
+		    let expText = `<br><strong>🎁 戰利品：</strong><br>獲得 ${base_exp} 經驗值`;
+		    
+		    // 🌟 經驗值幸運加成
+		    if (exp_luck_bonus > 0) {
+		      expText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>🍀 幸運加成！額外獲得 ${exp_luck_bonus} 經驗值！</span>`;
+		    }
+		    
+		    // 🎊 等級提升
+		    if (leveled_up) {
+		      expText += `<br><span style='color:red'>🎊 等級提升！</span>`;
+		    }
+		    
+		    let dropText = "";
+		    
+		    // 🎯 處理掉落物品顯示
+		    const hasActualDrops = actual_drops && Object.keys(actual_drops).length > 0;
+		    const originalDrops = drops || [];
+		    
+		    if (hasActualDrops) {
+		      dropText += "<br><strong>📦 獲得物品：</strong>";
+		      
+		      for (const [itemId, quantity] of Object.entries(actual_drops)) {
+			const meta = itemMap[itemId] || { name: itemId, special: 0 };
+			const luckBonus = drop_luck_bonus[itemId] || 0;
+			
+			let itemText = "";
+			
+			// 根據稀有度設定顏色
+			if (meta.special === 2) {
+			  itemText = `<br><span style='color:crimson'>【超稀有】${meta.name} × ${quantity}</span>`;
+			} else if (meta.special === 1) {
+			  itemText = `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${quantity}</span>`;
+			} else {
+			  itemText = `<br>${meta.name} × ${quantity}`;
 			}
-	
-	        } else {
-	          showDefeatEffect();
-	          const loseMsg = document.createElement("div");
-	          loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
-	          logArea.appendChild(loseMsg);
-	          const failMsg = document.createElement("div");
-	          failMsg.innerHTML = `<br>❌ ${data.message}`;
-	          logArea.appendChild(failMsg);
-	          scrollLogToBottom();
-	          document.getElementById("leaveBtn").style.display = "inline-block";
-	        }
-	      });
-	    }, 1000);
-	
-	  } catch (err) {
-	    console.error("戰鬥執行錯誤:", err);
-	    showBattleLoading(false);
-	    logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
-	    document.getElementById("leaveBtn").style.display = "inline-block";
-	    battleBtn.style.display = "inline-block";
-	    battleBtn.disabled = false;
-	    // 重置執行標誌
-	    isBattleInProgress = false;
-	  }
-	}
+			
+			// 🌟 如果有幸運加成，額外顯示
+			if (luckBonus > 0) {
+			  itemText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;margin-left:20px;'>🍀 幸運加成！額外獲得 ${luckBonus} 個！</span>`;
+			}
+			
+			dropText += itemText;
+		      }
+		    } else {
+		      // ✅ 修正：檢查是否因為背包滿了而無法獲得物品
+		      let hasFullInventoryItems = false;
+		      
+		      // 檢查原始掉落表中100%掉落的物品
+		      for (const drop of originalDrops) {
+			if (drop.rate >= 1.0) {
+			  // 這是100%掉落的物品，但沒有在actual_drops中
+			  // 很可能是背包滿了
+			  hasFullInventoryItems = true;
+			  break;
+			}
+		      }
+		      
+		      if (hasFullInventoryItems) {
+			dropText += "<br><span style='color:orange'>⚠️ 背包已滿，部分物品無法獲得</span>";
+		      } else {
+			dropText += "<br>本次沒有掉落物品";
+		      }
+		    }
+		    
+		    rewardLog.innerHTML = expText + dropText;
+		    logArea.appendChild(rewardLog);
+		    scrollLogToBottom();
+		  });
+		}
+        } else {
+          showDefeatEffect();
+          const loseMsg = document.createElement("div");
+          loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
+          logArea.appendChild(loseMsg);
+          const failMsg = document.createElement("div");
+          failMsg.innerHTML = `<br>❌ ${data.message}`;
+          logArea.appendChild(failMsg);
+          scrollLogToBottom();
+          document.getElementById("leaveBtn").style.display = "inline-block";
+        }
+      });
+    }, 1000);
+
+  } catch (err) {
+    console.error("戰鬥執行錯誤:", err);
+    showBattleLoading(false);
+    logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
+    document.getElementById("leaveBtn").style.display = "inline-block";
+    battleBtn.style.display = "inline-block";
+    battleBtn.disabled = false;
+    isBattleInProgress = false;
+  }
+}
 
     // 開始戰鬥函數
     window.startBattle = executeBattle;
@@ -946,14 +1082,84 @@
       });
     }
 
+async function preloadDungeonData() {
+  console.log('🎯 預載入副本相關資料...');
+  
+  try {
+    // 預載入當前副本的所有怪物資料
+    if (dungeonData) {
+      const currentDungeon = dungeonData.find(d => d.id === dungeon);
+      if (currentDungeon) {
+        const allMonsterIds = [...currentDungeon.monsters, currentDungeon.bossId];
+        
+        // 並行預載入所有怪物
+        const preloadPromises = allMonsterIds.map(monsterId => 
+          fetchMonster(monsterId).catch(error => {
+            console.warn(`預載入怪物 ${monsterId} 失敗:`, error);
+            return null;
+          })
+        );
+        
+        await Promise.allSettled(preloadPromises);
+        console.log('✅ 副本怪物資料預載入完成');
+      }
+    }
+  } catch (error) {
+    console.warn('預載入副本資料失敗:', error);
+  }
+}
+
     onAuthStateChanged(auth, async (user) => {
-	    if (user) {
+	  if (user) {
+	    try {
+	      PerformanceMonitor.startTiming('dungeonPageInit');
+	      
 	      await fetchProgress();
-	      loadLayer();
-	    } else {
-	      window.parent.location.href = "/SFL/login.html";
+	      await loadLayer();
+	      
+	      // 🎯 背景預載入副本資料
+	      preloadDungeonData().catch(error => {
+	        console.warn('背景預載入失敗:', error);
+	      });
+	      
+	      PerformanceMonitor.endTiming('dungeonPageInit');
+	      console.log('🎉 副本頁面初始化完成');
+	      
+	    } catch (error) {
+	      console.error('副本頁面初始化失敗:', error);
+	      alert('頁面載入失敗，請重新整理');
 	    }
-	  });
+	  } else {
+	    window.parent.location.href = "/SFL/login.html";
+	  }
+	});
+
+if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+  // 每30秒監控一次記憶體使用
+  setInterval(() => {
+    const cacheSize = monsterCache.size;
+    const memoryUsage = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : '未知';
+    
+    console.log(`📊 記憶體狀態 - 怪物快取: ${cacheSize} 項目, JS記憶體: ${memoryUsage}MB`);
+    
+    // 如果快取項目過多，清理舊項目
+    if (cacheSize > 20) {
+      monsterCache.clear();
+      console.log('🧹 清理過多的怪物快取項目');
+    }
+  }, 30000);
+  
+  // 全域除錯工具
+  window.dungeonDebug = {
+    cache: monsterCache,
+    userData: () => userData,
+    clearMonsterCache: () => {
+      monsterCache.clear();
+      console.log('🧹 怪物快取已清除');
+    },
+    preloadAll: preloadDungeonData
+  };
+}
   </script>
 </body>
 </html>
