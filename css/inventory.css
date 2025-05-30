@@ -271,6 +271,13 @@
       animation: rarePulse 3s ease-in-out infinite;
     }
 
+    .item-card.mythical { 
+      border-color: #FFD306;  /* 金黃色邊框 */
+      background: linear-gradient(135deg, rgba(255, 211, 6, 0.2) 0%, rgba(15, 15, 35, 0.9) 100%);
+      box-shadow: 0 4px 20px rgba(255, 211, 6, 0.3);
+      animation: rarePulse 3s ease-in-out infinite;
+    }
+
     @keyframes rarePulse {
       0%, 100% { box-shadow: 0 4px 20px rgba(255, 110, 199, 0.2); }
       50% { box-shadow: 0 8px 30px rgba(255, 110, 199, 0.4); }
