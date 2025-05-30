@@ -53,7 +53,7 @@
 </div>
 
 <script type="module">
-  import { auth, SecureAPI } from "./js/firebase-init.js";
+  import { auth, SecureAPI, PerformanceMonitor } from "./js/firebase-init.js";
   import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const API_BASE = "https://sfl-9cb8.onrender.com";
@@ -134,18 +134,25 @@
     remainingPointsEl.innerText = userStats.stat_points;
   }
 
+  // 🚀 優化的升級提交
   async function submitLevelUp() {
     const totalAlloc = Object.values(alloc).reduce((a, b) => a + b, 0);
     if (totalAlloc === 0) return alert("請先分配能力點！");
     if (!confirm("是否確定分配能力點？")) return;
 
     showLoading(true);
+    PerformanceMonitor.startTiming('submitLevelUp');
+    
     try {
       const res = await SecureAPI.post(`${API_BASE}/levelup`, { allocate: alloc });
       const data = await res.json();
       
       if (res.ok) {
         alert("能力值已分配完畢！");
+        
+        // 🧹 清除使用者快取
+        SecureAPI.clearUserCache();
+        
         await loadStatus();
         resetStats();
       } else {
@@ -155,10 +162,13 @@
       alert(`錯誤：${err.message}`);
     } finally {
       showLoading(false);
+      PerformanceMonitor.endTiming('submitLevelUp');
     }
   }
 
   function renderSkills() {
+    PerformanceMonitor.startTiming('renderSkills');
+    
     skillListEl.innerHTML = "";
     skillListEl.className = "skill-row";
     const typeMap = { 
@@ -320,6 +330,8 @@
       skillListEl.appendChild(card);
     });
     remainingSkillPointsEl.innerText = remainingSkillPoints;
+    
+    PerformanceMonitor.endTiming('renderSkills');
   }
 
   function resetSkills() {
@@ -329,14 +341,21 @@
     renderSkills();
   }
 
+  // 🚀 優化的技能儲存
   async function submitSkills() {
     showLoading(true);
+    PerformanceMonitor.startTiming('submitSkills');
+    
     try {
       const res = await SecureAPI.post(`${API_BASE}/skills_save`, { skills: skillAlloc });
       const data = await res.json();
       
       if (res.ok) {
         alert("技能儲存成功！");
+        
+        // 🧹 清除使用者快取
+        SecureAPI.clearUserCache();
+        
         await loadStatus();
         await loadAllSkills();
       } else {
@@ -346,6 +365,7 @@
       alert(`錯誤：${err.message}`);
     } finally {
       showLoading(false);
+      PerformanceMonitor.endTiming('submitSkills');
     }
   }
 
@@ -354,37 +374,83 @@
   document.getElementById("btnResetSkills").onclick = resetSkills;
   document.getElementById("btnSubmitSkills").onclick = submitSkills;
 
+  // 🚀 優化的技能載入（使用快取）
   async function loadAllSkills() {
-    const skillRes = await fetch(`${API_BASE}/skills_full`);
-    const userRes = await SecureAPI.get(`${API_BASE}/status`);
+    PerformanceMonitor.startTiming('loadAllSkills');
     
-    allSkills = await skillRes.json();
-    userStats = await userRes.json();
-    
-    skillAlloc = {};
-    remainingSkillPoints = userStats.skill_points;
-    allSkills.forEach(skill => {
-      skillAlloc[skill.id] = userStats.skills?.[skill.id] ?? 0;
-    });
-    renderStats();
-    renderSkills();
+    try {
+      // 🎯 並行載入技能資料和使用者狀態
+      const [skillRes, userRes] = await Promise.all([
+        SecureAPI.getStaticData('skills_full'),
+        SecureAPI.getStatus(false)
+      ]);
+      
+      // 處理技能資料
+      if (Array.isArray(skillRes)) {
+        allSkills = skillRes;
+      } else {
+        // 如果從後端API載入
+        const skillResponse = await fetch(`${API_BASE}/skills_full`);
+        allSkills = await skillResponse.json();
+      }
+      
+      userStats = await userRes.json();
+      
+      skillAlloc = {};
+      remainingSkillPoints = userStats.skill_points;
+      allSkills.forEach(skill => {
+        skillAlloc[skill.id] = userStats.skills?.[skill.id] ?? 0;
+      });
+      
+      renderStats();
+      renderSkills();
+      
+      console.log('✅ 技能資料載入完成');
+      
+    } catch (error) {
+      console.error('載入技能資料失敗:', error);
+      alert('載入技能資料失敗，請重新整理頁面');
+    } finally {
+      PerformanceMonitor.endTiming('loadAllSkills');
+    }
   }
 
+  // 🚀 優化的狀態載入
   async function loadStatus() {
-    const res = await SecureAPI.get(`${API_BASE}/status`);
-    userStats = await res.json();
-    renderStats();
+    PerformanceMonitor.startTiming('loadStatus');
+    
+    try {
+      const res = await SecureAPI.getStatus(false); // 使用快取
+      userStats = await res.json();
+      renderStats();
+    } catch (error) {
+      console.error('載入使用者狀態失敗:', error);
+      alert('載入使用者狀態失敗');
+    } finally {
+      PerformanceMonitor.endTiming('loadStatus');
+    }
   }
 
+  // 🚀 主要初始化函數
   async function runMain() {
     showLoading(true);
+    PerformanceMonitor.startTiming('upgradePageInit');
+    
     try {
-      await loadStatus();
-      await loadAllSkills();
+      // 🎯 並行載入狀態和技能資料
+      await Promise.all([
+        loadStatus(),
+        loadAllSkills()
+      ]);
+      
+      console.log('🎉 升級頁面初始化完成');
+      
     } catch (err) {
       console.error("runMain 錯誤：", err);
+      alert("頁面初始化失敗，請重新整理");
     } finally {
       showLoading(false);
+      PerformanceMonitor.endTiming('upgradePageInit');
     }
   }
 
