@@ -137,8 +137,8 @@
       {
         "level": 3,
         "materials": {
-          "radar_module": 20,
-          "buzz_blade": 10,
+          "buzz_blade": 20,
+          "radar_module": 10,
           "metal_core": 10,
           "chaos_breath": 2
         },
@@ -147,7 +147,7 @@
       {
         "level": 4,
         "materials": {
-          "buzz_blade": 20,
+          "radar_module": 20,
           "armor_plate": 10,
           "gray_alloy": 10,
           "metal_core": 15,
