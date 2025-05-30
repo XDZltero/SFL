@@ -1,4 +1,4 @@
-// js/firebase-init.js (整合快取版本)
+// js/firebase-init.js (修正版本)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import CacheManager from './cache-manager.js';
@@ -109,7 +109,7 @@ class SecureAPI {
       const cached = cacheManager.get(cacheKey);
       if (cached) {
         console.log(`🎯 靜態資料快取命中: ${endpoint}`);
-        return cached; // ✅ 統一返回資料
+        return cached;
       }
     }
   
@@ -119,7 +119,7 @@ class SecureAPI {
       if (response.ok) {
         const data = await response.json();
         cacheManager.set(cacheKey, data, 60 * 60 * 1000);
-        return data; // ✅ 統一返回資料
+        return data;
       } else {
         throw new Error(`API請求失敗: ${response.status}`);
       }
@@ -152,7 +152,7 @@ class SecureAPI {
       }
     }
 
-    const response = await this.get(url, false); // 不使用URL快取，使用自定義快取
+    const response = await this.get(url, false);
     
     if (response && response.ok) {
       try {
@@ -171,7 +171,7 @@ class SecureAPI {
   static async getWithRetry(url, maxRetries = 3, useCache = true) {
     for (let i = 0; i < maxRetries; i++) {
       try {
-        return await this.get(url, useCache && i === 0); // 第一次嘗試使用快取
+        return await this.get(url, useCache && i === 0);
       } catch (error) {
         console.warn(`請求失敗 (嘗試 ${i + 1}/${maxRetries}):`, error);
         
@@ -200,11 +200,11 @@ class SecureAPI {
 
   // 🎯 根據URL設定適當的TTL
   static getTTLForUrl(url) {
-    if (url.includes('status')) return 30 * 1000;        // 30秒
-    if (url.includes('inventory')) return 60 * 1000;     // 1分鐘
-    if (url.includes('progress')) return 60 * 1000;      // 1分鐘
-    if (url.includes('_table')) return 60 * 60 * 1000;   // 1小時
-    return 5 * 60 * 1000;                                // 預設5分鐘
+    if (url.includes('status')) return 30 * 1000;
+    if (url.includes('inventory')) return 60 * 1000;
+    if (url.includes('progress')) return 60 * 1000;
+    if (url.includes('_table')) return 60 * 60 * 1000;
+    return 5 * 60 * 1000;
   }
 
   // 🧹 快取管理方法
@@ -362,7 +362,9 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // 🚀 全域快取統計函數
-window.getCacheStats = () => cacheManager.getStats();
+function getCacheStats() {
+  return cacheManager.getStats();
+}
 
 // 🚀 開發者工具（僅在開發模式下啟用）
 if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
@@ -396,5 +398,5 @@ export {
   PreloadManager,
   ErrorHandler,
   PerformanceMonitor,
-  getCacheStats: () => cacheManager.getStats()
+  getCacheStats
 };
