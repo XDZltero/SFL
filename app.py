@@ -682,7 +682,7 @@ def levelup():
 
 @app.route("/skills_full", methods=["GET"])
 def get_skills_full():
-    return jsonify(list(get_all_skill_data().values()))
+    return jsonify(get_all_skill_data())
 
 @app.route("/skills_all", methods=["GET"])
 @require_auth
