@@ -256,6 +256,10 @@ function percent(val) {
     const params = new URLSearchParams(location.search);
     const dungeon = params.get("dungeon");
     let layer = parseInt(params.get("layer") || "0");
+    
+    // 🎯 新增：從URL參數獲取傳遞的冷卻時間
+    const inheritedCooldown = parseInt(params.get("cooldown") || "0");
+    console.log("URL參數中的冷卻時間:", inheritedCooldown);
 
     const logArea = document.getElementById("logArea");
     const userDiv = document.getElementById("userInfo");
@@ -280,28 +284,53 @@ function percent(val) {
       }
     }
 
+    // ✅ 修正：改進的冷卻計時器，加入時間同步機制
     function startCooldownTimer(initialRemaining) {
-      console.log("開始冷卻計時器，初始剩餘時間:", initialRemaining); // 調試信息
+      console.log("開始冷卻計時器，初始剩餘時間:", initialRemaining);
       
       if (cooldownTimer) {
         clearInterval(cooldownTimer);
       }
       
-      let remaining = Math.ceil(initialRemaining); // 向上取整確保顯示正確
+      // 🎯 記錄開始時間，用於時間同步
+      const startTime = Date.now();
+      let remaining = Math.ceil(initialRemaining);
       
-      cooldownTimer = setInterval(() => {
-        remaining -= 1;
-        console.log("冷卻倒數:", remaining); // 調試信息
+      cooldownTimer = setInterval(async () => {
+        // 📊 計算實際經過的時間（以客戶端時間為準）
+        const elapsedSeconds = (Date.now() - startTime) / 1000;
+        const calculatedRemaining = Math.ceil(initialRemaining - elapsedSeconds);
+        
+        // 🔄 每 10 秒與伺服器同步一次時間
+        if (Math.floor(elapsedSeconds) % 10 === 0 && Math.floor(elapsedSeconds) > 0) {
+          try {
+            console.log("🔄 同步伺服器時間...");
+            const syncUser = await fetchUser(true);
+            const serverRemaining = syncUser.battle_cooldown_remaining || 0;
+            
+            if (Math.abs(calculatedRemaining - serverRemaining) > 2) {
+              console.log(`⚠️ 時間偏差過大，同步至伺服器時間: ${serverRemaining}s`);
+              remaining = Math.ceil(serverRemaining);
+            } else {
+              remaining = calculatedRemaining;
+            }
+          } catch (error) {
+            console.warn("同步時間失敗，使用本地計算:", error);
+            remaining = calculatedRemaining;
+          }
+        } else {
+          remaining = calculatedRemaining;
+        }
+        
+        console.log("冷卻倒數:", remaining);
         
         if (remaining <= 0) {
-          // 冷卻完成，恢復按鈕
-          console.log("冷卻完成，恢復按鈕"); // 調試信息
+          console.log("冷卻完成，恢復按鈕");
           updateBattleButton(battleBtn, 0, "開始戰鬥");
           updateBattleButton(retryBtn, 0, "再戰一次");
           clearInterval(cooldownTimer);
           cooldownTimer = null;
         } else {
-          // 更新倒數
           updateBattleButton(battleBtn, remaining, "開始戰鬥");
           if (retryBtn.style.display !== "none") {
             updateBattleButton(retryBtn, remaining, "再戰一次");
@@ -311,19 +340,32 @@ function percent(val) {
     }
 
     function initializeBattleButtons(userData) {
-      console.log("初始化戰鬥按鈕，使用者資料:", userData); // 調試信息
+      console.log("初始化戰鬥按鈕，使用者資料:", userData);
       
-      const remaining = userData.battle_cooldown_remaining || 0;
-      const isReady = userData.battle_ready !== false;
+      // 🎯 優先使用URL參數傳遞的冷卻時間，避免網路延遲造成的時間偏差
+      let remaining = 0;
+      let isReady = true;
       
-      console.log("冷卻剩餘時間:", remaining, "是否準備好:", isReady); // 調試信息
+      if (inheritedCooldown > 0) {
+        // 使用從上一頁傳遞的冷卻時間
+        remaining = inheritedCooldown;
+        isReady = false;
+        console.log("使用URL參數的冷卻時間:", remaining);
+      } else {
+        // 使用伺服器返回的冷卻時間
+        remaining = userData.battle_cooldown_remaining || 0;
+        isReady = userData.battle_ready !== false;
+        console.log("使用伺服器的冷卻時間:", remaining);
+      }
+      
+      console.log("最終冷卻剩餘時間:", remaining, "是否準備好:", isReady);
       
       if (!isReady && remaining > 0) {
-        console.log("開始冷卻倒數:", remaining); // 調試信息
+        console.log("開始冷卻倒數:", remaining);
         updateBattleButton(battleBtn, remaining, "開始戰鬥");
         startCooldownTimer(remaining);
       } else {
-        console.log("戰鬥按鈕已準備好"); // 調試信息
+        console.log("戰鬥按鈕已準備好");
         updateBattleButton(battleBtn, 0, "開始戰鬥");
       }
     }
@@ -982,10 +1024,27 @@ function percent(val) {
                 cooldownTimer = null;
               }
               
-              // ⏳ 等動畫結束後跳轉
-              setTimeout(() => {
-                window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-              }, 500);
+              // 🎯 新增：計算當前精確的剩餘冷卻時間並傳遞給下一頁
+              try {
+                const currentUser = await fetchUser(true);
+                const preciseCooldown = currentUser.battle_cooldown_remaining || 0;
+                console.log("跳轉前精確冷卻時間:", preciseCooldown);
+                
+                // 🚀 使用URL參數傳遞冷卻時間，避免新頁面獲取過期資料
+                const cooldownParam = preciseCooldown > 0 ? `&cooldown=${Math.ceil(preciseCooldown)}` : '';
+                const nextUrl = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
+                
+                // ⏳ 等動畫結束後跳轉
+                setTimeout(() => {
+                  window.parent.loadPage(nextUrl);
+                }, 500);
+              } catch (error) {
+                console.error("獲取跳轉前冷卻時間失敗:", error);
+                // 降級：直接跳轉，不傳遞參數
+                setTimeout(() => {
+                  window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
+                }, 500);
+              }
             };
           }
 
