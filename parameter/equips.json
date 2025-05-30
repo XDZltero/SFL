@@ -92,5 +92,38 @@
         "other_bonus": 0.05
       }
     }
+  },
+  {
+    "id": "card_ironcity",
+    "name": "[副本卡片]紫魔之城",
+    "quality": "稀有",
+    "value": {
+      "1": {
+        "attack": 10,
+        "shield": 50,
+        "evade": 5
+      },
+      "2": {
+        "attack": 15,
+        "shield": 50,
+        "evade": 7
+      },
+      "3": {
+        "attack": 20,
+        "shield": 50,
+        "evade": 9
+      },
+      "4": {
+        "attack": 25,
+        "shield": 50,
+        "evade": 12
+      },
+      "5": {
+        "attack": 30,
+        "shield": 50,
+        "evade": 15
+        "other_bonus": 0.05
+      }
+    }
   }
 ]
