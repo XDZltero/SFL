@@ -24,6 +24,14 @@
 
   <pre id="statusBlock">正在載入角色資料...</pre>
 
+  <!-- 🚀 立即實施：快取狀態顯示（開發模式） -->
+  <div id="cacheStatus" style="display:none; background: rgba(0,255,255,0.1); padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 0.8em;">
+    <strong>🚀 快取狀態：</strong>
+    <span id="cacheInfo">載入中...</span>
+    <button onclick="showCacheDetails()" style="margin-left: 10px; padding: 2px 8px; background: #667eea; color: white; border: none; border-radius: 3px; cursor: pointer;">📊 詳情</button>
+    <button onclick="clearAllCaches()" style="margin-left: 5px; padding: 2px 8px; background: #ff6b6b; color: white; border: none; border-radius: 3px; cursor: pointer;">🗑️ 清除</button>
+  </div>
+
   <div>
     <button onclick="window.parent.loadPage('upgrade.html')">🧠 技能與升級頁面</button>
     <button onclick="window.parent.loadPage('inventory.html')">🎒 背包與裝備管理</button>
@@ -35,12 +43,25 @@
   </div>
 
   <script type="module">
-    import { auth, SecureAPI } from "./js/firebase-init.js";
+    import { auth, SecureAPI, getCacheStats } from "./js/firebase-init.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    const API_BASE = "https://sfl-9cb8.onrender.com";
     const statusBlock = document.getElementById("statusBlock");
+    const cacheStatusDiv = document.getElementById("cacheStatus");
+    const cacheInfoSpan = document.getElementById("cacheInfo");
+    
     let levelExp = {};
+    let loadTimes = [];
+
+    // 🚀 立即實施：開發模式檢測
+    const isDevelopment = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.search.includes('debug=true');
+    
+    if (isDevelopment) {
+      cacheStatusDiv.style.display = 'block';
+      console.log('🔧 開發模式已啟用');
+    }
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
@@ -56,62 +77,279 @@
       return base + (equip || 0);
     }
 
-    function formatStats(data) {
-      const b = data.base_stats;
-      const e = data.equipment_stats || {};
-      const total_hp = calcTotal(b.hp, e.hp);
-      const total_atk = calcTotal(b.attack, e.attack);
-      const total_shield = calcTotal(b.shield, e.shield);
-      const total_luck = calcTotal(b.luck, e.luck);
-      const total_accuracy = calcTotal(b.accuracy, e.accuracy);
-      const total_evade = calcTotal(b.evade, e.evade);
-      const levelMaxExp = levelExp[data.level] || 1;
-      const progress = percent(data.exp / levelMaxExp);
+    // 🚀 立即實施：使用快取的裝備數值計算
+    function calculateEquipmentBonus(equipment, equipData) {
+      const bonus = {};
+      
+      if (!equipment || !equipData) return bonus;
+      
+      for (let slot = 1; slot <= 5; slot++) {
+        const equippedCard = equipment[slot];
+        if (!equippedCard) continue;
 
-      return `玩家名稱: ${data.nickname}
-等級: ${data.level}
-經驗值: ${data.exp} (${progress})
-生命值: ${total_hp} (${b.hp} + ${e.hp || 0})
-攻擊力: ${total_atk} (${b.attack} + ${e.attack || 0})
-護盾值: ${total_shield} (${b.shield} + ${e.shield || 0})
-幸運值: ${total_luck} (${b.luck} + ${e.luck || 0})
-命中率: ${percent(total_accuracy)} (${b.accuracy} + ${e.accuracy || 0})
-迴避率: ${percent(total_evade)} (${b.evade} + ${e.evade || 0})
-攻擊速度: ${b.atk_speed}
-額外傷害加成: ${b.other_bonus ?? 0}
-剩餘能力值點數: ${data.stat_points}
-剩餘技能點: ${data.skill_points}`;
+        const cardId = Object.keys(equippedCard)[0];
+        const cardLevel = equippedCard[cardId];
+        
+        // 🚀 支援兩種資料格式
+        let equipInfo;
+        if (Array.isArray(equipData)) {
+          equipInfo = equipData.find(e => e.id === cardId);
+        } else {
+          equipInfo = Object.values(equipData).find(e => e.id === cardId);
+        }
+
+        if (equipInfo?.value?.[cardLevel]) {
+          const cardStats = equipInfo.value[cardLevel];
+          for (const [stat, value] of Object.entries(cardStats)) {
+            bonus[stat] = (bonus[stat] || 0) + value;
+          }
+        }
+      }
+
+      return bonus;
     }
 
-    async function loadStatus() {
-      showLoading(true);
+    // 🚀 立即實施：快速格式化狀態資料
+    async function formatStats(data) {
       try {
-        // 載入經驗值表（公開API）
-        const expRes = await fetch("parameter/level_exp.json");
-        levelExp = await expRes.json();
+        const b = data.base_stats;
+        
+        // 🚀 並行載入裝備資料
+        let e = {};
+        try {
+          const equipRes = await SecureAPI.getStaticData('equips_table');
+          e = calculateEquipmentBonus(data.equipment || {}, equipRes);
+        } catch (equipError) {
+          console.warn('載入裝備資料失敗，使用預設值:', equipError);
+        }
+        
+        const levelMaxExp = levelExp[data.level] || 1;
+        const progress = percent(data.exp / levelMaxExp);
 
-        // 使用SecureAPI取得使用者狀態
-        const res = await SecureAPI.get(`${API_BASE}/status`);
-        const data = await res.json();
+        return `玩家名稱: ${data.nickname}
+等級: ${data.level}
+經驗值: ${data.exp} (${progress})
+生命值: ${calcTotal(b.hp, e.hp)} (${b.hp} + ${e.hp || 0})
+攻擊力: ${calcTotal(b.attack, e.attack)} (${b.attack} + ${e.attack || 0})
+護盾值: ${calcTotal(b.shield, e.shield)} (${b.shield} + ${e.shield || 0})
+幸運值: ${calcTotal(b.luck, e.luck)} (${b.luck} + ${e.luck || 0})
+命中率: ${percent(calcTotal(b.accuracy, e.accuracy))} (${percent(b.accuracy)} + ${percent(e.accuracy || 0)})
+迴避率: ${percent(calcTotal(b.evade, e.evade))} (${percent(b.evade)} + ${percent(e.evade || 0)})
+攻擊速度: ${b.atk_speed}
+額外傷害加成: ${calcTotal(b.other_bonus || 0, e.other_bonus || 0)}
+剩餘能力值點數: ${data.stat_points}
+剩餘技能點: ${data.skill_points}`;
+      } catch (error) {
+        console.error('格式化狀態資料失敗:', error);
+        return `格式化資料時發生錯誤: ${error.message}`;
+      }
+    }
 
-        if (res.ok) {
-          // 傳給父視窗更新 topbar 使用者名稱
+    // 🚀 立即實施：優化的載入狀態資料
+    async function loadStatus(forceRefresh = false) {
+      const startTime = Date.now();
+      showLoading(true);
+      
+      try {
+        // 🚀 並行載入資料，優先載入經驗值表
+        const expPromise = SecureAPI.getStaticData('exp_table');
+        const userPromise = SecureAPI.getStatus(forceRefresh);
+
+        // 先載入經驗值表
+        levelExp = await expPromise;
+        
+        // 再載入使用者資料
+        const userRes = await userPromise;
+        let userData;
+        
+        if (userRes.cached) {
+          console.log('🚀 使用者資料來自快取');
+        }
+        
+        userData = await userRes.json();
+
+        const loadTime = Date.now() - startTime;
+        loadTimes.push(loadTime);
+        
+        // 保持最近10次載入時間
+        if (loadTimes.length > 10) {
+          loadTimes.shift();
+        }
+
+        if (userData) {
+          // 🚀 立即顯示基本資訊，異步載入詳細資訊
+          statusBlock.innerText = `玩家名稱: ${userData.nickname}\n等級: ${userData.level}\n載入中詳細資訊...`;
+          
+          // 傳遞使用者名稱給父視窗
           window.parent.postMessage({
-            nickname: data.nickname || data.user_id
+            nickname: userData.nickname || userData.user_id
           }, "*");
           
-          statusBlock.innerText = formatStats(data);
+          // 🚀 異步格式化完整狀態
+          formatStats(userData).then(formattedStats => {
+            statusBlock.innerText = formattedStats;
+          }).catch(error => {
+            console.error('格式化失敗:', error);
+            statusBlock.innerText += '\n⚠️ 部分資訊載入失敗';
+          });
+          
         } else {
-          statusBlock.innerText = "❌ 載入角色資料失敗：" + (data.error || "未知錯誤");
+          statusBlock.innerText = "❌ 載入角色資料失敗：無法獲取使用者資料";
         }
+        
+        // 🚀 更新快取狀態
+        updateCacheStatus(loadTime, userRes.cached);
+        
       } catch (err) {
         console.error("載入失敗", err);
-        statusBlock.innerText = "❌ 載入角色資料失敗，請稍後再試。";
+        statusBlock.innerText = `❌ 載入角色資料失敗：${err.message}`;
+        
+        // 🚀 網路錯誤時的智能重試
+        if (err.message.includes('fetch') || err.message.includes('network')) {
+          console.log('🔄 偵測到網路錯誤，10秒後自動重試...');
+          setTimeout(() => {
+            if (statusBlock.innerText.includes('❌')) {
+              loadStatus(true);
+            }
+          }, 10000);
+        }
+        
       } finally {
         showLoading(false);
       }
     }
 
+    // 🚀 立即實施：快取狀態更新
+    function updateCacheStatus(loadTime = 0, wasCached = false) {
+      if (!isDevelopment) return;
+
+      try {
+        const stats = getCacheStats();
+        const avgLoadTime = loadTimes.length > 0 ? 
+          Math.round(loadTimes.reduce((a, b) => a + b, 0) / loadTimes.length) : 0;
+        
+        const statusText = `快取項目: ${stats.total} | ` +
+                          `載入: ${loadTime}ms${wasCached ? ' (快取)' : ' (API)'} | ` +
+                          `平均: ${avgLoadTime}ms | ` +
+                          `記憶體: ${Math.round(stats.memory / 1024)}KB`;
+        
+        cacheInfoSpan.textContent = statusText;
+        
+        // 🚀 快取命中率顏色指示
+        if (wasCached) {
+          cacheInfoSpan.style.color = '#4ecdc4'; // 綠色：快取命中
+        } else {
+          cacheInfoSpan.style.color = '#ffd93d'; // 黃色：API呼叫
+        }
+        
+      } catch (error) {
+        console.warn('更新快取狀態失敗:', error);
+        cacheInfoSpan.textContent = '快取狀態獲取失敗';
+      }
+    }
+
+    // 🚀 立即實施：全域函數
+    window.showCacheDetails = () => {
+      try {
+        const stats = getCacheStats();
+        const avgLoadTime = loadTimes.length > 0 ? 
+          Math.round(loadTimes.reduce((a, b) => a + b, 0) / loadTimes.length) : 0;
+        
+        const details = `
+快取統計詳情：
+
+📊 總項目數: ${stats.total}
+📝 快取鍵: ${stats.keys.join(', ') || '無'}
+💾 記憶體使用: ${Math.round(stats.memory / 1024)} KB
+⏱️ 平均載入時間: ${avgLoadTime} ms
+📈 最近載入時間: ${loadTimes.join(', ')} ms
+🗑️ 過期項目: ${stats.expired}
+
+詳細資訊請查看瀏覽器控制台 (F12)
+        `.trim();
+        
+        alert(details);
+        
+        // 在控制台輸出詳細資訊
+        console.group('🚀 快取詳細統計');
+        console.table(stats);
+        console.log('載入時間歷史:', loadTimes);
+        console.groupEnd();
+        
+      } catch (error) {
+        alert('獲取快取詳情失敗: ' + error.message);
+      }
+    };
+
+    window.clearAllCaches = () => {
+      if (confirm('確定要清除所有快取嗎？\n這將清除前端和後端的所有快取資料。')) {
+        try {
+          // 清除前端快取
+          SecureAPI.clearCache();
+          
+          // 清除後端快取
+          fetch('https://sfl-9cb8.onrender.com/clear_cache', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+              console.log('後端快取清除結果:', data);
+            })
+            .catch(err => {
+              console.warn('清除後端快取失敗:', err);
+            });
+          
+          // 重置載入時間統計
+          loadTimes = [];
+          
+          alert('快取已清除！頁面將重新載入資料。');
+          updateCacheStatus();
+          
+          // 重新載入資料
+          setTimeout(() => loadStatus(true), 1000);
+          
+        } catch (error) {
+          alert('清除快取失敗: ' + error.message);
+        }
+      }
+    };
+
+    // 🚀 立即實施：智能重新整理
+    window.smartRefresh = () => {
+      console.log('🔄 智能重新整理：清除使用者快取並重新載入');
+      SecureAPI.clearUserCache();
+      loadStatus(true);
+    };
+
+    // 🚀 頁面可見性API：智能資料更新
+    let lastVisibilityChange = Date.now();
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        const timeSinceHidden = Date.now() - lastVisibilityChange;
+        
+        if (timeSinceHidden > 60000) { // 超過1分鐘
+          console.log('🔄 頁面重新可見且超過1分鐘，重新載入使用者資料');
+          loadStatus(true);
+        } else if (timeSinceHidden > 30000) { // 超過30秒
+          console.log('🔄 頁面重新可見，檢查資料新鮮度');
+          // 檢查快取是否還有效，無效則重新載入
+          setTimeout(() => {
+            if (statusBlock.innerText.includes('載入中')) {
+              loadStatus(false); // 允許使用快取
+            }
+          }, 100);
+        }
+      } else {
+        lastVisibilityChange = Date.now();
+      }
+    });
+
+    // 🚀 定期更新快取狀態顯示
+    if (isDevelopment) {
+      setInterval(() => {
+        updateCacheStatus(0, false);
+      }, 5000);
+    }
+
+    // 🚀 監聽登入狀態
     onAuthStateChanged(auth, (user) => {
       if (user) {
         loadStatus();
@@ -119,6 +357,51 @@
         window.parent.location.href = "/SFL/login.html";
       }
     });
+
+    // 🚀 全域錯誤處理
+    window.addEventListener('error', (event) => {
+      console.error('頁面錯誤:', event.error);
+      if (isDevelopment) {
+        cacheInfoSpan.style.color = '#ff6b6b';
+        cacheInfoSpan.textContent = '發生錯誤，請查看控制台';
+      }
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('未處理的Promise錯誤:', event.reason);
+      
+      // 🚀 智能錯誤恢復
+      if (event.reason && event.reason.message) {
+        const message = event.reason.message.toLowerCase();
+        
+        if (message.includes('fetch') || message.includes('network')) {
+          console.log('🔄 網路錯誤，將在5秒後自動重試');
+          setTimeout(() => smartRefresh(), 5000);
+          
+        } else if (message.includes('token') || message.includes('auth')) {
+          console.log('🔒 認證錯誤，重新導向到登入頁面');
+          window.parent.location.href = "/SFL/login.html";
+          
+        } else if (message.includes('cache')) {
+          console.log('🧹 快取錯誤，清除快取後重試');
+          SecureAPI.clearCache();
+          setTimeout(() => loadStatus(true), 1000);
+        }
+      }
+    });
+
+    // 🚀 立即實施：效能監控（開發模式）
+    if (isDevelopment) {
+      // 監控頁面載入效能
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const nav = performance.getEntriesByType('navigation')[0];
+          if (nav) {
+            console.log(`📊 頁面載入效能: ${Math.round(nav.loadEventEnd - nav.loadEventStart)}ms`);
+          }
+        }, 1000);
+      });
+    }
   </script>
 </body>
 </html>
