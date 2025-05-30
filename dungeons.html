@@ -8,6 +8,14 @@
   <link href="css/style.css" rel="stylesheet" />
   <style>
     #dungeonList { margin-top: 20px; }
+    #debugInfo {
+      background: #f0f0f0;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
@@ -24,6 +32,8 @@
       });
   </script>
 
+  <!-- Debug 資訊區域 -->
+  <div id="debugInfo"></div>
   <div id="dungeonList"></div>
 
   <script type="module">
@@ -38,30 +48,60 @@
       loading.style.display = show ? "flex" : "none";
     }
 
+    function debugLog(message, data = null) {
+      console.log(message, data);
+      const debugDiv = document.getElementById("debugInfo");
+      debugDiv.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+      if (data) {
+        debugDiv.innerHTML += `  數據: ${JSON.stringify(data, null, 2)}\n`;
+      }
+      debugDiv.innerHTML += '\n';
+    }
+
     async function loadDungeons() {
       showLoading(true);
+      debugLog("開始載入副本資料...");
       
       try {
         // 載入副本資料（公開API）
+        debugLog("正在載入副本定義檔...");
         const res = await fetch("parameter/dungeons.json");
         const dungeons = await res.json();
+        debugLog("副本定義檔載入完成", { dungeonCount: dungeons.length });
 
-        // 取得使用者狀態
-        const userRes = await SecureAPI.get(`${API_BASE}/status`);
+        // 取得使用者狀態 - 強制不使用快取
+        debugLog("正在取得使用者狀態...");
+        const userRes = await SecureAPI.get(`${API_BASE}/status?force=1&_t=${Date.now()}`);
         const userData = await userRes.json();
+        debugLog("使用者狀態取得完成", { 
+          level: userData.level, 
+          lastBattle: userData.last_battle,
+          battleReady: userData.battle_ready
+        });
 
-        // 取得進度
-        const progRes = await SecureAPI.get(`${API_BASE}/get_progress?force=1`);
+        // 取得進度 - 強制不使用快取並加上時間戳
+        debugLog("正在取得副本進度...");
+        const progRes = await SecureAPI.get(`${API_BASE}/get_progress?force=1&_t=${Date.now()}`);
         const progData = await progRes.json();
         const progress = progData.progress || {};
+        debugLog("副本進度取得完成", progress);
 
         const clearLog = userData.ClearLog || {};
         const level = userData.level || 1;
+
+        debugLog("開始渲染副本卡片...");
 
         for (const dungeon of dungeons) {
           const totalLayers = dungeon.monsters.length + 1;
           const current = progress[dungeon.id] ?? 0;
           const targetLayer = Math.min(current, totalLayers - 1);
+
+          debugLog(`處理副本: ${dungeon.name}`, {
+            dungeonId: dungeon.id,
+            totalLayers,
+            currentProgress: current,
+            targetLayer
+          });
 
           let text = `進入第 ${targetLayer + 1} 層`;
           let cls = "button-normal";
@@ -89,7 +129,7 @@
 
           let buttonHtml = `<button class="${cls}" onclick="window.parent.loadPage('dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}')">${text}</button>`;
           if (lockReason) {
-            buttonHtml = `<p style=\"color:red\">${lockReason}</p>`;
+            buttonHtml = `<p style="color:red">${lockReason}</p>`;
           }
 
           const div = document.createElement("div");
@@ -101,6 +141,9 @@
                 <h2>${dungeon.name}</h2>
                 <p>${dungeon.description}</p>
                 <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
+                <p style="font-size: 12px; color: #666;">
+                  當前進度: ${current}/${totalLayers-1} | 目標層數: ${targetLayer}
+                </p>
                 ${buttonHtml}
               </div>
             </div>
@@ -108,11 +151,13 @@
           document.getElementById("dungeonList").appendChild(div);
         }
 
+        debugLog("副本渲染完成");
         showLoading(false);
         document.getElementById("dungeonList").style.display = "block";
       } catch (error) {
         console.error("載入副本失敗:", error);
-        alert("載入副本資料失敗");
+        debugLog("載入副本失敗", { error: error.message, stack: error.stack });
+        alert("載入副本資料失敗: " + error.message);
         showLoading(false);
       }
     }
@@ -120,10 +165,25 @@
     // 監聽登入狀態
     onAuthStateChanged(auth, async (user) => {
       if (user) {
+        debugLog("使用者已登入", { uid: user.uid, email: user.email });
         await loadDungeons();
       } else {
+        debugLog("使用者未登入，重導向到登入頁面");
         window.parent.location.href = "/SFL/login.html";
       }
+    });
+
+    // 新增重新載入按鈕
+    window.addEventListener('load', () => {
+      const reloadBtn = document.createElement('button');
+      reloadBtn.textContent = '重新載入副本資料';
+      reloadBtn.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 9999; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;';
+      reloadBtn.onclick = () => {
+        document.getElementById("debugInfo").innerHTML = '';
+        document.getElementById("dungeonList").innerHTML = '';
+        loadDungeons();
+      };
+      document.body.appendChild(reloadBtn);
     });
   </script>
 </body>
