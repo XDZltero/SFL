@@ -952,7 +952,7 @@ function percent(val) {
             nextBtn.style.display = "inline-block";
             nextBtn.onclick = async () => {
 		  // 🔄 先強制刷新一次進度，避免快取
-		  await fetchProgress(true);
+		  await fetchProgress();
 		
 		  // ⏳ 等動畫結束後跳轉
 		  setTimeout(() => {
