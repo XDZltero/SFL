@@ -108,52 +108,6 @@
       }
     }
 
-    // 🚀 優化的使用者資料載入
-    async function loadUserData() {
-      PerformanceMonitor.startTiming('loadUserData');
-      
-      try {
-        // 🎯 並行載入使用者相關資料
-        const promises = [
-          SecureAPI.getStatus(false), // 使用快取
-          SecureAPI.get(`${API_BASE}/user_items`, true), // 使用快取
-          SecureAPI.get(`${API_BASE}/user_cards`, true)  // 使用快取
-        ];
-        
-        const [statusRes, itemsRes, cardsRes] = await Promise.all(promises);
-        
-        // 處理使用者狀態
-        userData = await statusRes.json();
-        
-        // 處理使用者道具
-        if (itemsRes && itemsRes.ok) {
-          userItems = await itemsRes.json();
-        } else {
-          userItems = userData.items || {};
-        }
-        
-        // 處理使用者卡片
-        if (cardsRes && cardsRes.ok) {
-          userCards = await cardsRes.json();
-        } else {
-          userCards = userData.cards_owned || {};
-        }
-        
-        // 🔧 驗證並修復裝備等級不一致問題
-        await validateAndFixEquipmentLevels();
-        
-        renderPage();
-        
-        console.log('✅ 使用者資料載入完成');
-        
-      } catch (error) {
-        console.error("載入使用者資料失敗:", error);
-        alert("載入使用者資料失敗");
-        throw error;
-      } finally {
-        PerformanceMonitor.endTiming('loadUserData');
-      }
-    }
 
     async function loadUserData(forceRefresh = true) {
       PerformanceMonitor.startTiming('loadUserData');
@@ -218,7 +172,6 @@
       } finally {
         PerformanceMonitor.endTiming('loadUserData');
       }
-    }
 
     function calculateEquipmentBonus() {
       const bonus = {};
