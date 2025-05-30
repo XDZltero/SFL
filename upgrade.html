@@ -134,12 +134,12 @@
     remainingPointsEl.innerText = userStats.stat_points;
   }
 
-  // 🚀 優化的升級提交
+  // 能力值升級提交
   async function submitLevelUp() {
     const totalAlloc = Object.values(alloc).reduce((a, b) => a + b, 0);
     if (totalAlloc === 0) return alert("請先分配能力點！");
     if (!confirm("是否確定分配能力點？")) return;
-
+  
     showLoading(true);
     PerformanceMonitor.startTiming('submitLevelUp');
     
@@ -150,11 +150,9 @@
       if (res.ok) {
         alert("能力值已分配完畢！");
         
-        // 🧹 清除使用者快取
-        SecureAPI.clearUserCache();
+        // ✅ 使用完整刷新流程
+        await performCompleteRefresh('level');
         
-        await loadStatus();
-        resetStats();
       } else {
         alert(data.error || "升級失敗");
       }
@@ -165,6 +163,7 @@
       PerformanceMonitor.endTiming('submitLevelUp');
     }
   }
+
 
   function renderSkills() {
     PerformanceMonitor.startTiming('renderSkills');
@@ -341,7 +340,7 @@
     renderSkills();
   }
 
-  // 🚀 優化的技能儲存
+  // 🚀 技能儲存
   async function submitSkills() {
     showLoading(true);
     PerformanceMonitor.startTiming('submitSkills');
@@ -353,11 +352,9 @@
       if (res.ok) {
         alert("技能儲存成功！");
         
-        // 🧹 清除使用者快取
-        SecureAPI.clearUserCache();
+        // ✅ 使用完整刷新流程
+        await performCompleteRefresh('skill');
         
-        await loadStatus();
-        await loadAllSkills();
       } else {
         alert(data.error || "儲存失敗");
       }
@@ -374,15 +371,15 @@
   document.getElementById("btnResetSkills").onclick = resetSkills;
   document.getElementById("btnSubmitSkills").onclick = submitSkills;
 
-  // 🚀 優化的技能載入（使用快取）
-  async function loadAllSkills() {
+  // 🚀 技能載入
+  async function loadAllSkills(forceRefresh = false) {
     PerformanceMonitor.startTiming('loadAllSkills');
     
     try {
       // 🎯 並行載入技能資料和使用者狀態
       const [skillRes, userRes] = await Promise.all([
         SecureAPI.getStaticData('skills_full'),
-        SecureAPI.getStatus(false)
+        SecureAPI.getStatus(forceRefresh) // ✅ 修正：支援強制刷新
       ]);
       
       // 處理技能資料
@@ -405,7 +402,12 @@
       renderStats();
       renderSkills();
       
-      console.log('✅ 技能資料載入完成');
+      // 🔄 如果是強制刷新，記錄日誌
+      if (forceRefresh) {
+        console.log('✅ 已強制刷新技能資料並更新顯示');
+      } else {
+        console.log('✅ 技能資料載入完成');
+      }
       
     } catch (error) {
       console.error('載入技能資料失敗:', error);
@@ -416,20 +418,26 @@
   }
 
   // 🚀 優化的狀態載入
-  async function loadStatus() {
-    PerformanceMonitor.startTiming('loadStatus');
-    
-    try {
-      const res = await SecureAPI.getStatus(false); // 使用快取
-      userStats = await res.json();
-      renderStats();
-    } catch (error) {
-      console.error('載入使用者狀態失敗:', error);
-      alert('載入使用者狀態失敗');
-    } finally {
-      PerformanceMonitor.endTiming('loadStatus');
+  async function loadStatus(forceRefresh = false) {
+      PerformanceMonitor.startTiming('loadStatus');
+      
+      try {
+        // ✅ 強制刷新參數
+        const res = await SecureAPI.getStatus(forceRefresh);
+        userStats = await res.json();
+        renderStats();
+        
+        // 🔄 如果是強制刷新，也要更新頁面顯示
+        if (forceRefresh) {
+          console.log('✅ 已強制刷新使用者狀態並更新顯示');
+        }
+      } catch (error) {
+        console.error('載入使用者狀態失敗:', error);
+        alert('載入使用者狀態失敗');
+      } finally {
+        PerformanceMonitor.endTiming('loadStatus');
+      }
     }
-  }
 
   // 🚀 主要初始化函數
   async function runMain() {
@@ -451,6 +459,73 @@
     } finally {
       showLoading(false);
       PerformanceMonitor.endTiming('upgradePageInit');
+    }
+  }
+
+  // 主動刷新顯示函數
+  function forceUpdateDisplay() {
+    console.log('🔄 強制更新所有顯示元件...');
+    
+    try {
+      // 重新渲染能力值顯示
+      renderStats();
+      
+      // 重新渲染技能顯示
+      if (typeof renderSkills === 'function') {
+        renderSkills();
+      }
+      
+      // 更新剩餘點數顯示
+      if (remainingPointsEl && userStats) {
+        remainingPointsEl.innerText = userStats.stat_points || 0;
+      }
+      
+      if (remainingSkillPointsEl && userStats) {
+        remainingSkillPointsEl.innerText = userStats.skill_points || 0;
+      }
+      
+      console.log('✅ 強制更新顯示完成');
+      
+    } catch (error) {
+      console.error('❌ 強制更新顯示時發生錯誤:', error);
+    }
+  }
+
+  async function performCompleteRefresh(type = 'level') {
+    console.log(`🔄 執行完整刷新流程 (${type})...`);
+    
+    try {
+      showLoading(true);
+      
+      // 1. 清除所有相關快取
+      SecureAPI.clearUserCache();
+      
+      // 2. 等待一小段時間確保快取清除
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // 3. 強制重新載入使用者資料
+      await loadStatus(true);
+      
+      // 4. 如果是技能更新，也要重新載入技能資料
+      if (type === 'skill') {
+        await loadAllSkills(true);
+      }
+      
+      // 5. 強制更新顯示
+      forceUpdateDisplay();
+      
+      // 6. 重置分配狀態
+      if (type === 'level') {
+        resetStats();
+      }
+      
+      console.log(`✅ ${type} 完整刷新流程完成`);
+      
+    } catch (error) {
+      console.error(`❌ ${type} 完整刷新流程失敗:`, error);
+      alert('資料同步失敗，建議重新整理頁面');
+    } finally {
+      showLoading(false);
     }
   }
 
