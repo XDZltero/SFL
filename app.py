@@ -571,9 +571,6 @@ def inventory():
     
     return {"items": {}}
 
-# 🚀 繼續優化其他端點...（為了簡潔，省略部分重複程式碼）
-# 其他端點維持原樣，但加入適當的快取策略
-
 @app.route("/clear_cache", methods=["GET", "POST"])
 def clear_cache():
     try:
@@ -593,8 +590,231 @@ def clear_cache():
     except Exception as e:
         return jsonify({"error": f"清除失敗: {str(e)}"}), 500
 
-# 其餘端點維持原有邏輯...
-# [為了簡潔省略，實際應用時需要完整複製原有的所有端點]
+@app.route("/levelup", methods=["POST"])
+@require_auth
+def levelup():
+    data = request.json
+    user_id = request.user_id
+    allocation = data.get("allocate")
+
+    if not allocation:
+        return jsonify({"error": "缺少參數"}), 400
+
+    ref = db.collection("users").document(user_id)
+    snap = ref.get()
+    if not snap.exists:
+        return jsonify({"error": "使用者不存在"}), 404
+
+    user = snap.to_dict()
+    total_points = sum(allocation.values())
+
+    if user["stat_points"] < total_points:
+        return jsonify({"error": "點數不足"}), 400
+
+    # 更新能力值
+    for stat, value in allocation.items():
+        if stat not in user["base_stats"]:
+            return jsonify({"error": f"無效屬性：{stat}"}), 400
+        if stat == "hp":
+            user["base_stats"][stat] += value * 5
+        else:
+            user["base_stats"][stat] += value
+
+    user["stat_points"] -= total_points
+    ref.set(user)
+    return jsonify({"message": "屬性分配完成", "status": user})
+
+@app.route("/skills_full", methods=["GET"])
+def get_skills_full():
+    return jsonify(list(get_all_skill_data().values()))
+
+@app.route("/skills_all", methods=["GET"])
+@require_auth
+def get_all_skills():
+    user_id = request.user_id
+
+    user_doc = db.collection("users").document(user_id).get()
+    if not user_doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+
+    user = user_doc.to_dict()
+    user_skills = user.get("skills", {})
+    skill_points = user.get("skill_points", 0)
+
+    skill_docs = db.collection("skills").stream()
+    skills = []
+    for doc in skill_docs:
+        s = doc.to_dict()
+        s["id"] = doc.id
+        skills.append(s)
+
+    return jsonify({
+        "skills": skills,
+        "user_skills": user_skills,
+        "remaining": skill_points
+    })
+
+@app.route("/skills_save", methods=["POST"])
+@require_auth
+def save_skill_distribution():
+    data = request.json
+    user_id = request.user_id
+    new_levels = data.get("skills")
+
+    if not isinstance(new_levels, dict):
+        return jsonify({"error": "參數錯誤"}), 400
+
+    user_ref = db.collection("users").document(user_id)
+    user_doc = user_ref.get()
+    if not user_doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+
+    user = user_doc.to_dict()
+    old_skills = user.get("skills", {})
+    skill_points = user.get("skill_points", 0)
+
+    skill_docs = db.collection("skills").stream()
+    skill_data = {doc.id: doc.to_dict() for doc in skill_docs}
+
+    # 驗證新技能配置是否合法
+    total_used = 0
+    for skill_id, new_lvl in new_levels.items():
+        if skill_id not in skill_data:
+            return jsonify({"error": f"技能 {skill_id} 不存在"}), 400
+        skill_info = skill_data[skill_id]
+
+        if new_lvl < 0 or new_lvl > skill_info["maxlvl"]:
+            return jsonify({"error": f"{skill_id} 超出等級範圍"}), 400
+        if new_lvl > 0 and user["level"] < skill_info.get("learnlvl", 1):
+            return jsonify({"error": f"{skill_id} 等級未達要求"}), 400
+
+        total_used += new_lvl
+
+    total_available = sum(old_skills.values()) + user.get("skill_points", 0)
+    if total_used > total_available:
+        return jsonify({"error": "技能點數不足"}), 400
+
+    user["skills"] = {k: v for k, v in new_levels.items() if v > 0}
+    user["skill_points"] = total_available - total_used
+
+    user_ref.set(user)
+    return jsonify({"message": "技能升級完成", "status": user})
+
+@app.route("/user_items", methods=["GET"])
+@require_auth
+def user_items():
+    user_id = request.user_id
+    
+    doc = db.collection("user_items").document(user_id).get()
+    if not doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+    
+    user_data = doc.to_dict()
+    items = user_data.get("items", {})
+    return jsonify(items)
+
+@app.route("/user_cards", methods=["GET"])
+@require_auth
+def user_cardss():
+    user_id = request.user_id
+    
+    doc = db.collection("users").document(user_id).get()
+    if not doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+    
+    user_data = doc.to_dict()
+    cards_owned = user_data.get("cards_owned", {})
+    return jsonify(cards_owned)
+
+@app.route("/items", methods=["GET"])
+def get_items():
+    return jsonify(get_item_map())
+
+@app.route("/craft_card", methods=["POST"])
+@require_auth
+def craft_card():
+    data = request.json
+    user_id = request.user_id
+    card_id = data.get("card_id")
+    materials = data.get("materials")
+    success_rate = data.get("success_rate", 1.0)
+
+    if not card_id or not materials:
+        return jsonify({"success": False, "error": "缺少必要參數"}), 400
+
+    # 取得卡片資訊
+    user_ref = db.collection("users").document(user_id)
+    user_doc = user_ref.get()
+    if not user_doc.exists:
+        return jsonify({"success": False, "error": "找不到使用者"}), 404
+    user_data = user_doc.to_dict()
+    cards_owned = user_data.get("cards_owned", {})
+
+    # 改為從 user_items collection 取得道具資料
+    item_ref = db.collection("user_items").document(user_id)
+    item_doc = item_ref.get()
+    if not item_doc.exists:
+        return jsonify({"success": False, "error": "找不到使用者道具資料"}), 404
+
+    # 正確解析 items
+    raw_items = item_doc.to_dict()
+    user_items = raw_items.get("items", {})
+    user_items = {str(k): v for k, v in user_items.items()}
+
+    # 檢查材料是否足夠
+    for material_id, required_qty in materials.items():
+        owned_qty = user_items.get(str(material_id), 0)
+        if owned_qty < required_qty:
+            return jsonify({
+                "success": False,
+                "error": f"材料 {material_id} 不足（持有 {owned_qty}，需要 {required_qty}）"
+            }), 400
+
+    # 扣除材料
+    for material_id, required_qty in materials.items():
+        mat_id = str(material_id)
+        user_items[mat_id] = user_items.get(mat_id, 0) - required_qty
+        if user_items[mat_id] <= 0:
+            del user_items[mat_id]
+
+    # 判斷成功與否
+    import random
+    is_success = random.random() <= success_rate
+
+    # 更新道具資料
+    item_ref.set({"items": user_items})
+
+    if is_success:
+        current_level = cards_owned.get(card_id, 0)
+        cards_owned[card_id] = current_level + 1
+        user_data["cards_owned"] = cards_owned
+        user_ref.set(user_data)
+
+        return jsonify({"success": True, "message": "製作成功"})
+    else:
+        return jsonify({"success": False, "message": "製作失敗，材料已消耗"})
+
+@app.route("/save_equipment", methods=["POST"])
+@require_auth
+def save_equipment():
+    data = request.json
+    user_id = request.user_id
+    equipment = data.get("equipment")
+    
+    user_ref = db.collection("users").document(user_id)
+    user_doc = user_ref.get()
+    
+    if not user_doc.exists:
+        return jsonify({"success": False, "error": "使用者不存在"}), 404
+    
+    user_data = user_doc.to_dict()
+    user_data["equipment"] = equipment
+    
+    try:
+        user_ref.set(user_data)
+        return jsonify({"success": True, "message": "裝備更新成功"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     import os
