@@ -790,12 +790,12 @@ function percent(val) {
     let currentProgress = 0;
 
     async function fetchProgress(force = false) {
-	  const url = `${API}/get_progress${force ? "?force=" + Date.now() : ""}`;
-	  const res = await SecureAPI.get(url, force);  // 這會觸發真正的 API 請求
+	  const url = `${API}/get_progress${force ? "?force=1" : ""}`;
+	  const res = await SecureAPI.get(url);
 	  const data = await res.json();
 	  currentProgress = data.progress?.[dungeon] ?? 0;
 	  return data;
-	}
+	}		
 
     function checkProgressBeforeBattle() {
       if (layer > currentProgress) {
@@ -947,13 +947,16 @@ function percent(val) {
             updateBattleButton(retryBtn, 30, "再戰一次");
             startCooldownTimer(30);
             nextBtn.style.display = "inline-block";
-            nextBtn.onclick = () => {
-		  // 加入延遲，避免進度未同步導致進入失敗
+            nextBtn.onclick = async () => {
+		  // 🔄 先強制刷新一次進度，避免快取
+		  await fetchProgress(true);
+		
+		  // ⏳ 等動畫結束後跳轉
 		  setTimeout(() => {
 		    window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-		  }, 1500);  // 延遲 1.5 秒
+		  }, 1500);
 		};
-            
+		            
             const remaining = userData?.battle_cooldown_remaining || 0;
             if (remaining > 0) {
               updateBattleButton(retryBtn, remaining, "再戰一次");
