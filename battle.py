@@ -893,7 +893,8 @@ def simulate_battle(user, monster, user_skill_dict):
     rewards = {}
     
     # ✅ 更新最後戰鬥時間戳（無論勝負）
-    user["last_battle"] = time.time()
+    battle_completion_time = round(time.time(), 2)  # 保留2位小數精度
+    user["last_battle"] = battle_completion_time
     
     if outcome == "win":
         base_exp = monster["exp"]
