@@ -9,6 +9,7 @@ from firebase_admin import credentials, firestore, auth as firebase_auth
 from battle import simulate_battle
 from functools import lru_cache, wraps
 import re
+from urllib.parse import urlencode
 
 app = Flask(__name__)
 Compress(app)
@@ -118,17 +119,22 @@ def cached_response(ttl=300):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            # ✅ 如果有 force=1 就不使用快取
+            # ✅ 使用 force=1 時，不使用快取
             if request.args.get("force") == "1":
                 return f(*args, **kwargs)
 
+            # 使用者身分作為快取鍵的一部分
             user_id = getattr(request, 'user_id', 'anonymous')
-            cache_key = f"{f.__name__}_{user_id}_{request.endpoint}"
+
+            # ✅ 把 query string 排序後變成字串納入快取鍵，避免漏判
+            query_string = urlencode(sorted(request.args.items()))
+            cache_key = f"{f.__name__}_{user_id}_{request.endpoint}_{query_string}"
 
             cached_data = cache_manager.get(cache_key)
             if cached_data is not None:
                 return jsonify(cached_data)
 
+            # 執行原本的函式並儲存快取
             result = f(*args, **kwargs)
             if isinstance(result, dict):
                 cache_manager.set(cache_key, result, ttl)
@@ -141,8 +147,6 @@ def cached_response(ttl=300):
                 return result
         return wrapper
     return decorator
-
-
 
 # 檢查戰鬥冷卻時間
 def check_battle_cooldown(user_data):
