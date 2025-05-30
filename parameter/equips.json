@@ -101,27 +101,27 @@
       "1": {
         "attack": 10,
         "shield": 50,
-        "evade": 5
+        "evade": 0.05
       },
       "2": {
         "attack": 15,
         "shield": 50,
-        "evade": 7
+        "evade": 0.07
       },
       "3": {
         "attack": 20,
         "shield": 50,
-        "evade": 9
+        "evade": 0.09
       },
       "4": {
         "attack": 25,
         "shield": 50,
-        "evade": 12
+        "evade": 0.12
       },
       "5": {
         "attack": 30,
         "shield": 50,
-        "evade": 15,
+        "evade": 0.15,
         "other_bonus": 0.05
       }
     }
