@@ -789,12 +789,13 @@ function percent(val) {
 
     let currentProgress = 0;
 
-    async function fetchProgress() {
-      const res = await SecureAPI.get(`${API}/get_progress`);
-      const data = await res.json();
-      currentProgress = data.progress?.[dungeon] ?? 0;
-      return data;
-    }
+    async function fetchProgress(force = false) {
+	  const url = `${API}/get_progress${force ? "?force=" + Date.now() : ""}`;
+	  const res = await SecureAPI.get(url, force);  // 這會觸發真正的 API 請求
+	  const data = await res.json();
+	  currentProgress = data.progress?.[dungeon] ?? 0;
+	  return data;
+	}
 
     function checkProgressBeforeBattle() {
       if (layer > currentProgress) {
@@ -1161,8 +1162,7 @@ async function preloadDungeonData() {
 	  if (user) {
 	    try {
 	      PerformanceMonitor.startTiming('dungeonPageInit');
-	      
-	      await fetchProgress();
+	      await fetchProgress(true);
 	      await loadLayer();
 	      
 	      // 🎯 背景預載入副本資料
