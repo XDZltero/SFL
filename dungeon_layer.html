@@ -287,6 +287,7 @@ function percent(val) {
     }
 
     // ✅ 修正：改進的冷卻計時器，移除會造成干擾的時間同步機制
+    let currentRemainingTime = 0; // 🎯 新增：追蹤當前倒數器的實際剩餘時間
     function startCooldownTimer(initialRemaining) {
       console.log("開始冷卻計時器，初始剩餘時間:", initialRemaining);
       
@@ -297,6 +298,7 @@ function percent(val) {
       // 🎯 記錄開始時間和原始冷卻時間，用於跳轉時計算
       startCooldownTime = Date.now();
       originalCooldownTime = initialRemaining;
+      currentRemainingTime = Math.ceil(initialRemaining); // 🎯 初始化當前剩餘時間
       
       // 🎯 記錄開始時間，用於本地計時
       const startTime = Date.now();
@@ -306,6 +308,7 @@ function percent(val) {
         // 📊 計算實際經過的時間（以客戶端時間為準）
         const elapsedSeconds = (Date.now() - startTime) / 1000;
         remaining = Math.ceil(initialRemaining - elapsedSeconds);
+        currentRemainingTime = remaining; // 🎯 更新當前剩餘時間
         
         console.log("冷卻倒數:", remaining);
         
@@ -317,6 +320,7 @@ function percent(val) {
           cooldownTimer = null;
           startCooldownTime = null;
           originalCooldownTime = 0;
+          currentRemainingTime = 0; // 🎯 重置當前剩餘時間
         } else {
           updateBattleButton(battleBtn, remaining, "開始戰鬥");
           if (retryBtn.style.display !== "none") {
@@ -988,10 +992,29 @@ function percent(val) {
             retryBtn.style.display = "inline-block";
             nextBtn.style.display = "inline-block";
             
-            // 🚀 修正：戰鬥勝利後立即顯示30秒冷卻，不等API回應
-            console.log("🕒 戰鬥勝利，立即設定30秒冷卻");
+            // 🚀 修正：戰鬥勝利後立即顯示30秒冷卻並開始倒數
+            console.log("🕒 戰鬥勝利，立即設定30秒冷卻並開始倒數");
             updateBattleButton(retryBtn, 30, "再戰一次");
             startCooldownTimer(30);
+            
+            // 🔄 然後異步獲取實際冷卻時間並更正
+            fetchUser(true).then(updatedUser => {
+              const actualCooldown = updatedUser.battle_cooldown_remaining || 0;
+              console.log("🔧 API回應後更正冷卻時間:", actualCooldown);
+              
+              if (actualCooldown > 0 && Math.abs(actualCooldown - 30) > 1) {
+                // 如果實際冷卻時間與30秒差距大於1秒，則更正
+                console.log("⚠️ 更正冷卻時間差異過大，重新設定為:", actualCooldown);
+                if (cooldownTimer) {
+                  clearInterval(cooldownTimer);
+                  cooldownTimer = null;
+                }
+                updateBattleButton(retryBtn, actualCooldown, "再戰一次");
+                startCooldownTimer(actualCooldown);
+              }
+            }).catch(error => {
+              console.error('獲取實際冷卻時間失敗:', error);
+            });
             
             nextBtn.onclick = async () => {
               // 🔄 先強制刷新一次進度，避免快取
@@ -1003,32 +1026,24 @@ function percent(val) {
                 cooldownTimer = null;
               }
               
-              // 🎯 修正：計算實際剩餘的冷卻時間，而非使用戰鬥勝利時的時間
+              // 🎯 修正：直接使用當前倒數器顯示的剩餘時間
               try {
-                let remainingCooldown = 0;
+                let remainingCooldown = currentRemainingTime; // 🚀 使用全域追蹤的當前剩餘時間
                 
-                // 如果當前還有計時器在跑，計算實際剩餘時間
-                if (cooldownTimer && startCooldownTime) {
-                  const elapsed = (Date.now() - startCooldownTime) / 1000;
-                  remainingCooldown = Math.max(0, originalCooldownTime - elapsed);
-                } else {
-                  // 如果沒有計時器，從伺服器獲取最新狀態
-                  const currentUser = await fetchUser(true);
-                  remainingCooldown = currentUser.battle_cooldown_remaining || 0;
-                }
+                console.log(`🎯 使用當前倒數器的剩餘時間: ${remainingCooldown}s`);
                 
-                console.log("跳轉前實際剩餘冷卻時間:", remainingCooldown);
-                
-                // 🚀 只有當剩餘時間大於1秒時才傳遞參數，避免傳遞微小誤差
-                const cooldownParam = remainingCooldown > 1 ? `&cooldown=${Math.ceil(remainingCooldown)}` : '';
+                // 🚀 只有當剩餘時間大於2秒時才傳遞參數，避免傳遞微小誤差
+                const cooldownParam = remainingCooldown > 2 ? `&cooldown=${remainingCooldown}` : '';
                 const nextUrl = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
+                
+                console.log("🔗 跳轉到:", nextUrl);
                 
                 // ⏳ 等動畫結束後跳轉
                 setTimeout(() => {
                   window.parent.loadPage(nextUrl);
                 }, 500);
               } catch (error) {
-                console.error("計算跳轉前冷卻時間失敗:", error);
+                console.error("準備跳轉時發生錯誤:", error);
                 // 降級：直接跳轉，不傳遞參數
                 setTimeout(() => {
                   window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
