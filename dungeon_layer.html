@@ -433,7 +433,9 @@ function percent(val) {
     // 離開副本函數
     function leaveDungeon() {
       window.parent.postMessage({ command: "restoreMainMusic" }, "*");
-      window.parent.loadPage('dungeons.html');
+      setTimeout(() => {
+	    window.parent.loadPage('dungeons.html');  // 建議延遲避免 race condition
+	  }, 300);
     }
     window.leaveDungeon = leaveDungeon;
 
