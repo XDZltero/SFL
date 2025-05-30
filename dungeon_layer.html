@@ -947,8 +947,11 @@ function percent(val) {
             startCooldownTimer(30);
             nextBtn.style.display = "inline-block";
             nextBtn.onclick = () => {
-              window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-            };
+		  // 加入延遲，避免進度未同步導致進入失敗
+		  setTimeout(() => {
+		    window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
+		  }, 1500);  // 延遲 1.5 秒
+		};
             
             const remaining = userData?.battle_cooldown_remaining || 0;
             if (remaining > 0) {
