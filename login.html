@@ -245,7 +245,6 @@
     async function signInWithGoogle() {
       const loginBtn = document.getElementById("loginButton");
       
-      // 🔒 防止重複點擊，立即禁用按鈕
       if (loginBtn.disabled || isAuthInProgress) {
         return;
       }
@@ -256,6 +255,11 @@
       provider.addScope('email');
       provider.addScope('profile');
       
+      // 清除可能的緩存問題
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
       try {
         showLoading(true, "認證中");
         updateStatus("正在連接 Google 服務...");
@@ -263,27 +267,33 @@
         let result;
         const isMobile = isMobileDevice();
         
-        if (isMobile) {
-          try {
-            result = await firebase.auth().signInWithPopup(provider);
-          } catch (popupError) {
-            if (popupError.code === 'auth/popup-blocked' || 
-                popupError.code === 'auth/popup-closed-by-user' ||
-                popupError.code === 'auth/cancelled-popup-request') {
-              updateStatus("改用重導向方式登入...");
-              await firebase.auth().signInWithRedirect(provider);
-              return;
-            } else {
-              throw popupError;
-            }
-          }
-        } else {
+        // 首先嘗試 popup 方式
+        try {
           result = await firebase.auth().signInWithPopup(provider);
+          console.log("Popup 登入成功:", result.user.email);
+        } catch (popupError) {
+          console.log("Popup 登入失敗:", popupError.code, popupError.message);
+          
+          // 如果是特定錯誤，嘗試 redirect 方式
+          if (popupError.code === 'auth/popup-blocked' || 
+              popupError.code === 'auth/popup-closed-by-user' ||
+              popupError.code === 'auth/cancelled-popup-request' ||
+              popupError.code === 'auth/invalid-action-code') {
+            
+            updateStatus("改用重導向方式登入...");
+            console.log("嘗試 redirect 登入");
+            
+            // 儲存當前狀態，重導向後使用
+            sessionStorage.setItem('authAttempt', 'true');
+            await firebase.auth().signInWithRedirect(provider);
+            return;
+          } else {
+            throw popupError;
+          }
         }
         
         if (result && result.user) {
           updateStatus("認證成功！", "success");
-          // 🔒 登入成功後保持按鈕禁用狀態
           loginBtn.disabled = true;
           loginBtn.textContent = "✅ 認證成功";
           loginBtn.style.background = "linear-gradient(135deg, #4CAF50 0%, #45a049 100%)";
@@ -291,15 +301,33 @@
         
       } catch (error) {
         console.error("登入錯誤:", error);
-        updateStatus("登入失敗，請重試", "error");
         
-        if (error.code === 'auth/network-request-failed') {
-          updateStatus("網路連線問題，請檢查網路", "error");
-        } else if (error.code === 'auth/too-many-requests') {
-          updateStatus("請求過於頻繁，請稍後再試", "error");
+        // 詳細的錯誤處理
+        let errorMessage = "登入失敗，請重試";
+        
+        switch(error.code) {
+          case 'auth/network-request-failed':
+            errorMessage = "網路連線問題，請檢查網路";
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = "請求過於頻繁，請稍後再試";
+            break;
+          case 'auth/invalid-action-code':
+          case 'auth/invalid-api-key':
+            errorMessage = "認證配置錯誤，請聯繫管理員";
+            console.error("Firebase 配置錯誤:", error);
+            break;
+          case 'auth/unauthorized-domain':
+            errorMessage = "域名未授權，請聯繫管理員";
+            console.error("域名未在 Firebase Console 中授權:", window.location.hostname);
+            break;
+          default:
+            errorMessage = `登入失敗: ${error.message}`;
         }
         
-        // 🔓 登入失敗時重新啟用按鈕
+        updateStatus(errorMessage, "error");
+        
+        // 重置狀態
         isAuthInProgress = false;
         loginBtn.disabled = false;
         loginBtn.textContent = "使用 Google 登入";
@@ -307,20 +335,43 @@
         showLoading(false);
         
       } finally {
-        // 不在這裡重新啟用按鈕，讓 onAuthStateChanged 處理成功的情況
+        // 只有在沒有 redirect 的情況下才執行
+        if (!sessionStorage.getItem('authAttempt')) {
+          // showLoading(false); // 如果有 redirect，不要關閉 loading
+        }
       }
     }
 
     // 處理重導向結果
     async function handleRedirectResult() {
       try {
+        console.log("檢查重導向結果...");
         const result = await firebase.auth().getRedirectResult();
+        
         if (result && result.user) {
+          console.log("重導向登入成功:", result.user.email);
           updateStatus("重導向登入成功！", "success");
+          
+          // 清除重導向標記
+          sessionStorage.removeItem('authAttempt');
+        } else if (sessionStorage.getItem('authAttempt')) {
+          // 有嘗試登入但沒有結果，可能是用戶取消或錯誤
+          console.log("重導向登入無結果");
+          sessionStorage.removeItem('authAttempt');
+          updateStatus("登入已取消", "error");
+          isAuthInProgress = false;
         }
       } catch (error) {
         console.error("重導向錯誤:", error);
-        updateStatus("登入過程發生錯誤", "error");
+        sessionStorage.removeItem('authAttempt');
+        
+        let errorMessage = "登入過程發生錯誤";
+        if (error.code === 'auth/unauthorized-domain') {
+          errorMessage = "域名未授權，請聯繫管理員";
+        }
+        
+        updateStatus(errorMessage, "error");
+        isAuthInProgress = false;
       }
     }
 
