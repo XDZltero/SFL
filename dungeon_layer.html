@@ -198,6 +198,8 @@ function percent(val) {
     let userData = null;
 	let levelExp = {};
 	let dungeonData = null; // 🚀 新增：快取副本資料
+	let startCooldownTime = null; // 🎯 新增：記錄冷卻開始時間
+	let originalCooldownTime = 0; // 🎯 新增：記錄原始冷卻時間
 	class BoundedMonsterCache {
 	  constructor(maxSize = 50) {
 	    this.cache = new Map();
@@ -292,6 +294,10 @@ function percent(val) {
         clearInterval(cooldownTimer);
       }
       
+      // 🎯 記錄開始時間和原始冷卻時間，用於跳轉時計算
+      startCooldownTime = Date.now();
+      originalCooldownTime = initialRemaining;
+      
       // 🎯 記錄開始時間，用於本地計時
       const startTime = Date.now();
       let remaining = Math.ceil(initialRemaining);
@@ -309,6 +315,8 @@ function percent(val) {
           updateBattleButton(retryBtn, 0, "再戰一次");
           clearInterval(cooldownTimer);
           cooldownTimer = null;
+          startCooldownTime = null;
+          originalCooldownTime = 0;
         } else {
           updateBattleButton(battleBtn, remaining, "開始戰鬥");
           if (retryBtn.style.display !== "none") {
@@ -980,19 +988,10 @@ function percent(val) {
             retryBtn.style.display = "inline-block";
             nextBtn.style.display = "inline-block";
             
-            // ✅ 修正：移除硬編碼的30秒，等待使用者資料載入完成後設定
-            setTimeout(() => {
-              const currentCooldown = userData?.battle_cooldown_remaining || 0;
-              if (currentCooldown > 0) {
-                updateBattleButton(retryBtn, currentCooldown, "再戰一次");
-                // 只有在有冷卻時間時才啟動計時器
-                if (!cooldownTimer) {
-                  startCooldownTimer(currentCooldown);
-                }
-              } else {
-                updateBattleButton(retryBtn, 0, "再戰一次");
-              }
-            }, 500); // 等待使用者資料更新完成
+            // 🚀 修正：戰鬥勝利後立即顯示30秒冷卻，不等API回應
+            console.log("🕒 戰鬥勝利，立即設定30秒冷卻");
+            updateBattleButton(retryBtn, 30, "再戰一次");
+            startCooldownTimer(30);
             
             nextBtn.onclick = async () => {
               // 🔄 先強制刷新一次進度，避免快取
@@ -1004,14 +1003,24 @@ function percent(val) {
                 cooldownTimer = null;
               }
               
-              // 🎯 新增：計算當前精確的剩餘冷卻時間並傳遞給下一頁
+              // 🎯 修正：計算實際剩餘的冷卻時間，而非使用戰鬥勝利時的時間
               try {
-                const currentUser = await fetchUser(true);
-                const preciseCooldown = currentUser.battle_cooldown_remaining || 0;
-                console.log("跳轉前精確冷卻時間:", preciseCooldown);
+                let remainingCooldown = 0;
                 
-                // 🚀 使用URL參數傳遞冷卻時間，避免新頁面獲取過期資料
-                const cooldownParam = preciseCooldown > 0 ? `&cooldown=${Math.ceil(preciseCooldown)}` : '';
+                // 如果當前還有計時器在跑，計算實際剩餘時間
+                if (cooldownTimer && startCooldownTime) {
+                  const elapsed = (Date.now() - startCooldownTime) / 1000;
+                  remainingCooldown = Math.max(0, originalCooldownTime - elapsed);
+                } else {
+                  // 如果沒有計時器，從伺服器獲取最新狀態
+                  const currentUser = await fetchUser(true);
+                  remainingCooldown = currentUser.battle_cooldown_remaining || 0;
+                }
+                
+                console.log("跳轉前實際剩餘冷卻時間:", remainingCooldown);
+                
+                // 🚀 只有當剩餘時間大於1秒時才傳遞參數，避免傳遞微小誤差
+                const cooldownParam = remainingCooldown > 1 ? `&cooldown=${Math.ceil(remainingCooldown)}` : '';
                 const nextUrl = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
                 
                 // ⏳ 等動畫結束後跳轉
@@ -1019,7 +1028,7 @@ function percent(val) {
                   window.parent.loadPage(nextUrl);
                 }, 500);
               } catch (error) {
-                console.error("獲取跳轉前冷卻時間失敗:", error);
+                console.error("計算跳轉前冷卻時間失敗:", error);
                 // 降級：直接跳轉，不傳遞參數
                 setTimeout(() => {
                   window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
