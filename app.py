@@ -115,13 +115,11 @@ def user_ref(user_id):
 
 # 🚀 快取裝飾器
 def cached_response(ttl=300):
-    """快取回應的裝飾器"""
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            # 為不同使用者建立不同的快取key
             user_id = getattr(request, 'user_id', 'anonymous')
-            cache_key = f"{f.__name__}_{user_id}_{hash(str(args) + str(kwargs))}"
+            cache_key = f"{f.__name__}_{user_id}_{request.endpoint}"
             
             # 檢查快取
             cached_data = cache_manager.get(cache_key)
@@ -131,12 +129,18 @@ def cached_response(ttl=300):
             # 執行原函數
             result = f(*args, **kwargs)
             
-            # 如果是成功的回應，儲存到快取
-            if hasattr(result, 'status_code') and result.status_code == 200:
+            # ✅ 修復：正確處理不同返回類型
+            if isinstance(result, dict):
+                # 直接返回字典的情況
+                cache_manager.set(cache_key, result, ttl)
+                return jsonify(result)
+            elif hasattr(result, 'status_code') and result.status_code == 200:
+                # 返回Response物件的情況
                 response_data = result.get_json()
                 cache_manager.set(cache_key, response_data, ttl)
-            
-            return result
+                return result
+            else:
+                return result
         return wrapper
     return decorator
 
@@ -921,19 +925,16 @@ def save_equipment():
         return jsonify({"success": False, "error": str(e)}), 500
 
 def invalidate_user_cache(user_id, cache_patterns=None):
-    """智能清除特定使用者的快取"""
     if cache_patterns is None:
         cache_patterns = ['status', 'inventory', 'user_items', 'user_cards', 'progress']
     
     cleared_count = 0
-    for pattern in cache_patterns:
-        cache_key_pattern = f"{pattern}_{user_id}_"
-        
-        # 清除匹配模式的快取
-        keys_to_clear = [key for key in cache_manager._cache.keys() if cache_key_pattern in key]
-        for key in keys_to_clear:
-            cache_manager.delete(key)
-            cleared_count += 1
+    for key in list(cache_manager._cache.keys()):
+        for pattern in cache_patterns:
+            if f"{pattern}_{user_id}_" in key or key == f"user_status" and user_id in key:
+                cache_manager.delete(key)
+                cleared_count += 1
+                break
     
     print(f"已清除使用者 {user_id} 的 {cleared_count} 個快取項目")
     return cleared_count
