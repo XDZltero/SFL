@@ -702,9 +702,12 @@ function percent(val) {
 	    
 	    // 處理使用者資料
 	    if (userDataPromise.status === 'fulfilled') {
-	      userData = userDataPromise.value;
-	      console.log("✅ 使用者資料載入完成:", userData.nickname);
-	    } else {
+	  userData = userDataPromise.value;
+	  console.log("✅ 使用者資料載入完成:", userData.nickname);
+	
+	  // ✅ 修正：在這裡才初始化冷卻邏輯
+	  initializeBattleButtons(userData);
+	} else {
 	      throw new Error('使用者資料載入失敗: ' + userDataPromise.reason);
 	    }
 	    
