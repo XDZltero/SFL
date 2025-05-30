@@ -1,0 +1,470 @@
+/* 玩家資訊優化樣式 - 參考 inventory.css */
+.player-info-container {
+  background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.player-info-container::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
+  animation: sectionShine 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sectionShine {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+.player-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.4em;
+  font-weight: 700;
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+  margin-bottom: 15px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.stats-container {
+  position: relative;
+  z-index: 1;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  background: rgba(0, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.3);
+  transform: translateX(3px);
+}
+
+.stat-item span:first-child {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+  flex: 1;
+}
+
+.stat-item span:last-child {
+  color: #00ffff;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* 怪物資訊優化樣式 */
+.monster-info-container {
+  background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 15px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.monster-info-container::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 107, 107, 0.05) 50%, transparent 70%);
+  animation: sectionShine 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.monster-info-container.boss {
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.9) 0%, rgba(255, 69, 0, 0.7) 100%);
+  border: 2px solid rgba(255, 69, 0, 0.6);
+  box-shadow: 0 0 30px rgba(255, 69, 0, 0.4);
+  animation: bossPulse 2s ease-in-out infinite;
+}
+
+.monster-info-container.boss::before {
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 69, 0, 0.1) 50%, transparent 70%);
+}
+
+@keyframes bossPulse {
+  0%, 100% { 
+    box-shadow: 0 0 30px rgba(255, 69, 0, 0.4);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 50px rgba(255, 69, 0, 0.8);
+    transform: scale(1.02);
+  }
+}
+
+.monster-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.6em;
+  font-weight: 900;
+  color: #ff6b6b;
+  text-shadow: 0 0 15px rgba(255, 107, 107, 0.8);
+  margin-bottom: 15px;
+  position: relative;
+  z-index: 1;
+}
+
+.monster-info-container.boss .monster-name {
+  color: #ff4500;
+  text-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
+  animation: bossTextGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes bossTextGlow {
+  from { text-shadow: 0 0 20px rgba(255, 69, 0, 0.8); }
+  to { text-shadow: 0 0 40px rgba(255, 69, 0, 1), 0 0 60px rgba(255, 69, 0, 0.5); }
+}
+
+.boss-title-decoration {
+  position: relative;
+  text-align: center;
+  font-size: 2em;
+  font-weight: 900;
+  color: #ff4500;
+  text-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
+  margin-bottom: 20px;
+  animation: bossTextGlow 1.5s ease-in-out infinite alternate;
+}
+
+.boss-title-decoration::before {
+  content: '👑';
+  position: absolute;
+  left: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+  animation: crownSpin 3s linear infinite;
+}
+
+.boss-title-decoration::after {
+  content: '👑';
+  position: absolute;
+  right: -50px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+  animation: crownSpin 3s linear infinite reverse;
+}
+
+@keyframes crownSpin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+.monster-image {
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+  margin: 15px 0;
+  max-width: 200px;
+  position: relative;
+  z-index: 1;
+}
+
+.monster-info-container.boss .monster-image {
+  box-shadow: 0 8px 25px rgba(255, 69, 0, 0.5);
+  animation: bossImageGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes bossImageGlow {
+  from { box-shadow: 0 8px 25px rgba(255, 69, 0, 0.5); }
+  to { box-shadow: 0 12px 35px rgba(255, 69, 0, 0.8); }
+}
+
+.monster-description {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1em;
+  color: #ffffff;
+  margin: 15px 0;
+  line-height: 1.6;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+  position: relative;
+  z-index: 1;
+  white-space: pre-line; /* 這將處理換行 */
+}
+
+.monster-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 15px;
+  position: relative;
+  z-index: 1;
+}
+
+.monster-stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.85em;
+  transition: all 0.3s ease;
+}
+
+.monster-info-container.boss .monster-stat-item {
+  background: rgba(255, 69, 0, 0.15);
+  border-color: rgba(255, 69, 0, 0.3);
+}
+
+.monster-stat-item:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.4);
+  transform: translateX(3px);
+}
+
+.monster-info-container.boss .monster-stat-item:hover {
+  background: rgba(255, 69, 0, 0.25);
+  border-color: rgba(255, 69, 0, 0.5);
+}
+
+.monster-stat-item span:first-child {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+}
+
+.monster-stat-item span:last-child {
+  color: #fff8b0;
+  text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+  font-weight: 700;
+}
+
+.monster-info-container.boss .monster-stat-item span:last-child {
+  color: #ffd700; /* 金黃色 */
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+  font-weight: 700;
+}
+
+/* 戰鬥紀錄滾軸樣式優化 */
+#logArea {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(15, 15, 35, 0.6) 100%);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  line-height: 1.6;
+  backdrop-filter: blur(5px);
+  position: relative;
+}
+
+/* 自定義滾軸樣式 */
+#logArea::-webkit-scrollbar {
+  width: 12px;
+}
+
+#logArea::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+#logArea::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.6) 0%, 
+    rgba(0, 255, 255, 0.8) 50%, 
+    rgba(0, 255, 255, 0.6) 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2);
+}
+
+#logArea::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.8) 0%, 
+    rgba(0, 255, 255, 1) 50%, 
+    rgba(0, 255, 255, 0.8) 100%);
+  box-shadow: 0 4px 12px rgba(0, 255, 255, 0.4);
+}
+
+#logArea::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(255, 215, 0, 0.8) 0%, 
+    rgba(255, 215, 0, 1) 50%, 
+    rgba(255, 215, 0, 0.8) 100%);
+}
+
+/* Firefox 滾軸樣式 */
+#logArea {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 255, 0.6) rgba(0, 0, 0, 0.3);
+}
+
+/* BOSS模式下的滾軸樣式 */
+body.boss-mode #logArea {
+  border-color: rgba(255, 50, 50, 0.3);
+  background: linear-gradient(135deg, rgba(50, 0, 0, 0.4) 0%, rgba(80, 15, 15, 0.6) 100%);
+}
+
+body.boss-mode #logArea::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(255, 69, 0, 0.6) 0%, 
+    rgba(255, 69, 0, 0.8) 50%, 
+    rgba(255, 69, 0, 0.6) 100%);
+  border-color: rgba(255, 69, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(255, 69, 0, 0.2);
+}
+
+body.boss-mode #logArea::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(255, 69, 0, 0.8) 0%, 
+    rgba(255, 69, 0, 1) 50%, 
+    rgba(255, 69, 0, 0.8) 100%);
+  box-shadow: 0 4px 12px rgba(255, 69, 0, 0.4);
+}
+
+body.boss-mode #logArea {
+  scrollbar-color: rgba(255, 69, 0, 0.6) rgba(50, 0, 0, 0.3);
+}
+
+/* 戰鬥紀錄內容樣式優化 */
+#logArea div {
+  margin: 4px 0;
+  padding: 2px 0;
+}
+
+/* 回合標題樣式 */
+#logArea div[style*="color:#ffa500"],
+#logArea div[style*="color:orange"] {
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
+  border-bottom: 1px solid rgba(255, 165, 0, 0.3);
+  padding-bottom: 5px;
+  margin: 8px 0;
+}
+
+/* 勝利/失敗訊息樣式 */
+#logArea div[style*="color:green"] {
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+  font-weight: bold;
+}
+
+#logArea div[style*="color:red"] {
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+  font-weight: bold;
+}
+
+/* 獎勵訊息樣式已在 dungeon_layer_winning.css 中定義 */
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .player-info-container,
+  .monster-info-container {
+    padding: 15px;
+  }
+  
+  .player-name,
+  .monster-name {
+    font-size: 1.2em;
+  }
+  
+  .stat-item,
+  .monster-stat-item {
+    font-size: 0.8em;
+    padding: 6px 8px;
+  }
+  
+  .monster-image {
+    max-width: 150px;
+  }
+  
+  .boss-title-decoration::before,
+  .boss-title-decoration::after {
+    display: none;
+  }
+  
+  #logArea {
+    max-height: 300px;
+  }
+  
+  #logArea::-webkit-scrollbar {
+    width: 8px;
+  }
+}
+
+/* 冷卻按鈕樣式 */
+.cooldown-button {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+  color: #adb5bd !important;
+  cursor: not-allowed !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.cooldown-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(255,255,255,0.1) 25%, 
+    transparent 25%, 
+    transparent 50%, 
+    rgba(255,255,255,0.1) 50%, 
+    rgba(255,255,255,0.1) 75%, 
+    transparent 75%
+  );
+  background-size: 20px 20px;
+  animation: cooldownStripes 1s linear infinite;
+}
+
+.reward-message {
+  background: linear-gradient(135deg, rgba(255, 255, 0, 0.05), rgba(255, 255, 0, 0.02));
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 10px;
+  padding: 15px 20px;
+  margin-top: 10px;
+  margin-left: 20px;
+  margin-right: 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.95em;
+  color: #f0e68c;
+  text-shadow: 0 0 5px rgba(255, 255, 0, 0.1);
+}
+
+@keyframes cooldownStripes {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 0; }
+}
+
+.cooldown-button:hover {
+  transform: none !important;
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4) !important;
+}
+
+.cooldown-text {
+  position: relative;
+  z-index: 1;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
