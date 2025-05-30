@@ -155,7 +155,7 @@ def check_battle_cooldown(user_data):
         return True, 0
     
     current_timestamp = time.time()
-    cooldown_seconds = 29
+    cooldown_seconds = 30  # ✅ 修正：統一為30秒，與前端一致
     
     time_diff = current_timestamp - last_battle
     if time_diff >= cooldown_seconds:
