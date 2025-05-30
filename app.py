@@ -155,14 +155,48 @@ def check_battle_cooldown(user_data):
         return True, 0
     
     current_timestamp = time.time()
-    cooldown_seconds = 30  # ✅ 修正：統一為30秒，與前端一致
+    cooldown_seconds = 30
     
     time_diff = current_timestamp - last_battle
+    
+    # 🚀 修正：添加調試日誌並確保精度
+    print(f"🕒 冷卻檢查 - 當前時間: {current_timestamp:.2f}, 上次戰鬥: {last_battle:.2f}")
+    print(f"🕒 時間差: {time_diff:.2f}秒, 冷卻要求: {cooldown_seconds}秒")
+    
     if time_diff >= cooldown_seconds:
+        print("✅ 冷卻完成，允許戰鬥")
         return True, 0
     else:
         remaining = cooldown_seconds - time_diff
-        return False, max(0, remaining)
+        # 🚀 修正：確保不返回負數或微小數值
+        remaining = max(0, round(remaining, 2))
+        print(f"❌ 冷卻中，剩餘: {remaining}秒")
+        return False, remaining
+
+def force_clear_user_cache(user_id):
+    """強制清除用戶相關的所有緩存"""
+    print(f"🧹 強制清除使用者 {user_id} 的所有緩存...")
+    
+    # 清除記憶體緩存
+    invalidate_user_cache(user_id)
+    
+    # 清除LRU緩存（如果有相關的用戶數據）
+    cache_patterns = [
+        f"user_{user_id}",
+        f"status_{user_id}",
+        f"battle_{user_id}",
+        "get_all_skill_data",  # 技能數據可能影響戰鬥
+    ]
+    
+    # 清除特定緩存項目
+    for pattern in cache_patterns:
+        try:
+            for key in list(cache_manager._cache.keys()):
+                if pattern in key:
+                    cache_manager.delete(key)
+                    print(f"🗑️ 已清除: {key}")
+        except Exception as e:
+            print(f"⚠️ 清除緩存 {pattern} 時出錯: {e}")
 
 # 🚀 優化的靜態資料快取（1小時TTL）
 @lru_cache(maxsize=128)
@@ -336,25 +370,29 @@ def register():
 # 🚀 優化的使用者狀態端點（短期快取）
 @app.route("/status", methods=["GET"])
 @require_auth
-@cached_response(ttl=30)  # 30秒快取
 def status():
     user_id = request.user_id
     
+    # 🚀 強制從數據庫獲取最新數據，避免緩存問題
     doc = db.collection("users").document(user_id).get()
     if not doc.exists:
         return jsonify({"error": "找不到使用者"}), 404
 
     user_data = doc.to_dict()
     
+    # 🚀 確保 last_battle 字段存在
     if "last_battle" not in user_data:
         user_data["last_battle"] = 0
         db.collection("users").document(user_id).set({"last_battle": 0}, merge=True)
     
+    # 🚀 重新計算冷卻狀態
     is_ready, remaining_seconds = check_battle_cooldown(user_data)
     user_data["battle_cooldown_remaining"] = remaining_seconds
     user_data["battle_ready"] = is_ready
     
-    return user_data  # 回傳資料，讓快取裝飾器處理
+    print(f"📊 Status API - 冷卻剩餘: {remaining_seconds:.2f}秒, 準備狀態: {is_ready}")
+    
+    return jsonify(user_data)
 
 @app.route("/monster", methods=["GET"])
 def get_monster():
@@ -451,11 +489,10 @@ def battle_dungeon():
         if not dungeon_id or layer is None:
             return jsonify({"error": "缺少參數"}), 400
 
-        # 🚀 戰鬥前清除使用者快取
-        print(f"🔄 戰鬥前清除使用者 {user_id} 的快取...")
-        invalidate_user_cache(user_id)
+        # 🚀 戰鬥前強制清除所有緩存
+        force_clear_user_cache(user_id)
 
-        # ... 原有戰鬥邏輯保持不變 ...
+        # 🚀 修正：直接從數據庫獲取最新用戶數據，避免緩存問題
         user_doc = db.collection("users").document(user_id).get()
         if not user_doc.exists:
             return jsonify({"error": "找不到使用者"}), 404
@@ -463,15 +500,19 @@ def battle_dungeon():
         user_data = user_doc.to_dict()
         user_data["user_id"] = user_id
 
+        # 🚀 修正：確保使用最新的時間戳檢查冷卻
+        current_check_time = time.time()
+        print(f"🔍 戰鬥前冷卻檢查時間: {current_check_time:.2f}")
+        
         is_ready, remaining_seconds = check_battle_cooldown(user_data)
         if not is_ready:
+            print(f"❌ 戰鬥被冷卻阻止，剩餘: {remaining_seconds}秒")
             return jsonify({
                 "error": f"戰鬥冷卻中，請等待 {remaining_seconds} 秒",
                 "cooldown_remaining": remaining_seconds
             }), 400
 
-        dungeons = get_dungeon_data()  # 使用快取版本
-
+        dungeons = get_dungeon_data()
         dungeon = next((d for d in dungeons if d["id"] == dungeon_id), None)
         if not dungeon:
             return jsonify({"error": "副本不存在"}), 404
@@ -492,6 +533,7 @@ def battle_dungeon():
 
         monster_data = mon_doc.to_dict()
 
+        # 獲取技能數據
         user_skill_ids = list(user_data.get("skills", {}).keys())
         user_skill_list = []
         for i in range(0, len(user_skill_ids), 10):
@@ -504,12 +546,34 @@ def battle_dungeon():
         
         result = simulate_battle(user_data, monster_data, user_skill_dict)
         
-        current_timestamp = time.time()
-        result["user"]["last_battle"] = current_timestamp
+        # 🚀 修正：戰鬥完成後立即設定精確的時間戳
+        battle_end_timestamp = time.time()
+        result["user"]["last_battle"] = battle_end_timestamp
         
-        print(f"🕒 設定戰鬥時間戳: {current_timestamp}")
-        db.collection("users").document(user_id).set(result["user"])
+        print(f"🕒 戰鬥結束時間戳: {battle_end_timestamp:.2f}")
+        
+        # 🚀 修正：立即寫入數據庫並確認寫入成功
+        try:
+            db.collection("users").document(user_id).set(result["user"])
+            print("✅ 用戶數據已寫入數據庫")
+            
+            # 🚀 立即驗證寫入結果
+            verify_doc = db.collection("users").document(user_id).get()
+            if verify_doc.exists:
+                verify_data = verify_doc.to_dict()
+                stored_timestamp = verify_data.get("last_battle", 0)
+                print(f"🔍 數據庫中的時間戳: {stored_timestamp:.2f}")
+                if abs(stored_timestamp - battle_end_timestamp) > 1:
+                    print(f"⚠️ 時間戳寫入可能有問題！預期: {battle_end_timestamp:.2f}, 實際: {stored_timestamp:.2f}")
+            
+        except Exception as db_error:
+            print(f"❌ 數據庫寫入失敗: {db_error}")
+            return jsonify({"error": "數據儲存失敗"}), 500
 
+        # 🚀 戰鬥後強制清除所有緩存
+        force_clear_user_cache(user_id)
+
+        # 處理副本進度
         user_key = user_id.replace(".", "_")
         progress_ref = db.collection("progress").document(user_key)
         progress_doc = progress_ref.get()
@@ -518,9 +582,7 @@ def battle_dungeon():
 
         if result["result"] == "lose":
             progress_ref.set({dungeon_id: 0}, merge=True)
-            # 🚀 失敗後清除相關快取
-            print(f"❌ 戰鬥失敗，清除快取...")
-            invalidate_user_cache(user_id, ['progress'])
+            force_clear_user_cache(user_id)
             return jsonify({
                 "success": False,
                 "message": "你被擊敗了，進度已重設為第一層。",
@@ -538,9 +600,8 @@ def battle_dungeon():
             elif int(layer) >= current_layer:
                 progress_ref.set({dungeon_id: int(layer) + 1}, merge=True)
 
-        # 🚀 勝利後強制清除所有相關快取
-        print(f"✅ 戰鬥勝利，強制清除所有快取...")
-        invalidate_user_cache(user_id)
+        # 🚀 最後再次清除緩存
+        force_clear_user_cache(user_id)
 
         return jsonify({
             "success": True,
