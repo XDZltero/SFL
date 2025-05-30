@@ -838,6 +838,15 @@ def cache_stats_detailed():
 def get_items():
     return jsonify(get_item_map())
 
+@lru_cache(maxsize=128)
+def get_card_data():
+    with open("parameter/cards_data.json", encoding="utf-8") as f:
+        return json.load(f)
+
+@app.route("/cards_data")
+def cards_data():
+    return jsonify(get_card_data())
+
 @app.route("/craft_card", methods=["POST"])
 @require_auth
 def craft_card():
