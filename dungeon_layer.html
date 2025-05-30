@@ -284,7 +284,7 @@ function percent(val) {
       }
     }
 
-    // ✅ 修正：改進的冷卻計時器，加入時間同步機制
+    // ✅ 修正：改進的冷卻計時器，移除會造成干擾的時間同步機制
     function startCooldownTimer(initialRemaining) {
       console.log("開始冷卻計時器，初始剩餘時間:", initialRemaining);
       
@@ -292,35 +292,14 @@ function percent(val) {
         clearInterval(cooldownTimer);
       }
       
-      // 🎯 記錄開始時間，用於時間同步
+      // 🎯 記錄開始時間，用於本地計時
       const startTime = Date.now();
       let remaining = Math.ceil(initialRemaining);
       
-      cooldownTimer = setInterval(async () => {
+      cooldownTimer = setInterval(() => {
         // 📊 計算實際經過的時間（以客戶端時間為準）
         const elapsedSeconds = (Date.now() - startTime) / 1000;
-        const calculatedRemaining = Math.ceil(initialRemaining - elapsedSeconds);
-        
-        // 🔄 每 10 秒與伺服器同步一次時間
-        if (Math.floor(elapsedSeconds) % 10 === 0 && Math.floor(elapsedSeconds) > 0) {
-          try {
-            console.log("🔄 同步伺服器時間...");
-            const syncUser = await fetchUser(true);
-            const serverRemaining = syncUser.battle_cooldown_remaining || 0;
-            
-            if (Math.abs(calculatedRemaining - serverRemaining) > 2) {
-              console.log(`⚠️ 時間偏差過大，同步至伺服器時間: ${serverRemaining}s`);
-              remaining = Math.ceil(serverRemaining);
-            } else {
-              remaining = calculatedRemaining;
-            }
-          } catch (error) {
-            console.warn("同步時間失敗，使用本地計算:", error);
-            remaining = calculatedRemaining;
-          }
-        } else {
-          remaining = calculatedRemaining;
-        }
+        remaining = Math.ceil(initialRemaining - elapsedSeconds);
         
         console.log("冷卻倒數:", remaining);
         
