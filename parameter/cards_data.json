@@ -168,5 +168,65 @@
     ],
     "description": "摧毀次元入侵者的卡片。鑲嵌提升生命值，並提高較多護盾值。",
     "require_level": 20
+  },
+  {
+    "id": "card_ironcity",
+    "name": "[副本卡片]紫魔之城",
+    "quality": "稀有",
+    "levels": [
+      {
+        "level": 1,
+        "materials": {
+          "purple_crystal": 20,
+          "big_purple_crystal": 10,
+          "magic_fragment": 5,
+          "chaos_breath": 1
+        },
+        "chance": 0.95
+      },
+      {
+        "level": 2,
+        "materials": {
+          "big_purple_crystal": 20,
+          "pandora_claw": 10,
+          "magic_fragment": 10,
+          "chaos_breath": 1
+        },
+        "chance": 0.8
+      },
+      {
+        "level": 3,
+        "materials": {
+          "pandora_claw": 20,
+          "ancient_parchment": 10,
+          "magic_fragment": 10,
+          "chaos_breath": 2
+        },
+        "chance": 0.7
+      },
+      {
+        "level": 4,
+        "materials": {
+          "ancient_parchment": 20,
+          "magic_essence": 10,
+          "upper_magic_essence": 10,
+          "magic_fragment": 15,
+          "chaos_breath": 2
+        },
+        "chance": 0.4
+      },
+      {
+        "level": 5,
+        "materials": {
+          "forbidden_tome_page": 5,
+          "evitina_staff_fragment": 2,
+          "magic_fragment": 15,
+          "chaos_breath": 2
+        },
+        "chance": 0.4
+      }
+    ],
+    "description": "充滿魔力王城的魔力卡片。鑲嵌提升攻擊力、迴避率、護盾值。",
+    "require_level": 30
   }
 ]
