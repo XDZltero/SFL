@@ -2,3 +2,4 @@ flask          # 後端 Web framework
 firebase-admin # 與 Firestore 溝通並驗證ID Token
 flask-cors     # 處理跨網域請求（讓前端能連線）
 flask-compress # 戰鬥log處理用
+pytz
