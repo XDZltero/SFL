@@ -1077,3 +1077,10 @@ body.world-boss-mode::before {
     display: table;
   }
 }
+
+.middle-panel {
+  flex: 0 0 340px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
