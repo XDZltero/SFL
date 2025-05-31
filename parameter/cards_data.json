@@ -228,5 +228,66 @@
     ],
     "description": "充滿魔力王城的魔力卡片。鑲嵌提升攻擊力、迴避率、護盾值。",
     "require_level": 30
+  },
+  {
+    "id": "card_pandora_nightmare",
+    "name": "[副本卡片]潘朵拉：夢魘幻境",
+    "quality": "稀有",
+    "levels": [
+      {
+        "level": 1,
+        "materials": {
+          "shadow_essence": 30,
+          "puzzle_fragment": 30,
+          "crystal_core": 10,
+          "nightmare_fragment": 5,
+          "chaos_breath": 2
+        },
+        "chance": 0.9
+      },
+      {
+        "level": 2,
+        "materials": {
+          "crystal_core": 20,
+          "phantom_metal": 30,
+          "dream_essence": 10,
+          "chaos_breath": 2
+        },
+        "chance": 0.75
+      },
+      {
+        "level": 3,
+        "materials": {
+          "dream_essence": 20,
+          "torn_flesh": 30,
+          "cursed_armor": 10,
+          "chaos_breath": 3
+        },
+        "chance": 0.65
+      },
+      {
+        "level": 4,
+        "materials": {
+          "cursed_armor": 20,
+          "necro_essence": 30,
+          "apostle_essence": 5,
+          "nightmare_fragment": 15,
+          "chaos_breath": 3
+        },
+        "chance": 0.35
+      },
+      {
+        "level": 5,
+        "materials": {
+          "apostle_essence": 10,
+          "defile_letter": 2,
+          "nightmare_fragment": 15,
+          "chaos_breath": 4
+        },
+        "chance": 0.35
+      }
+    ],
+    "description": "魔力塑造的夢境與夢魘的卡片。鑲嵌提升攻擊力、命中率、護盾值。",
+    "require_level": 45
   }
 ]
