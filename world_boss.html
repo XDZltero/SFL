@@ -135,9 +135,21 @@ let currentUserNickname = "";
 
 // 階段配置
 const PHASES = {
-  1: { ... },
-  2: { ... },
-  3: { ... }
+  1: {
+    name: "【第一階段】資料載入中",
+    description: "資料載入中...",
+    hp_threshold: 100
+  },
+  2: {
+    name: "【第二階段】資料載入中",
+    description: "資料載入中...",
+    hp_threshold: 60
+  },
+  3: {
+    name: "【第三階段】資料載入中",
+    description: "資料載入中...",
+    hp_threshold: 30
+  }
 };
 
 // 載入頁面初始化
