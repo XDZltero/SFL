@@ -6,9 +6,11 @@ from flask_cors import CORS
 from flask_compress import Compress
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
-from battle import simulate_battle
+from battle import simulate_battle, get_equipment_bonus, calculate_hit, calculate_damage, get_element_multiplier, level_damage_modifier
 from functools import lru_cache, wraps
 import re
+import datetime 
+
 from urllib.parse import urlencode
 
 app = Flask(__name__)
