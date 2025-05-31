@@ -49,7 +49,6 @@
     }
   },
   "rewards": {
-    "base_exp": 25000,
     "drops": [
       {
         "id": "world_boss_token",
