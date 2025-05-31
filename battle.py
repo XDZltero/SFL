@@ -123,8 +123,6 @@ def apply_drops(db, user_id, drops, user_luck=0):
     round_2_bonus = {}  
     round_3_bonus = {}
     
-    print(f"🍀 幸運值: {user_luck}, 三輪倍率: {round_1_multiplier:.3f}, {round_2_multiplier:.3f}, {round_3_multiplier:.3f}")
-    
     # 🎯 第一輪：基礎掉落 + 第一輪幸運加成
     for drop in drops:
         base_rate = drop["rate"]
@@ -152,8 +150,6 @@ def apply_drops(db, user_id, drops, user_luck=0):
             else:
                 current["items"][item_id] = new_amount
                 actual_drops[item_id] = actual_drops.get(item_id, 0) + qty
-            
-            print(f"🎯 第一輪掉落: {item_id} x{qty} (機率: {round_1_rate:.1%})")
     
     # 🎁 第二輪：獨立判定，基於原始掉落率
     for drop in drops:
@@ -183,8 +179,6 @@ def apply_drops(db, user_id, drops, user_luck=0):
             if bonus_qty > 0:
                 round_2_bonus[item_id] = round_2_bonus.get(item_id, 0) + bonus_qty
                 actual_drops[item_id] = actual_drops.get(item_id, 0) + bonus_qty
-                
-            print(f"🎁 第二輪掉落: {item_id} x{bonus_qty} (機率: {round_2_rate:.1%})")
 
     # 🌟 第三輪：獨立判定，基於原始掉落率
     for drop in drops:
@@ -214,13 +208,9 @@ def apply_drops(db, user_id, drops, user_luck=0):
             if bonus_qty > 0:
                 round_3_bonus[item_id] = round_3_bonus.get(item_id, 0) + bonus_qty
                 actual_drops[item_id] = actual_drops.get(item_id, 0) + bonus_qty
-                
-            print(f"🌟 第三輪掉落: {item_id} x{bonus_qty} (機率: {round_3_rate:.1%})")
 
     # 儲存更新後的道具
     ref.set(current)
-    
-    print(f"✅ 掉落完成 - 總獲得: {actual_drops}")
     
     return {
         "items": actual_drops,
