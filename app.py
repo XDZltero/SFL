@@ -159,23 +159,15 @@ def check_battle_cooldown(user_data):
     
     time_diff = current_timestamp - last_battle
     
-    # 🚀 修正：添加調試日誌並確保精度
-    print(f"🕒 冷卻檢查 - 當前時間: {current_timestamp:.2f}, 上次戰鬥: {last_battle:.2f}")
-    print(f"🕒 時間差: {time_diff:.2f}秒, 冷卻要求: {cooldown_seconds}秒")
-    
     if time_diff >= cooldown_seconds:
-        print("✅ 冷卻完成，允許戰鬥")
         return True, 0
     else:
         remaining = cooldown_seconds - time_diff
-        # 🚀 修正：確保不返回負數或微小數值
         remaining = max(0, round(remaining, 2))
-        print(f"❌ 冷卻中，剩餘: {remaining}秒")
         return False, remaining
 
 def force_clear_user_cache(user_id):
     """強制清除用戶相關的所有緩存"""
-    print(f"🧹 強制清除使用者 {user_id} 的所有緩存...")
     
     # 清除記憶體緩存
     invalidate_user_cache(user_id)
@@ -194,7 +186,6 @@ def force_clear_user_cache(user_id):
             for key in list(cache_manager._cache.keys()):
                 if pattern in key:
                     cache_manager.delete(key)
-                    print(f"🗑️ 已清除: {key}")
         except Exception as e:
             print(f"⚠️ 清除緩存 {pattern} 時出錯: {e}")
 
@@ -390,8 +381,6 @@ def status():
     user_data["battle_cooldown_remaining"] = remaining_seconds
     user_data["battle_ready"] = is_ready
     
-    print(f"📊 Status API - 冷卻剩餘: {remaining_seconds:.2f}秒, 準備狀態: {is_ready}")
-    
     return jsonify(user_data)
 
 @app.route("/monster", methods=["GET"])
@@ -425,8 +414,7 @@ def battle():
         if not monster_id:
             return jsonify({"error": "缺少怪物ID"}), 400
 
-        # 🚀 戰鬥前清除使用者快取
-        print(f"🔄 戰鬥前清除使用者 {user_id} 的快取...")
+        # 戰鬥前清除使用者快取
         invalidate_user_cache(user_id)
 
         # ... 原有戰鬥邏輯 ...
@@ -463,11 +451,9 @@ def battle():
         current_timestamp = time.time()
         result["user"]["last_battle"] = current_timestamp
         
-        print(f"🕒 設定戰鬥時間戳: {current_timestamp}")
         db.collection("users").document(user_id).set(result["user"])
 
         # 🚀 戰鬥後再次清除快取以確保資料一致性
-        print(f"✅ 戰鬥勝利，強制清除所有快取...")
         invalidate_user_cache(user_id)
 
         return jsonify(result)
@@ -502,11 +488,9 @@ def battle_dungeon():
 
         # 🚀 修正：確保使用最新的時間戳檢查冷卻
         current_check_time = time.time()
-        print(f"🔍 戰鬥前冷卻檢查時間: {current_check_time:.2f}")
         
         is_ready, remaining_seconds = check_battle_cooldown(user_data)
         if not is_ready:
-            print(f"❌ 戰鬥被冷卻阻止，剩餘: {remaining_seconds}秒")
             return jsonify({
                 "error": f"戰鬥冷卻中，請等待 {remaining_seconds} 秒",
                 "cooldown_remaining": remaining_seconds
@@ -550,19 +534,16 @@ def battle_dungeon():
         battle_end_timestamp = time.time()
         result["user"]["last_battle"] = battle_end_timestamp
         
-        print(f"🕒 戰鬥結束時間戳: {battle_end_timestamp:.2f}")
         
         # 🚀 修正：立即寫入數據庫並確認寫入成功
         try:
             db.collection("users").document(user_id).set(result["user"])
-            print("✅ 用戶數據已寫入數據庫")
             
             # 🚀 立即驗證寫入結果
             verify_doc = db.collection("users").document(user_id).get()
             if verify_doc.exists:
                 verify_data = verify_doc.to_dict()
                 stored_timestamp = verify_data.get("last_battle", 0)
-                print(f"🔍 數據庫中的時間戳: {stored_timestamp:.2f}")
                 if abs(stored_timestamp - battle_end_timestamp) > 1:
                     print(f"⚠️ 時間戳寫入可能有問題！預期: {battle_end_timestamp:.2f}, 實際: {stored_timestamp:.2f}")
             
@@ -1131,9 +1112,6 @@ def invalidate_user_cache(user_id, cache_patterns=None):
         if should_clear:
             cache_manager.delete(key)
             cleared_count += 1
-            print(f"🧹 清除快取: {key}")
-    
-    print(f"✅ 已清除使用者 {user_id} 的 {cleared_count} 個快取項目")
     return cleared_count
 
 if __name__ == "__main__":
