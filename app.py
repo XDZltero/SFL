@@ -1,24 +1,15 @@
 import os
 import json
 import time
-import re
-import datetime
-import pytz
-from functools import lru_cache, wraps
-from urllib.parse import urlencode
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_compress import Compress
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
-from battle import (
-    simulate_battle,
-    get_equipment_bonus,
-    calculate_hit,
-    calculate_damage,
-    level_damage_modifier,
-    get_element_multiplier
-)
+from battle import simulate_battle
+from functools import lru_cache, wraps
+import re
+from urllib.parse import urlencode
 
 app = Flask(__name__)
 Compress(app)
@@ -1093,8 +1084,61 @@ def reset_stats():
         traceback.print_exc()
         return jsonify({"error": f"伺服器錯誤: {str(e)}"}), 500
 
+def invalidate_user_cache(user_id, cache_patterns=None):
+    """清除使用者相關的所有快取"""
+    if cache_patterns is None:
+        cache_patterns = ['status', 'inventory', 'user_items', 'user_cards', 'progress']
+    
+    cleared_count = 0
+    # 🎯 修正：改進快取清除邏輯，正確匹配快取鍵
+    for key in list(cache_manager._cache.keys()):
+        should_clear = False
+        
+        # 檢查是否包含使用者ID
+        if user_id in key:
+            # 檢查是否匹配任何快取模式
+            for pattern in cache_patterns:
+                if pattern in key:
+                    should_clear = True
+                    break
+            
+            # 🚀 新增：額外檢查完整的API端點名稱
+            api_endpoints = ['status_', 'get_progress_', 'inventory_', 'user_items_', 'user_cards_']
+            for endpoint in api_endpoints:
+                if endpoint in key:
+                    should_clear = True
+                    break
+        
+        if should_clear:
+            cache_manager.delete(key)
+            cleared_count += 1
+    return cleared_count
+
+def invalidate_user_cache(user_id):
+    """清除指定使用者的快取項目"""
+    try:
+        # 清除記憶體快取中與該使用者相關的項目
+        user_patterns = [
+            f"status_{user_id}",
+            f"inventory_{user_id}", 
+            f"user_items_{user_id}",
+            f"user_cards_{user_id}",
+            f"get_progress_{user_id}",
+        ]
+        
+        for pattern in user_patterns:
+            # 搜尋並刪除匹配的快取鍵
+            keys_to_delete = [key for key in cache_manager._cache.keys() if pattern in key]
+            for key in keys_to_delete:
+                cache_manager.delete(key)
+        
+        print(f"已清除使用者 {user_id} 的快取項目")
+        
+    except Exception as e:
+        print(f"清除使用者快取時發生錯誤: {e}")
 
 # 🌍 世界王系統相關函數
+
 @lru_cache(maxsize=1)
 def get_world_boss_config():
     """載入世界王配置"""
@@ -1631,6 +1675,7 @@ def world_boss_init_check():
             "initialized": False,
             "error": f"檢查世界王狀態失敗: {str(e)}"
         }), 500
+
 
 if __name__ == "__main__":
     import os
