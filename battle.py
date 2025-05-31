@@ -100,13 +100,6 @@ def apply_drops(db, user_id, drops, user_luck=0):
     - 第一輪：原始掉落率 + 幸運加成(每點幸運+0.2%，最大+25%)
     - 第二輪：只有第一輪掉落的道具才能進行第二輪判定(每點幸運+0.15%，最大+15%)  
     - 第三輪：只有第二輪掉落的道具才能進行第三輪判定(每點幸運+0.05%，最大+10%)
-    
-    回傳格式：{
-        "items": {"item_id": final_quantity, ...},
-        "round_1_bonus": {"item_id": bonus_quantity, ...},
-        "round_2_bonus": {"item_id": bonus_quantity, ...},
-        "round_3_bonus": {"item_id": bonus_quantity, ...}
-    }
     """
     ref = get_user_item_ref(db, user_id)
     snap = ref.get()
@@ -114,8 +107,8 @@ def apply_drops(db, user_id, drops, user_luck=0):
 
     # 🎲 計算三輪的幸運加成
     round_1_bonus_rate = min(user_luck * 0.002, 0.25)   # 最大 25% 額外機率
-    round_2_bonus_rate = min(user_luck * 0.0015, 0.15)  # 最大 15% 額外機率  
-    round_3_bonus_rate = min(user_luck * 0.0005, 0.10)  # 最大 10% 額外機率
+    round_2_bonus_rate = min(user_luck * 0.0015, 0.15)  # 最大 15% 純幸運機率
+    round_3_bonus_rate = min(user_luck * 0.0005, 0.10)  # 最大 10% 純幸運機率
     
     # 記錄各輪掉落
     actual_drops = {}
@@ -135,7 +128,7 @@ def apply_drops(db, user_id, drops, user_luck=0):
         item_id = drop["id"]
         qty = drop["value"]
         
-        # 計算第一輪掉落率
+        # 計算第一輪掉落率（基礎率 + 幸運加成）
         if base_rate >= 1.0:
             # 100% 掉落率不變
             round_1_rate = 1.0
@@ -160,15 +153,13 @@ def apply_drops(db, user_id, drops, user_luck=0):
                 round_1_dropped.append(drop)  # 記錄成功掉落的道具
             
             print(f"🎯 第一輪掉落: {item_id} x{qty} (機率: {round_1_rate:.1%})")
-    
-    # 🎁 第二輪：只對第一輪掉落的道具進行判定
+
     for drop in round_1_dropped:
-        base_rate = drop["rate"]
         item_id = drop["id"]
         qty = drop["value"]
         
-        # 計算第二輪掉落率
-        round_2_rate = min(base_rate + round_2_bonus_rate, 0.95)
+        # ✅ 修正：第二輪使用純幸運機率，不加原始掉落率
+        round_2_rate = round_2_bonus_rate
         
         if random.random() <= round_2_rate:
             # 第二輪掉落成功
@@ -186,17 +177,14 @@ def apply_drops(db, user_id, drops, user_luck=0):
                 round_2_bonus[item_id] = round_2_bonus.get(item_id, 0) + bonus_qty
                 actual_drops[item_id] = actual_drops.get(item_id, 0) + bonus_qty
                 round_2_dropped.append(drop)  # 記錄成功掉落的道具
-                
-            print(f"🎁 第二輪掉落: {item_id} x{bonus_qty} (機率: {round_2_rate:.1%})")
 
-    # 🌟 第三輪：只對第二輪掉落的道具進行判定
+    # 🌟 第三輪：只對第二輪掉落的道具進行純幸運判定
     for drop in round_2_dropped:
-        base_rate = drop["rate"]
         item_id = drop["id"]
         qty = drop["value"]
         
-        # 計算第三輪掉落率
-        round_3_rate = min(base_rate + round_3_bonus_rate, 0.95)
+        # ✅ 修正：第三輪使用純幸運機率，不加原始掉落率
+        round_3_rate = round_3_bonus_rate
         
         if random.random() <= round_3_rate:
             # 第三輪掉落成功
@@ -213,8 +201,6 @@ def apply_drops(db, user_id, drops, user_luck=0):
             if bonus_qty > 0:
                 round_3_bonus[item_id] = round_3_bonus.get(item_id, 0) + bonus_qty
                 actual_drops[item_id] = actual_drops.get(item_id, 0) + bonus_qty
-                
-            print(f"🌟 第三輪掉落: {item_id} x{bonus_qty} (機率: {round_3_rate:.1%})")
 
     # 儲存更新後的道具
     ref.set(current)
