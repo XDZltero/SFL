@@ -1,0 +1,10 @@
+[
+  {
+    "id": "Creator_defile",
+    "name": "獲得潘朵拉創世主的認可",
+    "description": "迪菲爾解放了自己的魔力，以真正的創世主的姿態現身。",
+    "bossId": "Creator_defile",
+    "min_level": 10,
+    "image": "https://i.postimg.cc/Bvj6GM01/dungeon-moss.png",
+  }
+]
