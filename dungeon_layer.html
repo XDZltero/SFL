@@ -1175,7 +1175,9 @@ function percent(val) {
           logArea.appendChild(winMsg);
           scrollLogToBottom();
 
-          	if (data.rewards) {
+          	// 在 dungeon_layer.html 中找到獎勵顯示部分並替換為：
+
+		if (data.rewards) {
 		  const { 
 		    base_exp, 
 		    exp_luck_bonus, 
@@ -1222,10 +1224,10 @@ function percent(val) {
 		      for (const [itemId, totalQuantity] of Object.entries(actual_drops)) {
 		        const meta = itemMap[itemId] || { name: itemId, special: 0 };
 		        
-		        // 計算基礎掉落數量（總數量減去各輪額外獲得的）
+		        // 計算幸運加成數量
 		        const round2Bonus = round2Items[itemId] || 0;
 		        const round3Bonus = round3Items[itemId] || 0;
-		        const baseQuantity = totalQuantity - round2Bonus - round3Bonus;
+		        const totalLuckBonus = round2Bonus + round3Bonus;
 		        
 		        let itemText = "";
 		        
@@ -1240,10 +1242,7 @@ function percent(val) {
 		          itemText = `<br>${meta.name} × ${totalQuantity}`;
 		        }
 		        
-		        // 🍀 簡化的幸運加成顯示
-		        const round2Bonus = round2Items[itemId] || 0;
-		        const round3Bonus = round3Items[itemId] || 0;
-		        const totalLuckBonus = round2Bonus + round3Bonus;
+		        // 🍀 顯示幸運加成
 		        
 		        // 如果有幸運加成，顯示幸運獲得的額外數量
 		        if (totalLuckBonus > 0) {
