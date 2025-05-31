@@ -8,6 +8,322 @@
 <link href="css/dungeon_layer_winning.css" rel="stylesheet"/>
 <link href="css/dungeon_layer.css" rel="stylesheet"/>
 <link href="css/world_boss.css" rel="stylesheet"/>
+<style>
+/* 重新設計的佈局樣式 */
+.world-boss-container {
+  display: flex;
+  gap: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  margin-top: 160px; /* 為上方血量條留空間 */
+}
+
+.left-panel {
+  flex: 1;
+  max-width: 600px;
+}
+
+.right-panel {
+  flex: 1;
+  max-width: 500px;
+}
+
+/* 玩家挑戰卡片 */
+.player-challenge-card {
+  background: linear-gradient(135deg, 
+    rgba(15, 15, 35, 0.9) 0%, 
+    rgba(25, 25, 55, 0.8) 100%);
+  border: 2px solid rgba(0, 255, 255, 0.3);
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.player-challenge-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.08) 50%, transparent 70%);
+  animation: sectionShine 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.player-damage-stats {
+  text-align: center;
+  margin-bottom: 25px;
+  position: relative;
+  z-index: 1;
+}
+
+.damage-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #ffd93d;
+  margin-bottom: 15px;
+  text-shadow: 0 0 10px rgba(255, 217, 61, 0.6);
+}
+
+.total-damage {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.5em;
+  font-weight: 900;
+  color: #ff6b6b;
+  text-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+  margin-bottom: 10px;
+  animation: damageGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes damageGlow {
+  from { text-shadow: 0 0 20px rgba(255, 107, 107, 0.8); }
+  to { text-shadow: 0 0 30px rgba(255, 107, 107, 1), 0 0 40px rgba(255, 107, 107, 0.5); }
+}
+
+.damage-rank {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1em;
+  color: #00ffff;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.challenge-button-area {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.world-challenge-btn {
+  background: linear-gradient(135deg, #ff4500 0%, #ff6347 25%, #ffd700 50%, #ff8c00 75%, #ff0000 100%);
+  border: none;
+  padding: 18px 40px;
+  border-radius: 30px;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.3em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(255, 69, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  animation: worldChallengeBtnPulse 2s ease-in-out infinite;
+}
+
+@keyframes worldChallengeBtnPulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 8px 25px rgba(255, 69, 0, 0.6);
+  }
+  50% { 
+    transform: scale(1.02);
+    box-shadow: 0 12px 35px rgba(255, 69, 0, 0.8);
+  }
+}
+
+.world-challenge-btn:disabled {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  color: #adb5bd;
+  cursor: not-allowed;
+  animation: none;
+  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.4);
+}
+
+.cooldown-info {
+  margin-top: 15px;
+  font-family: 'Orbitron', sans-serif;
+  color: #ff6b6b;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+/* 排行榜樣式 */
+.leaderboard-card {
+  background: linear-gradient(135deg, 
+    rgba(15, 15, 35, 0.9) 0%, 
+    rgba(25, 25, 55, 0.8) 100%);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+  max-height: 600px;
+}
+
+.leaderboard-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #ffd700;
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+}
+
+.leaderboard-list {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.leaderboard-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.leaderboard-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.leaderboard-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255, 215, 0, 0.6), rgba(255, 215, 0, 0.8));
+  border-radius: 4px;
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  margin: 8px 0;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  border-left: 4px solid rgba(255, 215, 0, 0.6);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.leaderboard-item:hover {
+  background: rgba(255, 215, 0, 0.1);
+  transform: translateX(5px);
+  border-left-color: rgba(255, 215, 0, 1);
+}
+
+.leaderboard-item.top-3 {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.1));
+  border-left-color: #ffd700;
+}
+
+.leaderboard-item.current-player {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 255, 255, 0.1));
+  border-left-color: #00ffff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.rank-number {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.2em;
+  color: #ffd700;
+  min-width: 40px;
+  text-align: center;
+}
+
+.rank-number.top-1 { color: #ff6347; text-shadow: 0 0 10px rgba(255, 99, 71, 0.8); }
+.rank-number.top-2 { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.8); }
+.rank-number.top-3 { color: #cd7f32; text-shadow: 0 0 10px rgba(205, 127, 50, 0.8); }
+
+.player-name {
+  flex: 1;
+  margin-left: 15px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  color: #fff;
+  font-size: 1em;
+}
+
+.damage-amount {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: #ff6347;
+  font-size: 1em;
+  text-shadow: 0 0 8px rgba(255, 99, 71, 0.5);
+}
+
+/* 時間限制提示 */
+.time-restriction-notice {
+  background: linear-gradient(135deg, rgba(220, 20, 60, 0.9), rgba(139, 0, 0, 0.8));
+  border: 2px solid rgba(255, 69, 0, 0.6);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-family: 'Orbitron', sans-serif;
+  color: #fff;
+  box-shadow: 0 8px 25px rgba(220, 20, 60, 0.4);
+}
+
+.restriction-title {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #ff6b6b;
+  margin-bottom: 10px;
+  text-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+}
+
+.restriction-message {
+  font-size: 1em;
+  line-height: 1.5;
+}
+
+/* 階段系統樣式 */
+.phase-indicator {
+  position: fixed;
+  top: 160px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, rgba(75, 0, 130, 0.95), rgba(139, 0, 139, 0.95));
+  border: 2px solid rgba(255, 215, 0, 0.6);
+  border-radius: 15px;
+  padding: 15px 25px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  animation: phaseIndicatorPulse 3s ease-in-out infinite;
+}
+
+@keyframes phaseIndicatorPulse {
+  0%, 100% { 
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    transform: translateX(-50%) scale(1);
+  }
+  50% { 
+    box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
+    transform: translateX(-50%) scale(1.02);
+  }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .world-boss-container {
+    flex-direction: column;
+    margin-top: 180px;
+    padding: 15px;
+  }
+  
+  .left-panel, .right-panel {
+    max-width: 100%;
+  }
+  
+  .total-damage {
+    font-size: 2em;
+  }
+  
+  .phase-indicator {
+    position: static;
+    transform: none;
+    margin: 15px auto;
+    display: table;
+  }
+}
+</style>
 </head>
 <body class="world-boss-mode">
 
@@ -15,53 +331,130 @@
 <div class="world-boss-hp-container">
   <div class="world-boss-title">🌍 世界王挑戰 🌍</div>
   <div class="world-hp-bar-container">
-    <div class="world-hp-bar" id="worldHpBar" style="width: 75.3%;">
-      <div class="world-hp-text" id="worldHpText">75,328,419 / 100,000,000</div>
+    <div class="world-hp-bar" id="worldHpBar" style="width: 100%;">
+      <div class="world-hp-text" id="worldHpText">載入中...</div>
     </div>
   </div>
   <div class="world-boss-stats">
-    <div class="world-stat-item">參與者: <span class="world-stat-value" id="participantCount">1,247</span></div>
+    <div class="world-stat-item">參與者: <span class="world-stat-value" id="participantCount">-</span></div>
     <div class="world-stat-item">等級: <span class="world-stat-value" id="bossLevel">99</span></div>
     <div class="world-stat-item">階段: <span class="world-stat-value" id="currentPhase">1 / 3</span></div>
   </div>
 </div>
 
+<!-- 階段指示器 -->
+<div class="phase-indicator" id="phaseIndicator">
+  【第一階段】魔力覺醒
+</div>
+
 <!-- 倒數計時器 -->
 <div class="countdown-timer">
-  <div class="countdown-label">⏰ 挑戰結束倒數</div>
-  <div class="countdown-value" id="countdownDisplay">72:15:30</div>
+  <div class="countdown-label">⏰ 挑戰開放倒數</div>
+  <div class="countdown-value" id="countdownDisplay">計算中...</div>
 </div>
 
 <!-- 頁面載入遮罩 -->
 <div id="loadingOverlay">
-<div class="particles" id="pageParticles"></div>
-<div class="battle-loading-container">
-<div class="battle-icon">🐲</div>
-<div class="battle-title normal-title">載入世界王</div>
-<div class="loading-text" id="pageLoadingText">正在連接世界王戰場...</div>
-<div class="progress-container">
-<div class="progress-bar" id="pageProgressBar"></div>
+  <div class="particles" id="pageParticles"></div>
+  <div class="battle-loading-container">
+    <div class="battle-icon">🐲</div>
+    <div class="battle-title normal-title">載入世界王</div>
+    <div class="loading-text" id="pageLoadingText">正在連接世界王戰場...</div>
+    <div class="progress-container">
+      <div class="progress-bar" id="pageProgressBar"></div>
+    </div>
+    <div class="progress-text" id="pageProgressText">0%</div>
+    <div class="battle-tips">
+      🌍 全世界的冒險者正在一起戰鬥！<br/>
+      ⚔️ 每一次攻擊都關乎人類的命運
+    </div>
+  </div>
 </div>
-<div class="progress-text" id="pageProgressText">0%</div>
-<div class="battle-tips">
-        🌍 全世界的冒險者正在一起戰鬥！<br/>
-        ⚔️ 每一次攻擊都關乎人類的命運
+
+<!-- 主要內容區域 -->
+<div class="world-boss-container">
+  <!-- 左側面板：玩家挑戰區域 -->
+  <div class="left-panel">
+    <!-- 時間限制提示（週日顯示） -->
+    <div class="time-restriction-notice" id="timeRestriction" style="display: none;">
+      <div class="restriction-title">⏰ 挑戰時間限制</div>
+      <div class="restriction-message">
+        世界王每週日進行休整，無法挑戰<br>
+        挑戰將於下週一 00:00 重新開放
       </div>
-</div>
+    </div>
+
+    <!-- 玩家挑戰卡片 -->
+    <div class="player-challenge-card">
+      <div class="player-damage-stats">
+        <div class="damage-title">🏆 你的累積傷害</div>
+        <div class="total-damage" id="playerTotalDamage">0</div>
+        <div class="damage-rank" id="playerRank">排名: 未參與</div>
+      </div>
+      
+      <div class="challenge-button-area">
+        <button class="world-challenge-btn" id="challengeBtn" onclick="challengeWorldBoss()">
+          🌍 挑戰世界王 🌍
+        </button>
+        <div class="cooldown-info" id="cooldownInfo" style="display: none;">
+          冷卻中，請等待：<span id="cooldownTimer">00:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 世界王資訊 -->
+    <div class="section world-boss-info-container">
+      <div class="world-boss-name" id="bossName">載入中...</div>
+      <div class="world-boss-phase" id="phaseDescription">載入階段資訊...</div>
+      <img src="" class="world-boss-image" id="bossImage" width="250">
+      <div class="world-boss-description" id="bossDescription">載入中...</div>
+    </div>
+  </div>
+
+  <!-- 右側面板：排行榜 -->
+  <div class="right-panel">
+    <div class="leaderboard-card">
+      <div class="leaderboard-title">🏆 傷害排行榜</div>
+      <div class="leaderboard-list" id="leaderboardList">
+        <div style="text-align: center; color: #888; padding: 20px;">
+          載入排行榜中...
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div id="content">
-<div class="section" id="userInfo">🧍 角色資訊載入中...</div>
-<div class="section world-boss-info-container" id="worldBossInfo">🐲 世界王資訊載入中...</div>
-<div class="section"><strong>🌍 世界戰鬥紀錄</strong><pre id="logArea"></pre></div>
-</div>
+<script type="module">
+import { auth, SecureAPI, PerformanceMonitor } from "./js/firebase-init.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-<div id="footer">
-<button id="worldBossBtn" onclick="challengeWorldBoss()">🌍 挑戰世界王 🌍</button>
-<button id="leaveBtn" onclick="leaveWorldBoss()">🏃 離開戰場</button>
-</div>
+const API_BASE = "https://sfl-9cb8.onrender.com";
 
-<script>
+let worldBossData = null;
+let playerData = null;
+let leaderboardData = [];
+let cooldownTimer = null;
+
+// 階段配置
+const PHASES = {
+  1: {
+    name: "【第一階段】魔力覺醒",
+    description: "迪菲爾剛剛覺醒其真正力量，雖然強大但尚未完全適應。這是攻擊的最佳時機！",
+    threshold: 100
+  },
+  2: {
+    name: "【第二階段】創世之怒", 
+    description: "感受到威脅的迪菲爾開始認真戰鬥，其創世之力開始展現。攻擊力和防禦力都有所提升！",
+    threshold: 60
+  },
+  3: {
+    name: "【第三階段】毀滅創生",
+    description: "瀕死的迪菲爾徹底釋放創世主的力量！毀滅與創生並存，這是最後的決戰！",
+    threshold: 30
+  }
+};
+
+// 載入頁面初始化
 function createPageParticles() {
   const particlesContainer = document.getElementById("pageParticles");
   if (!particlesContainer) return;
@@ -85,9 +478,9 @@ function startPageLoadingProgress() {
 
   const messages = [
     "正在連接世界王戰場...",
-    "載入全球戰鬥資料...",
+    "載入全球戰鬥資料...", 
     "同步世界王狀態...",
-    "準備挑戰環境...",
+    "載入排行榜資料...",
     "連接完成！"
   ];
 
@@ -129,14 +522,116 @@ function hidePageLoading() {
   }, 1000);
 }
 
-// 倒數計時器更新
-function updateCountdown() {
-  const countdownEl = document.getElementById("countdownDisplay");
-  let timeLeft = "72:15:30"; // 這裡之後會從 API 獲取
-  countdownEl.textContent = timeLeft;
+// 時間相關函數
+function isWeekend() {
+  const now = new Date();
+  const taipeiTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+  return taipeiTime.getDay() === 0; // 週日
 }
 
-// 世界王血量更新
+function getNextMondayCountdown() {
+  const now = new Date();
+  const taipeiTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+  
+  // 找下週一 00:00
+  const nextMonday = new Date(taipeiTime);
+  nextMonday.setDate(taipeiTime.getDate() + (7 - taipeiTime.getDay() + 1));
+  nextMonday.setHours(0, 0, 0, 0);
+  
+  const diff = nextMonday - taipeiTime;
+  
+  if (diff <= 0) return "00:00:00";
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// 更新倒數計時器
+function updateCountdown() {
+  const countdownEl = document.getElementById("countdownDisplay");
+  const timeRestrictionEl = document.getElementById("timeRestriction");
+  const challengeBtnEl = document.getElementById("challengeBtn");
+  
+  if (isWeekend()) {
+    countdownEl.textContent = getNextMondayCountdown();
+    timeRestrictionEl.style.display = "block";
+    challengeBtnEl.disabled = true;
+    challengeBtnEl.textContent = "⏰ 週日休整中";
+  } else {
+    timeRestrictionEl.style.display = "none";
+    countdownEl.textContent = "挑戰開放中";
+    if (!challengeBtnEl.disabled) {
+      challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+    }
+  }
+}
+
+// 更新冷卻時間顯示
+function updateCooldownDisplay(cooldownEndTime) {
+  const cooldownInfoEl = document.getElementById("cooldownInfo");
+  const cooldownTimerEl = document.getElementById("cooldownTimer");
+  const challengeBtnEl = document.getElementById("challengeBtn");
+  
+  if (!cooldownEndTime) {
+    cooldownInfoEl.style.display = "none";
+    if (!isWeekend()) {
+      challengeBtnEl.disabled = false;
+      challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+    }
+    return;
+  }
+  
+  const now = Date.now();
+  const remaining = cooldownEndTime - now;
+  
+  if (remaining <= 0) {
+    cooldownInfoEl.style.display = "none";
+    if (!isWeekend()) {
+      challengeBtnEl.disabled = false;
+      challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+    }
+    if (cooldownTimer) {
+      clearInterval(cooldownTimer);
+      cooldownTimer = null;
+    }
+    return;
+  }
+  
+  const minutes = Math.floor(remaining / (1000 * 60));
+  const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+  
+  cooldownInfoEl.style.display = "block";
+  cooldownTimerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  challengeBtnEl.disabled = true;
+  challengeBtnEl.textContent = "⏰ 冷卻中";
+}
+
+// 階段系統
+function getCurrentPhase(currentHp, maxHp) {
+  const percentage = (currentHp / maxHp) * 100;
+  
+  if (percentage > 60) return 1;
+  if (percentage > 30) return 2;
+  return 3;
+}
+
+function updatePhaseDisplay(phase) {
+  const phaseIndicatorEl = document.getElementById("phaseIndicator");
+  const phaseDescriptionEl = document.getElementById("phaseDescription");
+  const currentPhaseEl = document.getElementById("currentPhase");
+  
+  const phaseInfo = PHASES[phase];
+  if (phaseInfo) {
+    phaseIndicatorEl.textContent = phaseInfo.name;
+    phaseDescriptionEl.textContent = phaseInfo.description;
+    currentPhaseEl.textContent = `${phase} / 3`;
+  }
+}
+
+// 更新世界王血量和階段
 function updateWorldBossHP(current, max) {
   const hpBar = document.getElementById("worldHpBar");
   const hpText = document.getElementById("worldHpText");
@@ -144,11 +639,166 @@ function updateWorldBossHP(current, max) {
   const percentage = (current / max) * 100;
   hpBar.style.width = percentage + "%";
   hpText.textContent = `${current.toLocaleString()} / ${max.toLocaleString()}`;
+  
+  // 更新階段
+  const currentPhase = getCurrentPhase(current, max);
+  updatePhaseDisplay(currentPhase);
 }
 
-// 世界王挑戰函數（暫時無功能）
-function challengeWorldBoss() {
-  alert("世界王挑戰功能開發中...\n\n敬請期待！");
+// 更新玩家傷害顯示
+function updatePlayerDamage(damage, rank) {
+  const damageEl = document.getElementById("playerTotalDamage");
+  const rankEl = document.getElementById("playerRank");
+  
+  damageEl.textContent = damage.toLocaleString();
+  rankEl.textContent = rank > 0 ? `排名: #${rank}` : "排名: 未參與";
+}
+
+// 更新排行榜
+function updateLeaderboard(leaderboard, currentPlayerNickname) {
+  const listEl = document.getElementById("leaderboardList");
+  
+  if (!leaderboard || leaderboard.length === 0) {
+    listEl.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">暫無排行榜資料</div>';
+    return;
+  }
+  
+  let html = '';
+  leaderboard.forEach((player, index) => {
+    const rank = index + 1;
+    const isCurrentPlayer = player.nickname === currentPlayerNickname;
+    const isTop3 = rank <= 3;
+    
+    let rankClass = '';
+    if (rank === 1) rankClass = 'top-1';
+    else if (rank === 2) rankClass = 'top-2';
+    else if (rank === 3) rankClass = 'top-3';
+    
+    let itemClass = 'leaderboard-item';
+    if (isTop3) itemClass += ' top-3';
+    if (isCurrentPlayer) itemClass += ' current-player';
+    
+    html += `
+      <div class="${itemClass}">
+        <div class="rank-number ${rankClass}">#${rank}</div>
+        <div class="player-name">${player.nickname}${isCurrentPlayer ? ' (你)' : ''}</div>
+        <div class="damage-amount">${player.total_damage.toLocaleString()}</div>
+      </div>
+    `;
+  });
+  
+  listEl.innerHTML = html;
+}
+
+// 載入世界王資料
+async function loadWorldBossData() {
+  try {
+    PerformanceMonitor.startTiming('loadWorldBoss');
+    
+    // 並行載入世界王資料和排行榜
+    const [bossRes, leaderboardRes, playerRes] = await Promise.all([
+      SecureAPI.get(`${API_BASE}/world_boss_status`),
+      SecureAPI.get(`${API_BASE}/world_boss_leaderboard`),
+      SecureAPI.get(`${API_BASE}/world_boss_player_data`)
+    ]);
+    
+    if (bossRes.ok) {
+      worldBossData = await bossRes.json();
+      updateWorldBossInfo(worldBossData);
+    }
+    
+    if (leaderboardRes.ok) {
+      leaderboardData = await leaderboardRes.json();
+      updateLeaderboard(leaderboardData.leaderboard, leaderboardData.current_player_nickname);
+    }
+    
+    if (playerRes.ok) {
+      playerData = await playerRes.json();
+      updatePlayerDamage(playerData.total_damage, playerData.rank);
+      
+      // 如果有冷卻時間，開始倒數
+      if (playerData.cooldown_end_time) {
+        startCooldownTimer(playerData.cooldown_end_time);
+      }
+    }
+    
+    console.log('✅ 世界王資料載入完成');
+    
+  } catch (error) {
+    console.error('載入世界王資料失敗:', error);
+    document.getElementById("bossName").textContent = "載入失敗";
+    document.getElementById("leaderboardList").innerHTML = 
+      '<div style="text-align: center; color: #ff6b6b; padding: 20px;">載入失敗，請重新整理</div>';
+  } finally {
+    PerformanceMonitor.endTiming('loadWorldBoss');
+  }
+}
+
+function updateWorldBossInfo(boss) {
+  document.getElementById("bossName").textContent = boss.name;
+  document.getElementById("bossImage").src = boss.image;
+  document.getElementById("bossDescription").textContent = boss.description;
+  document.getElementById("bossLevel").textContent = boss.level;
+  document.getElementById("participantCount").textContent = boss.total_participants.toLocaleString();
+  
+  updateWorldBossHP(boss.current_hp, boss.max_hp);
+}
+
+// 開始冷卻計時器
+function startCooldownTimer(endTime) {
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer);
+  }
+  
+  cooldownTimer = setInterval(() => {
+    updateCooldownDisplay(endTime);
+  }, 1000);
+  
+  updateCooldownDisplay(endTime);
+}
+
+// 挑戰世界王
+async function challengeWorldBoss() {
+  if (isWeekend()) {
+    alert("世界王於週日休整，請於週一再來挑戰！");
+    return;
+  }
+  
+  const challengeBtnEl = document.getElementById("challengeBtn");
+  if (challengeBtnEl.disabled) return;
+  
+  challengeBtnEl.disabled = true;
+  challengeBtnEl.textContent = "⚔️ 戰鬥中...";
+  
+  try {
+    const response = await SecureAPI.post(`${API_BASE}/world_boss_challenge`, {});
+    const result = await response.json();
+    
+    if (response.ok) {
+      // 戰鬥成功
+      alert(`⚔️ 戰鬥完成！\n造成傷害：${result.damage_dealt.toLocaleString()}\n累積傷害：${result.total_damage.toLocaleString()}\n當前排名：#${result.current_rank}`);
+      
+      // 更新顯示
+      updatePlayerDamage(result.total_damage, result.current_rank);
+      
+      // 重新載入排行榜和世界王狀態
+      await loadWorldBossData();
+      
+      // 開始冷卻計時
+      startCooldownTimer(result.cooldown_end_time);
+      
+    } else {
+      alert(`挑戰失敗：${result.error}`);
+      challengeBtnEl.disabled = false;
+      challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+    }
+    
+  } catch (error) {
+    console.error('挑戰世界王失敗:', error);
+    alert("挑戰過程發生錯誤，請稍後再試");
+    challengeBtnEl.disabled = false;
+    challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+  }
 }
 
 // 離開世界王戰場
@@ -159,80 +809,45 @@ function leaveWorldBoss() {
   }, 300);
 }
 
-// 初始化頁面
+// 強制刷新功能（父視窗調用）
+window.addEventListener('message', (event) => {
+  if (event.data && event.data.command === 'forceRefresh') {
+    console.log('收到強制刷新指令');
+    loadWorldBossData();
+  }
+});
+
+// 全域函數
+window.challengeWorldBoss = challengeWorldBoss;
+window.leaveWorldBoss = leaveWorldBoss;
+
+// 初始化
 function initWorldBoss() {
-  // 通知父視窗切換為世界王音樂
+  // 通知父視窗切換音樂
   window.parent.postMessage({ command: "switchToWorldBossMusic" }, "*");
   
   createPageParticles();
   startPageLoadingProgress();
-  updateCountdown();
   
-  // 模擬載入世界王資料
-  setTimeout(() => {
-    loadWorldBossData();
+  // 載入世界王資料
+  setTimeout(async () => {
+    await loadWorldBossData();
     hidePageLoading();
-  }, 3000);
+  }, 2000);
+  
+  // 開始倒數計時器
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
 }
 
-// 載入世界王資料
-async function loadWorldBossData() {
-  try {
-    const response = await fetch("parameter/world_boss.json");
-    const worldBossData = await response.json();
-    const boss = worldBossData[0]; // 假設只有一個世界王
-    
-    // 更新世界王資訊
-    document.getElementById("worldBossInfo").innerHTML = `
-      <div class="world-boss-name">${boss.name}</div>
-      <div class="world-boss-phase">${boss.phase_description}</div>
-      <img src="${boss.image}" class="world-boss-image" width="250">
-      <div class="world-boss-description">${boss.description}</div>
-      <div class="world-participants">
-        <div class="participant-count">🌍 全球參與冒險者：${boss.total_participants.toLocaleString()} 人</div>
-        <div class="recent-attackers">
-          最近造成傷害：${boss.last_damage_players.map(name => `<span>${name}</span>`).join('')}
-        </div>
-      </div>
-    `;
-    
-    // 更新血量
-    updateWorldBossHP(boss.current_hp, boss.max_hp);
-    
-    // 更新統計資料
-    document.getElementById("participantCount").textContent = boss.total_participants.toLocaleString();
-    document.getElementById("bossLevel").textContent = boss.level;
-    document.getElementById("currentPhase").textContent = `${boss.phase} / ${boss.total_phases}`;
-    document.getElementById("countdownDisplay").textContent = boss.defeat_countdown;
-    
-    // 載入玩家資訊（重用現有邏輯）
-    loadPlayerInfo();
-    
-  } catch (error) {
-    console.error("載入世界王資料失敗:", error);
-    document.getElementById("worldBossInfo").innerHTML = "❌ 載入世界王資料失敗";
+// 監聽登入狀態
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    initWorldBoss();
+  } else {
+    window.parent.location.href = "/SFL/login.html";
   }
-}
-
-// 載入玩家資訊（簡化版）
-function loadPlayerInfo() {
-  document.getElementById("userInfo").innerHTML = `
-    <div class="player-info-container">
-      <h3 class="player-name">👤 玩家資訊載入中...</h3>
-      <div class="stats-container">
-        <div class="stat-item"><span>等級：</span><span>載入中...</span></div>
-        <div class="stat-item"><span>生命值：</span><span>載入中...</span></div>
-        <div class="stat-item"><span>攻擊力：</span><span>載入中...</span></div>
-      </div>
-    </div>
-  `;
-}
-
-// 每分鐘更新一次倒數計時
-setInterval(updateCountdown, 60000);
-
-// 頁面載入時初始化
-window.addEventListener('load', initWorldBoss);
+});
 </script>
 </body>
 </html>
