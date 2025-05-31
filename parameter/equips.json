@@ -125,5 +125,38 @@
         "other_bonus": 0.05
       }
     }
+  },
+  {
+    "id": "card_pandora_nightmare",
+    "name": "[副本卡片]潘朵拉：夢魘幻境",
+    "quality": "稀有",
+    "value": {
+      "1": {
+        "attack": 20,
+        "accuracy": 0.1,
+        "shield": 50
+      },
+      "2": {
+        "attack": 25,
+        "accuracy": 0.15,
+        "shield": 50
+      },
+      "3": {
+        "attack": 30,
+        "accuracy": 0.2,
+        "shield": 50
+      },
+      "4": {
+        "attack": 35,
+        "accuracy": 25,
+        "shield": 50
+      },
+      "5": {
+        "attack": 40,
+        "accuracy": 0.25,
+        "shield": 50,
+        "other_bonus": 0.05
+      }
+    }
   }
 ]
