@@ -1,0 +1,302 @@
+/* 世界王專用CSS樣式 */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+/* 世界王頁面背景粒子效果 */
+.world-boss-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.world-boss-particles .particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.8) 0%, rgba(255, 140, 0, 0.4) 100%);
+  animation: worldParticleFloat 8s linear infinite;
+}
+
+.world-boss-particles .particle:nth-child(odd) {
+  background: radial-gradient(circle, rgba(255, 69, 0, 0.8) 0%, rgba(220, 20, 60, 0.4) 100%);
+  animation-duration: 12s;
+}
+
+@keyframes worldParticleFloat {
+  0% {
+    transform: translateY(100vh) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) scale(1.5) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* 世界王血量條特效 */
+.world-hp-damage-flash {
+  animation: hpDamageFlash 0.5s ease-out;
+}
+
+@keyframes hpDamageFlash {
+  0% { background: linear-gradient(90deg, #ff0000, #ff4500, #ff6347); }
+  50% { background: linear-gradient(90deg, #ffffff, #ffff00, #ffffff); }
+  100% { background: linear-gradient(90deg, #ff4500, #ff6347, #ffd700); }
+}
+
+/* 階段切換特效 */
+.phase-transition {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, 
+    rgba(255, 215, 0, 0.9) 0%, 
+    rgba(255, 140, 0, 0.7) 30%, 
+    transparent 70%);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: phaseTransitionEffect 3s ease-out;
+}
+
+@keyframes phaseTransitionEffect {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.phase-transition-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 4em;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 40px rgba(255, 215, 0, 1);
+  animation: phaseTextPulse 3s ease-out;
+}
+
+@keyframes phaseTextPulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 0 40px rgba(255, 215, 0, 1);
+  }
+  50% {
+    transform: scale(1.5);
+    text-shadow: 0 0 80px rgba(255, 215, 0, 1), 0 0 120px rgba(255, 140, 0, 0.8);
+  }
+}
+
+/* 世界王戰鬥特效 */
+.world-boss-attack-effect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, 
+    rgba(255, 0, 0, 0.6) 0%, 
+    rgba(255, 69, 0, 0.4) 30%, 
+    transparent 70%);
+  display: none;
+  z-index: 9999;
+  animation: attackEffect 1s ease-out;
+}
+
+@keyframes attackEffect {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+/* 世界王勝利特效 */
+.world-boss-victory {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 215, 0, 0.9) 0%, 
+    rgba(255, 140, 0, 0.8) 50%, 
+    rgba(255, 69, 0, 0.9) 100%);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+  animation: victoryFadeIn 2s ease-in-out;
+}
+
+.world-victory-content {
+  text-align: center;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.world-victory-title {
+  font-size: 5em;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 50px rgba(255, 255, 255, 1);
+  margin-bottom: 30px;
+  animation: worldVictoryTitleAnimation 3s ease-in-out infinite;
+}
+
+@keyframes worldVictoryTitleAnimation {
+  0%, 100% { 
+    transform: scale(1) rotate(0deg);
+    text-shadow: 0 0 50px rgba(255, 255, 255, 1);
+  }
+  50% { 
+    transform: scale(1.2) rotate(5deg);
+    text-shadow: 0 0 80px rgba(255, 255, 255, 1), 0 0 120px rgba(255, 215, 0, 0.8);
+  }
+}
+
+.world-victory-icon {
+  font-size: 8em;
+  margin-bottom: 40px;
+  animation: worldVictoryIconSpin 4s ease-in-out infinite;
+}
+
+@keyframes worldVictoryIconSpin {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.3) rotate(90deg); }
+  50% { transform: scale(1) rotate(180deg); }
+  75% { transform: scale(1.3) rotate(270deg); }
+  100% { transform: scale(1) rotate(360deg); }
+}
+
+/* 世界王傷害數字顯示 */
+.world-damage-number {
+  position: fixed;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 3em;
+  color: #ff4500;
+  text-shadow: 0 0 20px rgba(255, 69, 0, 1);
+  pointer-events: none;
+  z-index: 9998;
+  animation: damageNumberFloat 2s ease-out forwards;
+}
+
+@keyframes damageNumberFloat {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100px) scale(0.8);
+  }
+}
+
+/* 世界王狂暴模式 */
+.world-boss-enrage {
+  background: radial-gradient(circle at center, 
+    rgba(139, 0, 0, 0.9) 0%, 
+    rgba(220, 20, 60, 0.8) 30%, 
+    rgba(75, 0, 130, 0.7) 60%, 
+    rgba(0, 0, 0, 0.9) 100%);
+}
+
+.world-boss-enrage::before {
+  background: 
+    radial-gradient(circle at 30% 70%, rgba(255, 0, 0, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 70% 30%, rgba(139, 0, 0, 0.6) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(220, 20, 60, 0.7) 0%, transparent 50%);
+  animation: enrageFlow 10s ease-in-out infinite;
+}
+
+@keyframes enrageFlow {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  33% { transform: rotate(120deg) scale(1.3); }
+  66% { transform: rotate(240deg) scale(0.7); }
+}
+
+/* 全球排行榜樣式 */
+.world-leaderboard {
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.8) 0%, 
+    rgba(25, 25, 112, 0.6) 100%);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 15px;
+  padding: 20px;
+  margin: 20px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.leaderboard-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.4em;
+  font-weight: 700;
+  color: #ffd700;
+  text-align: center;
+  margin-bottom: 15px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+}
+
+.leaderboard-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin: 5px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid rgba(255, 215, 0, 0.6);
+  transition: all 0.3s ease;
+}
+
+.leaderboard-item:hover {
+  background: rgba(255, 215, 0, 0.1);
+  transform: translateX(5px);
+}
+
+.leaderboard-rank {
+  color: #ffd700;
+  font-weight: 700;
+  min-width: 30px;
+}
+
+.leaderboard-name {
+  color: #fff;
+  flex: 1;
+  margin-left: 10px;
+}
+
+.leaderboard-damage {
+  color: #ff6347;
+  font-weight: 600;
+}
