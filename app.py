@@ -1101,6 +1101,51 @@ def get_world_boss_config():
     with open("parameter/world_boss.json", encoding="utf-8") as f:
         return json.load(f)
 
+def initialize_world_boss_global_state():
+    """初始化世界王全域狀態（僅在首次運行時）"""
+    try:
+        global_ref = db.collection("world_boss_global").document("current_status")
+        global_doc = global_ref.get()
+        
+        if not global_doc.exists:
+            config = get_world_boss_config()
+            initial_state = {
+                "current_hp": config["initial_stats"]["max_hp"],
+                "max_hp": config["initial_stats"]["max_hp"],
+                "current_phase": 1,
+                "total_participants": 0,
+                "total_damage_dealt": 0,
+                "created_time": time.time(),
+                "last_reset_time": time.time(),
+                "weekly_reset_time": datetime.datetime.now(pytz.timezone('Asia/Taipei')).isoformat()
+            }
+            
+            global_ref.set(initial_state)
+            print("✅ 世界王全域狀態已初始化")
+            return initial_state
+        else:
+            return global_doc.to_dict()
+            
+    except Exception as e:
+        print(f"❌ 初始化世界王狀態失敗: {e}")
+        return None
+
+def get_world_boss_global_state():
+    """取得世界王全域狀態"""
+    try:
+        global_ref = db.collection("world_boss_global").document("current_status")
+        global_doc = global_ref.get()
+        
+        if global_doc.exists:
+            return global_doc.to_dict()
+        else:
+            # 如果不存在，自動初始化
+            return initialize_world_boss_global_state()
+            
+    except Exception as e:
+        print(f"取得世界王全域狀態失敗: {e}")
+        return None
+
 def is_weekend_restriction():
     """檢查是否為週日限制時間 (UTC+8)"""
     taipei_tz = pytz.timezone('Asia/Taipei')
@@ -1161,7 +1206,7 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         boss_level = world_boss_config["level"]
         
         # 計算當前階段
-        current_phase = get_current_world_boss_phase(world_boss_config)
+        current_phase = get_current_world_boss_phase()
         phase_config = world_boss_config["phases"][str(current_phase)]
         
         # 應用階段修正
@@ -1207,20 +1252,19 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         print(f"計算世界王傷害失敗: {e}")
         return 1, "計算錯誤，造成最小傷害"
 
-def get_current_world_boss_phase(world_boss_config):
+def get_current_world_boss_phase(world_boss_config=None):
     """根據世界王血量計算當前階段"""
     try:
-        global_ref = db.collection("world_boss_global").document("current_status")
-        global_doc = global_ref.get()
+        global_state = get_world_boss_global_state()
+        if not global_state:
+            return 1
+            
+        current_hp = global_state.get("current_hp", 0)
+        max_hp = global_state.get("max_hp", 1)
         
-        if global_doc.exists:
-            global_data = global_doc.to_dict()
-            current_hp = global_data.get("current_hp", world_boss_config["global_stats"]["max_hp"])
-            max_hp = global_data.get("max_hp", world_boss_config["global_stats"]["max_hp"])
-        else:
-            current_hp = world_boss_config["global_stats"]["current_hp"]
-            max_hp = world_boss_config["global_stats"]["max_hp"]
-        
+        if max_hp <= 0:
+            return 1
+            
         hp_percentage = (current_hp / max_hp) * 100
         
         # 根據血量百分比決定階段
@@ -1239,25 +1283,34 @@ def update_world_boss_global_stats(damage_dealt):
     """更新世界王全域統計"""
     try:
         global_ref = db.collection("world_boss_global").document("current_status")
-        global_doc = global_ref.get()
+        global_state = get_world_boss_global_state()
         
-        config = get_world_boss_config()
+        if not global_state:
+            config = get_world_boss_config()
+            global_state = initialize_world_boss_global_state()
         
-        if global_doc.exists:
-            global_data = global_doc.to_dict()
-        else:
-            # 初始化全域狀態
-            global_data = config["global_stats"].copy()
+        if not global_state:
+            return None
         
         # 更新數據
-        global_data["current_hp"] = max(0, global_data.get("current_hp", config["global_stats"]["max_hp"]) - damage_dealt)
-        global_data["total_damage_dealt"] = global_data.get("total_damage_dealt", 0) + damage_dealt
-        global_data["current_phase"] = get_current_world_boss_phase(config)
+        new_hp = max(0, global_state.get("current_hp", 0) - damage_dealt)
+        new_total_damage = global_state.get("total_damage_dealt", 0) + damage_dealt
+        new_phase = get_current_world_boss_phase()
         
-        # 儲存更新
-        global_ref.set(global_data)
+        updated_state = {
+            "current_hp": new_hp,
+            "max_hp": global_state.get("max_hp", 999999999),
+            "current_phase": new_phase,
+            "total_damage_dealt": new_total_damage,
+            "last_update_time": time.time()
+        }
         
-        return global_data
+        # 合併更新，保留其他欄位
+        global_ref.update(updated_state)
+        
+        # 返回更新後的完整狀態
+        global_state.update(updated_state)
+        return global_state
         
     except Exception as e:
         print(f"更新世界王全域統計失敗: {e}")
@@ -1271,19 +1324,27 @@ def world_boss_status():
     try:
         config = get_world_boss_config()
         
-        # 取得全域狀態
-        global_ref = db.collection("world_boss_global").document("current_status")
-        global_doc = global_ref.get()
+        # 取得或初始化全域狀態
+        global_state = get_world_boss_global_state()
+        if not global_state:
+            return jsonify({"error": "無法取得世界王狀態"}), 500
         
-        if global_doc.exists:
-            global_data = global_doc.to_dict()
-        else:
-            global_data = config["global_stats"].copy()
-            global_ref.set(global_data)
+        # 計算參與者總數（有造成傷害的玩家）
+        try:
+            players_ref = db.collection("world_boss_players").where("total_damage", ">", 0)
+            participants_count = len([doc for doc in players_ref.stream()])
+        except Exception:
+            participants_count = global_state.get("total_participants", 0)
         
-        # 計算參與者總數
-        players_ref = db.collection("world_boss_players")
-        participants_count = len([doc for doc in players_ref.stream() if doc.to_dict().get("total_damage", 0) > 0])
+        # 更新參與者數量到 Firebase（可選，減少重複計算）
+        if participants_count != global_state.get("total_participants", 0):
+            try:
+                db.collection("world_boss_global").document("current_status").update({
+                    "total_participants": participants_count
+                })
+                global_state["total_participants"] = participants_count
+            except Exception as e:
+                print(f"更新參與者數量失敗: {e}")
         
         result = {
             "boss_id": config["boss_id"],
@@ -1292,12 +1353,13 @@ def world_boss_status():
             "image": config["image"],
             "level": config["level"],
             "element": config["element"],
-            "current_hp": global_data.get("current_hp", config["global_stats"]["max_hp"]),
-            "max_hp": global_data.get("max_hp", config["global_stats"]["max_hp"]),
-            "current_phase": global_data.get("current_phase", 1),
+            "current_hp": global_state.get("current_hp", config["initial_stats"]["max_hp"]),
+            "max_hp": global_state.get("max_hp", config["initial_stats"]["max_hp"]),
+            "current_phase": global_state.get("current_phase", 1),
             "total_participants": participants_count,
-            "total_damage_dealt": global_data.get("total_damage_dealt", 0),
-            "phases": config["phases"]
+            "total_damage_dealt": global_state.get("total_damage_dealt", 0),
+            "phases": config["phases"],
+            "last_update_time": global_state.get("last_update_time", global_state.get("created_time", time.time()))
         }
         
         return jsonify(result)
@@ -1498,51 +1560,77 @@ def world_boss_reset():
         
         # 重置全域狀態
         global_ref = db.collection("world_boss_global").document("current_status")
-        reset_data = config["global_stats"].copy()
-        reset_data["weekly_reset_time"] = datetime.datetime.now(pytz.timezone('Asia/Taipei')).isoformat()
+        reset_data = {
+            "current_hp": config["initial_stats"]["max_hp"],
+            "max_hp": config["initial_stats"]["max_hp"],
+            "current_phase": 1,
+            "total_participants": 0,
+            "total_damage_dealt": 0,
+            "last_reset_time": time.time(),
+            "weekly_reset_time": datetime.datetime.now(pytz.timezone('Asia/Taipei')).isoformat(),
+            "created_time": time.time()
+        }
         global_ref.set(reset_data)
         
         # 可選：清除玩家數據（如果需要每週重置排行榜）
-        # players_ref = db.collection("world_boss_players")
-        # batch = db.batch()
-        # for doc in players_ref.stream():
-        #     batch.delete(doc.reference)
-        # batch.commit()
+        # 注意：這會刪除所有玩家的世界王數據，請謹慎使用
+        clear_leaderboard = request.json.get("clear_leaderboard", False) if request.json else False
+        if clear_leaderboard:
+            try:
+                players_ref = db.collection("world_boss_players")
+                batch = db.batch()
+                docs_deleted = 0
+                for doc in players_ref.stream():
+                    batch.delete(doc.reference)
+                    docs_deleted += 1
+                    # Firebase 批次操作限制500個操作
+                    if docs_deleted >= 500:
+                        batch.commit()
+                        batch = db.batch()
+                        docs_deleted = 0
+                
+                if docs_deleted > 0:
+                    batch.commit()
+                    
+                print(f"已清除所有玩家世界王數據")
+            except Exception as e:
+                print(f"清除玩家數據時發生錯誤: {e}")
         
-        return jsonify({"message": "世界王已重置", "reset_time": reset_data["weekly_reset_time"]})
+        return jsonify({
+            "message": "世界王已重置", 
+            "reset_time": reset_data["weekly_reset_time"],
+            "new_hp": reset_data["current_hp"],
+            "leaderboard_cleared": clear_leaderboard
+        })
         
     except Exception as e:
         return jsonify({"error": f"重置世界王失敗: {str(e)}"}), 500
 
-def invalidate_user_cache(user_id, cache_patterns=None):
-    """清除使用者相關的所有快取"""
-    if cache_patterns is None:
-        cache_patterns = ['status', 'inventory', 'user_items', 'user_cards', 'progress']
-    
-    cleared_count = 0
-    # 🎯 修正：改進快取清除邏輯，正確匹配快取鍵
-    for key in list(cache_manager._cache.keys()):
-        should_clear = False
+# 🚀 新增：世界王初始化檢查端點
+@app.route("/world_boss_init_check", methods=["GET"])
+def world_boss_init_check():
+    """檢查世界王是否已初始化，如果沒有則自動初始化"""
+    try:
+        global_state = get_world_boss_global_state()
         
-        # 檢查是否包含使用者ID
-        if user_id in key:
-            # 檢查是否匹配任何快取模式
-            for pattern in cache_patterns:
-                if pattern in key:
-                    should_clear = True
-                    break
+        if global_state:
+            return jsonify({
+                "initialized": True,
+                "current_hp": global_state.get("current_hp", 0),
+                "max_hp": global_state.get("max_hp", 0),
+                "message": "世界王狀態正常"
+            })
+        else:
+            return jsonify({
+                "initialized": False,
+                "error": "世界王初始化失敗"
+            }), 500
             
-            # 🚀 新增：額外檢查完整的API端點名稱
-            api_endpoints = ['status_', 'get_progress_', 'inventory_', 'user_items_', 'user_cards_']
-            for endpoint in api_endpoints:
-                if endpoint in key:
-                    should_clear = True
-                    break
-        
-        if should_clear:
-            cache_manager.delete(key)
-            cleared_count += 1
-    return cleared_count
+    except Exception as e:
+        return jsonify({
+            "initialized": False,
+            "error": f"檢查世界王狀態失敗: {str(e)}"
+        }), 500
 
 if __name__ == "__main__":
     import os
