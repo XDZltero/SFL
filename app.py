@@ -1184,13 +1184,26 @@ def get_world_boss_global_state():
         global_doc = global_ref.get()
         
         if global_doc.exists:
-            return global_doc.to_dict()
+            state = global_doc.to_dict()
+            # 驗證關鍵欄位
+            required_fields = ["current_hp", "max_hp"]
+            for field in required_fields:
+                if field not in state:
+                    print(f"⚠️ 缺少關鍵欄位 {field}，嘗試修復")
+                    if field == "current_hp":
+                        state[field] = 999999999
+                    elif field == "max_hp":
+                        state[field] = 999999999
+                    # 更新到資料庫
+                    global_ref.update({field: state[field]})
+            
+            return state
         else:
-            # 如果不存在，自動初始化
+            print("⚠️ 全域狀態文檔不存在，自動初始化")
             return initialize_world_boss_global_state()
             
     except Exception as e:
-        print(f"取得世界王全域狀態失敗: {e}")
+        print(f"❌ 取得世界王全域狀態失敗: {e}")
         return None
 
 def is_weekend_restriction():
@@ -1304,12 +1317,14 @@ def get_current_world_boss_phase(world_boss_config=None):
     try:
         global_state = get_world_boss_global_state()
         if not global_state:
+            print("⚠️ 無法獲取全域狀態，返回階段1")
             return 1
             
         current_hp = global_state.get("current_hp", 0)
         max_hp = global_state.get("max_hp", 1)
         
         if max_hp <= 0:
+            print("⚠️ 最大HP異常，返回階段1")
             return 1
             
         hp_percentage = (current_hp / max_hp) * 100
@@ -1323,7 +1338,7 @@ def get_current_world_boss_phase(world_boss_config=None):
             return 3
             
     except Exception as e:
-        print(f"取得世界王階段失敗: {e}")
+        print(f"❌ 取得世界王階段失敗: {e}")
         return 1
 
 def update_world_boss_global_stats(damage_dealt):
@@ -1333,16 +1348,29 @@ def update_world_boss_global_stats(damage_dealt):
         global_state = get_world_boss_global_state()
         
         if not global_state:
+            print("⚠️ 全域狀態不存在，嘗試初始化")
             config = get_world_boss_config()
             global_state = initialize_world_boss_global_state()
         
         if not global_state:
+            print("❌ 無法獲取或初始化全域狀態")
             return None
         
-        # 更新數據
-        new_hp = max(0, global_state.get("current_hp", 0) - damage_dealt)
+        # 更新數據，增加更多錯誤檢查
+        current_hp = global_state.get("current_hp", 0)
+        if not isinstance(current_hp, (int, float)):
+            print(f"⚠️ 當前HP值異常: {current_hp}, 重置為0")
+            current_hp = 0
+            
+        new_hp = max(0, current_hp - damage_dealt)
         new_total_damage = global_state.get("total_damage_dealt", 0) + damage_dealt
-        new_phase = get_current_world_boss_phase()
+        
+        # 安全地獲取新階段
+        try:
+            new_phase = get_current_world_boss_phase()
+        except Exception as phase_error:
+            print(f"⚠️ 獲取階段失敗: {phase_error}, 使用預設值1")
+            new_phase = 1
         
         updated_state = {
             "current_hp": new_hp,
@@ -1352,6 +1380,8 @@ def update_world_boss_global_stats(damage_dealt):
             "last_update_time": time.time()
         }
         
+        print(f"🔄 更新世界王狀態: HP {current_hp} -> {new_hp}, 傷害 +{damage_dealt}")
+        
         # 合併更新，保留其他欄位
         global_ref.update(updated_state)
         
@@ -1360,7 +1390,9 @@ def update_world_boss_global_stats(damage_dealt):
         return global_state
         
     except Exception as e:
-        print(f"更新世界王全域統計失敗: {e}")
+        print(f"❌ 更新世界王全域統計失敗: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 # 🌍 世界王 API 端點
@@ -1501,6 +1533,11 @@ def world_boss_challenge():
             from battle import apply_drops
             drop_result = apply_drops(db, user_id, config["rewards"]["drops"], user_data.get("luck", 10))
         
+        # 🔧 修復：正確獲取最大HP值
+        max_hp = config.get("initial_stats", {}).get("max_hp", 999999999)
+        if global_stats:
+            max_hp = global_stats.get("max_hp", max_hp)
+        
         result = {
             "success": True,
             "damage_dealt": damage_dealt,
@@ -1512,7 +1549,7 @@ def world_boss_challenge():
             "cooldown_end_time": new_cooldown_end_time,
             "world_boss_hp": {
                 "current": global_stats.get("current_hp", 0) if global_stats else 0,
-                "max": config["global_stats"]["max_hp"]
+                "max": max_hp  # 🔧 修復：使用正確的路徑
             }
         }
         
@@ -1521,6 +1558,7 @@ def world_boss_challenge():
     except Exception as e:
         import traceback
         traceback.print_exc()
+        print(f"🔥 世界王挑戰錯誤詳情: {str(e)}")
         return jsonify({"error": f"挑戰世界王失敗: {str(e)}"}), 500
 
 @app.route("/world_boss_leaderboard", methods=["GET"])
