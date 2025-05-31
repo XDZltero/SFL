@@ -1,10 +1,51 @@
 [
   {
-    "id": "Creator_defile",
-    "name": "獲得潘朵拉創世主的認可",
-    "description": "迪菲爾解放了自己的魔力，以真正的創世主的姿態現身。",
     "bossId": "Creator_defile",
-    "min_level": 10,
-    "image": "https://i.postimg.cc/Bvj6GM01/dungeon-moss.png",
+    "name": "「潘朵拉的創世主」迪菲爾",
+    "description": "迪菲爾解放了自己的魔力，以真正的創世主的姿態現身。\n\n只有全世界的冒險者團結一致，才有可能與他抗衡。每一次攻擊都是為了全人類的未來而戰！",
+    "image": "https://i.postimg.cc/9FZK6y4P/world-boss-dragon.png",
+    "level": 99,
+    "element": ["all"],
+    "max_hp": 100000000,
+    "current_hp": 9999999,
+    "stats": {
+      "attack": 5000,
+      "shield": 2000,
+      "accuracy": 0.95,
+      "evade": 0.3,
+      "atk_speed": 150
+    },
+    "phase": 1,
+    "total_phases": 3,
+    "phase_description": "【第一階段】魔力覺醒",
+    "rewards": {
+      "base_exp": 10000,
+      "drops": [
+        {
+          "id": "dragon_scale",
+          "value": 1,
+          "rate": 1.0
+        },
+        {
+          "id": "ancient_crystal",
+          "value": 3,
+          "rate": 0.1
+        },
+        {
+          "id": "chaos_breath",
+          "value": 5,
+          "rate": 0.05
+        }
+      ]
+    },
+    "last_damage_players": [
+      "勇者ABC",
+      "法師舌頭",
+      "騎士舌頭",
+      "弓手舌頭",
+      "盜賊舌頭"
+    ],
+    "total_participants": 1247,
+    "defeat_countdown": "72:15:30"
   }
 ]
