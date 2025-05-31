@@ -515,10 +515,24 @@ function showBattleResult(success, title, message, damage = 0) {
   const messageEl = document.getElementById("battleResultMessage");
   
   if (success) {
-    icon.textContent = "⚔️";
-    titleEl.textContent = title || "戰鬥成功！";
-    messageEl.innerHTML = message || `造成了 ${damage.toLocaleString()} 點傷害！`;
-    overlay.style.background = "linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 140, 0, 0.8), rgba(255, 69, 0, 0.9))";
+    // 🎨 根據標題設定不同的背景顏色
+    if (title.includes("完美攻擊")) {
+      // S級 - 金色漸層
+      overlay.style.background = "linear-gradient(135deg, rgba(255, 215, 0, 0.95), rgba(255, 165, 0, 0.9), rgba(255, 140, 0, 0.95))";
+    } else if (title.includes("強力攻擊")) {
+      // A級 - 紫色漸層
+      overlay.style.background = "linear-gradient(135deg, rgba(138, 43, 226, 0.9), rgba(75, 0, 130, 0.85), rgba(148, 0, 211, 0.9))";
+    } else if (title.includes("有效攻擊")) {
+      // B級 - 藍色漸層
+      overlay.style.background = "linear-gradient(135deg, rgba(0, 100, 255, 0.9), rgba(0, 150, 255, 0.85), rgba(30, 144, 255, 0.9))";
+    } else {
+      // C級或預設 - 綠色漸層
+      overlay.style.background = "linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 140, 0, 0.8), rgba(255, 69, 0, 0.9))";
+    }
+    
+    icon.textContent = title.charAt(0); // 使用標題的第一個字符作為圖示
+    titleEl.textContent = title;
+    messageEl.innerHTML = message;
   } else {
     icon.textContent = "❌";
     titleEl.textContent = title || "挑戰失敗";
@@ -551,15 +565,50 @@ async function challengeWorldBoss() {
     const result = await response.json();
     
     if (response.ok && result.success) {
-      // 戰鬥成功
+      // 🚀 新的戰鬥成功顯示，包含傷害百分比和獎勵等級
       const message = `
-        造成傷害：${result.damage_dealt.toLocaleString()}<br>
-        累積傷害：${result.total_damage.toLocaleString()}<br>
-        當前排名：#${result.current_rank}<br>
-        獲得經驗：${result.exp_gained.toLocaleString()}
+        <div style="text-align: left; line-height: 1.6;">
+          <div style="margin-bottom: 15px;">
+            <div style="font-size: 1.3em; color: #ffd700; margin-bottom: 8px;">
+              ${result.reward_tier} - ${result.tier_description}
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+              造成傷害：<span style="color: #ff6b6b; font-weight: bold;">${result.damage_dealt.toLocaleString()}</span><br>
+              傷害百分比：<span style="color: #00ffff; font-weight: bold;">${result.damage_percentage.toFixed(4)}%</span><br>
+              獲得經驗：<span style="color: #ffd700; font-weight: bold;">+${result.exp_gained.toLocaleString()}</span>
+            </div>
+            <div style="background: rgba(0,255,255,0.1); padding: 8px; border-radius: 6px;">
+              累積傷害：${result.total_damage.toLocaleString()}<br>
+              當前排名：#${result.current_rank}
+            </div>
+          </div>
+        </div>
       `;
       
-      showBattleResult(true, "⚔️ 戰鬥成功！", message, result.damage_dealt);
+      // 🎯 根據獎勵等級顯示不同的標題和圖示
+      let title = "⚔️ 戰鬥成功！";
+      let icon = "⚔️";
+      
+      switch(result.reward_tier) {
+        case "S級傷害":
+          title = "🌟 完美攻擊！";
+          icon = "🌟";
+          break;
+        case "A級傷害":
+          title = "💥 強力攻擊！";
+          icon = "💥";
+          break;
+        case "B級傷害":
+          title = "⚔️ 有效攻擊！";
+          icon = "⚔️";
+          break;
+        case "C級傷害":
+          title = "🛡️ 成功命中！";
+          icon = "🛡️";
+          break;
+      }
+      
+      showBattleResult(true, title, message, result.damage_dealt);
       
       // 更新顯示
       updatePlayerDamage(result.total_damage, result.current_rank, playerData.challenge_count + 1);
