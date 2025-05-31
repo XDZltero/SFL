@@ -21,7 +21,7 @@
   </div>
   <div class="world-boss-stats">
     <div class="world-stat-item">參與者: <span class="world-stat-value" id="participantCount">-</span></div>
-    <div class="world-stat-item">等級: <span class="world-stat-value" id="bossLevel">99</span></div>
+    <div class="world-stat-item">等級: <span class="world-stat-value" id="bossLevel">80</span></div>
     <div class="world-stat-item">階段: <span class="world-stat-value" id="currentPhase">1 / 3</span></div>
   </div>
 </div>
@@ -74,6 +74,9 @@
         <div class="damage-title">🏆 你的累積傷害</div>
         <div class="total-damage" id="playerTotalDamage">0</div>
         <div class="damage-rank" id="playerRank">排名: 未參與</div>
+        <div style="margin-top: 10px; font-size: 0.9em; color: #ccc;">
+          挑戰次數: <span id="challengeCount">0</span> 次
+        </div>
       </div>
       
       <div class="challenge-button-area">
@@ -108,6 +111,16 @@
   </div>
 </div>
 
+<!-- 勝利/戰鬥結果遮罩 -->
+<div class="victory-overlay" id="battleResultOverlay" style="display: none;">
+  <div class="victory-content">
+    <div class="victory-icon" id="battleResultIcon">⚔️</div>
+    <div class="victory-title" id="battleResultTitle">戰鬥結果</div>
+    <div class="victory-message" id="battleResultMessage">結果訊息</div>
+    <button class="effect-button" onclick="closeBattleResult()">確定</button>
+  </div>
+</div>
+
 <script type="module">
 import { auth, SecureAPI, PerformanceMonitor } from "./js/firebase-init.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -118,6 +131,7 @@ let worldBossData = null;
 let playerData = null;
 let leaderboardData = [];
 let cooldownTimer = null;
+let currentUserNickname = "";
 
 // 階段配置
 const PHASES = {
@@ -219,7 +233,8 @@ function getNextMondayCountdown() {
   
   // 找下週一 00:00
   const nextMonday = new Date(taipeiTime);
-  nextMonday.setDate(taipeiTime.getDate() + (7 - taipeiTime.getDay() + 1));
+  const daysUntilMonday = (7 - taipeiTime.getDay() + 1) % 7;
+  nextMonday.setDate(taipeiTime.getDate() + (daysUntilMonday === 0 ? 7 : daysUntilMonday));
   nextMonday.setHours(0, 0, 0, 0);
   
   const diff = nextMonday - taipeiTime;
@@ -247,7 +262,7 @@ function updateCountdown() {
   } else {
     timeRestrictionEl.style.display = "none";
     countdownEl.textContent = "挑戰開放中";
-    if (!challengeBtnEl.disabled) {
+    if (!challengeBtnEl.dataset.cooling) {
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
     }
   }
@@ -261,6 +276,7 @@ function updateCooldownDisplay(cooldownEndTime) {
   
   if (!cooldownEndTime) {
     cooldownInfoEl.style.display = "none";
+    challengeBtnEl.dataset.cooling = "false";
     if (!isWeekend()) {
       challengeBtnEl.disabled = false;
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
@@ -273,6 +289,7 @@ function updateCooldownDisplay(cooldownEndTime) {
   
   if (remaining <= 0) {
     cooldownInfoEl.style.display = "none";
+    challengeBtnEl.dataset.cooling = "false";
     if (!isWeekend()) {
       challengeBtnEl.disabled = false;
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
@@ -290,6 +307,7 @@ function updateCooldownDisplay(cooldownEndTime) {
   cooldownInfoEl.style.display = "block";
   cooldownTimerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   challengeBtnEl.disabled = true;
+  challengeBtnEl.dataset.cooling = "true";
   challengeBtnEl.textContent = "⏰ 冷卻中";
 }
 
@@ -320,9 +338,9 @@ function updateWorldBossHP(current, max) {
   const hpBar = document.getElementById("worldHpBar");
   const hpText = document.getElementById("worldHpText");
   
-  const percentage = (current / max) * 100;
+  const percentage = Math.max(0, (current / max) * 100);
   hpBar.style.width = percentage + "%";
-  hpText.textContent = `${current.toLocaleString()} / ${max.toLocaleString()}`;
+  hpText.textContent = `${current.toLocaleString()} / ${max.toLocaleString()} (${percentage.toFixed(1)}%)`;
   
   // 更新階段
   const currentPhase = getCurrentPhase(current, max);
@@ -330,16 +348,18 @@ function updateWorldBossHP(current, max) {
 }
 
 // 更新玩家傷害顯示
-function updatePlayerDamage(damage, rank) {
+function updatePlayerDamage(damage, rank, challengeCount = 0) {
   const damageEl = document.getElementById("playerTotalDamage");
   const rankEl = document.getElementById("playerRank");
+  const countEl = document.getElementById("challengeCount");
   
   damageEl.textContent = damage.toLocaleString();
   rankEl.textContent = rank > 0 ? `排名: #${rank}` : "排名: 未參與";
+  countEl.textContent = challengeCount;
 }
 
 // 更新排行榜
-function updateLeaderboard(leaderboard, currentPlayerNickname) {
+function updateLeaderboard(leaderboard) {
   const listEl = document.getElementById("leaderboardList");
   
   if (!leaderboard || leaderboard.length === 0) {
@@ -350,7 +370,7 @@ function updateLeaderboard(leaderboard, currentPlayerNickname) {
   let html = '';
   leaderboard.forEach((player, index) => {
     const rank = index + 1;
-    const isCurrentPlayer = player.nickname === currentPlayerNickname;
+    const isCurrentPlayer = player.nickname === currentUserNickname;
     const isTop3 = rank <= 3;
     
     let rankClass = '';
@@ -392,13 +412,13 @@ async function loadWorldBossData() {
     }
     
     if (leaderboardRes.ok) {
-      leaderboardData = await leaderboardRes.json();
-      updateLeaderboard(leaderboardData.leaderboard, leaderboardData.current_player_nickname);
+      const leaderboardData = await leaderboardRes.json();
+      updateLeaderboard(leaderboardData.leaderboard);
     }
     
     if (playerRes.ok) {
       playerData = await playerRes.json();
-      updatePlayerDamage(playerData.total_damage, playerData.rank);
+      updatePlayerDamage(playerData.total_damage, playerData.rank, playerData.challenge_count);
       
       // 如果有冷卻時間，開始倒數
       if (playerData.cooldown_end_time) {
@@ -441,10 +461,36 @@ function startCooldownTimer(endTime) {
   updateCooldownDisplay(endTime);
 }
 
+// 顯示戰鬥結果
+function showBattleResult(success, title, message, damage = 0) {
+  const overlay = document.getElementById("battleResultOverlay");
+  const icon = document.getElementById("battleResultIcon");
+  const titleEl = document.getElementById("battleResultTitle");
+  const messageEl = document.getElementById("battleResultMessage");
+  
+  if (success) {
+    icon.textContent = "⚔️";
+    titleEl.textContent = title || "戰鬥成功！";
+    messageEl.innerHTML = message || `造成了 ${damage.toLocaleString()} 點傷害！`;
+    overlay.style.background = "linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 140, 0, 0.8), rgba(255, 69, 0, 0.9))";
+  } else {
+    icon.textContent = "❌";
+    titleEl.textContent = title || "挑戰失敗";
+    messageEl.textContent = message || "挑戰過程發生錯誤";
+    overlay.style.background = "linear-gradient(135deg, rgba(139, 0, 0, 0.9), rgba(220, 20, 60, 0.8), rgba(75, 0, 130, 0.9))";
+  }
+  
+  overlay.style.display = "flex";
+}
+
+function closeBattleResult() {
+  document.getElementById("battleResultOverlay").style.display = "none";
+}
+
 // 挑戰世界王
 async function challengeWorldBoss() {
   if (isWeekend()) {
-    alert("世界王於週日休整，請於週一再來挑戰！");
+    showBattleResult(false, "時間限制", "世界王於週日休整，請於週一再來挑戰！");
     return;
   }
   
@@ -458,28 +504,37 @@ async function challengeWorldBoss() {
     const response = await SecureAPI.post(`${API_BASE}/world_boss_challenge`, {});
     const result = await response.json();
     
-    if (response.ok) {
+    if (response.ok && result.success) {
       // 戰鬥成功
-      alert(`⚔️ 戰鬥完成！\n造成傷害：${result.damage_dealt.toLocaleString()}\n累積傷害：${result.total_damage.toLocaleString()}\n當前排名：#${result.current_rank}`);
+      const message = `
+        造成傷害：${result.damage_dealt.toLocaleString()}<br>
+        累積傷害：${result.total_damage.toLocaleString()}<br>
+        當前排名：#${result.current_rank}<br>
+        獲得經驗：${result.exp_gained.toLocaleString()}
+      `;
+      
+      showBattleResult(true, "⚔️ 戰鬥成功！", message, result.damage_dealt);
       
       // 更新顯示
-      updatePlayerDamage(result.total_damage, result.current_rank);
+      updatePlayerDamage(result.total_damage, result.current_rank, playerData.challenge_count + 1);
       
       // 重新載入排行榜和世界王狀態
-      await loadWorldBossData();
+      setTimeout(() => {
+        loadWorldBossData();
+      }, 1000);
       
       // 開始冷卻計時
       startCooldownTimer(result.cooldown_end_time);
       
     } else {
-      alert(`挑戰失敗：${result.error}`);
+      showBattleResult(false, "挑戰失敗", result.error || "未知錯誤");
       challengeBtnEl.disabled = false;
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
     }
     
   } catch (error) {
     console.error('挑戰世界王失敗:', error);
-    alert("挑戰過程發生錯誤，請稍後再試");
+    showBattleResult(false, "連線錯誤", "挑戰過程發生錯誤，請稍後再試");
     challengeBtnEl.disabled = false;
     challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
   }
@@ -504,6 +559,7 @@ window.addEventListener('message', (event) => {
 // 全域函數
 window.challengeWorldBoss = challengeWorldBoss;
 window.leaveWorldBoss = leaveWorldBoss;
+window.closeBattleResult = closeBattleResult;
 
 // 初始化
 function initWorldBoss() {
@@ -524,9 +580,21 @@ function initWorldBoss() {
   setInterval(updateCountdown, 1000);
 }
 
+// 載入使用者暱稱
+async function loadUserNickname() {
+  try {
+    const statusRes = await SecureAPI.getStatus(false);
+    const userData = await statusRes.json();
+    currentUserNickname = userData.nickname || userData.user_id;
+  } catch (error) {
+    console.warn('載入使用者暱稱失敗:', error);
+  }
+}
+
 // 監聽登入狀態
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
+    await loadUserNickname();
     initWorldBoss();
   } else {
     window.parent.location.href = "/SFL/login.html";
