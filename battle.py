@@ -120,8 +120,6 @@ def apply_drops(db, user_id, drops, user_luck=0):
     round_1_dropped = []
     round_2_dropped = []
     
-    print(f"🍀 幸運值: {user_luck}, 三輪加成: +{round_1_bonus_rate:.1%}, +{round_2_bonus_rate:.1%}, +{round_3_bonus_rate:.1%}")
-    
     # 🎯 第一輪：基礎掉落 + 第一輪幸運加成
     for drop in drops:
         base_rate = drop["rate"]
@@ -151,8 +149,6 @@ def apply_drops(db, user_id, drops, user_luck=0):
                 current["items"][item_id] = new_amount
                 actual_drops[item_id] = actual_drops.get(item_id, 0) + qty
                 round_1_dropped.append(drop)  # 記錄成功掉落的道具
-            
-            print(f"🎯 第一輪掉落: {item_id} x{qty} (機率: {round_1_rate:.1%})")
 
     for drop in round_1_dropped:
         item_id = drop["id"]
