@@ -1181,7 +1181,10 @@ function percent(val) {
 		    exp_luck_bonus, 
 		    leveled_up, 
 		    actual_drops, 
-		    drop_luck_bonus,
+		    round_1_bonus,  // 新增：第一輪額外獲得
+		    round_2_bonus,  // 新增：第二輪額外獲得
+		    round_3_bonus,  // 新增：第三輪額外獲得
+		    drop_luck_bonus, // 保留向下相容
 		    drops 
 		  } = data.rewards;
 		  
@@ -1211,48 +1214,71 @@ function percent(val) {
 		    if (hasActualDrops) {
 		      dropText += "<br><strong>📦 獲得物品：</strong>";
 		      
-		      for (const [itemId, quantity] of Object.entries(actual_drops)) {
-			const meta = itemMap[itemId] || { name: itemId, special: 0 };
-			const luckBonus = drop_luck_bonus[itemId] || 0;
-			
-			let itemText = "";
-			
-			// 根據稀有度設定顏色
-			if (meta.special === 2) {
-			  itemText = `<br><span style='color:crimson'>【超稀有】${meta.name} × ${quantity}</span>`;
-			} else if (meta.special === 1) {
-			  itemText = `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${quantity}</span>`;
-			} else if (meta.special === 3) {
-			  itemText = `<br><span style='color:##FFD306'>【罕見】${meta.name} × ${quantity}</span>`;
-			}else {
-			  itemText = `<br>${meta.name} × ${quantity}`;
-			}
-			
-			// 🌟 如果有幸運加成，額外顯示
-			if (luckBonus > 0) {
-			  itemText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;margin-left:20px;'>🍀 幸運加成！額外獲得 ${luckBonus} 個！</span>`;
-			}
-			
-			dropText += itemText;
+		      // 統計各輪的獎勵資訊
+		      const round1Items = round_1_bonus || {};
+		      const round2Items = round_2_bonus || {};  
+		      const round3Items = round_3_bonus || {};
+		      
+		      for (const [itemId, totalQuantity] of Object.entries(actual_drops)) {
+		        const meta = itemMap[itemId] || { name: itemId, special: 0 };
+		        
+		        // 計算基礎掉落數量（總數量減去各輪額外獲得的）
+		        const round2Bonus = round2Items[itemId] || 0;
+		        const round3Bonus = round3Items[itemId] || 0;
+		        const baseQuantity = totalQuantity - round2Bonus - round3Bonus;
+		        
+		        let itemText = "";
+		        
+		        // 根據稀有度設定顏色
+		        if (meta.special === 2) {
+		          itemText = `<br><span style='color:crimson'>【超稀有】${meta.name} × ${totalQuantity}</span>`;
+		        } else if (meta.special === 1) {
+		          itemText = `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${totalQuantity}</span>`;
+		        } else if (meta.special === 3) {
+		          itemText = `<br><span style='color:#FFD306'>【罕見】${meta.name} × ${totalQuantity}</span>`;
+		        } else {
+		          itemText = `<br>${meta.name} × ${totalQuantity}`;
+		        }
+		        
+		        // 🍀 簡化的幸運加成顯示
+		        const round2Bonus = round2Items[itemId] || 0;
+		        const round3Bonus = round3Items[itemId] || 0;
+		        const totalLuckBonus = round2Bonus + round3Bonus;
+		        
+		        // 如果有幸運加成，顯示幸運獲得的額外數量
+		        if (totalLuckBonus > 0) {
+		          itemText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;margin-left:20px;'>🍀 幸運額外獲得 ${totalLuckBonus} 個！</span>`;
+		        }
+		        
+		        dropText += itemText;
 		      }
+		      
+		      // 🎊 統計總體幸運效果
+		      const totalLuckItems = Object.keys({...round2Items, ...round3Items}).length;
+		      const totalLuckQuantity = Object.values({...round2Items, ...round3Items}).reduce((sum, qty) => sum + qty, 0);
+		      
+		      if (totalLuckQuantity > 0) {
+		        dropText += `<br><br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>✨ 幸運觸發！總計額外獲得 ${totalLuckQuantity} 個道具！</span>`;
+		      }
+		      
 		    } else {
 		      // ✅ 修正：檢查是否因為背包滿了而無法獲得物品
 		      let hasFullInventoryItems = false;
 		      
 		      // 檢查原始掉落表中100%掉落的物品
 		      for (const drop of originalDrops) {
-			if (drop.rate >= 1.0) {
-			  // 這是100%掉落的物品，但沒有在actual_drops中
-			  // 很可能是背包滿了
-			  hasFullInventoryItems = true;
-			  break;
-			}
+		        if (drop.rate >= 1.0) {
+		          // 這是100%掉落的物品，但沒有在actual_drops中
+		          // 很可能是背包滿了
+		          hasFullInventoryItems = true;
+		          break;
+		        }
 		      }
 		      
 		      if (hasFullInventoryItems) {
-			dropText += "<br><span style='color:orange'>⚠️ 背包已滿，部分物品無法獲得</span>";
+		        dropText += "<br><span style='color:orange'>⚠️ 背包已滿，部分物品無法獲得</span>";
 		      } else {
-			dropText += "<br>本次沒有掉落物品";
+		        dropText += "<br>本次沒有掉落物品";
 		      }
 		    }
 		    
