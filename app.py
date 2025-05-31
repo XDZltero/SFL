@@ -1783,9 +1783,9 @@ def calculate_world_boss_exp_reward(damage_dealt, world_boss_config):
 def world_boss_leaderboard():
     """取得世界王排行榜"""
     try:
-        # 可選：設定顯示人數上限
-        limit = request.args.get("limit", 10, type=int)  # 預設顯示前50名
-        limit = min(limit, 10)  # 最多不超過20名
+        # 🎯 設定顯示人數上限，前端會進一步篩選為前10名
+        limit = request.args.get("limit", 50, type=int)  # 預設50名，給前端更多選擇空間
+        limit = min(limit, 100)  # 最多不超過100名避免性能問題
         
         # 取得排行榜數據（按累積傷害降序）
         players_ref = db.collection("world_boss_players").order_by("total_damage", direction=firestore.Query.DESCENDING)
@@ -1807,14 +1807,64 @@ def world_boss_leaderboard():
                 "last_challenge_time": player_data.get("last_challenge_time", 0)
             })
         
+        # 🎯 計算總參與者數量（用於顯示統計）
+        total_participants_ref = db.collection("world_boss_players").where("total_damage", ">", 0)
+        total_count = len([doc for doc in total_participants_ref.stream()])
+        
         return jsonify({
             "leaderboard": leaderboard,
-            "total_players": len(leaderboard),
-            "limit": limit
+            "total_players": total_count,
+            "limit": limit,
+            "returned_count": len(leaderboard)
         })
         
     except Exception as e:
         return jsonify({"error": f"取得排行榜失敗: {str(e)}"}), 500
+
+@app.route("/world_boss_player_rank", methods=["GET"])
+@require_auth
+def world_boss_player_rank():
+    """取得玩家在世界王排行榜中的排名（獨立計算，不受顯示限制影響）"""
+    try:
+        user_id = request.user_id
+        
+        # 取得玩家資料
+        player_ref = db.collection("world_boss_players").document(user_id)
+        player_doc = player_ref.get()
+        
+        if not player_doc.exists:
+            return jsonify({
+                "rank": 0,
+                "total_damage": 0,
+                "challenge_count": 0,
+                "message": "尚未參與世界王挑戰"
+            })
+        
+        player_data = player_doc.to_dict()
+        player_damage = player_data.get("total_damage", 0)
+        
+        if player_damage <= 0:
+            return jsonify({
+                "rank": 0,
+                "total_damage": 0,
+                "challenge_count": player_data.get("challenge_count", 0),
+                "message": "尚未造成傷害"
+            })
+        
+        # 🎯 計算真實排名：統計傷害比該玩家高的玩家數量
+        higher_damage_players = db.collection("world_boss_players").where("total_damage", ">", player_damage)
+        rank = len([doc for doc in higher_damage_players.stream()]) + 1
+        
+        return jsonify({
+            "rank": rank,
+            "total_damage": player_damage,
+            "challenge_count": player_data.get("challenge_count", 0),
+            "last_challenge_time": player_data.get("last_challenge_time", 0),
+            "nickname": player_data.get("nickname", user_id)
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"取得玩家排名失敗: {str(e)}"}), 500
 
 if __name__ == "__main__":
     import os
