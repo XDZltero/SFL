@@ -1563,14 +1563,14 @@ def world_boss_challenge():
                 rank = i + 1
                 break
         
-        # 給予獎勵（基於傷害的經驗值和道具）
-        exp_gained = max(100, int(damage_dealt / 100))  # 基礎經驗值
+        # 🚀 新的經驗值計算系統
+        exp_gained, damage_percentage, reward_tier, tier_desc = calculate_world_boss_exp_reward(damage_dealt, config)
         user_data["exp"] += exp_gained
         
         # 更新使用者經驗值
         db.collection("users").document(user_id).update({"exp": user_data["exp"]})
         
-        # 道具獎勵（基於配置）
+        # 道具獎勵（保持原有邏輯）
         drop_result = {"items": {}}
         if damage_dealt > 1000:  # 只有造成足夠傷害才有道具獎勵
             from battle import apply_drops
@@ -1588,11 +1588,14 @@ def world_boss_challenge():
             "total_damage": player_data["total_damage"],
             "current_rank": rank,
             "exp_gained": exp_gained,
+            "damage_percentage": round(damage_percentage, 4),  # 保留4位小數
+            "reward_tier": reward_tier,
+            "tier_description": tier_desc,
             "rewards": drop_result,
             "cooldown_end_time": new_cooldown_end_time,
             "world_boss_hp": {
                 "current": global_stats.get("current_hp", 0) if global_stats else 0,
-                "max": max_hp  # 🔧 修復：使用正確的路徑
+                "max": max_hp
             }
         }
         
@@ -1603,33 +1606,6 @@ def world_boss_challenge():
         traceback.print_exc()
         print(f"🔥 世界王挑戰錯誤詳情: {str(e)}")
         return jsonify({"error": f"挑戰世界王失敗: {str(e)}"}), 500
-
-@app.route("/world_boss_leaderboard", methods=["GET"])
-def world_boss_leaderboard():
-    """取得世界王排行榜"""
-    try:
-        # 取得排行榜（前50名）
-        players_ref = db.collection("world_boss_players").order_by("total_damage", direction=firestore.Query.DESCENDING).limit(50)
-        players = players_ref.stream()
-        
-        leaderboard = []
-        for doc in players:
-            data = doc.to_dict()
-            if data.get("total_damage", 0) > 0:  # 只顯示有造成傷害的玩家
-                leaderboard.append({
-                    "user_id": doc.id,
-                    "nickname": data.get("nickname", doc.id),
-                    "total_damage": data.get("total_damage", 0),
-                    "challenge_count": data.get("challenge_count", 0)
-                })
-        
-        return jsonify({
-            "leaderboard": leaderboard,
-            "total_participants": len(leaderboard)
-        })
-        
-    except Exception as e:
-        return jsonify({"error": f"取得排行榜失敗: {str(e)}"}), 500
 
 @app.route("/world_boss_player_data", methods=["GET"])
 @require_auth
@@ -1759,6 +1735,49 @@ def world_boss_init_check():
             "initialized": False,
             "error": f"檢查世界王狀態失敗: {str(e)}"
         }), 500
+
+def calculate_world_boss_exp_reward(damage_dealt, world_boss_config):
+    """
+    根據對世界王總血量的傷害百分比計算經驗值獎勵
+    
+    Args:
+        damage_dealt: 造成的傷害
+        world_boss_config: 世界王配置
+    
+    Returns:
+        tuple: (獲得的經驗值, 傷害百分比, 獎勵等級說明)
+    """
+    try:
+        # 🎯 取得世界王最大血量
+        max_hp = world_boss_config["initial_stats"]["max_hp"]
+        
+        # 🧮 計算傷害百分比
+        damage_percentage = (damage_dealt / max_hp) * 100
+        
+        # 🏆 根據傷害百分比給予經驗值
+        if damage_percentage >= 1.0:
+            exp_gained = 300
+            reward_tier = "S級傷害"
+            tier_desc = "造成1.0%以上傷害"
+        elif damage_percentage >= 0.5:
+            exp_gained = 200
+            reward_tier = "A級傷害"
+            tier_desc = "造成0.5%~1.0%傷害"
+        elif damage_percentage >= 0.1:
+            exp_gained = 100
+            reward_tier = "B級傷害"
+            tier_desc = "造成0.1%~0.5%傷害"
+        else:
+            exp_gained = 20
+            reward_tier = "C級傷害"
+            tier_desc = "造成0.1%以下傷害"
+        
+        return exp_gained, damage_percentage, reward_tier, tier_desc
+        
+    except Exception as e:
+        print(f"計算經驗值獎勵失敗: {e}")
+        # 發生錯誤時給予最低獎勵
+        return 20, 0.0, "計算錯誤", "系統錯誤，給予基礎獎勵"
 
 if __name__ == "__main__":
     import os
