@@ -1175,18 +1175,16 @@ function percent(val) {
           logArea.appendChild(winMsg);
           scrollLogToBottom();
 
-          	// 在 dungeon_layer.html 中找到獎勵顯示部分並替換為：
-
+		// 獎勵
 		if (data.rewards) {
 		  const { 
 		    base_exp, 
 		    exp_luck_bonus, 
 		    leveled_up, 
 		    actual_drops, 
-		    round_1_bonus,  // 新增：第一輪額外獲得
-		    round_2_bonus,  // 新增：第二輪額外獲得
-		    round_3_bonus,  // 新增：第三輪額外獲得
-		    drop_luck_bonus, // 保留向下相容
+		    round_1_bonus,  // 第一輪額外獲得（基於幸運的額外掉落機率）
+		    round_2_bonus,  // 第二輪額外獲得（第二輪判定成功）
+		    round_3_bonus,  // 第三輪額外獲得（第三輪判定成功）
 		    drops 
 		  } = data.rewards;
 		  
@@ -1217,17 +1215,19 @@ function percent(val) {
 		      dropText += "<br><strong>📦 獲得物品：</strong>";
 		      
 		      // 統計各輪的獎勵資訊
-		      const round1Items = round_1_bonus || {};
-		      const round2Items = round_2_bonus || {};  
-		      const round3Items = round_3_bonus || {};
+		      const round1Items = round_1_bonus || {}; // 第一輪額外獲得
+		      const round2Items = round_2_bonus || {}; // 第二輪額外獲得  
+		      const round3Items = round_3_bonus || {}; // 第三輪額外獲得
 		      
 		      for (const [itemId, totalQuantity] of Object.entries(actual_drops)) {
 		        const meta = itemMap[itemId] || { name: itemId, special: 0 };
 		        
-		        // 計算幸運加成數量
+		        // 🎲 分析各輪獲得情況
+		        const round1Bonus = round1Items[itemId] || 0;
 		        const round2Bonus = round2Items[itemId] || 0;
 		        const round3Bonus = round3Items[itemId] || 0;
-		        const totalLuckBonus = round2Bonus + round3Bonus;
+		        const totalLuckBonus = round1Bonus + round2Bonus + round3Bonus;
+		        const baseQuantity = totalQuantity - totalLuckBonus;
 		        
 		        let itemText = "";
 		        
@@ -1242,42 +1242,73 @@ function percent(val) {
 		          itemText = `<br>${meta.name} × ${totalQuantity}`;
 		        }
 		        
-		        // 🍀 顯示幸運加成
-		        
-		        // 如果有幸運加成，顯示幸運獲得的額外數量
+		        // 🍀 詳細顯示幸運加成的構成
 		        if (totalLuckBonus > 0) {
-		          itemText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;margin-left:20px;'>🍀 幸運額外獲得 ${totalLuckBonus} 個！</span>`;
+		          let bonusDetails = [];
+		          
+		          if (round1Bonus > 0) {
+		            bonusDetails.push(`第一輪幸運 +${round1Bonus}`);
+		          }
+		          if (round2Bonus > 0) {
+		            bonusDetails.push(`第二輪幸運 +${round2Bonus}`);
+		          }
+		          if (round3Bonus > 0) {
+		            bonusDetails.push(`第三輪幸運 +${round3Bonus}`);
+		          }
+		          
+		          const bonusText = bonusDetails.join('，');
+		          itemText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;margin-left:20px;'>🍀 幸運觸發！${bonusText}，額外獲得 ${totalLuckBonus} 個</span>`;
 		        }
 		        
 		        dropText += itemText;
 		      }
 		      
 		      // 🎊 統計總體幸運效果
-		      const totalLuckItems = Object.keys({...round2Items, ...round3Items}).length;
-		      const totalLuckQuantity = Object.values({...round2Items, ...round3Items}).reduce((sum, qty) => sum + qty, 0);
+		      const allLuckItems = {...round1Items, ...round2Items, ...round3Items};
+		      const totalLuckQuantity = Object.values(allLuckItems).reduce((sum, qty) => sum + qty, 0);
+		      const uniqueLuckItems = Object.keys(allLuckItems).length;
 		      
 		      if (totalLuckQuantity > 0) {
-		        dropText += `<br><br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>✨ 幸運觸發！總計額外獲得 ${totalLuckQuantity} 個道具！</span>`;
+		        dropText += `<br><br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>✨ 幸運觸發了 ${uniqueLuckItems} 種道具，總計額外獲得 ${totalLuckQuantity} 個道具！</span>`;
+		        
+		        // 💡 如果有多輪觸發，顯示各輪統計
+		        const round1Total = Object.values(round1Items).reduce((sum, qty) => sum + qty, 0);
+		        const round2Total = Object.values(round2Items).reduce((sum, qty) => sum + qty, 0);
+		        const round3Total = Object.values(round3Items).reduce((sum, qty) => sum + qty, 0);
+		        
+		        let roundDetails = [];
+		        if (round1Total > 0) roundDetails.push(`第一輪: ${round1Total}個`);
+		        if (round2Total > 0) roundDetails.push(`第二輪: ${round2Total}個`);
+		        if (round3Total > 0) roundDetails.push(`第三輪: ${round3Total}個`);
+		        
+		        if (roundDetails.length > 1) {
+		          dropText += `<br><span style='color:gold;font-size:0.9em;margin-left:20px;'>各輪詳情：${roundDetails.join('，')}</span>`;
+		        }
 		      }
 		      
 		    } else {
-		      // ✅ 修正：檢查是否因為背包滿了而無法獲得物品
-		      let hasFullInventoryItems = false;
+		      // ✅ 改進：更精確地檢查背包滿的情況
+		      let hasGuaranteedDrops = false;
+		      let totalGuaranteedItems = 0;
 		      
 		      // 檢查原始掉落表中100%掉落的物品
 		      for (const drop of originalDrops) {
 		        if (drop.rate >= 1.0) {
-		          // 這是100%掉落的物品，但沒有在actual_drops中
-		          // 很可能是背包滿了
-		          hasFullInventoryItems = true;
-		          break;
+		          hasGuaranteedDrops = true;
+		          totalGuaranteedItems++;
 		        }
 		      }
 		      
-		      if (hasFullInventoryItems) {
-		        dropText += "<br><span style='color:orange'>⚠️ 背包已滿，部分物品無法獲得</span>";
+		      if (hasGuaranteedDrops) {
+		        dropText += `<br><span style='color:orange'>⚠️ 背包已滿，無法獲得 ${totalGuaranteedItems} 種必定掉落的道具</span>`;
 		      } else {
-		        dropText += "<br>本次沒有掉落物品";
+		        // 檢查是否有基於幸運的可能掉落但都失敗了
+		        const hasAnyDropChance = originalDrops.some(drop => drop.rate > 0);
+		        if (hasAnyDropChance) {
+		          dropText += "<br>本次運氣不佳，沒有掉落物品 😔";
+		        } else {
+		          dropText += "<br>此怪物沒有掉落物品";
+		        }
 		      }
 		    }
 		    
