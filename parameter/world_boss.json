@@ -7,11 +7,11 @@
   "element": ["all"],
   "stats": {
     "hp": 999999999,
-    "attack": 3500,
-    "shield": 1500,
+    "attack": 2500,
+    "shield": 900,
     "accuracy": 0.90,
     "evade": 0.25,
-    "atk_speed": 120,
+    "atk_speed": 100,
     "luck": 300,
     "other_bonus": 0.15
   },
