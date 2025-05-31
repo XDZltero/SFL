@@ -954,8 +954,15 @@ def simulate_battle(user, monster, user_skill_dict):
             "exp_luck_bonus": exp_luck_bonus,
             "leveled_up": leveled,
             "drops": monster["drops"],  # 原始掉落表
-            "actual_drops": drop_result["items"],  # 實際獲得的物品
-            "drop_luck_bonus": drop_result["luck_bonus"]  # 幸運加成獲得的物品
+            "actual_drops": drop_result["items"],  # 實際獲得的物品總數
+            "round_1_bonus": drop_result["round_1_bonus"],  # 第一輪額外獲得
+            "round_2_bonus": drop_result["round_2_bonus"],  # 第二輪額外獲得  
+            "round_3_bonus": drop_result["round_3_bonus"],  # 第三輪額外獲得
+            # 向下相容：保留原有的 drop_luck_bonus 格式
+            "drop_luck_bonus": {
+                **drop_result["round_2_bonus"], 
+                **drop_result["round_3_bonus"]
+            }
         }
 
     return {
