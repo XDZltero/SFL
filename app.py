@@ -1655,10 +1655,9 @@ def world_boss_reset():
 # 🚀 新增：世界王初始化檢查端點
 @app.route("/world_boss_init_check", methods=["GET"])
 def world_boss_init_check():
-    """檢查世界王是否已初始化，如果沒有則自動初始化"""
     try:
         global_state = get_world_boss_global_state()
-        
+
         if global_state:
             return jsonify({
                 "initialized": True,
@@ -1671,13 +1670,13 @@ def world_boss_init_check():
                 "initialized": False,
                 "error": "世界王初始化失敗"
             }), 500
-            
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "initialized": False,
             "error": f"檢查世界王狀態失敗: {str(e)}"
         }), 500
-
 
 if __name__ == "__main__":
     import os
