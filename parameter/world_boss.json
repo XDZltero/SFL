@@ -1,12 +1,12 @@
 {
   "boss_id": "Creator_defile",
   "name": "「潘朵拉的創世主」\n迪菲爾",
-  "description": "迪菲爾解放了自己的魔力，以真正的創世主的姿態現身。\n\n只有全世界的冒險者團結一致，才有可能與他抗衡。每一次攻擊都是為了全人類的未來而戰！",
+  "description": "迪菲爾解放了自己的魔力，以真正的創世主的姿態現身。\n\n只有全世界的冒險者團結一致，才有可能與祂抗衡。每一次攻擊都是為了全人類的未來而戰！",
   "image": "https://i.postimg.cc/T1zwNCFF/Creator-defile.png",
-  "level": 80,
+  "level": 100,
   "element": ["all"],
   "stats": {
-    "hp": 999999999,
+    "hp": 200000,
     "attack": 2500,
     "shield": 900,
     "accuracy": 0.90,
@@ -56,14 +56,9 @@
         "rate": 1.0
       },
       {
-        "id": "creator_essence", 
-        "value": 1,
-        "rate": 0.05
-      },
-      {
         "id": "chaos_breath",
-        "value": 2,
-        "rate": 0.03
+        "value": 1,
+        "rate": 0.1
       },
       {
         "id": "reset_stats_ticket",
@@ -73,7 +68,6 @@
     ]
   },
   "initial_stats": {
-    "max_hp": 999999999,
-    "reset_day": 0
+    "max_hp": 200000
   }
 }
