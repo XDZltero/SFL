@@ -53,7 +53,7 @@
   <div id="container-footer">
     📦 版本：v1.0.0
     ｜ 🔗 <a href="https://discord.gg/C8MZXcqZZn" target="_blank">加入 Discord</a>
-    ｜ 🕒 最後更新：2025-05-20
+    ｜ 🕒 最後更新：2025-05-31
     ｜ 🧑‍💻 開發者：<a href="https://www.youtube.com/@XD_Zltero" target="_blank">萊姆醬</a>
   </div>
 
@@ -62,31 +62,58 @@
     import { auth, signOut } from "./js/firebase-init.js";
     let currentBgm = "main";
 
-    // boss關切換音樂
-    window.addEventListener("message", (event) => {
-      const data = event.data;
-    
-      if (!data || !data.command) return;
+    // 🎵 音樂資源配置
+    const musicSources = {
+      main: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3",
+      boss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/Last_Boss_Battle_theme_v2-zrhJSBVfzYfK17ro58EyHtmr0smIxi.mp3",
+      worldBoss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/World_Boss_Battle_theme-1iojoQSoKrHoSGqZX5R6NrXmPwGAJ0.mp3" 
+    };
+
+    // 🎵 音樂切換函數
+    function switchMusic(musicType) {
+      if (currentBgm === musicType) return;
       
-    
-      if (data.command === "switchToBossMusic" && currentBgm !== "boss") {
-        currentBgm = "boss";
-        bgm.pause();
-        bgm.src = "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/Last_Boss_Battle_theme_v2-zrhJSBVfzYfK17ro58EyHtmr0smIxi.mp3";
-        bgm.load();
-        bgm.volume = volumeSlider.value;
-        bgm.muted = muted;
-        bgm.play().catch(() => {});
+      console.log(`🎵 切換音樂：${currentBgm} → ${musicType}`);
+      
+      currentBgm = musicType;
+      bgm.pause();
+      
+      if (musicSources[musicType]) {
+        bgm.src = musicSources[musicType];
+      } else {
+        console.warn(`⚠️ 找不到音樂類型：${musicType}，使用主音樂`);
+        bgm.src = musicSources.main;
+        currentBgm = "main";
       }
       
-      if (data.command === "restoreMainMusic" && currentBgm !== "main") {
-        currentBgm = "main";
-        bgm.pause();
-        bgm.src = "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3";
-        bgm.load();
-        bgm.volume = volumeSlider.value;
-        bgm.muted = muted;
-        bgm.play().catch(() => {});
+      bgm.load();
+      bgm.volume = volumeSlider.value;
+      bgm.muted = muted;
+      bgm.play().catch(error => {
+        console.warn("音樂播放失敗:", error);
+      });
+    }
+
+    // 🎵 音樂控制訊息監聽
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data || !data.command) return;
+      
+      switch (data.command) {
+        case "switchToBossMusic":
+          switchMusic("boss");
+          break;
+          
+        case "switchToWorldBossMusic": // 🆕 世界王音樂
+          switchMusic("worldBoss");
+          break;
+          
+        case "restoreMainMusic":
+          switchMusic("main");
+          break;
+          
+        default:
+          console.log("未知的音樂指令:", data.command);
       }
     });
 
@@ -186,12 +213,15 @@
     const controlButtons = document.getElementById("controlButtons");
   
     function loadPage(page) {
-      if (!page.includes("dungeon_layer") && currentBgm === "boss") {
-        currentBgm = "main";
-        bgm.pause();
-        bgm.src = "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3";
-        bgm.load();
-        bgm.play().catch(() => {});
+      console.log(`📄 載入頁面：${page}`);
+      
+      // 🎵 根據頁面自動切換音樂
+      if (page.includes("world_boss.html")) {
+        switchMusic("worldBoss");
+      } else if (page.includes("dungeon_layer") && currentBgm === "boss") {
+        // 保持 boss 音樂
+      } else if (!page.includes("dungeon_layer") && currentBgm !== "main") {
+        switchMusic("main");
       }
     
       iframe.src = page;
@@ -201,7 +231,15 @@
   
     function updateTopbar(pagePath) {
       controlButtons.innerHTML = "";
-      if (pagePath.includes("upgrade") || pagePath.includes("inventory") || pagePath.includes("dungeons")) {
+      
+      if (pagePath.includes("world_boss")) {
+        // 🆕 世界王頁面專用按鈕
+        controlButtons.innerHTML = `
+          <button onclick="loadPage('main_page.html')">🔙 返回主頁</button>
+          <button onclick="refreshWorldBoss()">🔄 刷新戰況</button>
+          <button onclick="logout()">🔓 登出</button>
+        `;
+      } else if (pagePath.includes("upgrade") || pagePath.includes("inventory") || pagePath.includes("dungeons")) {
         controlButtons.innerHTML = `
           <button onclick="loadPage('main_page.html')">🔙 返回主頁</button>
           <button onclick="logout()">🔓 登出</button>
@@ -215,6 +253,13 @@
         controlButtons.innerHTML = `<button onclick="logout()">🔓 登出</button>`;
       }
     }
+
+    // 🆕 世界王頁面刷新功能
+    window.refreshWorldBoss = function() {
+      if (iframe.src.includes("world_boss.html")) {
+        iframe.contentWindow.postMessage({ command: "forceRefresh" }, "*");
+      }
+    };
   
     iframe.addEventListener("load", () => {
       try {
@@ -225,18 +270,17 @@
     });
   
     window.logout = function () {
-	  signOut(auth).then(() => {
-	    window.location.href = "/SFL/login.html";
-	  });
-	};
+      signOut(auth).then(() => {
+        window.location.href = "/SFL/login.html";
+      });
+    };
   
     const userEmailSpan = document.getElementById("userEmail");
-	window.addEventListener("message", (e) => {
-	  if (e.data?.nickname) {
-		document.getElementById("userEmail").textContent = e.data.nickname;
-	  }
-	  // 移除傳遞user資訊給iframe的程式碼
-	});
+    window.addEventListener("message", (e) => {
+      if (e.data?.nickname) {
+        document.getElementById("userEmail").textContent = e.data.nickname;
+      }
+    });
 
     window.addEventListener("message", (e) => {
       if (e.data?.user) {
@@ -247,18 +291,18 @@
     });
 
     iframe.addEventListener("load", () => {
-	  try {
-		updateTopbar(iframe.contentWindow.location.pathname);
-	  } catch {
-		updateTopbar(iframe.src);
-	  }
-	});
-	
-	auth.onAuthStateChanged((user) => {
-	  if (!user) {
-	    window.location.href = "/SFL/login.html";
-	  }
-	});
+      try {
+        updateTopbar(iframe.contentWindow.location.pathname);
+      } catch {
+        updateTopbar(iframe.src);
+      }
+    });
+    
+    auth.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = "/SFL/login.html";
+      }
+    });
   
     document.addEventListener("DOMContentLoaded", () => {
       createParticles();
@@ -267,153 +311,168 @@
       loadPage("main_page.html");
     });
 
+    // 🎵 音樂預載入
+    function preloadMusic() {
+      Object.entries(musicSources).forEach(([key, src]) => {
+        if (key !== "main") { // 主音樂已經預載入了
+          const audio = new Audio();
+          audio.preload = "metadata";
+          audio.src = src;
+          console.log(`🎵 預載入音樂：${key}`);
+        }
+      });
+    }
+
+    // 在適當時機預載入音樂
+    setTimeout(preloadMusic, 3000);
+
    // 嘗試修復手機視窗
    function adjustMobileLayout() {
-	  // 檢查是否為移動設備
-	  function isMobile() {
-	    return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-	  }
-	  
-	  if (!isMobile()) return;
-	  
-	  const topbar = document.getElementById('topbar');
-	  const mainFrame = document.getElementById('mainFrame');
-	  const footer = document.getElementById('container-footer');
-	  
-	  if (!topbar || !mainFrame) return;
-	  
-	  // 動態計算 topbar 的實際高度
-	  function calculateActualTopbarHeight() {
-	    // 獲取 topbar 的實際渲染高度
-	    const topbarRect = topbar.getBoundingClientRect();
-	    const actualHeight = topbarRect.height;
-	    
-	    // 確保最小高度
-	    const minHeight = window.innerWidth <= 480 ? 48 : 50;
-	    return Math.max(actualHeight, minHeight);
-	  }
-	  
-	  // 調整 mainFrame 位置
-	  function adjustMainFrame() {
-	    const actualTopbarHeight = calculateActualTopbarHeight();
-	    const footerHeight = footer ? footer.offsetHeight : 40;
-	    
-	    // 設置 mainFrame 的 top 和 height
-	    mainFrame.style.top = actualTopbarHeight + 'px';
-	    mainFrame.style.height = `calc(100vh - ${actualTopbarHeight}px - ${footerHeight}px)`;
-	    
-	    console.log(`調整後的 topbar 高度: ${actualTopbarHeight}px`);
-	  }
-	  
-	  // 初始調整
-	  adjustMainFrame();
-	  
-	  // 監聽視窗大小變化
-	  let resizeTimeout;
-	  window.addEventListener('resize', function() {
-	    clearTimeout(resizeTimeout);
-	    resizeTimeout = setTimeout(adjustMainFrame, 100);
-	  });
-	  
-	  // 監聽設備方向變化
-	  window.addEventListener('orientationchange', function() {
-	    setTimeout(adjustMainFrame, 300); // 給一點時間讓佈局穩定
-	  });
-	  
-	  // 針對 iframe 內容也進行調整
-	  mainFrame.addEventListener('load', function() {
-	    try {
-	      const iframeDoc = mainFrame.contentDocument || mainFrame.contentWindow.document;
-	      const iframeContent = iframeDoc.getElementById('content');
-	      
-	      if (iframeContent) {
-	        // 移除可能造成間隙的 margin
-	        iframeContent.style.marginTop = '0';
-	        iframeContent.style.paddingTop = '10px';
-	        
-	        // 確保 iframe body 沒有額外的 margin
-	        const iframeBody = iframeDoc.body;
-	        if (iframeBody) {
-	          iframeBody.style.marginTop = '0';
-	          iframeBody.style.paddingTop = '0';
-	        }
-	      }
-	    } catch (e) {
-	      // 跨域限制，無法存取 iframe 內容
-	      console.log('無法存取 iframe 內容，可能是跨域限制');
-	    }
-	  });
-	}
-	
-	// DOM 載入完成後執行
-	if (document.readyState === 'loading') {
-	  document.addEventListener('DOMContentLoaded', adjustMobileLayout);
-	} else {
-	  adjustMobileLayout();
-	}
-	
-	// 為了處理動態載入的內容，也可以在適當時機手動調用
-	window.adjustMobileLayout = adjustMobileLayout;
-	
-	// 額外的輔助函數：檢測和修復常見的移動端問題
-	function fixMobileViewport() {
-	  // 確保 viewport 設置正確
-	  let viewport = document.querySelector('meta[name="viewport"]');
-	  if (!viewport) {
-	    viewport = document.createElement('meta');
-	    viewport.name = 'viewport';
-	    document.head.appendChild(viewport);
-	  }
-	  
-	  // 設置適合移動設備的 viewport
-	  viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
-	  
-	  // 防止 iOS Safari 的滾動反彈
-	  document.body.style.overflowX = 'hidden';
-	  
-	  // 防止雙擊縮放
-	  let lastTouchEnd = 0;
-	  document.addEventListener('touchend', function (event) {
-	    const now = (new Date()).getTime();
-	    if (now - lastTouchEnd <= 300) {
-	      event.preventDefault();
-	    }
-	    lastTouchEnd = now;
-	  }, false);
-	}
-	
-	// 執行移動端修復
-	fixMobileViewport();
-	
-	// 針對特定問題的修復
-	function fixSpecificIssues() {
-	  // 修復 iPhone Safari 的狀態列問題
-	  if (/iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent)) {
-	    // 檢查是否為全屏模式
-	    const isStandalone = window.navigator.standalone;
-	    const isFullScreen = window.innerHeight === screen.height;
-	    
-	    if (isStandalone || isFullScreen) {
-	      // 全屏模式下調整頂部間距
-	      document.body.style.paddingTop = '20px'; // 狀態列高度
-	    }
-	  }
-	  
-	  // 修復 Android Chrome 的地址列隱藏問題
-	  if (/Android/.test(navigator.userAgent) && /Chrome/.test(navigator.userAgent)) {
-	    // 監聽視窗高度變化（通常是地址列隱藏/顯示）
-	    let initialHeight = window.innerHeight;
-	    window.addEventListener('resize', function() {
-	      if (Math.abs(window.innerHeight - initialHeight) > 100) {
-	        // 重新調整佈局
-	        setTimeout(adjustMobileLayout, 100);
-	      }
-	    });
-	  }
-	}
-	
-	// 執行特定修復
-	setTimeout(fixSpecificIssues, 500);
+      // 檢查是否為移動設備
+      function isMobile() {
+        return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      }
+      
+      if (!isMobile()) return;
+      
+      const topbar = document.getElementById('topbar');
+      const mainFrame = document.getElementById('mainFrame');
+      const footer = document.getElementById('container-footer');
+      
+      if (!topbar || !mainFrame) return;
+      
+      // 動態計算 topbar 的實際高度
+      function calculateActualTopbarHeight() {
+        // 獲取 topbar 的實際渲染高度
+        const topbarRect = topbar.getBoundingClientRect();
+        const actualHeight = topbarRect.height;
+        
+        // 確保最小高度
+        const minHeight = window.innerWidth <= 480 ? 48 : 50;
+        return Math.max(actualHeight, minHeight);
+      }
+      
+      // 調整 mainFrame 位置
+      function adjustMainFrame() {
+        const actualTopbarHeight = calculateActualTopbarHeight();
+        const footerHeight = footer ? footer.offsetHeight : 40;
+        
+        // 設置 mainFrame 的 top 和 height
+        mainFrame.style.top = actualTopbarHeight + 'px';
+        mainFrame.style.height = `calc(100vh - ${actualTopbarHeight}px - ${footerHeight}px)`;
+        
+        console.log(`調整後的 topbar 高度: ${actualTopbarHeight}px`);
+      }
+      
+      // 初始調整
+      adjustMainFrame();
+      
+      // 監聽視窗大小變化
+      let resizeTimeout;
+      window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(adjustMainFrame, 100);
+      });
+      
+      // 監聽設備方向變化
+      window.addEventListener('orientationchange', function() {
+        setTimeout(adjustMainFrame, 300); // 給一點時間讓佈局穩定
+      });
+      
+      // 針對 iframe 內容也進行調整
+      mainFrame.addEventListener('load', function() {
+        try {
+          const iframeDoc = mainFrame.contentDocument || mainFrame.contentWindow.document;
+          const iframeContent = iframeDoc.getElementById('content');
+          
+          if (iframeContent) {
+            // 移除可能造成間隙的 margin
+            iframeContent.style.marginTop = '0';
+            iframeContent.style.paddingTop = '10px';
+            
+            // 確保 iframe body 沒有額外的 margin
+            const iframeBody = iframeDoc.body;
+            if (iframeBody) {
+              iframeBody.style.marginTop = '0';
+              iframeBody.style.paddingTop = '0';
+            }
+          }
+        } catch (e) {
+          // 跨域限制，無法存取 iframe 內容
+          console.log('無法存取 iframe 內容，可能是跨域限制');
+        }
+      });
+    }
+    
+    // DOM 載入完成後執行
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', adjustMobileLayout);
+    } else {
+      adjustMobileLayout();
+    }
+    
+    // 為了處理動態載入的內容，也可以在適當時機手動調用
+    window.adjustMobileLayout = adjustMobileLayout;
+    
+    // 額外的輔助函數：檢測和修復常見的移動端問題
+    function fixMobileViewport() {
+      // 確保 viewport 設置正確
+      let viewport = document.querySelector('meta[name="viewport"]');
+      if (!viewport) {
+        viewport = document.createElement('meta');
+        viewport.name = 'viewport';
+        document.head.appendChild(viewport);
+      }
+      
+      // 設置適合移動設備的 viewport
+      viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+      
+      // 防止 iOS Safari 的滾動反彈
+      document.body.style.overflowX = 'hidden';
+      
+      // 防止雙擊縮放
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function (event) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+          event.preventDefault();
+        }
+        lastTouchEnd = now;
+      }, false);
+    }
+    
+    // 執行移動端修復
+    fixMobileViewport();
+    
+    // 針對特定問題的修復
+    function fixSpecificIssues() {
+      // 修復 iPhone Safari 的狀態列問題
+      if (/iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent)) {
+        // 檢查是否為全屏模式
+        const isStandalone = window.navigator.standalone;
+        const isFullScreen = window.innerHeight === screen.height;
+        
+        if (isStandalone || isFullScreen) {
+          // 全屏模式下調整頂部間距
+          document.body.style.paddingTop = '20px'; // 狀態列高度
+        }
+      }
+      
+      // 修復 Android Chrome 的地址列隱藏問題
+      if (/Android/.test(navigator.userAgent) && /Chrome/.test(navigator.userAgent)) {
+        // 監聽視窗高度變化（通常是地址列隱藏/顯示）
+        let initialHeight = window.innerHeight;
+        window.addEventListener('resize', function() {
+          if (Math.abs(window.innerHeight - initialHeight) > 100) {
+            // 重新調整佈局
+            setTimeout(adjustMobileLayout, 100);
+          }
+        });
+      }
+    }
+    
+    // 執行特定修復
+    setTimeout(fixSpecificIssues, 500);
   </script>
 </body>
 </html>
