@@ -461,7 +461,7 @@ async function loadWorldBossData() {
 }
 
 function updateWorldBossInfo(boss) {
-  document.getElementById("bossName").textContent = boss.name;
+  document.getElementById("bossName").innerHTML = boss.name.replace(/\n/g, "<br>");
   document.getElementById("bossImage").src = boss.image;
   document.getElementById("bossDescription").textContent = boss.description;
   document.getElementById("bossLevel").textContent = boss.level;
