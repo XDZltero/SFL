@@ -1779,6 +1779,43 @@ def calculate_world_boss_exp_reward(damage_dealt, world_boss_config):
         # 發生錯誤時給予最低獎勵
         return 20, 0.0, "計算錯誤", "系統錯誤，給予基礎獎勵"
 
+@app.route("/world_boss_leaderboard", methods=["GET"])
+def world_boss_leaderboard():
+    """取得世界王排行榜"""
+    try:
+        # 可選：設定顯示人數上限
+        limit = request.args.get("limit", 10, type=int)  # 預設顯示前50名
+        limit = min(limit, 10)  # 最多不超過20名
+        
+        # 取得排行榜數據（按累積傷害降序）
+        players_ref = db.collection("world_boss_players").order_by("total_damage", direction=firestore.Query.DESCENDING)
+        
+        # 只取得有造成傷害的玩家
+        players_ref = players_ref.where("total_damage", ">", 0)
+        
+        # 應用人數限制
+        players_ref = players_ref.limit(limit)
+        
+        leaderboard = []
+        for doc in players_ref.stream():
+            player_data = doc.to_dict()
+            leaderboard.append({
+                "user_id": doc.id,
+                "nickname": player_data.get("nickname", doc.id),
+                "total_damage": player_data.get("total_damage", 0),
+                "challenge_count": player_data.get("challenge_count", 0),
+                "last_challenge_time": player_data.get("last_challenge_time", 0)
+            })
+        
+        return jsonify({
+            "leaderboard": leaderboard,
+            "total_players": len(leaderboard),
+            "limit": limit
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"取得排行榜失敗: {str(e)}"}), 500
+
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))
