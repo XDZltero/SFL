@@ -13,20 +13,20 @@
     "evade": 0.25,
     "atk_speed": 100,
     "luck": 300,
-    "other_bonus": 0.15
+    "other_bonus": 0.1
   },
   "phases": {
     "1": {
       "hp_threshold": 100,
       "name": "【第一階段】魔力覺醒",
-      "description": "迪菲爾剛剛覺醒其真正力量，雖然強大但尚未完全適應。這是攻擊的最佳時機！",
+      "description": "迪菲爾剛剛解放其真正力量，雖然強大但尚未完全適應。這是攻擊的最佳時機！",
       "damage_multiplier": 1.0,
       "defense_multiplier": 1.0
     },
     "2": {
       "hp_threshold": 60,
       "name": "【第二階段】創世之怒",
-      "description": "感受到威脅的迪菲爾開始認真戰鬥，其創世之力開始展現。攻擊力和防禦力都有所提升！",
+      "description": "感受到威脅的迪菲爾開始認真戰鬥，其創世之力開始展現。",
       "damage_multiplier": 1.2,
       "defense_multiplier": 1.15
     },
