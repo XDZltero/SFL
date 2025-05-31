@@ -382,8 +382,11 @@ function updateLeaderboard(leaderboard) {
     return;
   }
   
+  // 🎯 限制只顯示前10名
+  const top10 = leaderboard.slice(0, 10);
+  
   let html = '';
-  leaderboard.forEach((player, index) => {
+  top10.forEach((player, index) => {
     const rank = index + 1;
     const isCurrentPlayer = player.nickname === currentUserNickname;
     const isTop3 = rank <= 3;
@@ -405,6 +408,38 @@ function updateLeaderboard(leaderboard) {
       </div>
     `;
   });
+  
+  // 🎯 如果當前玩家不在前10名，額外顯示自己的排名
+  if (currentUserNickname) {
+    const currentPlayerInTop10 = top10.find(p => p.nickname === currentUserNickname);
+    
+    if (!currentPlayerInTop10 && playerData && playerData.rank > 10) {
+      // 找到當前玩家在完整排行榜中的資料
+      const currentPlayerData = leaderboard.find(p => p.nickname === currentUserNickname);
+      
+      if (currentPlayerData) {
+        html += `
+          <div class="leaderboard-divider" style="margin: 15px 0; border-top: 1px solid rgba(255,215,0,0.3); text-align: center; padding-top: 10px;">
+            <span style="color: #ffd700; font-size: 0.9em;">--- 你的排名 ---</span>
+          </div>
+          <div class="leaderboard-item current-player">
+            <div class="rank-number">#${playerData.rank}</div>
+            <div class="player-name">${currentPlayerData.nickname} (你)</div>
+            <div class="damage-amount">${currentPlayerData.total_damage.toLocaleString()}</div>
+          </div>
+        `;
+      }
+    }
+  }
+  
+  // 🎯 添加顯示說明
+  if (leaderboard.length > 10) {
+    html += `
+      <div style="text-align: center; color: #888; padding: 15px 10px; font-size: 0.85em; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px;">
+        顯示前 10 名 / 共 ${leaderboard.length} 名參與者
+      </div>
+    `;
+  }
   
   listEl.innerHTML = html;
 }
@@ -428,7 +463,8 @@ async function loadWorldBossData() {
     // 並行載入世界王資料和排行榜
     const [bossRes, leaderboardRes, playerRes] = await Promise.all([
       SecureAPI.get(`${API_BASE}/world_boss_status`),
-      SecureAPI.get(`${API_BASE}/world_boss_leaderboard`),
+      // 🎯 請求更多數據以便前端篩選，或者後端限制為50名避免性能問題
+      SecureAPI.get(`${API_BASE}/world_boss_leaderboard?limit=50`),
       SecureAPI.get(`${API_BASE}/world_boss_player_data`)
     ]);
     
@@ -446,8 +482,9 @@ async function loadWorldBossData() {
     }
     
     if (leaderboardRes.ok) {
-      const leaderboardData = await leaderboardRes.json();
-      updateLeaderboard(leaderboardData.leaderboard);
+      const leaderboardResult = await leaderboardRes.json();
+      // 🎯 傳入完整的排行榜數據，讓前端處理顯示邏輯
+      updateLeaderboard(leaderboardResult.leaderboard || []);
     } else {
       console.warn('載入排行榜失敗:', leaderboardRes.status);
       updateLeaderboard([]);
