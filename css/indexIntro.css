@@ -275,7 +275,7 @@
 
     #mainFrame {
       width: 100%;
-      height: calc(100vh - 60px - 40px);
+      height: calc(100vh - 60px - 50px);
       border: none;
       position: absolute;
       top: 60px;
@@ -405,7 +405,7 @@
   /* 極小屏幕優化 (小於 480px) */
   @media (max-width: 480px) {
   #mainFrame {
-    height: calc(100vh - 48px - 40px);
+    height: calc(100vh - 48px - 45px);
     top: 48px;
   }
   
@@ -461,7 +461,7 @@
  /* 橫屏手機優化 */
 @media (max-width: 768px) and (orientation: landscape) {
   #mainFrame {
-    height: calc(100vh - 45px - 20px); /* 橫屏時縮小 footer 空間 */
+    height: calc(100vh - 45px - 35px); /* 橫屏時縮小 footer 空間 */
     top: 45px;
   }
   
@@ -479,8 +479,38 @@
   
   /* 橫屏時頁尾調整 */
   #container-footer {
-    padding: 8px 16px;
-    font-size: 0.8em;
+    padding: 4px 16px;
+    font-size: 0.7em;
+    /* 確保不會太高 */
+    min-height: 30px;
+    max-height: 40px;
+    overflow: hidden;
+  }
+}
+
+/* 3. 針對 iPhone 16 Pro 等較新設備的特殊處理 */
+@media (max-width: 768px) and (min-height: 850px) {
+  /* iPhone 16 Pro 的螢幕高度約 956px */
+  #mainFrame {
+    height: calc(100vh - 50px - 55px); /* 稍微增加 footer 預留空間 */
+  }
+  
+  #container-footer {
+    padding: 10px 16px;
+    min-height: 45px;
+  }
+}
+
+/* 安全區域處理（針對有 Home Indicator 的設備）*/
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  #container-footer {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  
+  @media (max-width: 768px) {
+    #mainFrame {
+      height: calc(100vh - 50px - 50px - env(safe-area-inset-bottom));
+    }
   }
 }
 
@@ -512,6 +542,11 @@
 }
 
 @media (max-width: 768px) {
+    #mainFrame {
+    /* 使用 margin-bottom 而不是純粹的高度計算 */
+    margin-bottom: 60px; /* 預留更多空間 */
+    height: calc(100vh - 50px - 60px);
+    }
   /* 移除可能造成間隙的 margin */
   #content {
     margin-top: 0 !important; /* 移除原本的 2.5px margin */
