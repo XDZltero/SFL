@@ -332,7 +332,7 @@
   text-align: center;
   padding: 12px 16px;
   font-size: 0.9em;
-  z-index: 999;
+  z-index: 99;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -350,7 +350,7 @@
 @media (max-width: 768px) {
   /* 重新計算 topbar 高度並調整 mainFrame */
   #mainFrame {
-    height: calc(100vh - 50px - 40px); /* 調整為手機版 topbar 高度 */
+    height: calc(100vh - 50px - 60px); /* 增加 footer 預留空間 */
     top: 50px; /* 調整為實際的手機版 topbar 高度 */
   }
   
