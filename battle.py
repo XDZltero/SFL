@@ -241,7 +241,7 @@ def check_level_up(user):
     exp = user["exp"]
     leveled = False
 
-    while str(level) in level_table and exp >= level_table[str(level)]:
+    while str(level) in level_table and exp >= level_table[str(level)] and level < 100:
         exp -= level_table[str(level)]
         level += 1
         user["stat_points"] += 5
