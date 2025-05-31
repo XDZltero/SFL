@@ -28,7 +28,7 @@
 
 <!-- 階段指示器 -->
 <div class="phase-indicator" id="phaseIndicator">
-  【第一階段】魔力覺醒
+  載入階段資訊...
 </div>
 
 <!-- 倒數計時器 -->
@@ -434,6 +434,12 @@ async function loadWorldBossData() {
     
     if (bossRes.ok) {
       worldBossData = await bossRes.json();
+      if (worldBossData.phases) {
+        console.log('✅ 階段資料載入成功:', Object.keys(worldBossData.phases));
+      } else {
+        console.warn('⚠️ 階段資料載入失敗');
+      }
+      
       updateWorldBossInfo(worldBossData);
     } else {
       throw new Error(`載入世界王狀態失敗: ${bossRes.status}`);
@@ -679,6 +685,29 @@ function initWorldBoss() {
   setInterval(updateCountdown, 1000);
 }
 
+// 階段資料驗證函數
+function validatePhaseData() {
+  if (!worldBossData || !worldBossData.phases) {
+    console.warn('階段資料未載入或格式錯誤');
+    return false;
+  }
+  
+  const phases = worldBossData.phases;
+  const requiredFields = ['name', 'description', 'hp_threshold'];
+  
+  for (const [phaseKey, phaseData] of Object.entries(phases)) {
+    for (const field of requiredFields) {
+      if (!phaseData[field] && phaseData[field] !== 0) {
+        console.error(`階段 ${phaseKey} 缺少必要欄位: ${field}`);
+        return false;
+      }
+    }
+  }
+  
+  console.log('✅ 階段資料驗證通過');
+  return true;
+}
+  
 // 載入使用者暱稱
 async function loadUserNickname() {
   try {
