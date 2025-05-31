@@ -50,7 +50,7 @@
     "bossId": "imperial_minister_defile",
     "min_level": 45,
     "image": "https://i.postimg.cc/VvRfgKfY/dungeon-pandora-nightmare.png",
-    "monsters": ["ruin_messenger", "maze_creature", "nightmare_barrier", "phantom_armed_guard", "nightmare_demon", "murky_berserker", "corpse_berserker", "phantom_corpse", "phantom_corpse", "dream_apostle_nightmare_creator"],
+    "monsters": ["ruin_messenger", "maze_creature", "nightmare_barrier", "phantom_armed_guard", "nightmare_demon", "murky_berserker", "corpse_berserker", "phantom_corpse", "dream_apostle_nightmare_creator"],
     "Pre-Task": "dungeon_magictown",
     "Pre-Task-ReqTime" : 3
   },
