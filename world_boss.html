@@ -135,21 +135,9 @@ let currentUserNickname = "";
 
 // 階段配置
 const PHASES = {
-  1: {
-    name: "【第一階段】魔力覺醒",
-    description: "迪菲爾剛剛覺醒其真正力量，雖然強大但尚未完全適應。這是攻擊的最佳時機！",
-    threshold: 100
-  },
-  2: {
-    name: "【第二階段】創世之怒", 
-    description: "感受到威脅的迪菲爾開始認真戰鬥，其創世之力開始展現。攻擊力和防禦力都有所提升！",
-    threshold: 60
-  },
-  3: {
-    name: "【第三階段】毀滅創生",
-    description: "瀕死的迪菲爾徹底釋放創世主的力量！毀滅與創生並存，這是最後的決戰！",
-    threshold: 30
-  }
+  1: { ... },
+  2: { ... },
+  3: { ... }
 };
 
 // 載入頁面初始化
@@ -315,6 +303,17 @@ function updateCooldownDisplay(cooldownEndTime) {
 function getCurrentPhase(currentHp, maxHp) {
   const percentage = (currentHp / maxHp) * 100;
   
+  // 使用 API 資料中的 hp_threshold
+  if (worldBossData?.phases) {
+    const phases = worldBossData.phases;
+    
+    // 從最低階段開始檢查
+    if (percentage <= (phases["3"]?.hp_threshold || 30)) return 3;
+    if (percentage <= (phases["2"]?.hp_threshold || 60)) return 2;
+    return 1;
+  }
+  
+  // 降級處理：使用硬編碼值
   if (percentage > 60) return 1;
   if (percentage > 30) return 2;
   return 3;
@@ -325,10 +324,14 @@ function updatePhaseDisplay(phase) {
   const phaseDescriptionEl = document.getElementById("phaseDescription");
   const currentPhaseEl = document.getElementById("currentPhase");
   
-  const phaseInfo = PHASES[phase];
+  const phaseInfo = worldBossData?.phases?.[phase.toString()];
   if (phaseInfo) {
     phaseIndicatorEl.textContent = phaseInfo.name;
     phaseDescriptionEl.textContent = phaseInfo.description;
+    currentPhaseEl.textContent = `${phase} / 3`;
+  } else {
+    phaseIndicatorEl.textContent = `【第${phase}階段】`;
+    phaseDescriptionEl.textContent = "階段資料載入中...";
     currentPhaseEl.textContent = `${phase} / 3`;
   }
 }
@@ -468,6 +471,9 @@ function updateWorldBossInfo(boss) {
   document.getElementById("participantCount").textContent = boss.total_participants.toLocaleString();
   
   updateWorldBossHP(boss.current_hp, boss.max_hp);
+  
+  const currentPhase = getCurrentPhase(boss.current_hp, boss.max_hp);
+  updatePhaseDisplay(currentPhase);
 }
 
 // 開始冷卻計時器
