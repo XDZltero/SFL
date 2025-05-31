@@ -6,8 +6,8 @@
     "image": "https://i.postimg.cc/T1zwNCFF/Creator-defile.png",
     "level": 99,
     "element": ["all"],
-    "max_hp": 100000000,
-    "current_hp": 9999999,
+    "max_hp": 1000000,
+    "current_hp": 750000,
     "stats": {
       "attack": 5000,
       "shield": 2000,
