@@ -1572,12 +1572,12 @@ def world_boss_challenge():
         
         # 道具獎勵（保持原有邏輯）
         drop_result = {"items": {}}
-        if damage_dealt > 1000:  # 只有造成足夠傷害才有道具獎勵
+        if damage_dealt >= 10:  # 只有造成足夠傷害才有道具獎勵
             from battle import apply_drops
             drop_result = apply_drops(db, user_id, config["rewards"]["drops"], user_data.get("luck", 10))
         
         # 🔧 修復：正確獲取最大HP值
-        max_hp = config.get("initial_stats", {}).get("max_hp", 999999999)
+        max_hp = config.get("initial_stats", {}).get("max_hp", 9999999)
         if global_stats:
             max_hp = global_stats.get("max_hp", max_hp)
         
