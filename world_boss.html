@@ -399,6 +399,17 @@ async function loadWorldBossData() {
   try {
     PerformanceMonitor.startTiming('loadWorldBoss');
     
+    // 🚀 先檢查世界王是否已初始化
+    try {
+      const initCheckRes = await SecureAPI.get(`${API_BASE}/world_boss_init_check`);
+      const initResult = await initCheckRes.json();
+      if (!initResult.initialized) {
+        console.warn('世界王未初始化:', initResult.error);
+      }
+    } catch (initError) {
+      console.warn('世界王初始化檢查失敗:', initError);
+    }
+    
     // 並行載入世界王資料和排行榜
     const [bossRes, leaderboardRes, playerRes] = await Promise.all([
       SecureAPI.get(`${API_BASE}/world_boss_status`),
@@ -409,11 +420,16 @@ async function loadWorldBossData() {
     if (bossRes.ok) {
       worldBossData = await bossRes.json();
       updateWorldBossInfo(worldBossData);
+    } else {
+      throw new Error(`載入世界王狀態失敗: ${bossRes.status}`);
     }
     
     if (leaderboardRes.ok) {
       const leaderboardData = await leaderboardRes.json();
       updateLeaderboard(leaderboardData.leaderboard);
+    } else {
+      console.warn('載入排行榜失敗:', leaderboardRes.status);
+      updateLeaderboard([]);
     }
     
     if (playerRes.ok) {
@@ -424,6 +440,9 @@ async function loadWorldBossData() {
       if (playerData.cooldown_end_time) {
         startCooldownTimer(playerData.cooldown_end_time);
       }
+    } else {
+      console.warn('載入玩家數據失敗:', playerRes.status);
+      updatePlayerDamage(0, 0, 0);
     }
     
     console.log('✅ 世界王資料載入完成');
@@ -432,7 +451,10 @@ async function loadWorldBossData() {
     console.error('載入世界王資料失敗:', error);
     document.getElementById("bossName").textContent = "載入失敗";
     document.getElementById("leaderboardList").innerHTML = 
-      '<div style="text-align: center; color: #ff6b6b; padding: 20px;">載入失敗，請重新整理</div>';
+      '<div style="text-align: center; color: #ff6b6b; padding: 20px;">載入失敗，請重新整理頁面</div>';
+      
+    // 顯示錯誤提示
+    showBattleResult(false, "載入錯誤", "無法載入世界王資料，請檢查網路連線並重新整理頁面");
   } finally {
     PerformanceMonitor.endTiming('loadWorldBoss');
   }
@@ -548,6 +570,38 @@ function leaveWorldBoss() {
   }, 300);
 }
 
+// 🔧 管理員功能：重置世界王（開發/測試用）
+async function resetWorldBoss() {
+  if (!confirm('⚠️ 確定要重置世界王嗎？\n這將重置血量和所有統計數據！\n\n是否同時清除排行榜？\n點確定=清除排行榜，取消=保留排行榜')) {
+    return;
+  }
+  
+  const clearLeaderboard = confirm('是否清除排行榜？\n確定=清除，取消=保留');
+  
+  try {
+    const response = await SecureAPI.post(`${API_BASE}/world_boss_reset`, {
+      clear_leaderboard: clearLeaderboard
+    });
+    const result = await response.json();
+    
+    if (response.ok) {
+      showBattleResult(true, "重置成功", `世界王已重置！\n${clearLeaderboard ? '排行榜已清除' : '排行榜已保留'}`);
+      setTimeout(() => {
+        loadWorldBossData();
+      }, 2000);
+    } else {
+      showBattleResult(false, "重置失敗", result.error);
+    }
+  } catch (error) {
+    showBattleResult(false, "重置錯誤", "重置過程發生錯誤：" + error.message);
+  }
+}
+
+// 🔧 開發者模式檢測
+const isDeveloper = window.location.hostname === 'localhost' || 
+                   window.location.search.includes('debug=true') ||
+                   window.location.search.includes('admin=true');
+
 // 強制刷新功能（父視窗調用）
 window.addEventListener('message', (event) => {
   if (event.data && event.data.command === 'forceRefresh') {
@@ -560,6 +614,7 @@ window.addEventListener('message', (event) => {
 window.challengeWorldBoss = challengeWorldBoss;
 window.leaveWorldBoss = leaveWorldBoss;
 window.closeBattleResult = closeBattleResult;
+window.resetWorldBoss = resetWorldBoss; // 管理員功能
 
 // 初始化
 function initWorldBoss() {
@@ -568,6 +623,32 @@ function initWorldBoss() {
   
   createPageParticles();
   startPageLoadingProgress();
+  
+  // 🔧 開發者模式：添加管理員控制
+  if (isDeveloper) {
+    const challengeArea = document.querySelector('.challenge-button-area');
+    if (challengeArea) {
+      const adminBtn = document.createElement('button');
+      adminBtn.textContent = '🔧 重置世界王 (管理員)';
+      adminBtn.style.cssText = `
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        color: white;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 10px;
+        width: 100%;
+        font-size: 0.9em;
+      `;
+      adminBtn.onclick = resetWorldBoss;
+      challengeArea.appendChild(adminBtn);
+      
+      console.log('🔧 開發者模式已啟用，管理員功能可用');
+    }
+  }
   
   // 載入世界王資料
   setTimeout(async () => {
