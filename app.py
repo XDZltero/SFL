@@ -1248,7 +1248,7 @@ def check_world_boss_cooldown(user_id):
         return True, 0, None
 
 def calculate_world_boss_damage(user_data, world_boss_config):
-    """計算玩家對世界王的傷害（加入攻擊速度和幸運影響）"""
+    """計算玩家對世界王的傷害（新增階段傷害增益）"""
     try:
         # 取得玩家實際戰鬥屬性（包含裝備加成）
         raw_stats = user_data.get("base_stats", {})
@@ -1265,12 +1265,16 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         player_level = user_data.get("level", 1)
         boss_level = world_boss_config["level"]
         
-        # 計算當前階段
+        # 🚀 修改重點：取得當前階段並應用玩家傷害增益
         current_phase = get_current_world_boss_phase()
         phase_config = world_boss_config["phases"][str(current_phase)]
         
-        # 應用階段修正
-        effective_boss_shield = boss_stats["shield"] * phase_config["defense_multiplier"]
+        # 🚀 新增：玩家傷害增益（這是關鍵改動！）
+        player_damage_multiplier = phase_config.get("player_damage_multiplier", 1.0)
+        
+        # 🚀 修改：世界王防禦調整（改為使用新的鍵名）
+        boss_defense_multiplier = phase_config.get("boss_defense_multiplier", 1.0)
+        effective_boss_shield = boss_stats["shield"] * boss_defense_multiplier
         
         # 命中檢查
         player_accuracy = player_stats.get("accuracy", 0.8)
@@ -1282,18 +1286,13 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         if not hit_success:
             return 0, "攻擊未命中"
         
-        # 🚀 新增：攻擊速度影響計算
+        # 🚀 攻擊速度影響計算
         player_speed = player_stats.get("atk_speed", 100)
         boss_speed = boss_stats.get("atk_speed", 100)
-        
-        # 速度比率計算：玩家速度 / 世界王速度
         speed_ratio = player_speed / boss_speed if boss_speed > 0 else 1.0
-        
-        # 限制速度倍率範圍（0.1x ~ 3.0x），避免過於極端
         speed_multiplier = max(0.1, min(3.0, speed_ratio))
         
-        # 🚀 新增：幸運暴擊計算
-        # 每點幸運增加0.15%的暴擊率，上限50%
+        # 🚀 幸運暴擊計算
         crit_chance = min(player_luck * 0.0015, 0.50)
         
         import random
@@ -1305,25 +1304,36 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         other_bonus = player_stats.get("other_bonus", 0)
         
         # 屬性克制（玩家技能屬性 vs 世界王屬性）
-        player_elements = ["none"]  # 預設為無屬性，可以根據裝備或技能修改
+        player_elements = ["none"]  # 預設為無屬性
         boss_elements = world_boss_config.get("element", ["all"])
         element_multiplier = get_element_multiplier(player_elements, boss_elements)
         
         # 等級差距修正
         level_multiplier = level_damage_modifier(player_level, boss_level)
         
-        # 計算最終傷害
+        # 🚀 重點修改：計算最終傷害時加入階段增益
         base_damage = calculate_damage(player_attack, 1.0, other_bonus, effective_boss_shield)
         
-        # 🚀 應用所有倍率：等級差距 × 屬性克制 × 攻擊速度 × 暴擊
-        final_damage = int(base_damage * level_multiplier * element_multiplier * speed_multiplier * crit_multiplier)
+        # 🚀 應用所有倍率：等級差距 × 屬性克制 × 攻擊速度 × 暴擊 × 階段增益
+        final_damage = int(base_damage * 
+                          level_multiplier * 
+                          element_multiplier * 
+                          speed_multiplier * 
+                          crit_multiplier * 
+                          player_damage_multiplier)  # 🚀 新增：階段傷害增益
         
         # 確保最小傷害
         final_damage = max(final_damage, 1)
         
-        # 🚀 生成詳細的戰鬥訊息
+        # 🚀 生成詳細的戰鬥訊息（包含階段增益資訊）
         hit_message = "成功命中"
         damage_details = []
+        
+        # 🚀 新增：階段增益說明
+        if player_damage_multiplier > 1.0:
+            stage_name = f"第{current_phase}階段"
+            bonus_percent = int((player_damage_multiplier - 1.0) * 100)
+            damage_details.append(f"【{stage_name}增益】傷害提升 +{bonus_percent}%")
         
         # 速度影響說明
         if speed_multiplier > 1.2:
@@ -1335,15 +1345,11 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         if is_critical:
             damage_details.append(f"【暴擊】幸運爆發 ×{crit_multiplier:.1f}")
         
-        # 階段影響說明
-        if phase_config["defense_multiplier"] > 1.0:
-            damage_details.append(f"【階段強化】防禦提升 ÷{phase_config['defense_multiplier']:.1f}")
-        
         # 組合詳細訊息
         if damage_details:
             hit_message = f"成功命中！{' '.join(damage_details)}"
         
-        # 添加一些隨機性（±5%），減少之前的±10%以讓計算更穩定
+        # 添加隨機性（±5%）
         random_factor = random.uniform(0.95, 1.05)
         final_damage = int(final_damage * random_factor)
         
