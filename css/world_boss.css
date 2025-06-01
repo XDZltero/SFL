@@ -1085,3 +1085,124 @@ body.world-boss-mode::before {
   justify-content: center;
   align-items: center;
 }
+
+/* 等級限制提示樣式 */
+.level-requirement-notice {
+  background: linear-gradient(135deg, rgba(255, 69, 0, 0.9), rgba(220, 20, 60, 0.8));
+  border: 2px solid rgba(255, 69, 0, 0.6);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-family: 'Orbitron', sans-serif;
+  color: #fff;
+  box-shadow: 0 8px 25px rgba(255, 69, 0, 0.4);
+  animation: levelWarningPulse 2s ease-in-out infinite;
+}
+
+@keyframes levelWarningPulse {
+  0%, 100% { 
+    box-shadow: 0 8px 25px rgba(255, 69, 0, 0.4);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 12px 35px rgba(255, 69, 0, 0.6);
+    transform: scale(1.01);
+  }
+}
+
+.level-requirement-notice .restriction-title {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #ffd93d;
+  margin-bottom: 10px;
+  text-shadow: 0 0 10px rgba(255, 217, 61, 0.8);
+}
+
+.level-requirement-notice .restriction-message {
+  font-size: 1em;
+  line-height: 1.5;
+  color: #ffeeee;
+}
+
+.level-requirement-notice strong {
+  color: #ffd93d;
+  font-weight: 900;
+  text-shadow: 0 0 8px rgba(255, 217, 61, 0.6);
+}
+
+/* 玩家等級信息樣式 */
+.player-level-info {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.15), rgba(0, 255, 255, 0.05));
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 15px;
+  text-align: center;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+}
+
+.player-level-info:hover {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(0, 255, 255, 0.1));
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 0 4px 15px rgba(0, 255, 255, 0.2);
+}
+
+/* 等級不足時的挑戰按鈕樣式 */
+.world-challenge-btn[data-level-locked="true"] {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+  color: #adb5bd !important;
+  cursor: not-allowed !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.world-challenge-btn[data-level-locked="true"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(255,255,255,0.05) 25%, 
+    transparent 25%, 
+    transparent 50%, 
+    rgba(255,255,255,0.05) 50%, 
+    rgba(255,255,255,0.05) 75%, 
+    transparent 75%
+  );
+  background-size: 20px 20px;
+  animation: levelBlockStripes 1s linear infinite;
+}
+
+@keyframes levelBlockStripes {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 0; }
+}
+
+.world-challenge-btn[data-level-locked="true"]:hover {
+  transform: none !important;
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4) !important;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .level-requirement-notice {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .level-requirement-notice .restriction-title {
+    font-size: 1.1em;
+  }
+  
+  .level-requirement-notice .restriction-message {
+    font-size: 0.9em;
+  }
+  
+  .player-level-info {
+    padding: 10px;
+  }
+}
