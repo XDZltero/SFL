@@ -1383,62 +1383,70 @@ function percent(val) {
           const line = round.actions[actionIndex];
           const entry = document.createElement("div");
           
-          // 血量添加顏色
+          // 為血量添加顏色
           let formattedLine = line;
           
-          // 玩家血量的各種格式
-          // （目前 HP：數字/數字）
-          formattedLine = formattedLine.replace(
-            /（目前 HP：(\d+\/\d+)）/g, 
-            '（目前 HP：<span class="player-hp">$1</span>）'
-          );
-          
-          // （目前 HP：數字/數字），- 有逗號的情況
-          formattedLine = formattedLine.replace(
-            /（目前 HP：(\d+\/\d+)），/g, 
-            '（目前 HP：<span class="player-hp">$1</span>），'
-          );
-          
-          // 你的 HP：數字/數字 - 直接顯示格式
-          formattedLine = formattedLine.replace(
-            /你的 HP：(\d+\/\d+)/g, 
-            '你的 HP：<span class="player-hp">$1</span>'
-          );
-          
-          // 怪物血量的各種格式  
-          // （對方 HP：數字/數字）
+          // 優先處理怪物血量（避免誤判）
+          // 格式1：（對方 HP：數字/數字）
           formattedLine = formattedLine.replace(
             /（對方 HP：(\d+\/\d+)）/g, 
             '（對方 HP：<span class="monster-hp">$1</span>）'
           );
           
-          // （對方 HP：數字/數字），- 有逗號的情況
+          // 格式2：（對方 HP：數字/數字），- 有逗號的情況
           formattedLine = formattedLine.replace(
             /（對方 HP：(\d+\/\d+)），/g, 
             '（對方 HP：<span class="monster-hp">$1</span>），'
           );
           
-          // 怪物名稱 HP：數字/數字 - 直接顯示格式
+          // 格式3：怪物受到傷害時的血量 - 怪物名稱受到...（目前 HP：數字/數字）
           formattedLine = formattedLine.replace(
-            /(\S+) HP：(\d+\/\d+)/g, 
-            '$1 HP：<span class="monster-hp">$2</span>'
+            /(\S+)受到.+?（目前 HP：(\d+\/\d+)）/g, 
+            '$1受到$2（目前 HP：<span class="monster-hp">$3</span>）'
           );
           
-          // 目前 HP：數字/數字（沒有括號的情況）
-          if (formattedLine.includes('目前 HP：') && !formattedLine.includes('（目前 HP：')) {
+          // 格式4：對方 HP：數字/數字（沒有括號的情況）
+          formattedLine = formattedLine.replace(
+            /對方 HP：(\d+\/\d+)/g, 
+            '對方 HP：<span class="monster-hp">$1</span>'
+          );
+          
+          // 格式5：怪物名稱 HP：數字/數字（但排除已經處理過的情況）
+          if (!formattedLine.includes('monster-hp') && !formattedLine.includes('你') && !formattedLine.includes('目前 HP')) {
             formattedLine = formattedLine.replace(
-              /目前 HP：(\d+\/\d+)/g, 
-              '目前 HP：<span class="player-hp">$1</span>'
+              /(\S+) HP：(\d+\/\d+)/g, 
+              '$1 HP：<span class="monster-hp">$2</span>'
             );
           }
           
-          // 對方 HP：數字/數字（沒有括號的情況）
-          if (formattedLine.includes('對方 HP：') && !formattedLine.includes('（對方 HP：')) {
+          // 處理玩家血量
+          // 格式1：（目前 HP：數字/數字）- 只有在沒有被標記為怪物血量時才處理
+          if (!formattedLine.includes('monster-hp')) {
             formattedLine = formattedLine.replace(
-              /對方 HP：(\d+\/\d+)/g, 
-              '對方 HP：<span class="monster-hp">$1</span>'
+              /（目前 HP：(\d+\/\d+)）/g, 
+              '（目前 HP：<span class="player-hp">$1</span>）'
             );
           }
+          
+          // 格式2：（目前 HP：數字/數字），- 有逗號的情況
+          formattedLine = formattedLine.replace(
+            /（目前 HP：(\d+\/\d+)），/g, 
+            '（目前 HP：<span class="player-hp">$1</span>），'
+          );
+          
+          // 格式3：你的 HP：數字/數字
+          formattedLine = formattedLine.replace(
+            /你的 HP：(\d+\/\d+)/g, 
+            '你的 HP：<span class="player-hp">$1</span>'
+          );
+          
+          // 格式4：你受到...（目前 HP：數字/數字）
+          formattedLine = formattedLine.replace(
+            /你受到.+?（目前 HP：(\d+\/\d+)）/g, 
+            function(match, hp) {
+              return match.replace(`（目前 HP：${hp}）`, `（目前 HP：<span class="player-hp">${hp}</span>）`);
+            }
+          );
           
           // 如果有格式化的內容，使用 innerHTML，否則使用 textContent
           if (formattedLine !== line) {
