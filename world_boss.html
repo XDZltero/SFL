@@ -539,7 +539,7 @@ function updateWorldBossInfo(boss) {
 
 function updateWorldBossStats(boss) {
   // 更新主要統計資訊
-  document.getElementById("participantCount").textContent = (boss.total_participants || 0).toLocaleString();
+  document.getElementById("totalAttacks").textContent = (boss.total_participants || 0).toLocaleString();
   document.getElementById("bossLevel").textContent = boss.level;
   document.getElementById("currentPhase").textContent = `${boss.current_phase || 1} / 3`;
   
