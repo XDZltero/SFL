@@ -1504,6 +1504,24 @@ def world_boss_challenge():
         is_restricted, restriction_msg = is_weekend_restriction()
         if is_restricted:
             return jsonify({"error": restriction_msg}), 403
+
+        # 檢查等級限制
+        user_doc = db.collection("users").document(user_id).get()
+        if not user_doc.exists:
+            return jsonify({"error": "找不到使用者"}), 404
+        
+        user_data = user_doc.to_dict()
+        user_level = user_data.get("level", 1)
+        
+        # 等級限制：需要30等以上
+        REQUIRED_LEVEL = 30
+        if user_level < REQUIRED_LEVEL:
+            return jsonify({
+                "error": f"等級不足！需要達到 {REQUIRED_LEVEL} 等才能挑戰世界王",
+                "required_level": REQUIRED_LEVEL,
+                "current_level": user_level,
+                "level_shortage": REQUIRED_LEVEL - user_level
+            }), 403
         
         # 檢查冷卻時間
         can_challenge, remaining_cooldown, cooldown_end_time = check_world_boss_cooldown(user_id)
