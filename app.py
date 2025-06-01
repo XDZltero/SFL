@@ -1756,20 +1756,20 @@ def calculate_world_boss_exp_reward(damage_dealt, world_boss_config):
         damage_percentage = (damage_dealt / max_hp) * 100
         
         # 🏆 根據傷害百分比給予經驗值
-        if damage_percentage >= 1.0:
-            exp_gained = 300
+        if damage_percentage >= 0.01:
+            exp_gained = 1000
             reward_tier = "S級傷害"
             tier_desc = "造成1.0%以上傷害"
-        elif damage_percentage >= 0.5:
-            exp_gained = 200
+        elif damage_percentage >= 0.005:
+            exp_gained = 500
             reward_tier = "A級傷害"
             tier_desc = "造成0.5%~1.0%傷害"
-        elif damage_percentage >= 0.1:
-            exp_gained = 100
+        elif damage_percentage >= 0.001:
+            exp_gained = 300
             reward_tier = "B級傷害"
-            tier_desc = "造成0.1%~0.5%傷害"
+            tier_desc = "造成0.01%~0.05%傷害"
         else:
-            exp_gained = 20
+            exp_gained = 100
             reward_tier = "C級傷害"
             tier_desc = "造成0.1%以下傷害"
         
