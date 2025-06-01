@@ -669,22 +669,20 @@ function showBattleResult(success, title, message, damage = 0) {
   const messageEl = document.getElementById("battleResultMessage");
   
   if (success) {
-    // 🎨 根據標題設定不同的背景顏色
     if (title.includes("完美攻擊")) {
-      // S級 - 金色漸層
       overlay.style.background = "linear-gradient(135deg, rgba(255, 215, 0, 0.95), rgba(255, 165, 0, 0.9), rgba(255, 140, 0, 0.95))";
     } else if (title.includes("強力攻擊")) {
-      // A級 - 紫色漸層
       overlay.style.background = "linear-gradient(135deg, rgba(138, 43, 226, 0.9), rgba(75, 0, 130, 0.85), rgba(148, 0, 211, 0.9))";
     } else if (title.includes("有效攻擊")) {
-      // B級 - 藍色漸層
       overlay.style.background = "linear-gradient(135deg, rgba(0, 100, 255, 0.9), rgba(0, 150, 255, 0.85), rgba(30, 144, 255, 0.9))";
     } else {
-      // C級或預設 - 綠色漸層
       overlay.style.background = "linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 140, 0, 0.8), rgba(255, 69, 0, 0.9))";
     }
     
-    icon.textContent = title.charAt(0); // 使用標題的第一個字符作為圖示
+    // 🔧 修正：使用 Array.from() 正確處理 Unicode 字符
+    const titleChars = Array.from(title);
+    icon.textContent = titleChars[0]; // 這樣能正確取得完整的 emoji
+    
     titleEl.textContent = title;
     messageEl.innerHTML = message;
   } else {
