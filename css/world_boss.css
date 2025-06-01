@@ -1219,3 +1219,174 @@ body.world-boss-mode::before {
   -webkit-font-feature-settings: "liga" on;
   font-feature-settings: "liga" on;
 }
+
+/* 世界王戰鬥結果遮罩在手機上的顯示 */
+
+/* 基礎戰鬥結果遮罩樣式 */
+.victory-overlay, .defeat-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 140, 0, 0.8), rgba(255, 69, 0, 0.9));
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+  animation: victoryFadeIn 1s ease-in-out;
+  padding: 20px; /* 新增：確保有邊距 */
+  box-sizing: border-box; /* 新增：確保padding不會增加總尺寸 */
+}
+
+.victory-content, .defeat-content {
+  text-align: center;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  position: relative;
+  max-width: 90%; /* 新增：限制最大寬度 */
+  max-height: 90vh; /* 新增：限制最大高度 */
+  overflow-y: auto; /* 新增：允許滾動 */
+  padding: 20px; /* 新增：內部間距 */
+  box-sizing: border-box;
+}
+
+/* 手機版響應式優化 */
+@media (max-width: 768px) {
+  .victory-overlay, .defeat-overlay {
+    padding: 10px; /* 手機版減少外邊距 */
+  }
+  
+  .victory-content, .defeat-content {
+    max-width: 95%; /* 手機版用更多螢幕空間 */
+    max-height: 85vh; /* 手機版留更多空間給系統UI */
+    padding: 15px;
+  }
+  
+  /* 大幅縮小圖示尺寸 */
+  .victory-icon, .defeat-icon {
+    font-size: 3em !important; /* 從 6em 降到 3em */
+    margin-bottom: 15px !important; /* 減少間距 */
+  }
+  
+  /* 縮小標題尺寸 */
+  .victory-title, .defeat-title {
+    font-size: 2em !important; /* 從 4em 降到 2em */
+    margin-bottom: 15px !important; /* 減少間距 */
+    line-height: 1.2; /* 改善行高 */
+  }
+  
+  /* 調整訊息文字大小 */
+  .victory-message, .defeat-message {
+    font-size: 1.1em !important; /* 從 1.5em 降到 1.1em */
+    margin-bottom: 20px !important; /* 減少間距 */
+    line-height: 1.4; /* 改善可讀性 */
+  }
+  
+  /* 優化按鈕樣式 */
+  .effect-button {
+    font-size: 1em !important; /* 確保按鈕文字不會太小 */
+    padding: 12px 24px !important; /* 確保按鈕夠大好按 */
+    min-width: 120px; /* 設定最小寬度 */
+    min-height: 44px; /* iOS建議的最小觸控面積 */
+    margin-top: 10px; /* 確保按鈕與上方內容有間距 */
+  }
+}
+
+/* 極小螢幕優化 (小於 480px) */
+@media (max-width: 480px) {
+  .victory-content, .defeat-content {
+    max-height: 80vh; /* 更保守的高度限制 */
+    padding: 10px;
+  }
+  
+  .victory-icon, .defeat-icon {
+    font-size: 2.5em !important; /* 進一步縮小 */
+    margin-bottom: 10px !important;
+  }
+  
+  .victory-title, .defeat-title {
+    font-size: 1.6em !important; /* 進一步縮小標題 */
+    margin-bottom: 10px !important;
+  }
+  
+  .victory-message, .defeat-message {
+    font-size: 1em !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .effect-button {
+    font-size: 0.9em !important;
+    padding: 10px 20px !important;
+    width: 80%; /* 按鈕佔用更多寬度，更好按 */
+    max-width: 200px;
+  }
+}
+
+/* 橫屏手機優化 */
+@media (max-width: 768px) and (orientation: landscape) {
+  .victory-content, .defeat-content {
+    max-height: 70vh; /* 橫屏時高度更受限 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .victory-icon, .defeat-icon {
+    font-size: 2em !important; /* 橫屏時圖示更小 */
+    margin-bottom: 8px !important;
+  }
+  
+  .victory-title, .defeat-title {
+    font-size: 1.4em !important; /* 橫屏時標題更小 */
+    margin-bottom: 8px !important;
+  }
+  
+  .victory-message, .defeat-message {
+    font-size: 0.9em !important;
+    margin-bottom: 10px !important;
+    max-height: 100px; /* 限制訊息高度 */
+    overflow-y: auto; /* 訊息過長時可滾動 */
+  }
+}
+
+/* 確保滾動條樣式在手機上好用 */
+@media (max-width: 768px) {
+  .victory-content::-webkit-scrollbar,
+  .defeat-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .victory-content::-webkit-scrollbar-track,
+  .defeat-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+  }
+  
+  .victory-content::-webkit-scrollbar-thumb,
+  .defeat-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 3px;
+  }
+}
+
+/* 新增：確保內容垂直置中，但不超出螢幕 */
+.victory-content, .defeat-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 修復：確保長文字訊息不會破版 */
+.victory-message, .defeat-message {
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap; /* 保持換行，但允許自動換行 */
+}
+
+/* 安全區域支援（針對有瀏海或Home Indicator的設備）*/
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 768px) {
+    .victory-overlay, .defeat-overlay {
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+  }
+}
