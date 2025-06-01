@@ -1676,8 +1676,9 @@ def world_boss_player_data():
         return jsonify({"error": f"取得玩家數據失敗: {str(e)}"}), 500
 
 @app.route("/world_boss_reset", methods=["POST"])
+@require_admin  # 🚀 改用管理員權限裝飾器
 def world_boss_reset():
-    """重置世界王（管理員功能或週重置）"""
+    """重置世界王（管理員功能）"""
     try:
         config = get_world_boss_config()
         
@@ -1687,15 +1688,16 @@ def world_boss_reset():
             "current_hp": config["initial_stats"]["max_hp"],
             "max_hp": config["initial_stats"]["max_hp"],
             "current_phase": 1,
-            "total_participants": 0,  # 🚀 修改：重置總攻擊次數
+            "total_participants": 0,
             "total_damage_dealt": 0,
             "last_reset_time": time.time(),
             "weekly_reset_time": datetime.datetime.now(pytz.timezone('Asia/Taipei')).isoformat(),
-            "created_time": time.time()
+            "created_time": time.time(),
+            "reset_by": request.user_id  # 🚀 記錄重置者
         }
         global_ref.set(reset_data)
         
-        # 可選：清除玩家數據（如果需要每週重置排行榜）
+        # 可選：清除玩家數據
         clear_leaderboard = request.json.get("clear_leaderboard", False) if request.json else False
         if clear_leaderboard:
             try:
@@ -1705,7 +1707,6 @@ def world_boss_reset():
                 for doc in players_ref.stream():
                     batch.delete(doc.reference)
                     docs_deleted += 1
-                    # Firebase 批次操作限制500個操作
                     if docs_deleted >= 500:
                         batch.commit()
                         batch = db.batch()
@@ -1714,16 +1715,19 @@ def world_boss_reset():
                 if docs_deleted > 0:
                     batch.commit()
                     
-                print(f"已清除所有玩家世界王數據")
+                print(f"管理員 {request.user_id} 清除了所有玩家世界王數據")
             except Exception as e:
                 print(f"清除玩家數據時發生錯誤: {e}")
+        
+        print(f"🔄 管理員 {request.user_id} 重置了世界王")
         
         return jsonify({
             "message": "世界王已重置", 
             "reset_time": reset_data["weekly_reset_time"],
             "new_hp": reset_data["current_hp"],
-            "total_attacks_reset": True,  # 🚀 新增：確認攻擊次數已重置
-            "leaderboard_cleared": clear_leaderboard
+            "total_attacks_reset": True,
+            "leaderboard_cleared": clear_leaderboard,
+            "reset_by": request.user_id
         })
         
     except Exception as e:
@@ -1884,6 +1888,204 @@ def world_boss_player_rank():
         
     except Exception as e:
         return jsonify({"error": f"取得玩家排名失敗: {str(e)}"}), 500
+
+# 管理員權限裝飾器
+def require_admin(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 先檢查基本授權
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header:
+            return jsonify({'error': '缺少授權標頭'}), 401
+        
+        try:
+            token = auth_header.split(' ')[1]
+            decoded_token = firebase_auth.verify_id_token(token)
+            user_id = decoded_token['email']
+            request.user_id = user_id
+            request.uid = decoded_token['uid']
+            
+        except Exception as e:
+            return jsonify({'error': '無效的授權令牌'}), 401
+        
+        # 🚀 檢查管理員權限
+        try:
+            user_doc = db.collection("users").document(user_id).get()
+            if not user_doc.exists:
+                return jsonify({'error': '使用者不存在'}), 404
+            
+            user_data = user_doc.to_dict()
+            is_admin = user_data.get('admin', False)
+            
+            if not is_admin:
+                return jsonify({'error': '權限不足：需要管理員權限'}), 403
+            
+            request.is_admin = True
+            print(f"🔑 管理員 {user_id} 執行管理操作")
+            
+        except Exception as e:
+            print(f"檢查管理員權限失敗: {e}")
+            return jsonify({'error': '權限檢查失敗'}), 500
+        
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+# 獲取使用者管理員狀態的 API
+@app.route("/admin_status", methods=["GET"])
+@require_auth
+def admin_status():
+    """檢查當前使用者是否為管理員"""
+    try:
+        user_id = request.user_id
+        
+        user_doc = db.collection("users").document(user_id).get()
+        if not user_doc.exists:
+            return jsonify({"error": "使用者不存在"}), 404
+        
+        user_data = user_doc.to_dict()
+        is_admin = user_data.get('admin', False)
+        
+        return jsonify({
+            "is_admin": is_admin,
+            "user_id": user_id,
+            "nickname": user_data.get("nickname", user_id),
+            "level": user_data.get("level", 1)
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"檢查管理員狀態失敗: {str(e)}"}), 500
+
+# 🚀 新增：管理員限定的快取清除 API
+@app.route("/admin_clear_cache", methods=["POST"])
+@require_admin
+def admin_clear_cache():
+    """管理員專用的完全快取清除"""
+    try:
+        # 清除LRU快取
+        get_dungeon_data.cache_clear()
+        get_element_table.cache_clear()
+        get_level_exp.cache_clear()
+        get_all_skill_data.cache_clear()
+        get_item_map.cache_clear()
+        get_items_data.cache_clear()
+        get_equips_data.cache_clear()
+        get_world_boss_config.cache_clear()
+        
+        # 清除記憶體快取
+        cache_manager.clear()
+        
+        print(f"🧹 管理員 {request.user_id} 清除了所有快取")
+        
+        return jsonify({
+            "message": "所有快取已清除",
+            "cleared_by": request.user_id,
+            "timestamp": time.time()
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"清除失敗: {str(e)}"}), 500
+
+# 🚀 新增：管理員限定的系統狀態查詢
+@app.route("/admin_system_status", methods=["GET"])
+@require_admin
+def admin_system_status():
+    """管理員專用的系統狀態查詢"""
+    try:
+        # 取得快取統計
+        cache_stats = cache_manager.get_stats()
+        
+        # 取得世界王狀態
+        world_boss_state = get_world_boss_global_state()
+        
+        # 取得玩家總數
+        try:
+            users_count = len([doc for doc in db.collection("users").stream()])
+        except:
+            users_count = "無法計算"
+        
+        # 取得世界王參與者數量
+        try:
+            wb_players_count = len([doc for doc in db.collection("world_boss_players").stream()])
+        except:
+            wb_players_count = "無法計算"
+        
+        return jsonify({
+            "cache_stats": cache_stats,
+            "world_boss": {
+                "current_hp": world_boss_state.get("current_hp", 0) if world_boss_state else 0,
+                "max_hp": world_boss_state.get("max_hp", 0) if world_boss_state else 0,
+                "phase": world_boss_state.get("current_phase", 1) if world_boss_state else 1,
+                "total_attacks": world_boss_state.get("total_participants", 0) if world_boss_state else 0
+            },
+            "player_statistics": {
+                "total_users": users_count,
+                "world_boss_participants": wb_players_count
+            },
+            "server_info": {
+                "timestamp": time.time(),
+                "timezone": "Asia/Taipei"
+            },
+            "queried_by": request.user_id
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"取得系統狀態失敗: {str(e)}"}), 500
+
+# 🚀 新增：管理員限定的使用者管理 API
+@app.route("/admin_user_info", methods=["GET"])
+@require_admin
+def admin_user_info():
+    """管理員查詢特定使用者資訊"""
+    try:
+        target_user_id = request.args.get("user_id")
+        if not target_user_id:
+            return jsonify({"error": "缺少 user_id 參數"}), 400
+        
+        # 取得使用者基本資料
+        user_doc = db.collection("users").document(target_user_id).get()
+        if not user_doc.exists:
+            return jsonify({"error": "使用者不存在"}), 404
+        
+        user_data = user_doc.to_dict()
+        
+        # 取得使用者世界王資料
+        wb_player_doc = db.collection("world_boss_players").document(target_user_id).get()
+        wb_data = wb_player_doc.to_dict() if wb_player_doc.exists else {}
+        
+        # 取得使用者道具資料
+        items_doc = db.collection("user_items").document(target_user_id).get()
+        items_data = items_doc.to_dict() if items_doc.exists else {"items": {}}
+        
+        result = {
+            "basic_info": {
+                "user_id": target_user_id,
+                "nickname": user_data.get("nickname", target_user_id),
+                "level": user_data.get("level", 1),
+                "exp": user_data.get("exp", 0),
+                "is_admin": user_data.get("admin", False),
+                "stat_points": user_data.get("stat_points", 0),
+                "skill_points": user_data.get("skill_points", 0)
+            },
+            "world_boss": {
+                "total_damage": wb_data.get("total_damage", 0),
+                "challenge_count": wb_data.get("challenge_count", 0),
+                "last_challenge": wb_data.get("last_challenge_time", 0)
+            },
+            "items_count": len(items_data.get("items", {})),
+            "equipment": user_data.get("equipment", {}),
+            "queried_by": request.user_id,
+            "query_time": time.time()
+        }
+        
+        print(f"🔍 管理員 {request.user_id} 查詢了使用者 {target_user_id} 的資料")
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({"error": f"查詢使用者資料失敗: {str(e)}"}), 500
+
 
 if __name__ == "__main__":
     import os
