@@ -50,7 +50,7 @@
         "chance": 0.75
       }
     ],
-    "description": "充滿詛咒的沼澤卡片。鑲嵌提升攻擊力、護盾值以及命中率。",
+    "description": "充滿詛咒的沼澤卡片。鑲嵌提升攻擊力、護盾值、命中率。",
     "require_level": 10
   },
   {
@@ -106,7 +106,7 @@
         "chance": 0.5
       }
     ],
-    "description": "象徵空中城邦立足之人的卡片。鑲嵌提升攻擊力、護盾值以及攻擊速度。",
+    "description": "象徵空中城邦立足之人的卡片。鑲嵌提升攻擊力、護盾值、攻擊速度。",
     "require_level": 20
   },
   {
@@ -240,7 +240,7 @@
           "shadow_essence": 30,
           "puzzle_fragment": 30,
           "crystal_core": 10,
-          "nightmare_fragment": 5,
+          "nightmare_fragment": 10,
           "chaos_breath": 2
         },
         "chance": 0.9
@@ -251,6 +251,7 @@
           "crystal_core": 20,
           "phantom_metal": 30,
           "dream_essence": 10,
+          "nightmare_fragment": 20,
           "chaos_breath": 2
         },
         "chance": 0.75
@@ -261,6 +262,7 @@
           "dream_essence": 20,
           "torn_flesh": 30,
           "cursed_armor": 10,
+          "nightmare_fragment": 25,
           "chaos_breath": 3
         },
         "chance": 0.65
@@ -271,7 +273,7 @@
           "cursed_armor": 20,
           "necro_essence": 30,
           "apostle_essence": 5,
-          "nightmare_fragment": 15,
+          "nightmare_fragment": 30,
           "chaos_breath": 3
         },
         "chance": 0.35
@@ -281,7 +283,7 @@
         "materials": {
           "apostle_essence": 10,
           "defile_letter": 2,
-          "nightmare_fragment": 15,
+          "nightmare_fragment": 30,
           "chaos_breath": 4
         },
         "chance": 0.35
@@ -289,5 +291,68 @@
     ],
     "description": "魔力塑造的夢境與夢魘的卡片。鑲嵌提升攻擊力、命中率、護盾值。",
     "require_level": 45
+  },
+  {
+    "id": "card_saint",
+    "name": "[副本卡片]潘朵拉：聖天教會",
+    "quality": "超稀有",
+    "levels": [
+      {
+        "level": 1,
+        "materials": {
+          "holy_scripture": 30,
+          "divine_fragment": 30,
+          "priest_staff_fragment": 10,
+          "divine_fragment": 10,
+          "chaos_breath": 5
+        },
+        "chance": 0.8
+      },
+      {
+        "level": 2,
+        "materials": {
+          "priest_staff_fragment": 20,
+          "sacred_flame_orb": 30,
+          "fanatic_relic": 10,
+          "divine_fragment": 20,
+          "chaos_breath": 7
+        },
+        "chance": 0.7
+      },
+      {
+        "level": 3,
+        "materials": {
+          "fanatic_relic": 20,
+          "elder_wisdom_scroll": 30,
+          "senate_seal": 10,
+          "divine_fragment": 25,
+          "chaos_breath": 10
+        },
+        "chance": 0.6
+      },
+      {
+        "level": 4,
+        "materials": {
+          "senate_seal": 20,
+          "knight_armor_fragment": 30,
+          "commander_insignia": 5,
+          "divine_fragment": 30,
+          "chaos_breath": 13
+        },
+        "chance": 0.3
+      },
+      {
+        "level": 5,
+        "materials": {
+          "commander_insignia": 10,
+          "gospel_divine_core": 2,
+          "divine_fragment": 30,
+          "chaos_breath": 15
+        },
+        "chance": 0.3
+      }
+    ],
+    "description": "信仰魔力的狂信者的卡片。鑲嵌提升攻擊力、護盾值以及命中率。",
+    "require_level": 60
   }
 ]
