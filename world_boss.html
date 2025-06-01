@@ -463,7 +463,6 @@ async function loadWorldBossData() {
     // 並行載入世界王資料和排行榜
     const [bossRes, leaderboardRes, playerRes] = await Promise.all([
       SecureAPI.get(`${API_BASE}/world_boss_status`),
-      // 🎯 請求更多數據以便前端篩選，或者後端限制為50名避免性能問題
       SecureAPI.get(`${API_BASE}/world_boss_leaderboard?limit=50`),
       SecureAPI.get(`${API_BASE}/world_boss_player_data`)
     ]);
@@ -477,13 +476,17 @@ async function loadWorldBossData() {
       }
       
       updateWorldBossInfo(worldBossData);
+      updateWorldBossStats(worldBossData);  // 🚀 新增：更新統計資訊
+      
+      // 🚀 新增：在控制台顯示詳細統計
+      console.log(`📊 世界王統計 - 總攻擊: ${worldBossData.total_participants}, 獨特玩家: ${worldBossData.unique_players}`);
+      
     } else {
       throw new Error(`載入世界王狀態失敗: ${bossRes.status}`);
     }
     
     if (leaderboardRes.ok) {
       const leaderboardResult = await leaderboardRes.json();
-      // 🎯 傳入完整的排行榜數據，讓前端處理顯示邏輯
       updateLeaderboard(leaderboardResult.leaderboard || []);
     } else {
       console.warn('載入排行榜失敗:', leaderboardRes.status);
@@ -523,12 +526,37 @@ function updateWorldBossInfo(boss) {
   document.getElementById("bossImage").src = boss.image;
   document.getElementById("bossDescription").textContent = boss.description;
   document.getElementById("bossLevel").textContent = boss.level;
-  document.getElementById("participantCount").textContent = boss.total_participants.toLocaleString();
+  
+  // 顯示總攻擊次數和獨特玩家數
+  const attackCount = boss.total_participants || 0;
+  const uniquePlayers = boss.unique_players || 0;
+  
+  // 更新參與者顯示（現在顯示攻擊次數）
+  document.getElementById("participantCount").textContent = attackCount.toLocaleString();
   
   updateWorldBossHP(boss.current_hp, boss.max_hp);
   
   const currentPhase = getCurrentPhase(boss.current_hp, boss.max_hp);
   updatePhaseDisplay(currentPhase);
+}
+
+function updateWorldBossStats(boss) {
+  // 更新主要統計資訊
+  document.getElementById("participantCount").textContent = (boss.total_participants || 0).toLocaleString();
+  document.getElementById("bossLevel").textContent = boss.level;
+  document.getElementById("currentPhase").textContent = `${boss.current_phase || 1} / 3`;
+  
+  // 顯示詳細統計資訊
+  const statsContainer = document.querySelector('.world-boss-stats');
+  if (statsContainer && boss.unique_players !== undefined) {
+    // 清除現有統計並重新建立
+    statsContainer.innerHTML = `
+      <div class="world-stat-item">總攻擊次數: <span class="world-stat-value" id="totalAttacks">${(boss.total_participants || 0).toLocaleString()}</span></div>
+      <div class="world-stat-item">參與玩家: <span class="world-stat-value" id="uniquePlayers">${(boss.unique_players || 0).toLocaleString()}</span></div>
+      <div class="world-stat-item">等級: <span class="world-stat-value" id="bossLevel">${boss.level}</span></div>
+      <div class="world-stat-item">階段: <span class="world-stat-value" id="currentPhase">${boss.current_phase || 1} / 3</span></div>
+    `;
+  }
 }
 
 // 開始冷卻計時器
