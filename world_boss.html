@@ -71,6 +71,25 @@
 
     <!-- 玩家挑戰卡片 -->
     <div class="player-challenge-card">
+
+      <div class="player-level-info" style="text-align: center; margin-bottom: 15px; padding: 10px; background: rgba(0,255,255,0.1); border-radius: 8px;">
+        <div style="color: #ffd93d; font-size: 1.1em; font-weight: 600;">
+          ⭐ 你的等級：<span id="playerLevel">載入中...</span>
+        </div>
+        <div style="color: #00ffff; font-size: 0.9em; margin-top: 5px;">
+          世界王挑戰需求：30 等以上
+        </div>
+      </div>
+    
+      <!-- 🚀 新增：等級不足提示（預設隱藏） -->
+      <div class="level-requirement-notice" id="levelRequirementNotice" style="display: none;">
+        <div class="restriction-title">⚡ 等級限制</div>
+        <div class="restriction-message">
+          需要達到 <strong>30 等</strong> 才能挑戰世界王<br>
+          你目前是 <span id="currentLevelDisplay">-</span> 等，還需要 <span id="levelShortage">-</span> 等
+        </div>
+      </div>
+      
       <div class="player-damage-stats">
         <div class="damage-title">🏆 你的累積傷害</div>
         <div class="total-damage" id="playerTotalDamage">0</div>
@@ -133,7 +152,9 @@ let playerData = null;
 let leaderboardData = [];
 let cooldownTimer = null;
 let currentUserNickname = "";
-
+let userLevel = 0;
+const REQUIRED_LEVEL = 30;
+  
 // 階段配置
 const PHASES = {
   1: {
@@ -169,6 +190,66 @@ function createPageParticles() {
   }
 }
 
+// 載入使用者等級資訊
+async function loadUserLevel() {
+  try {
+    const statusRes = await SecureAPI.getStatus(false);
+    const userData = await statusRes.json();
+    
+    userLevel = userData.level || 1;
+    currentUserNickname = userData.nickname || userData.user_id;
+    
+    // 更新等級顯示
+    document.getElementById("playerLevel").textContent = userLevel;
+    
+    // 檢查等級限制
+    checkLevelRequirement();
+    
+    console.log(`✅ 使用者等級載入：${userLevel}`);
+    
+  } catch (error) {
+    console.error('載入使用者等級失敗:', error);
+    document.getElementById("playerLevel").textContent = "載入失敗";
+  }
+}
+
+function checkLevelRequirement() {
+  const challengeBtnEl = document.getElementById("challengeBtn");
+  const levelNoticeEl = document.getElementById("levelRequirementNotice");
+  const currentLevelEl = document.getElementById("currentLevelDisplay");
+  const levelShortageEl = document.getElementById("levelShortage");
+  
+  if (userLevel < REQUIRED_LEVEL) {
+    // 等級不足
+    levelNoticeEl.style.display = "block";
+    currentLevelEl.textContent = userLevel;
+    levelShortageEl.textContent = REQUIRED_LEVEL - userLevel;
+    
+    challengeBtnEl.disabled = true;
+    challengeBtnEl.textContent = `⚡ 需要 ${REQUIRED_LEVEL} 等`;
+    challengeBtnEl.dataset.levelLocked = "true";
+    
+    // 設定特殊樣式
+    challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
+    challengeBtnEl.style.color = "#adb5bd";
+    challengeBtnEl.style.cursor = "not-allowed";
+    
+  } else {
+    // 等級足夠
+    levelNoticeEl.style.display = "none";
+    challengeBtnEl.dataset.levelLocked = "false";
+    
+    // 恢復正常樣式（如果沒有其他限制）
+    if (!isWeekend() && !challengeBtnEl.dataset.cooling) {
+      challengeBtnEl.disabled = false;
+      challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+      challengeBtnEl.style.background = "";
+      challengeBtnEl.style.color = "";
+      challengeBtnEl.style.cursor = "";
+    }
+  }
+}
+  
 function startPageLoadingProgress() {
   const progressBar = document.getElementById("pageProgressBar");
   const progressText = document.getElementById("pageProgressText");
@@ -249,7 +330,7 @@ function getNextMondayCountdown() {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// 更新倒數計時器
+// 倒數計時器
 function updateCountdown() {
   const countdownEl = document.getElementById("countdownDisplay");
   const timeRestrictionEl = document.getElementById("timeRestriction");
@@ -258,14 +339,16 @@ function updateCountdown() {
   if (isWeekend()) {
     countdownEl.textContent = getNextMondayCountdown();
     timeRestrictionEl.style.display = "block";
-    challengeBtnEl.disabled = true;
-    challengeBtnEl.textContent = "⏰ 週日休整中";
+    if (!challengeBtnEl.dataset.levelLocked || challengeBtnEl.dataset.levelLocked === "false") {
+      challengeBtnEl.disabled = true;
+      challengeBtnEl.textContent = "⏰ 週日休整中";
+    }
   } else {
     timeRestrictionEl.style.display = "none";
     countdownEl.textContent = "挑戰開放中";
-    if (!challengeBtnEl.dataset.cooling) {
-      challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
-    }
+    
+    // 🚀 新增：重新檢查等級限制
+    checkLevelRequirement();
   }
 }
 
@@ -278,7 +361,11 @@ function updateCooldownDisplay(cooldownEndTime) {
   if (!cooldownEndTime) {
     cooldownInfoEl.style.display = "none";
     challengeBtnEl.dataset.cooling = "false";
-    if (!isWeekend()) {
+    
+    // 🚀 新增：檢查等級限制
+    if (userLevel < REQUIRED_LEVEL) {
+      checkLevelRequirement();
+    } else if (!isWeekend()) {
       challengeBtnEl.disabled = false;
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
     }
@@ -291,10 +378,15 @@ function updateCooldownDisplay(cooldownEndTime) {
   if (remaining <= 0) {
     cooldownInfoEl.style.display = "none";
     challengeBtnEl.dataset.cooling = "false";
-    if (!isWeekend()) {
+    
+    // 🚀 新增：檢查等級限制
+    if (userLevel < REQUIRED_LEVEL) {
+      checkLevelRequirement();
+    } else if (!isWeekend()) {
       challengeBtnEl.disabled = false;
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
     }
+    
     if (cooldownTimer) {
       clearInterval(cooldownTimer);
       cooldownTimer = null;
@@ -611,6 +703,13 @@ function closeBattleResult() {
 
 // 挑戰世界王
 async function challengeWorldBoss() {
+  // 前端等級檢查
+  if (userLevel < REQUIRED_LEVEL) {
+    showBattleResult(false, "等級不足", 
+      `需要達到 ${REQUIRED_LEVEL} 等才能挑戰世界王\n你目前是 ${userLevel} 等，還需要 ${REQUIRED_LEVEL - userLevel} 等`);
+    return;
+  }
+  
   if (isWeekend()) {
     showBattleResult(false, "時間限制", "世界王於週日休整，請於週一再來挑戰！");
     return;
@@ -627,7 +726,6 @@ async function challengeWorldBoss() {
     const result = await response.json();
     
     if (response.ok && result.success) {
-      // 🚀 戰鬥成功後的顯示邏輯
       const message = `
         <div style="text-align: left; line-height: 1.6;">
           <div style="margin-bottom: 15px;">
@@ -671,7 +769,7 @@ async function challengeWorldBoss() {
       // 更新顯示
       updatePlayerDamage(result.total_damage, result.current_rank, playerData.challenge_count + 1);
       
-      // 🚀 重新載入資料以獲取最新的統計資訊
+      // 重新載入資料以獲取最新的統計資訊
       setTimeout(async () => {
         try {
           // 載入最新的世界王狀態
@@ -682,12 +780,6 @@ async function challengeWorldBoss() {
             // 更新全球統計顯示
             updateWorldBossInfo(latestBossData);
             updateWorldBossStats(latestBossData);
-            
-            // 🚀 更新玩家卡片中的全球統計
-            const globalAttackElement = document.getElementById("globalAttackCount");
-            if (globalAttackElement) {
-              globalAttackElement.textContent = (latestBossData.total_participants || 0).toLocaleString();
-            }
             
             // 更新排行榜
             const leaderboardRes = await SecureAPI.get(`${API_BASE}/world_boss_leaderboard?limit=50`);
@@ -708,16 +800,24 @@ async function challengeWorldBoss() {
       startCooldownTimer(result.cooldown_end_time);
       
     } else {
-      showBattleResult(false, "挑戰失敗", result.error || "未知錯誤");
-      challengeBtnEl.disabled = false;
-      challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+      // 處理等級不足錯誤
+      if (result.required_level && result.current_level) {
+        showBattleResult(false, "等級限制", 
+          `需要達到 ${result.required_level} 等才能挑戰世界王\n你目前是 ${result.current_level} 等，還需要升 ${result.level_shortage} 等`);
+      } else {
+        showBattleResult(false, "挑戰失敗", result.error || "未知錯誤");
+      }
+      
+      // 重新檢查等級限制狀態
+      checkLevelRequirement();
     }
     
   } catch (error) {
     console.error('挑戰世界王失敗:', error);
     showBattleResult(false, "連線錯誤", "挑戰過程發生錯誤，請稍後再試");
-    challengeBtnEl.disabled = false;
-    challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+    
+    // 重新檢查等級限制狀態
+    checkLevelRequirement();
   }
 }
 
@@ -832,8 +932,9 @@ function initWorldBoss() {
     }
   }
   
-  // 載入世界王資料
+  // 載入使用者等級和世界王資料
   setTimeout(async () => {
+    await loadUserLevel();  // 先載入使用者等級
     await loadWorldBossData();
     hidePageLoading();
   }, 2000);
@@ -843,44 +944,9 @@ function initWorldBoss() {
   setInterval(updateCountdown, 1000);
 }
 
-// 階段資料驗證函數
-function validatePhaseData() {
-  if (!worldBossData || !worldBossData.phases) {
-    console.warn('階段資料未載入或格式錯誤');
-    return false;
-  }
-  
-  const phases = worldBossData.phases;
-  const requiredFields = ['name', 'description', 'hp_threshold'];
-  
-  for (const [phaseKey, phaseData] of Object.entries(phases)) {
-    for (const field of requiredFields) {
-      if (!phaseData[field] && phaseData[field] !== 0) {
-        console.error(`階段 ${phaseKey} 缺少必要欄位: ${field}`);
-        return false;
-      }
-    }
-  }
-  
-  console.log('✅ 階段資料驗證通過');
-  return true;
-}
-  
-// 載入使用者暱稱
-async function loadUserNickname() {
-  try {
-    const statusRes = await SecureAPI.getStatus(false);
-    const userData = await statusRes.json();
-    currentUserNickname = userData.nickname || userData.user_id;
-  } catch (error) {
-    console.warn('載入使用者暱稱失敗:', error);
-  }
-}
-
 // 監聽登入狀態
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    await loadUserNickname();
     initWorldBoss();
   } else {
     window.parent.location.href = "/SFL/login.html";
