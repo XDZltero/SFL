@@ -66,6 +66,17 @@
     "Pre-Task-ReqTime" : 3
   },
   {
+    "id": "dungeon_obelisk",
+    "name": "次元界：第一要塞「方尖塔」",
+    "description": "在迪菲爾的指引下，你得知了一場由上位世界神明擬定的計畫。為了阻止與「時空萬象」的使徒合作的「次元界」創世主「天啟王」。你踏入了「次元界」的入口，迎接而來的是一座聳動的高塔－「方尖塔」。正式踏入無機生物的創世主的世界。",
+    "bossId": "arctos_phase_2",
+    "min_level": 75,
+    "image": "https://i.postimg.cc/wB0hGwHV/dungeon-obelisk.png",
+    "monsters": ["xenon_plasma_turret", "guardian_golem_protector", "assault_golem_striker", "healing_golem_cleric", "praetorian_guard", "tangia_elite", "ion_rifle_guardian", "ion_sniper_captain", "arctos_phase_1"],
+    "Pre-Task": "dungeon_siant",
+    "Pre-Task-ReqTime" : 3
+  },
+  {
     "id": "TEST",
     "name": "測試",
     "description": "Test。",
