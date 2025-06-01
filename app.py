@@ -1160,7 +1160,7 @@ def initialize_world_boss_global_state():
                 "current_hp": config["initial_stats"]["max_hp"],
                 "max_hp": config["initial_stats"]["max_hp"],
                 "current_phase": 1,
-                "total_participants": 0,
+                "total_participants": 0,  # 🚀 修改：現在代表總攻擊次數
                 "total_damage_dealt": 0,
                 "created_time": time.time(),
                 "last_reset_time": time.time(),
@@ -1414,6 +1414,9 @@ def update_world_boss_global_stats(damage_dealt):
         new_hp = max(0, current_hp - damage_dealt)
         new_total_damage = global_state.get("total_damage_dealt", 0) + damage_dealt
         
+        # 🚀 新增：每次攻擊都增加參與次數
+        new_total_participants = global_state.get("total_participants", 0) + 1
+        
         # 安全地獲取新階段
         try:
             new_phase = get_current_world_boss_phase()
@@ -1426,10 +1429,11 @@ def update_world_boss_global_stats(damage_dealt):
             "max_hp": global_state.get("max_hp", 999999999),
             "current_phase": new_phase,
             "total_damage_dealt": new_total_damage,
+            "total_participants": new_total_participants,  # 🚀 新增：總攻擊次數
             "last_update_time": time.time()
         }
         
-        print(f"🔄 更新世界王狀態: HP {current_hp} -> {new_hp}, 傷害 +{damage_dealt}")
+        print(f"🔄 更新世界王狀態: HP {current_hp} -> {new_hp}, 傷害 +{damage_dealt}, 總攻擊次數: {new_total_participants}")
         
         # 合併更新，保留其他欄位
         global_ref.update(updated_state)
@@ -1457,22 +1461,15 @@ def world_boss_status():
         if not global_state:
             return jsonify({"error": "無法取得世界王狀態"}), 500
         
-        # 計算參與者總數（有造成傷害的玩家）
+        # 🚀 修改：直接從全域狀態取得總攻擊次數，不再查詢資料庫
+        total_attacks = global_state.get("total_participants", 0)
+        
+        # 🚀 新增：計算獨特玩家數（可選，作為額外統計）
         try:
             players_ref = db.collection("world_boss_players").where("total_damage", ">", 0)
-            participants_count = len([doc for doc in players_ref.stream()])
+            unique_players_count = len([doc for doc in players_ref.stream()])
         except Exception:
-            participants_count = global_state.get("total_participants", 0)
-        
-        # 更新參與者數量到 Firebase（可選，減少重複計算）
-        if participants_count != global_state.get("total_participants", 0):
-            try:
-                db.collection("world_boss_global").document("current_status").update({
-                    "total_participants": participants_count
-                })
-                global_state["total_participants"] = participants_count
-            except Exception as e:
-                print(f"更新參與者數量失敗: {e}")
+            unique_players_count = 0
         
         result = {
             "boss_id": config["boss_id"],
@@ -1484,7 +1481,8 @@ def world_boss_status():
             "current_hp": global_state.get("current_hp", config["initial_stats"]["max_hp"]),
             "max_hp": global_state.get("max_hp", config["initial_stats"]["max_hp"]),
             "current_phase": global_state.get("current_phase", 1),
-            "total_participants": participants_count,
+            "total_participants": total_attacks,  # 🚀 修改：現在代表總攻擊次數
+            "unique_players": unique_players_count,  # 🚀 新增：獨特玩家數
             "total_damage_dealt": global_state.get("total_damage_dealt", 0),
             "phases": config["phases"],
             "last_update_time": global_state.get("last_update_time", global_state.get("created_time", time.time()))
@@ -1663,9 +1661,6 @@ def world_boss_player_data():
 def world_boss_reset():
     """重置世界王（管理員功能或週重置）"""
     try:
-        # 這個端點可以用於每週重置世界王
-        # 在實際部署時，建議加上管理員權限檢查
-        
         config = get_world_boss_config()
         
         # 重置全域狀態
@@ -1674,7 +1669,7 @@ def world_boss_reset():
             "current_hp": config["initial_stats"]["max_hp"],
             "max_hp": config["initial_stats"]["max_hp"],
             "current_phase": 1,
-            "total_participants": 0,
+            "total_participants": 0,  # 🚀 修改：重置總攻擊次數
             "total_damage_dealt": 0,
             "last_reset_time": time.time(),
             "weekly_reset_time": datetime.datetime.now(pytz.timezone('Asia/Taipei')).isoformat(),
@@ -1683,7 +1678,6 @@ def world_boss_reset():
         global_ref.set(reset_data)
         
         # 可選：清除玩家數據（如果需要每週重置排行榜）
-        # 注意：這會刪除所有玩家的世界王數據，請謹慎使用
         clear_leaderboard = request.json.get("clear_leaderboard", False) if request.json else False
         if clear_leaderboard:
             try:
@@ -1710,6 +1704,7 @@ def world_boss_reset():
             "message": "世界王已重置", 
             "reset_time": reset_data["weekly_reset_time"],
             "new_hp": reset_data["current_hp"],
+            "total_attacks_reset": True,  # 🚀 新增：確認攻擊次數已重置
             "leaderboard_cleared": clear_leaderboard
         })
         
