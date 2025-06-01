@@ -191,5 +191,38 @@
         "other_bonus": 0.1
       }
     }
+  },
+  {
+    "id": "card_obelisk",
+    "name": "[副本卡片]第一要塞",
+    "quality": "稀有",
+    "value": {
+      "1": {
+        "attack": 20,
+        "shield": 100,
+        "atk_speed": 20
+      },
+      "2": {
+        "attack": 20,
+        "shield": 100,
+        "atk_speed": 25
+      },
+      "3": {
+        "attack": 20,
+        "shield": 100,
+        "atk_speed": 30
+      },
+      "4": {
+        "attack": 20,
+        "shield": 100,
+        "atk_speed": 35
+      },
+      "5": {
+        "attack": 20,
+        "shield": 100,
+        "atk_speed": 40,
+        "other_bonus": 0.1
+      }
+    }
   }
 ]
