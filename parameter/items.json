@@ -50,7 +50,7 @@
   { "id": "steel_spear", "name": "鋼鐵長槍", "special": 0, "description": "鋼鐵少尉使用過的戰術用長槍，依然鋒利。" },
   { "id": "iron_scrap", "name": "廢棄鋼鐵", "special": 0, "description": "廢棄的鋼鐵。" },
   { "id": "metal_core", "name": "金屬核心", "special": 0, "description": "鋼鐵都市生產的核心，還再發出光芒。\n狩獵副本 [鋼鐵都市] 有低機率掉落的特殊素材。" },
-  { "id": "god_book", "name": "歌頌聖經", "special": 0, "description": "守護神殿深處的巨石碎片。" },
+  { "id": "god_book", "name": "歌頌聖經", "special": 0, "description": "蓋亞攜帶的聖經，上面的經文不知道是什麼語言寫的。" },
   { "id": "burn_sky_stone", "name": "燃燒的天空石碎", "special": 0, "description": "守護神殿深處的巨石碎片。" },
   { "id": "athena_burn_hair", "name": "燃燒的雅典娜髮絲", "special": 0, "description": "雅典娜保養得再好也沒用的頭髮。" },
   { "id": "athena_hair", "name": "雅典娜的髮絲", "special": 0, "description": "雅典娜保養得很好的頭髮。" },
