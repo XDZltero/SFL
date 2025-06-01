@@ -1206,3 +1206,16 @@ body.world-boss-mode::before {
     padding: 10px;
   }
 }
+
+.victory-icon, .defeat-icon, .battle-icon {
+  /* 確保支援 emoji 顯示的字體 */
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Orbitron', sans-serif !important;
+  font-size: 6em;
+  margin-bottom: 30px;
+  animation: victoryIconSpin 3s ease-in-out infinite;
+  /* 確保 emoji 正確顯示 */
+  font-variant-emoji: emoji !important;
+  text-rendering: optimizeLegibility;
+  -webkit-font-feature-settings: "liga" on;
+  font-feature-settings: "liga" on;
+}
