@@ -301,8 +301,8 @@
         "level": 1,
         "materials": {
           "holy_scripture": 30,
-          "divine_fragment": 30,
-          "priest_staff_fragment": 10,
+          "priest_staff_fragment": 30,
+          "sacred_flame_orb": 10,
           "divine_fragment": 10,
           "chaos_breath": 5
         },
@@ -311,9 +311,9 @@
       {
         "level": 2,
         "materials": {
-          "priest_staff_fragment": 20,
-          "sacred_flame_orb": 30,
-          "fanatic_relic": 10,
+          "sacred_flame_orb": 20,
+          "fanatic_relic": 30,
+          "elder_wisdom_scroll": 10,
           "divine_fragment": 20,
           "chaos_breath": 7
         },
@@ -322,9 +322,9 @@
       {
         "level": 3,
         "materials": {
-          "fanatic_relic": 20,
-          "elder_wisdom_scroll": 30,
-          "senate_seal": 10,
+          "elder_wisdom_scroll": 20,
+          "senate_seal": 30,
+          "knight_armor_fragment": 10,
           "divine_fragment": 25,
           "chaos_breath": 10
         },
@@ -333,9 +333,9 @@
       {
         "level": 4,
         "materials": {
-          "senate_seal": 20,
-          "knight_armor_fragment": 30,
-          "commander_insignia": 5,
+          "knight_armor_fragment": 20,
+          "commander_insignia": 30,
+          "sealed_gospel_fragment": 5,
           "divine_fragment": 30,
           "chaos_breath": 13
         },
@@ -344,7 +344,7 @@
       {
         "level": 5,
         "materials": {
-          "commander_insignia": 10,
+          "sealed_gospel_fragment": 10,
           "gospel_divine_core": 2,
           "divine_fragment": 30,
           "chaos_breath": 15
@@ -352,7 +352,70 @@
         "chance": 0.3
       }
     ],
-    "description": "信仰魔力的狂信者的卡片。鑲嵌提升攻擊力、護盾值以及命中率。",
+    "description": "信仰魔力的狂信者的卡片。鑲嵌提升攻擊力、護盾值、命中率。",
     "require_level": 60
+  },
+  {
+    "id": "card_obelisk",
+    "name": "[副本卡片]次元界：第一要塞",
+    "quality": "超稀有",
+    "levels": [
+      {
+        "level": 1,
+        "materials": {
+          "plasma_core": 30,
+          "heavy_armor_plate": 30,
+          "assault_module": 10,
+          "dimension_fragment": 10,
+          "chaos_breath": 10
+        },
+        "chance": 0.75
+      },
+      {
+        "level": 2,
+        "materials": {
+          "assault_module": 20,
+          "healing_core": 30,
+          "praetorian_insignia": 10,
+          "dimension_fragment": 20,
+          "chaos_breath": 12
+        },
+        "chance": 0.65
+      },
+      {
+        "level": 3,
+        "materials": {
+          "praetorian_insignia": 20,
+          "alien_biocore": 30,
+          "ion_rifle_parts": 10,
+          "dimension_fragment": 25,
+          "chaos_breath": 13
+        },
+        "chance": 0.55
+      },
+      {
+        "level": 4,
+        "materials": {
+          "ion_rifle_parts": 20,
+          "sniper_scope": 30,
+          "arctos_blade_fragment": 5,
+          "dimension_fragment": 30,
+          "chaos_breath": 15
+        },
+        "chance": 0.25
+      },
+      {
+        "level": 5,
+        "materials": {
+          "arctos_blade_fragment": 10,
+          "arctos_core": 2,
+          "dimension_fragment": 30,
+          "chaos_breath": 15
+        },
+        "chance": 0.25
+      }
+    ],
+    "description": "包含托瑞瓦納技術含量的卡片。鑲嵌提升攻擊力、護盾值、攻擊速度。",
+    "require_level": 75
   }
 ]
