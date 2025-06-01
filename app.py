@@ -1932,7 +1932,7 @@ def require_admin(f):
     
     return decorated_function
 
-# 獲取使用者管理員狀態的 API
+# 🚀 新增：獲取使用者管理員狀態的 API
 @app.route("/admin_status", methods=["GET"])
 @require_auth
 def admin_status():
@@ -1956,7 +1956,6 @@ def admin_status():
         
     except Exception as e:
         return jsonify({"error": f"檢查管理員狀態失敗: {str(e)}"}), 500
-
 # 🚀 新增：管理員限定的快取清除 API
 @app.route("/admin_clear_cache", methods=["POST"])
 @require_admin
@@ -2085,7 +2084,6 @@ def admin_user_info():
         
     except Exception as e:
         return jsonify({"error": f"查詢使用者資料失敗: {str(e)}"}), 500
-
 
 if __name__ == "__main__":
     import os
