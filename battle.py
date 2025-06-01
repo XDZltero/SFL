@@ -418,12 +418,16 @@ def simulate_battle(user, monster, user_skill_dict):
             user_dot_effects, dot_damage = apply_dot_effects(user_dot_effects, user_hp, user_battle_stats["hp"], round_log, True, "")
             user_hp = max(user_hp - dot_damage, 0)
             if user_hp <= 0:
+                round_log.append(f"💀 你因持續傷害效果死亡")
+                log.append({"round": current_round, "actions": round_log})
                 break
                 
         if mon_dot_effects:
             mon_dot_effects, dot_damage = apply_dot_effects(mon_dot_effects, mon_hp, monster["stats"]["hp"], round_log, False, monster["name"])
             mon_hp = max(mon_hp - dot_damage, 0)
             if mon_hp <= 0:
+                round_log.append(f"💀 {monster['name']} 因持續傷害效果死亡")
+                log.append({"round": current_round, "actions": round_log})
                 break
 
         # 處理無敵狀態倒數
