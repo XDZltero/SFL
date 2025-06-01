@@ -117,6 +117,52 @@ def require_auth(f):
 def user_ref(user_id):
     return db.collection("users").document(user_id)
 
+# 🚀 管理員權限裝飾器 - 移到這裡，在 require_auth 之後
+def require_admin(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 先檢查基本授權
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header:
+            return jsonify({'error': '缺少授權標頭'}), 401
+        
+        try:
+            token = auth_header.split(' ')[1]
+            decoded_token = firebase_auth.verify_id_token(token)
+            user_id = decoded_token['email']
+            request.user_id = user_id
+            request.uid = decoded_token['uid']
+            
+        except Exception as e:
+            return jsonify({'error': '無效的授權令牌'}), 401
+        
+        # 🚀 檢查管理員權限
+        try:
+            user_doc = db.collection("users").document(user_id).get()
+            if not user_doc.exists:
+                return jsonify({'error': '使用者不存在'}), 404
+            
+            user_data = user_doc.to_dict()
+            is_admin = user_data.get('admin', False)
+            
+            if not is_admin:
+                return jsonify({'error': '權限不足：需要管理員權限'}), 403
+            
+            request.is_admin = True
+            print(f"🔑 管理員 {user_id} 執行管理操作")
+            
+        except Exception as e:
+            print(f"檢查管理員權限失敗: {e}")
+            return jsonify({'error': '權限檢查失敗'}), 500
+        
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+def user_ref(user_id):
+    return db.collection("users").document(user_id)
+
 # 🚀 快取裝飾器
 def cached_response(ttl=300):
     def decorator(f):
@@ -1888,49 +1934,6 @@ def world_boss_player_rank():
         
     except Exception as e:
         return jsonify({"error": f"取得玩家排名失敗: {str(e)}"}), 500
-
-# 管理員權限裝飾器
-def require_admin(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # 先檢查基本授權
-        auth_header = request.headers.get('Authorization')
-        
-        if not auth_header:
-            return jsonify({'error': '缺少授權標頭'}), 401
-        
-        try:
-            token = auth_header.split(' ')[1]
-            decoded_token = firebase_auth.verify_id_token(token)
-            user_id = decoded_token['email']
-            request.user_id = user_id
-            request.uid = decoded_token['uid']
-            
-        except Exception as e:
-            return jsonify({'error': '無效的授權令牌'}), 401
-        
-        # 🚀 檢查管理員權限
-        try:
-            user_doc = db.collection("users").document(user_id).get()
-            if not user_doc.exists:
-                return jsonify({'error': '使用者不存在'}), 404
-            
-            user_data = user_doc.to_dict()
-            is_admin = user_data.get('admin', False)
-            
-            if not is_admin:
-                return jsonify({'error': '權限不足：需要管理員權限'}), 403
-            
-            request.is_admin = True
-            print(f"🔑 管理員 {user_id} 執行管理操作")
-            
-        except Exception as e:
-            print(f"檢查管理員權限失敗: {e}")
-            return jsonify({'error': '權限檢查失敗'}), 500
-        
-        return f(*args, **kwargs)
-    
-    return decorated_function
 
 # 🚀 新增：獲取使用者管理員狀態的 API
 @app.route("/admin_status", methods=["GET"])
