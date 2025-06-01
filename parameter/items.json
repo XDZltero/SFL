@@ -56,7 +56,6 @@
   { "id": "athena_hair", "name": "雅典娜的髮絲", "special": 0, "description": "雅典娜保養得很好的頭髮。" },
   { "id": "griffin_claw", "name": "格里芬的爪子", "special": 0, "description": "守護神殿的巨鷹爪子。" },
   { "id": "sky_stone", "name": "天空石碎", "special": 0, "description": "守護神殿之物遺留下來的碎片。" },
-  { "id": "chaos_breath", "name": "天空牛肉", "special": 0, "description": "天空牛的肉，看起來跟一般牛肉沒什麼差別。" },
   { "id": "sky_beaf", "name": "天空牛肉", "special": 0, "description": "天空牛的肉，看起來跟一般牛肉沒什麼差別。" },
   { "id": "sky_ragments", "name": "天空碎片", "special": 1, "description": "天空之城上撿到的碎片，像是雲朵被封印在了裡面。\n狩獵副本 [天空之城] 有低機率掉落的特殊素材。" },
   { "id": "chaos_breath", "name": "混沌氣息", "special": 2, "description": "狩獵怪物有很低的機率掉落的混沌氣息。" },
