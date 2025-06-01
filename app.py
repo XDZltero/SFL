@@ -1831,7 +1831,7 @@ def calculate_world_boss_exp_reward(damage_dealt, world_boss_config):
         elif damage_percentage >= 0.05:
             exp_gained = 500
             reward_tier = "A級傷害"
-            tier_desc = "造成0.01%~0.05%傷害"
+            tier_desc = "造成0.05%~0.1%傷害"
         elif damage_percentage >= 0.01:
             exp_gained = 300
             reward_tier = "B級傷害"
