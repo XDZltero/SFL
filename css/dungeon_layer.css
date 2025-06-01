@@ -467,3 +467,40 @@ body.boss-mode #logArea {
   font-weight: bold;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
+
+/* 血量顯示顏色樣式 */
+.player-hp {
+  color: #02F78E !important;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(2, 247, 142, 0.3);
+}
+
+.monster-hp {
+  color: #FFB5B5 !important;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(255, 181, 181, 0.3);
+}
+
+/* BOSS模式下的血量顯示增強 */
+body.boss-mode .player-hp {
+  color: #00ff88 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+  animation: playerHpGlow 2s ease-in-out infinite alternate;
+}
+
+body.boss-mode .monster-hp {
+  color: #ff6b6b !important;
+  text-shadow: 0 0 8px rgba(255, 107, 107, 0.6);
+  animation: monsterHpGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes playerHpGlow {
+  from { text-shadow: 0 0 8px rgba(0, 255, 136, 0.6); }
+  to { text-shadow: 0 0 12px rgba(0, 255, 136, 0.9), 0 0 16px rgba(0, 255, 136, 0.4); }
+}
+
+@keyframes monsterHpGlow {
+  from { text-shadow: 0 0 8px rgba(255, 107, 107, 0.6); }
+  to { text-shadow: 0 0 12px rgba(255, 107, 107, 0.9), 0 0 16px rgba(255, 107, 107, 0.4); }
+}
+
