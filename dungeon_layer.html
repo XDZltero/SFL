@@ -1383,12 +1383,15 @@ function percent(val) {
           const line = round.actions[actionIndex];
           const entry = document.createElement("div");
           
-          // 為血量添加顏色
+          // 🎨 為血量添加顏色
           let formattedLine = line;
           
-          
-          // 🟢 玩家血量：當訊息包含「你受到」或「你的」時的血量
-          if (formattedLine.includes('你受到') || formattedLine.includes('你的')) {
+          // 🟢 玩家血量的所有情況：
+          if (formattedLine.includes('你受到') || 
+              formattedLine.includes('你的 HP') ||
+              formattedLine.includes('對你造成') ||
+              (formattedLine.includes('你使用') && formattedLine.includes('目前 HP'))) {
+            // 玩家相關的血量 - 綠色
             formattedLine = formattedLine.replace(
               /（目前 HP：(\d+\/\d+)）/g, 
               '（目前 HP：<span class="player-hp">$1</span>）'
@@ -1398,15 +1401,14 @@ function percent(val) {
               '你的 HP：<span class="player-hp">$1</span>'
             );
           }
-          // 🔴 怪物血量：對方血量
-          else if (formattedLine.includes('對方 HP')) {
+          // 🔴 怪物血量的情況：
+          else {
+            // 對方血量
             formattedLine = formattedLine.replace(
               /（對方 HP：(\d+\/\d+)）/g, 
               '（對方 HP：<span class="monster-hp">$1</span>）'
             );
-          }
-          // 🔴 怪物血量：其他情況下的目前血量（怪物受傷等）
-          else if (formattedLine.includes('目前 HP')) {
+            // 其他目前血量（怪物受傷、持續傷害等）
             formattedLine = formattedLine.replace(
               /（目前 HP：(\d+\/\d+)）/g, 
               '（目前 HP：<span class="monster-hp">$1</span>）'
