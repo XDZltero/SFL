@@ -55,6 +55,17 @@
     "Pre-Task-ReqTime" : 3
   },
   {
+    "id": "dungeon_siant",
+    "name": "潘朵拉：夢魘幻境",
+    "description": "在紫魔女巫的實驗室中，居然發現了另一個世界的裂縫。這是紫色魔力的來源－「潘朵拉世界」，而首當其衝映入眼簾的居然是一個夢境領土，似乎告誡著其他世界的人們－「非請勿入」。",
+    "bossId": "holy_father_gospel",
+    "min_level": 60,
+    "image": "https://i.postimg.cc/GtLksdmd/dungeon-siant.png",
+    "monsters": ["holy_devotee", "holy_priest", "holy_missionary", "holy_fanatic", "holy_elder", "senate_messenger", "temple_knight", "temple_knight_commander", "father_gospel_sealed"],
+    "Pre-Task": "dungeon_pandora_nightmare",
+    "Pre-Task-ReqTime" : 3
+  },
+  {
     "id": "TEST",
     "name": "測試",
     "description": "Test。",
