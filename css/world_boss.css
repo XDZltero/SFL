@@ -1232,10 +1232,10 @@ body.world-boss-mode::before {
   z-index: 20000;
   animation: victoryFadeIn 1s ease-in-out;
   
-  /* 🔧 關鍵修正：更保守的邊距和盒模型 */
-  padding: 5px;
+  /* 🔧 桌面版優化：更寬鬆的邊距 */
+  padding: 20px;
   box-sizing: border-box;
-  overflow: hidden; /* 防止內容溢出 */
+  overflow: hidden;
 }
 
 .victory-content, .defeat-content {
@@ -1244,25 +1244,26 @@ body.world-boss-mode::before {
   font-family: 'Orbitron', sans-serif;
   position: relative;
   
-  /* 🔧 關鍵修正：更保守的尺寸限制 */
-  max-width: 85%; /* 從 90% 降到 85% */
+  /* 🔧 桌面版優化：更大的對話框尺寸 */
+  max-width: 95%; /* 從85%增加到95% */
   width: 100%;
-  max-height: 70vh; /* 從 90vh 大幅降到 70vh */
+  max-height: 85vh; /* 從70vh增加到85vh，給更多顯示空間 */
+  min-height: 60vh; /* 設定最小高度確保有足夠空間 */
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 15px;
+  padding: 30px; /* 從15px增加到30px，更寬敞的內邊距 */
   box-sizing: border-box;
   
-  /* 🔧 新增：確保內容居中且不超出 */
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start; /* 改為頂部對齊，避免內容被壓縮 */
   align-items: center;
   
-  /* 🔧 新增：背景和邊框確保可見性 */
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 15px;
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 20px; /* 增大圓角 */
+  backdrop-filter: blur(15px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
 }
 
 @media (max-width: 768px) {
@@ -1302,41 +1303,43 @@ body.world-boss-mode::before {
   
   /* 🔧 大幅增大所有元素 */
   .victory-icon, .defeat-icon {
-    font-size: 4em !important; /* 从2.5em增加到4em */
-    margin-bottom: 20px !important;
-    line-height: 1 !important;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8)) !important;
-  }
+  font-size: 4em !important; /* 增大圖示 */
+  margin-bottom: 25px !important;
+  line-height: 1 !important;
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8)) !important;
+}
   
   .victory-title, .defeat-title {
-    font-size: 2.2em !important; /* 从1.6em增加到2.2em */
-    margin-bottom: 20px !important;
-    line-height: 1.2 !important;
-    font-weight: 900 !important;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8) !important;
-  }
+  font-size: 2.5em !important; /* 增大標題 */
+  margin-bottom: 25px !important;
+  line-height: 1.2 !important;
+  font-weight: 900 !important;
+  text-shadow: 0 0 25px rgba(255, 255, 255, 0.9) !important;
+}
   
-  /* 🔧 重新设计消息区域 */
-  .victory-message, .defeat-message {
-    font-size: 1.1em !important; /* 从0.9em增加到1.1em */
-    line-height: 1.5 !important;
-    margin: 20px 0 !important;
-    flex: 1 !important; /* 让消息区域占据剩余空间 */
-    
-    /* 🔧 可滚动区域设计 */
-    background: rgba(0, 0, 0, 0.3) !important;
-    border-radius: 10px !important;
-    padding: 20px !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    position: relative !important;
-    overflow-y: auto !important;
-    max-height: 40vh !important; /* 限制最大高度以便滾動 */
-    
-    /* 🔧 文字處理 */
-    word-wrap: break-word !important;
-    word-break: break-word !important;
-    white-space: pre-wrap !important;
-  }
+.victory-message, .defeat-message {
+  font-size: 1.2em !important; /* 從較小字體增加到1.2em */
+  line-height: 1.6 !important; /* 增加行高提升可讀性 */
+  margin: 25px 0 !important;
+  flex: 1 !important; /* 讓訊息區域占據剩餘空間 */
+  
+  /* 🔧 可滾動區域優化 */
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 15px !important;
+  padding: 25px !important; /* 增加內邊距 */
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  position: relative !important;
+  overflow-y: auto !important;
+  max-height: 50vh !important; /* 增加最大高度 */
+  min-height: 20vh !important; /* 設定最小高度 */
+  width: 100% !important;
+  
+  /* 🔧 文字處理優化 */
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+}
+
   
   /* 滾動提示 */
   .victory-message::before, .defeat-message::before {
@@ -1673,4 +1676,62 @@ body.world-boss-mode::before {
 @keyframes legendaryItemPulse {
   0%, 100% { box-shadow: 0 0 15px rgba(255, 69, 0, 0.6); }
   50% { box-shadow: 0 0 30px rgba(255, 69, 0, 1); }
+}
+
+/* 🔧 桌面版滾動條優化 */
+.victory-message::-webkit-scrollbar,
+.defeat-message::-webkit-scrollbar {
+  width: 12px !important; /* 更寬的滾動條 */
+}
+
+.victory-message::-webkit-scrollbar-track,
+.defeat-message::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+}
+
+.victory-message::-webkit-scrollbar-thumb,
+.defeat-message::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ffd700, #ff8c00) !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.victory-message::-webkit-scrollbar-thumb:hover,
+.defeat-message::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ffed4e, #ffaa00) !important;
+}
+
+/* 🔧 大螢幕進一步優化 */
+@media (min-width: 1200px) {
+  .victory-content, .defeat-content {
+    max-width: 1000px !important; /* 在大螢幕上設定固定最大寬度 */
+    padding: 40px !important;
+  }
+  
+  .victory-message, .defeat-message {
+    font-size: 1.3em !important;
+    padding: 30px !important;
+  }
+  
+  .victory-title, .defeat-title {
+    font-size: 3em !important;
+  }
+  
+  .victory-icon, .defeat-icon {
+    font-size: 5em !important;
+  }
+}
+
+/* 🔧 中等螢幕優化 */
+@media (min-width: 769px) and (max-width: 1199px) {
+  .victory-content, .defeat-content {
+    max-width: 90% !important;
+    padding: 35px !important;
+  }
+  
+  .victory-message, .defeat-message {
+    font-size: 1.15em !important;
+    padding: 25px !important;
+  }
 }
