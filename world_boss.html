@@ -221,32 +221,63 @@ function checkLevelRequirement() {
   
   if (userLevel < REQUIRED_LEVEL) {
     // 等級不足
-    levelNoticeEl.style.display = "block";
-    currentLevelEl.textContent = userLevel;
-    levelShortageEl.textContent = REQUIRED_LEVEL - userLevel;
+    if (levelNoticeEl) levelNoticeEl.style.display = "block";
+    if (currentLevelEl) currentLevelEl.textContent = userLevel;
+    if (levelShortageEl) levelShortageEl.textContent = REQUIRED_LEVEL - userLevel;
     
-    challengeBtnEl.disabled = true;
-    challengeBtnEl.textContent = `⚡ 需要 ${REQUIRED_LEVEL} 等`;
-    challengeBtnEl.dataset.levelLocked = "true";
-    
-    // 設定特殊樣式
-    challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
-    challengeBtnEl.style.color = "#adb5bd";
-    challengeBtnEl.style.cursor = "not-allowed";
+    if (challengeBtnEl) {
+      challengeBtnEl.disabled = true;
+      challengeBtnEl.textContent = `⚡ 需要 ${REQUIRED_LEVEL} 等`;
+      challengeBtnEl.dataset.levelLocked = "true";
+      
+      // 設定特殊樣式
+      challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
+      challengeBtnEl.style.color = "#adb5bd";
+      challengeBtnEl.style.cursor = "not-allowed";
+    }
     
   } else {
     // 等級足夠
-    levelNoticeEl.style.display = "none";
-    challengeBtnEl.dataset.levelLocked = "false";
+    if (levelNoticeEl) levelNoticeEl.style.display = "none";
+    if (challengeBtnEl) challengeBtnEl.dataset.levelLocked = "false";
     
     // 恢復正常樣式（如果沒有其他限制）
-    if (!isWeekend() && !challengeBtnEl.dataset.cooling) {
+    if (!isWeekend() && challengeBtnEl && !challengeBtnEl.dataset.cooling) {
       challengeBtnEl.disabled = false;
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
       challengeBtnEl.style.background = "";
       challengeBtnEl.style.color = "";
       challengeBtnEl.style.cursor = "";
     }
+  }
+}
+
+function handleWorldBossError(error, context = "未知操作") {
+  console.error(`世界王${context}失敗:`, error);
+  
+  // 根據錯誤類型提供不同的恢復建議
+  if (error.message.includes('fetch') || error.message.includes('network')) {
+    showBattleResult(false, "網路錯誤", 
+      "連線中斷，請檢查網路連線後重試\n\n如果問題持續發生，請重新整理頁面");
+    
+    // 自動重試機制
+    setTimeout(() => {
+      if (confirm("是否自動重新載入世界王資料？")) {
+        loadWorldBossData();
+      }
+    }, 3000);
+    
+  } else if (error.message.includes('token') || error.message.includes('auth')) {
+    showBattleResult(false, "認證錯誤", 
+      "登入狀態已過期，請重新登入");
+    
+    setTimeout(() => {
+      window.parent.location.href = "/SFL/login.html";
+    }, 2000);
+    
+  } else {
+    showBattleResult(false, "系統錯誤", 
+      `${context}時發生錯誤，請稍後再試\n\n錯誤訊息：${error.message}`);
   }
 }
   
@@ -548,18 +579,29 @@ async function loadWorldBossData() {
       const initResult = await initCheckRes.json();
       if (!initResult.initialized) {
         console.warn('世界王未初始化:', initResult.error);
+        showBattleResult(false, "系統錯誤", "世界王系統尚未初始化，請聯繫管理員");
+        return;
       }
     } catch (initError) {
       console.warn('世界王初始化檢查失敗:', initError);
     }
     
-    // 並行載入世界王資料和排行榜
-    const [bossRes, leaderboardRes, playerRes] = await Promise.all([
-      SecureAPI.get(`${API_BASE}/world_boss_status`),
-      SecureAPI.get(`${API_BASE}/world_boss_leaderboard?limit=50`),
-      SecureAPI.get(`${API_BASE}/world_boss_player_data`)
+    // 🚀 優化：並行載入但有超時保護
+    const timeout = 10000; // 10秒超時
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('請求超時')), timeout)
+    );
+    
+    const [bossRes, leaderboardRes, playerRes] = await Promise.race([
+      Promise.all([
+        SecureAPI.get(`${API_BASE}/world_boss_status`),
+        SecureAPI.get(`${API_BASE}/world_boss_leaderboard?limit=50`),
+        SecureAPI.get(`${API_BASE}/world_boss_player_data`)
+      ]),
+      timeoutPromise
     ]);
     
+    // 處理世界王狀態
     if (bossRes.ok) {
       worldBossData = await bossRes.json();
       if (worldBossData.phases) {
@@ -569,15 +611,14 @@ async function loadWorldBossData() {
       }
       
       updateWorldBossInfo(worldBossData);
-      updateWorldBossStats(worldBossData);  // 🚀 新增：更新統計資訊
+      updateWorldBossStats(worldBossData);
       
-      // 🚀 新增：在控制台顯示詳細統計
       console.log(`📊 世界王統計 - 總攻擊: ${worldBossData.total_participants}, 獨特玩家: ${worldBossData.unique_players}`);
-      
     } else {
       throw new Error(`載入世界王狀態失敗: ${bossRes.status}`);
     }
     
+    // 處理排行榜
     if (leaderboardRes.ok) {
       const leaderboardResult = await leaderboardRes.json();
       updateLeaderboard(leaderboardResult.leaderboard || []);
@@ -586,6 +627,7 @@ async function loadWorldBossData() {
       updateLeaderboard([]);
     }
     
+    // 處理玩家資料
     if (playerRes.ok) {
       playerData = await playerRes.json();
       updatePlayerDamage(playerData.total_damage, playerData.rank, playerData.challenge_count);
@@ -603,16 +645,26 @@ async function loadWorldBossData() {
     
   } catch (error) {
     console.error('載入世界王資料失敗:', error);
+    
+    // 🚀 改進的錯誤處理
+    if (error.message.includes('超時')) {
+      showBattleResult(false, "連線超時", "載入世界王資料超時，請檢查網路連線並重新整理頁面");
+    } else if (error.message.includes('fetch')) {
+      showBattleResult(false, "網路錯誤", "無法連接到伺服器，請檢查網路連線");
+    } else {
+      showBattleResult(false, "載入錯誤", "載入世界王資料時發生錯誤，請重新整理頁面");
+    }
+    
+    // 設置錯誤狀態的顯示
     document.getElementById("bossName").textContent = "載入失敗";
     document.getElementById("leaderboardList").innerHTML = 
       '<div style="text-align: center; color: #ff6b6b; padding: 20px;">載入失敗，請重新整理頁面</div>';
-      
-    // 顯示錯誤提示
-    showBattleResult(false, "載入錯誤", "無法載入世界王資料，請檢查網路連線並重新整理頁面");
+    
   } finally {
     PerformanceMonitor.endTiming('loadWorldBoss');
   }
 }
+
 
 function updateWorldBossInfo(boss) {
   document.getElementById("bossName").innerHTML = boss.name.replace(/\n/g, "<br>");
@@ -814,24 +866,37 @@ async function challengeWorldBoss() {
 
 // 專門更新統計資訊的函數
 function updateGlobalStats(bossData) {
-  // 更新頂部血量條區域的統計
-  const elements = {
-    totalAttacks: document.getElementById("totalAttacks"),
-    uniquePlayers: document.getElementById("uniquePlayers"),
-    participantCount: document.getElementById("participantCount"),
-    globalAttackCount: document.getElementById("globalAttackCount")
+  // 🎯 正確的後端資料 → 前端元素對應
+  const dataMapping = {
+    // 後端 API 欄位 → 前端 DOM 元素 ID
+    'total_participants': 'totalAttacks',      // 總攻擊次數
+    'unique_players': 'uniquePlayers',         // 獨特玩家數
+    'level': 'bossLevel',                      // 世界王等級
+    'current_phase': 'currentPhase'            // 當前階段
   };
   
-  const totalAttacks = (bossData.total_participants || 0).toLocaleString();
-  const uniquePlayers = (bossData.unique_players || 0).toLocaleString();
+  // 🚀 安全更新函數
+  const updateElement = (elementId, value) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.textContent = value;
+      return true;
+    } else {
+      console.warn(`⚠️ 找不到元素: ${elementId}`);
+      return false;
+    }
+  };
   
-  // 更新所有相關元素
-  if (elements.totalAttacks) elements.totalAttacks.textContent = totalAttacks;
-  if (elements.uniquePlayers) elements.uniquePlayers.textContent = uniquePlayers;
-  if (elements.participantCount) elements.participantCount.textContent = totalAttacks;
-  if (elements.globalAttackCount) elements.globalAttackCount.textContent = totalAttacks;
+  // 📊 執行資料更新（按照正確的對應關係）
+  updateElement('totalAttacks', (bossData.total_participants || 0).toLocaleString());
+  updateElement('uniquePlayers', (bossData.unique_players || 0).toLocaleString());
+  updateElement('bossLevel', bossData.level || 100);
+  updateElement('currentPhase', `${bossData.current_phase || 1} / 3`);
   
-  console.log(`📊 統計更新完成 - 總攻擊: ${totalAttacks}, 獨特玩家: ${uniquePlayers}`);
+  console.log(`📊 統計更新完成:`);
+  console.log(`  - 總攻擊次數: ${(bossData.total_participants || 0).toLocaleString()}`);
+  console.log(`  - 獨特玩家: ${(bossData.unique_players || 0).toLocaleString()}`);
+  console.log(`  - 總傷害: ${(bossData.total_damage_dealt || 0).toLocaleString()}`);
 }
   
 // 離開世界王戰場
