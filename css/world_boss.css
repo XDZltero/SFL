@@ -1330,15 +1330,15 @@ body.world-boss-mode::before {
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     position: relative !important;
     overflow-y: auto !important;
-    max-height: 40vh !important; /* 限制最大高度以便滚动 */
+    max-height: 40vh !important; /* 限制最大高度以便滾動 */
     
-    /* 🔧 文字处理 */
+    /* 🔧 文字處理 */
     word-wrap: break-word !important;
     word-break: break-word !important;
     white-space: pre-wrap !important;
   }
   
-  /* 🚀 新增：滚动提示 */
+  /* 滾動提示 */
   .victory-message::before, .defeat-message::before {
     content: "👆 向上滑動查看掉落與排名資訊" !important;
     position: sticky !important;
@@ -1356,13 +1356,13 @@ body.world-boss-mode::before {
     z-index: 10 !important;
   }
   
-  /* 🚀 滚动提示动画 */
+  /* 滾動提示動畫 */
   @keyframes scrollHintPulse {
     0%, 100% { opacity: 0.8; transform: translateY(0); }
     50% { opacity: 1; transform: translateY(-2px); }
   }
   
-  /* 🚀 内容溢出时的渐变指示器 */
+  /* 指示器 */
   .victory-message::after, .defeat-message::after {
     content: "" !important;
     position: absolute !important;
@@ -1375,11 +1375,11 @@ body.world-boss-mode::before {
     border-radius: 0 0 10px 10px !important;
   }
   
-  /* 🔧 重新设计按钮 */
+  /* 按紐 */
   .effect-button {
-    font-size: 1.2em !important; /* 从0.9em增加到1.2em */
-    padding: 18px 40px !important; /* 大幅增大按钮 */
-    min-height: 60px !important; /* 增加按钮高度 */
+    font-size: 1.2em !important; /*0.9em增加到1.2em */
+    padding: 18px 40px !important; /* 大幅增大按紐 */
+    min-height: 60px !important; /* 增加按紐高度 */
     min-width: 200px !important;
     border-radius: 30px !important;
     margin-top: 20px !important;
@@ -1387,24 +1387,24 @@ body.world-boss-mode::before {
     text-transform: uppercase !important;
     letter-spacing: 1px !important;
     
-    /* 🔧 视觉增强 */
+    /* 🔧 視覺增加 */
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
     border: 2px solid rgba(255, 255, 255, 0.3) !important;
     
-    /* 🔧 触控优化 */
+    /* 🔧 觸控優化 */
     -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3) !important;
     touch-action: manipulation !important;
     position: relative !important;
     overflow: hidden !important;
   }
   
-  /* 🔧 按钮触控反馈 */
+  /* 🔧 按鈕觸控反饋 */
   .effect-button:active {
     transform: scale(0.95) !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
   }
   
-  /* 🚀 长按反馈效果 */
+  /* 長按反饋效果 */
   .effect-button::before {
     content: '' !important;
     position: absolute !important;
