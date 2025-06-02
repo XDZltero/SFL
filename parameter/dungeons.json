@@ -46,7 +46,7 @@
   {
     "id": "dungeon_pandora_nightmare",
     "name": "潘朵拉：夢魘幻境",
-    "description": "在紫魔女巫的實驗室中，居然發現了另一個世界的裂縫。這是紫色魔力的來源－「潘朵拉世界」，而首當其衝映入眼簾的居然是一個夢境領土，似乎告誡著其他世界的人們－「非請勿入」。",
+    "description": "在紫魔女巫的實驗室中，居然發現了另一個世界的裂縫。這是紫色魔力的來源－－「潘朵拉世界」，而首當其衝映入眼簾的居然是一個夢境領土，似乎告誡著其他世界的人們－「非請勿入」。",
     "bossId": "imperial_minister_defile",
     "min_level": 45,
     "image": "https://i.postimg.cc/VvRfgKfY/dungeon-pandora-nightmare.png",
@@ -68,7 +68,7 @@
   {
     "id": "dungeon_obelisk",
     "name": "次元界：第一要塞「方尖塔」",
-    "description": "在迪菲爾的指引下，你得知了一場由上位世界神明擬定的計畫。為了阻止與「時空萬象」的使徒合作的「次元界」創世主「天啟王」。你踏入了「次元界」的入口，迎接而來的是一座聳動的高塔－「方尖塔」。正式踏入無機生物的創世主的世界。",
+    "description": "在迪菲爾的指引下，你得知了一場由上位世界神明擬定的計畫。為了阻止與「時空萬象」的使徒合作的「次元界」創世主「天啟王」。你踏入了「次元界」的入口，迎接而來的是一座聳動的高塔－－「方尖塔」。正式踏入無機生物的創世主的世界。",
     "bossId": "arctos_phase_2",
     "min_level": 75,
     "image": "https://i.postimg.cc/wB0hGwHV/dungeon-obelisk.png",
