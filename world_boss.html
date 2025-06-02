@@ -392,9 +392,15 @@ function updateCooldownDisplay(cooldownEndTime) {
   const cooldownTimerEl = document.getElementById("cooldownTimer");
   const challengeBtnEl = document.getElementById("challengeBtn");
   
-  // 🚀 如果按鈕正在載入中，不要修改狀態
-  if (isChallengeButtonLoading()) {
+  // 🚀 【修正】：如果有冷卻時間，允許覆蓋 loading 狀態
+  if (isChallengeButtonLoading() && !cooldownEndTime) {
+    // 只有在沒有冷卻時間且按鈕在載入中時才返回
     return;
+  }
+  
+  // 🚀 如果有冷卻時間，清除 loading 狀態
+  if (cooldownEndTime && challengeBtnEl) {
+    challengeBtnEl.dataset.loading = "false";
   }
   
   if (!cooldownEndTime) {
@@ -852,6 +858,15 @@ async function challengeWorldBoss() {
         updateWorldBossHP(result.world_boss_hp.current, result.world_boss_hp.max);
       }
       
+      // 🚀 【關鍵修正】：在設置冷卻之前，先清除 loading 狀態
+      const challengeBtnEl = document.getElementById("challengeBtn");
+      if (challengeBtnEl) {
+        challengeBtnEl.dataset.loading = "false";
+      }
+      
+      // 成功後立即設置冷卻狀態（現在可以正常更新了）
+      startCooldownTimer(result.cooldown_end_time);
+      
       // 批次更新：只在必要時才重新載入完整資料
       setTimeout(async () => {
         try {
@@ -864,9 +879,6 @@ async function challengeWorldBoss() {
           console.warn('更新排行榜失敗:', updateError);
         }
       }, 500);
-      
-      // 成功後立即設置冷卻狀態
-      startCooldownTimer(result.cooldown_end_time);
       
     } else {
       // ❌ 挑戰失敗
