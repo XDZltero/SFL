@@ -67,33 +67,37 @@
       main: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3",
       boss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/Last_Boss_Battle_theme_v2-zrhJSBVfzYfK17ro58EyHtmr0smIxi.mp3",
       worldBoss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/World_Boss_Battle_theme-1iojoQSoKrHoSGqZX5R6NrXmPwGAJ0.mp3",
-      story: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/StoryBGM-故事背景音樂.mp3"
+      story: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/StoryPage-XBTqYtVyxoO0C48l0UPrKtutWNgB2t.mp3"
     };
 
     // 🎵 音樂切換函數
     function switchMusic(musicType) {
-      if (currentBgm === musicType) return;
-      
-      console.log(`🎵 切換音樂：${currentBgm} → ${musicType}`);
-      
-      currentBgm = musicType;
-      bgm.pause();
-      
-      if (musicSources[musicType]) {
-        bgm.src = musicSources[musicType];
-      } else {
-        console.warn(`⚠️ 找不到音樂類型：${musicType}，使用主音樂`);
-        bgm.src = musicSources.main;
-        currentBgm = "main";
+      if (currentBgm === musicType) return;  
+        currentBgm = musicType;
+        bgm.pause();
+        
+        if (musicSources[musicType]) {
+          bgm.src = musicSources[musicType];
+        } else {
+          console.warn(`⚠️ 找不到音樂類型：${musicType}，使用主音樂`);
+          bgm.src = musicSources.main;
+          currentBgm = "main";
+        }
+        
+        bgm.load();
+        
+        // 🎵 根據音樂類型調整音量
+        let targetVolume = volumeSlider.value;
+        // if (musicType === "story") {
+        //   targetVolume = volumeSlider.value * 0.7; // 故事模式音量降低30%，營造安靜閱讀氛圍
+        // }
+        
+        bgm.volume = targetVolume;
+        bgm.muted = muted;
+        bgm.play().catch(error => {
+          console.warn("音樂播放失敗:", error);
+        });
       }
-      
-      bgm.load();
-      bgm.volume = volumeSlider.value;
-      bgm.muted = muted;
-      bgm.play().catch(error => {
-        console.warn("音樂播放失敗:", error);
-      });
-    }
 
     // 🎵 音樂控制訊息監聽
     window.addEventListener("message", (event) => {
@@ -218,15 +222,19 @@
     const controlButtons = document.getElementById("controlButtons");
   
     function loadPage(page) {
-      
       // 🎵 根據頁面自動切換音樂
       if (page.includes("world_boss.html")) {
         switchMusic("worldBoss");
-      } else if (page.includes("story.html")) {
+      } else if (page.includes("story.html")) { // 🆕 進入故事頁面立即切換音樂
+        console.log("🎵 進入故事頁面，切換到故事音樂");
         switchMusic("story");
       } else if (page.includes("dungeon_layer") && currentBgm === "boss") {
         // 保持 boss 音樂
-      } else if (!page.includes("dungeon_layer") && !page.includes("story.html") && currentBgm !== "main") {
+      } else if (!page.includes("dungeon_layer") && 
+                 !page.includes("story.html") && 
+                 !page.includes("world_boss.html") && 
+                 currentBgm !== "main") {
+        // 🎵 離開特殊頁面時恢復主音樂
         switchMusic("main");
       }
     
@@ -245,7 +253,7 @@
           <button onclick="refreshWorldBoss()">🔄 刷新戰況</button>
           <button onclick="logout()">🔓 登出</button>
         `;
-      } else if (pagePath.includes("upgrade") || pagePath.includes("inventory") || pagePath.includes("dungeons")) {
+      } else if (pagePath.includes("story") || pagePath.includes("upgrade") || pagePath.includes("inventory") || pagePath.includes("dungeons")) {
         controlButtons.innerHTML = `
           <button onclick="loadPage('main_page.html')">🔙 返回主頁</button>
           <button onclick="logout()">🔓 登出</button>
