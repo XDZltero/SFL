@@ -80,7 +80,7 @@
     "id": "TEST",
     "name": "測試",
     "description": "Test。",
-    "bossId": "Creator-defile",
+    "bossId": "Creator_defile",
     "min_level": 10,
     "image": "https://i.postimg.cc/hG07jRbw/dungeon-skycity.png",
     "monsters": ["silver_emissary"],
