@@ -70,7 +70,7 @@
     "title": "三個世界與三個創世主",
     "category": "settings",
     "unlock_requirements": {
-      "dungeon": dungeon_magictown,
+      "dungeon": "dungeon_magictown",
       "clear_count": 1
     },
     "sort": 1,
