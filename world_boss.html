@@ -448,17 +448,7 @@ function updateCooldownDisplay(cooldownEndTime) {
   challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
   challengeBtnEl.style.cursor = "not-allowed";
 }
-  
-  const minutes = Math.floor(remaining / (1000 * 60));
-  const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-  
-  cooldownInfoEl.style.display = "block";
-  cooldownTimerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  challengeBtnEl.disabled = true;
-  challengeBtnEl.dataset.cooling = "true";
-  challengeBtnEl.textContent = "⏰ 冷卻中";
-}
-}
+
 
 // 階段系統
 function getCurrentPhase(currentHp, maxHp) {
