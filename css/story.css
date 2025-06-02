@@ -246,22 +246,47 @@
     /* 響應式設計 */
     @media (max-width: 768px) {
       .story-dialog-content {
-        padding: 25px;
-        margin: 10px;
-      }
-      
-      .story-dialog-title {
-        font-size: 1.6em;
-      }
-      
-      .story-dialog-body {
-        font-size: 1em;
-      }
-      
-      .settings-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+    padding: 25px;
+    margin: 10px;
+  }
+  
+  .story-dialog-title {
+    font-size: 1.6em;
+  }
+  
+  .story-dialog-body {
+    font-size: 1em;
+  }
+  
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* 🔧 新增：修正手機版叉叉按鈕位置 */
+  .story-close-btn {
+    position: fixed !important; /* 改為固定定位 */
+    top: 20px !important;
+    right: 20px !important;
+    width: 45px !important; /* 稍微增大以便觸摸 */
+    height: 45px !important;
+    font-size: 1.6em !important;
+    z-index: 10000 !important; /* 確保在最上層 */
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.6) !important;
+    
+    /* 確保觸摸友好 */
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
+    touch-action: manipulation;
+  }
+  
+  .story-close-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.8) !important;
+  }
+  
+  /* 🔧 確保對話框內容不會被按鈕遮擋 */
+  .story-dialog-content {
+    padding-top: 80px !important; /* 增加頂部padding避免被按鈕遮擋 */
+  }
 
     /* 載入動畫覆蓋 */
     .story-dialog-content::before {
@@ -273,4 +298,34 @@
       pointer-events: none;
       border-radius: 18px;
     }
+}
+
+    /* 極小螢幕優化 (小於 480px) */
+@media (max-width: 480px) {
+  .story-close-btn {
+    top: 15px !important;
+    right: 15px !important;
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 1.5em !important;
+  }
+  
+  .story-dialog-content {
+    padding-top: 75px !important;
+  }
+}
+
+/* 橫屏手機優化 */
+@media (max-width: 768px) and (orientation: landscape) {
+  .story-close-btn {
+    top: 10px !important;
+    right: 15px !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+  
+  .story-dialog-content {
+    padding-top: 65px !important;
+  }
+}
   </style>
