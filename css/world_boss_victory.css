@@ -1,0 +1,350 @@
+/* 🔧 完全重新設計的勝利/失敗對話框樣式 */
+
+/* 基礎遮罩層 */
+.victory-overlay, .defeat-overlay {
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 140, 0, 0.8), rgba(255, 69, 0, 0.9));
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+  animation: victoryFadeIn 1s ease-in-out;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.defeat-overlay {
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.9), rgba(220, 20, 60, 0.8), rgba(75, 0, 130, 0.9));
+}
+
+/* 主要內容容器 */
+.victory-content, .defeat-content {
+  text-align: center;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  position: relative;
+  
+  /* 🔧 重點修正：合理的尺寸設定 */
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  min-height: 50vh;
+  
+  /* 🔧 修正：使用彈性佈局 */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 20px;
+  
+  padding: 30px;
+  box-sizing: border-box;
+  
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 20px;
+  backdrop-filter: blur(15px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  
+  /* 🔧 重要：確保可以滾動 */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 圖示樣式 */
+.victory-icon, .defeat-icon {
+  font-size: 4em;
+  margin: 0;
+  line-height: 1;
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
+  flex-shrink: 0; /* 防止被壓縮 */
+}
+
+/* 標題樣式 */
+.victory-title, .defeat-title {
+  font-size: 2.5em;
+  margin: 0;
+  line-height: 1.2;
+  font-weight: 900;
+  text-shadow: 0 0 25px rgba(255, 255, 255, 0.9);
+  flex-shrink: 0; /* 防止被壓縮 */
+}
+
+.defeat-title {
+  color: #ff4444;
+  text-shadow: 0 0 30px rgba(255, 68, 68, 0.8);
+}
+
+/* 🔧 關鍵修正：訊息區域 */
+.victory-message, .defeat-message {
+  /* 🔧 重點：讓訊息區域佔用剩餘空間 */
+  flex: 1;
+  width: 100%;
+  
+  /* 🔧 字體和行距 */
+  font-size: 1.2em;
+  line-height: 1.6;
+  
+  /* 🔧 背景和邊框 */
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  
+  /* 🔧 滾動設定 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: none; /* 移除高度限制 */
+  
+  /* 🔧 文字處理 */
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  
+  /* 🔧 重要：確保內容從頂部開始顯示 */
+  text-align: left;
+  
+  /* 🔧 滾動行為 */
+  scroll-behavior: smooth;
+}
+
+/* 按鈕樣式 */
+.effect-button {
+  font-size: 1.3em;
+  padding: 18px 45px;
+  min-height: 60px;
+  min-width: 200px;
+  border-radius: 30px;
+  margin: 0; /* 移除 margin，使用 gap 來控制間距 */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  
+  flex-shrink: 0; /* 防止被壓縮 */
+}
+
+.effect-button:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* 滾動條樣式 */
+.victory-message::-webkit-scrollbar,
+.defeat-message::-webkit-scrollbar {
+  width: 12px;
+}
+
+.victory-message::-webkit-scrollbar-track,
+.defeat-message::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+}
+
+.victory-message::-webkit-scrollbar-thumb,
+.defeat-message::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ffd700, #ff8c00);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.victory-message::-webkit-scrollbar-thumb:hover,
+.defeat-message::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ffed4e, #ffaa00);
+}
+
+/* 🔧 特殊樣式：重要資訊高亮 */
+.victory-message > div:first-child,
+.defeat-message > div:first-child {
+  background: rgba(255, 215, 0, 0.2) !important;
+  border: 2px solid rgba(255, 215, 0, 0.5) !important;
+  border-radius: 10px !important;
+  padding: 15px !important;
+  margin-bottom: 15px !important;
+  font-size: 1.1em !important;
+  font-weight: 700 !important;
+  color: #ffd700 !important;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8) !important;
+}
+
+/* 🔧 傷害數值高亮 */
+.victory-message span[style*="color: #ff6b6b"],
+.victory-message span[style*="font-weight: bold"],
+.defeat-message span[style*="color: #ff6b6b"] {
+  font-size: 1.2em !important;
+  font-weight: 900 !important;
+  text-shadow: 0 0 10px rgba(255, 107, 107, 0.8) !important;
+  background: rgba(255, 107, 107, 0.2) !important;
+  padding: 3px 8px !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(255, 107, 107, 0.4) !important;
+  display: inline-block !important;
+  margin: 2px !important;
+}
+
+/* 🔧 獎勵物品樣式 */
+.victory-message div[style*="background: linear-gradient"] {
+  margin: 15px 0 !important;
+  padding: 15px !important;
+  border-radius: 10px !important;
+  border: 2px solid rgba(255, 215, 0, 0.5) !important;
+}
+
+/* 🔧 手機版優化 */
+@media (max-width: 768px) {
+  .victory-overlay, .defeat-overlay {
+    padding: 10px;
+  }
+  
+  .victory-content, .defeat-content {
+    width: 95%;
+    max-width: none;
+    max-height: 95vh;
+    min-height: 60vh;
+    padding: 20px;
+    gap: 15px;
+  }
+  
+  .victory-icon, .defeat-icon {
+    font-size: 3em;
+  }
+  
+  .victory-title, .defeat-title {
+    font-size: 2em;
+  }
+  
+  .victory-message, .defeat-message {
+    font-size: 1em;
+    padding: 20px;
+    line-height: 1.5;
+  }
+  
+  .effect-button {
+    font-size: 1.1em;
+    padding: 15px 35px;
+    min-height: 50px;
+    min-width: 180px;
+  }
+  
+  /* 🔧 手機版滾動條 */
+  .victory-message::-webkit-scrollbar,
+  .defeat-message::-webkit-scrollbar {
+    width: 8px;
+  }
+}
+
+/* 🔧 極小螢幕優化 */
+@media (max-width: 480px) {
+  .victory-content, .defeat-content {
+    width: 98%;
+    padding: 15px;
+    gap: 10px;
+    min-height: 50vh;
+  }
+  
+  .victory-icon, .defeat-icon {
+    font-size: 2.5em;
+  }
+  
+  .victory-title, .defeat-title {
+    font-size: 1.8em;
+  }
+  
+  .victory-message, .defeat-message {
+    font-size: 0.9em;
+    padding: 15px;
+  }
+  
+  .effect-button {
+    font-size: 1em;
+    padding: 12px 30px;
+    min-height: 45px;
+    min-width: 160px;
+  }
+}
+
+/* 🔧 大螢幕優化 */
+@media (min-width: 1200px) {
+  .victory-content, .defeat-content {
+    max-width: 1000px;
+    padding: 40px;
+    gap: 25px;
+  }
+  
+  .victory-message, .defeat-message {
+    font-size: 1.3em;
+    padding: 30px;
+  }
+  
+  .victory-title, .defeat-title {
+    font-size: 3em;
+  }
+  
+  .victory-icon, .defeat-icon {
+    font-size: 5em;
+  }
+}
+
+/* 🔧 動畫效果 */
+@keyframes victoryFadeIn {
+  0% { 
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 🔧 觸控設備優化 */
+@media (hover: none) and (pointer: coarse) {
+  .effect-button {
+    min-height: 55px;
+    min-width: 200px;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
+    touch-action: manipulation;
+  }
+  
+  .effect-button:active {
+    transform: scale(0.95);
+    transition: transform 0.1s;
+  }
+}
+
+/* 🔧 確保 Emoji 正確顯示 */
+.victory-icon, .defeat-icon, .battle-icon {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiOne Mozilla', 'Orbitron', sans-serif !important;
+  font-variant-emoji: emoji !important;
+  text-rendering: optimizeLegibility;
+  -webkit-font-feature-settings: "liga" on;
+  font-feature-settings: "liga" on;
+}
+
+/* 🔧 安全區域支援 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 768px) {
+    .victory-overlay, .defeat-overlay {
+      padding-top: max(10px, env(safe-area-inset-top));
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+    
+    .victory-content, .defeat-content {
+      max-height: calc(95vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    }
+  }
+}
