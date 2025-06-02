@@ -1,69 +1,69 @@
 [
   {
     "id": "story_001",
-    "title": "序章：被遺忘的世界",
+    "title": "序章：甦醒之「人」",
     "category": "story",
     "unlock_requirements": {
       "dungeon": null,
       "clear_count": 0
     },
     "sort": 1,
-    "content": "在這個被時間遺忘的世界中，古老的魔法與現代科技交織在一起。\n\n你原本只是一個普通的冒險者，但命運卻將你推向了一個充滿未知的旅程。\n\nhttps://i.postimg.cc/Bvj6GM01/dungeon-moss.png\n\n當你踏入第一個副本「腐爛沼澤地」時，你逐漸接近一切的真相。"
+    "content": "「諸神黃昏即將到來，而你或許是唯一能阻止這一切的『人』。」\n\n你在沼澤地醒來，不知道為何在這裡，也不知道你是誰。\n但你知道自己是個普通的冒險者，仍然記得使用那份力量的技巧以及手感。\n命運正在將你推向了一個充滿未知的旅程。\n\nhttps://i.postimg.cc/Bvj6GM01/dungeon-moss.png\n\n當你踏入第「腐爛沼澤地」的深處時，你總覺得能夠更接近一切的真相。"
   },
   {
     "id": "story_002", 
-    "title": "第一章：沼澤的祕密",
+    "title": "第一章：沼澤深處的祕密",
     "category": "story",
     "unlock_requirements": {
       "dungeon": "dungeon_moss",
       "clear_count": 1
     },
     "sort": 2,
-    "content": "在擊敗了沼澤地的死靈術師後，你發現了一些令人不安的線索。\n\n那些史萊姆和骷髏並不是自然產生的，而是被某種力量操控著。\n\nhttps://i.postimg.cc/hG07jRbw/dungeon-skycity.png\n\n遠方天空中浮現的城邦，似乎與這一切都有著密切的關聯..."
+    "content": "在擊敗了沼澤地的死靈術師後，翻閱桌上的書籍，你發現了一些令人不解的字條。\n\n「眾神正在尋找創世主的下落...，或許『死』是一種回到上位世界的方法。」\n\n你把目光放向窗外的空中，你依稀記得從一個島嶼瞭望整個世界的風景。\n\nhttps://i.postimg.cc/hG07jRbw/dungeon-skycity.png\n\n「遠方天空中浮現的城邦，似乎希望告訴我什麼。」你自言自語道。\n當你準備離去時，地上的魔法陣突然發出了光芒，就向回應了你的呼喚一般。\n\n「咻－－－－－」巨大的風聲響起，你感受到了一陣劇烈的搖晃。\n\n當你再度睜開眼睛，發現已經踏在雲層之上的城邦－「天空之城」。\n\nhttps://i.postimg.cc/hG07jRbw/dungeon-skycity.png"
   },
   {
     "id": "story_003",
-    "title": "第二章：天空之城的真相", 
+    "title": "第二章：雲層上的真面目", 
     "category": "story",
     "unlock_requirements": {
       "dungeon": "dungeon_skycity",
       "clear_count": 1
     },
     "sort": 3,
-    "content": "天空之城並非廢棄的神廟，而是一個巨大的監視站。\n\n蓋亞告訴你，這個世界正面臨著來自「上位世界」的威脅。\n\nhttps://i.postimg.cc/WbrtFLJV/dungeon-ironship.png\n\n那些鋼鐵軍隊已經開始入侵，而你是唯一能夠阻止他們的人..."
+    "content": "天空之城並非廢棄的神廟，而是一個巨大的傳送門－「星盤」的門扉。\n\n蓋亞告訴你，這個世界正面臨著來自「上位世界」的威脅，然而這個世界的神明已經無法再與「創世主」獲得聯繫。\n\nhttps://i.postimg.cc/WbrtFLJV/dungeon-ironship.png\n\n「另一個世界的創世主告訴了我這個世界面臨的危機，我選擇接納祂的意見。」\n「但是看到你以後，我確信你是另一個奇點。」 蓋亞笑著說到，並希望你前往「紫魔之城」，那裡是最接近另一個世界創世主的地方。\n\n「轟隆－－－」一陣巨響閃過了天際，蓋亞和你連忙轉身望去。\n\n雲層間空間被像方塊般撕裂開來，緊接著一艘巨大的白色帶有黃色紋路的飛船衝破雲層。\n\nhttps://i.postimg.cc/WbrtFLJV/dungeon-ironship.png\n\n「它們開始行動了嗎」蓋亞表示已經沒有時間解釋了，希望你前往那艘「鋼鐵都市」阻止「次元界」的入侵。祂分身乏術，難以放下星盤守護的責任。隨之將你送上了「鋼鐵都市」的甲板...。"
   },
   {
     "id": "story_004",
-    "title": "第三章：鋼鐵入侵者",
+    "title": "第三章：次元界的入侵者",
     "category": "story", 
     "unlock_requirements": {
       "dungeon": "dungeon_ironcity",
       "clear_count": 1
     },
     "sort": 4,
-    "content": "次元界的機器軍隊比你想像的更加強大。\n\n他們不僅擁有先進的科技，還掌握著某種能夠腐蝕魔法的力量。\n\nhttps://i.postimg.cc/85n124n1/dungeon-purpletwon.png\n\n但更可怕的是，你發現王城也開始被紫色的魔力侵蝕..."
+    "content": "次元界的機器軍隊比你想像的更加強大。\n\n他們不僅擁有先進的科技，還掌握著某種能夠抵禦魔法的力量。\n\nhttps://i.postimg.cc/85n124n1/dungeon-purpletwon.png\n\n「為了天啟王所預見的未來。」 鋼鐵毀滅者在殘破的身軀生出了微微的聲音。\n「青銅、黃金、鑽石...，神化械具的侵略不會停止。」 鋼鐵毀滅者的信號就此熄滅。\n\n一頭霧水的你，決定依照蓋亞的說法前往那一座被紫色魔力包裹的王城－「紫魔之城」。"
   },
   {
     "id": "story_005",
-    "title": "第四章：紫魔女巫的陰謀",
+    "title": "第四章：天才少女",
     "category": "story",
     "unlock_requirements": {
       "dungeon": "dungeon_magictown", 
       "clear_count": 1
     },
     "sort": 5,
-    "content": "艾畢蒂娜並不是普通的女巫，她是潘朵拉世界的使者。\n\n她的目的是打開通往潘朵拉世界的裂縫，讓那個世界的力量流入這裡。\n\nhttps://i.postimg.cc/VvRfgKfY/dungeon-pandora-nightmare.png\n\n當你踏入潘朵拉的夢魘幻境時，你才真正理解了「現實」的脆弱性..."
+    "content": "你以為艾畢蒂娜不只是個普通的女巫，但結果她只是單純誤打誤撞用魔法撕裂的空間來到了這裡，她只是一名喜愛魔法研究的天才少女。\n「所以你說這裡不是潘朵拉?」 似乎連本人都不知道這裡已經不是她熟悉的世界，她的所作所為在潘朵拉甚至不會造成的任何魔力災害。\n然而，她依舊打開了通往潘朵拉世界的裂縫，為追尋真相，你一腳踏入了潘朵拉世界的入口。\n\nhttps://i.postimg.cc/VvRfgKfY/dungeon-pandora-nightmare.png\n\n當你睜開了眼，你才真正理解了「現實」的脆弱性...。"
   },
   {
     "id": "story_006",
-    "title": "第五章：潘朵拉的真面目",
+    "title": "第五章：邀請",
     "category": "story",
     "unlock_requirements": {
       "dungeon": "dungeon_pandora_nightmare",
       "clear_count": 2
     },
     "sort": 6,
-    "content": "帝國大臣迪菲爾向你揭示了驚人的真相。\n\n這個世界、次元界、還有潘朵拉世界，都是由三個創世主創造的。\n\nhttps://i.postimg.cc/GtLksdmd/dungeon-siant.png\n\n而現在，時空萬象正試圖破壞這個平衡，你必須前往聖天教會尋求更多的答案..."
+    "content": "帝國大臣迪菲爾向你揭示了驚人的真相。\n\n你原本的世界「雲空大陸」、現在立足的魔法世界「潘朵拉」、以及無機生命的世界「次元界」，每一個世界都擁有一位創世主。\n\nhttps://i.postimg.cc/GtLksdmd/dungeon-siant.png\n\n「每一個世界的創世主會在創造生命的時候，創造一位『神子』，而『神』就是由『神子』的力量所分裂出來的。」\n「即便『盤古』已經完全失去聯繫，但發現你就是雲空大陸的『神子』呀?」\n迪菲爾壓了壓帽緣輕輕笑了幾聲。接著摘下了帽子，頭上冒出了紫色的光環，身上的衣服隨之變成了白色，紫色的魔法紋路蔓延至全身。\n\nhttps://i.postimg.cc/T1zwNCFF/Creator-defile.png\n\n「容我重新自我介紹，我是潘朵拉的創世主迪菲爾，正式邀請你加入反抗『上位世界』的計畫」。"
   },
   {
     "id": "setting_worlds",
