@@ -1340,7 +1340,7 @@ body.world-boss-mode::before {
   
   /* 🚀 新增：滚动提示 */
   .victory-message::before, .defeat-message::before {
-    content: "👆 向上滑动查看更多" !important;
+    content: "👆 向上滑動查看掉落與排名資訊" !important;
     position: sticky !important;
     top: 0 !important;
     background: linear-gradient(180deg, rgba(255, 215, 0, 0.9), transparent) !important;
