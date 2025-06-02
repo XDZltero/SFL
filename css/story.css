@@ -160,9 +160,9 @@
       box-shadow: 0 8px 25px rgba(0, 255, 255, 0.3);
     }
 
-    /* 🔧 修改1：固定在視窗右上角的叉叉按鈕 */
+    /* 🔧 修改1：強化固定在視窗右上角的叉叉按鈕 */
     .story-close-btn {
-      position: fixed !important; /* 固定在視窗位置，不會隨對話框滾動 */
+      position: fixed !important; /* 強制固定在視窗位置 */
       top: 30px !important;
       right: 30px !important;
       background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
@@ -175,12 +175,20 @@
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
-      z-index: 10000 !important; /* 確保在最上層 */
+      z-index: 99999 !important; /* 提高層級確保在最上層 */
       box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+      
+      /* 強制脫離文檔流 */
+      margin: 0 !important;
+      padding: 0 !important;
+      transform: none !important;
       
       /* 觸控友好 */
       -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
       touch-action: manipulation;
+      
+      /* 確保不受父容器影響 */
+      contain: layout style paint;
     }
 
     .story-close-btn:hover {
@@ -192,7 +200,7 @@
     .settings-header {
       display: flex;
       align-items: center;
-      gap: 20px; /* 標題和按鈕之間的間距 */
+      gap: 10px; /* 調整為較小的間距 */
       margin-bottom: 20px;
     }
 
@@ -207,58 +215,34 @@
       margin-bottom: 40px; /* 與故事區域之間的間距 */
     }
 
-    /* 🔧 修改3：正方形設定切換按鈕 */
-    .settings-toggle-btn-square {
+    /* 設定按鈕樣式（調整為更緊湊的設計） */
+    .settings-toggle-btn {
       background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%);
       border: none;
-      width: 50px;  /* 正方形尺寸 */
-      height: 50px; /* 正方形尺寸 */
-      border-radius: 12px; /* 圓角 */
+      padding: 8px 16px; /* 縮小內邊距 */
+      border-radius: 20px; /* 縮小圓角 */
       color: #333;
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      font-size: 1.3em;
+      font-size: 0.9em; /* 略小的字體 */
       cursor: pointer;
       transition: all 0.3s ease;
-      box-shadow: 0 6px 20px rgba(255, 217, 61, 0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      box-shadow: 0 4px 15px rgba(255, 217, 61, 0.4); /* 縮小陰影 */
       flex-shrink: 0; /* 不被壓縮 */
+      white-space: nowrap; /* 防止文字換行 */
       
       /* 觸控友好 */
       -webkit-tap-highlight-color: rgba(255, 217, 61, 0.3);
       touch-action: manipulation;
     }
 
-    .settings-toggle-btn-square:hover {
-      transform: translateY(-2px) scale(1.05);
-      box-shadow: 0 8px 25px rgba(255, 217, 61, 0.6);
-    }
-
-    .settings-toggle-btn-square:active {
-      transform: translateY(0) scale(0.98);
-    }
-
-    /* 原有的設定按鈕樣式（保留作為備用） */
-    .settings-toggle-btn {
-      background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%);
-      border: none;
-      padding: 12px 30px;
-      border-radius: 25px;
-      color: #333;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 700;
-      font-size: 1.1em;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 6px 20px rgba(255, 217, 61, 0.4);
-      margin-bottom: 20px;
-    }
-
     .settings-toggle-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(255, 217, 61, 0.6);
+      transform: translateY(-1px) scale(1.02); /* 減小hover效果 */
+      box-shadow: 0 6px 20px rgba(255, 217, 61, 0.6);
+    }
+
+    .settings-toggle-btn:active {
+      transform: translateY(0) scale(0.98);
     }
 
     .settings-grid {
@@ -334,17 +318,16 @@
 
       /* 🔧 修改3：手機版設定標題和按鈕佈局優化 */
       .settings-header {
-        gap: 15px;
+        gap: 8px; /* 手機版間距更小 */
       }
 
       .settings-header .fancy-subtitle {
         font-size: 1.3em;
       }
 
-      .settings-toggle-btn-square {
-        width: 45px;
-        height: 45px;
-        font-size: 1.2em;
+      .settings-toggle-btn {
+        font-size: 0.8em;
+        padding: 6px 12px;
       }
     }
 
@@ -363,13 +346,12 @@
       }
 
       .settings-header {
-        gap: 12px;
+        gap: 6px; /* 極小螢幕間距最小 */
       }
 
-      .settings-toggle-btn-square {
-        width: 40px;
-        height: 40px;
-        font-size: 1.1em;
+      .settings-toggle-btn {
+        font-size: 0.75em;
+        padding: 5px 10px;
       }
     }
 
@@ -477,7 +459,6 @@
     .story-item,
     .settings-item,
     .settings-toggle-btn,
-    .settings-toggle-btn-square,
     .story-close-btn,
     .effect-button {
       transition: none !important;
@@ -498,10 +479,6 @@
 
     /* 簡化按鈕效果 */
     .settings-toggle-btn:hover {
-      background: linear-gradient(135deg, #ffdd4a 0%, #ffc347 100%) !important;
-    }
-
-    .settings-toggle-btn-square:hover {
       background: linear-gradient(135deg, #ffdd4a 0%, #ffc347 100%) !important;
     }
 
@@ -548,7 +525,7 @@
         background: rgba(255, 217, 61, 0.15) !important;
       }
 
-      .settings-toggle-btn-square:active {
+      .settings-toggle-btn:active {
         background: rgba(255, 217, 61, 0.15) !important;
       }
     }
