@@ -263,6 +263,8 @@
       showLoading(true);
       
       try {
+        // 🎵 音樂切換已經在頁面載入時處理，這裡不再重複請求
+        
         // 並行載入資料
         await Promise.all([
           loadStoryData(),
@@ -281,6 +283,41 @@
       } finally {
         showLoading(false);
       }
+    }
+
+    window.addEventListener("beforeunload", () => {
+      try {
+        window.parent.postMessage({
+          command: "restoreMainMusic"
+        }, "*");
+        console.log("🎵 離開故事頁面，恢復主音樂");
+      } catch (error) {
+        console.warn("🎵 恢復主音樂失敗:", error);
+      }
+    });
+
+    function requestStoryMusic() {
+      try {
+        window.parent.postMessage({
+          command: "switchToStoryMusic"
+        }, "*");
+        console.log("🎵 故事頁面已請求切換到故事音樂");
+      } catch (error) {
+        console.warn("🎵 請求故事音樂失敗:", error);
+      }
+    }
+
+    // 🎵 頁面載入完成後立即切換音樂
+    document.addEventListener("DOMContentLoaded", () => {
+      requestStoryMusic();
+    });
+    
+    // 🎵 如果 DOM 已經載入完成，立即執行
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", requestStoryMusic);
+    } else {
+      // DOM 已經載入完成
+      requestStoryMusic();
     }
 
     // 監聽登入狀態
