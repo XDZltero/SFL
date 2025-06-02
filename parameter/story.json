@@ -1,0 +1,123 @@
+[
+  {
+    "id": "story_001",
+    "title": "序章：被遺忘的世界",
+    "category": "story",
+    "unlock_requirements": {
+      "dungeon": null,
+      "clear_count": 0
+    },
+    "sort": 1,
+    "content": "在這個被時間遺忘的世界中，古老的魔法與現代科技交織在一起。\n\n你原本只是一個普通的冒險者，但命運卻將你推向了一個充滿未知的旅程。\n\nhttps://i.postimg.cc/Bvj6GM01/dungeon-moss.png\n\n當你踏入第一個副本「腐爛沼澤地」時，你逐漸接近一切的真相。"
+  },
+  {
+    "id": "story_002", 
+    "title": "第一章：沼澤的祕密",
+    "category": "story",
+    "unlock_requirements": {
+      "dungeon": "dungeon_moss",
+      "clear_count": 1
+    },
+    "sort": 2,
+    "content": "在擊敗了沼澤地的死靈術師後，你發現了一些令人不安的線索。\n\n那些史萊姆和骷髏並不是自然產生的，而是被某種力量操控著。\n\nhttps://i.postimg.cc/hG07jRbw/dungeon-skycity.png\n\n遠方天空中浮現的城邦，似乎與這一切都有著密切的關聯..."
+  },
+  {
+    "id": "story_003",
+    "title": "第二章：天空之城的真相", 
+    "category": "story",
+    "unlock_requirements": {
+      "dungeon": "dungeon_skycity",
+      "clear_count": 1
+    },
+    "sort": 3,
+    "content": "天空之城並非廢棄的神廟，而是一個巨大的監視站。\n\n蓋亞告訴你，這個世界正面臨著來自「上位世界」的威脅。\n\nhttps://i.postimg.cc/WbrtFLJV/dungeon-ironship.png\n\n那些鋼鐵軍隊已經開始入侵，而你是唯一能夠阻止他們的人..."
+  },
+  {
+    "id": "story_004",
+    "title": "第三章：鋼鐵入侵者",
+    "category": "story", 
+    "unlock_requirements": {
+      "dungeon": "dungeon_ironcity",
+      "clear_count": 1
+    },
+    "sort": 4,
+    "content": "次元界的機器軍隊比你想像的更加強大。\n\n他們不僅擁有先進的科技，還掌握著某種能夠腐蝕魔法的力量。\n\nhttps://i.postimg.cc/85n124n1/dungeon-purpletwon.png\n\n但更可怕的是，你發現王城也開始被紫色的魔力侵蝕..."
+  },
+  {
+    "id": "story_005",
+    "title": "第四章：紫魔女巫的陰謀",
+    "category": "story",
+    "unlock_requirements": {
+      "dungeon": "dungeon_magictown", 
+      "clear_count": 1
+    },
+    "sort": 5,
+    "content": "艾畢蒂娜並不是普通的女巫，她是潘朵拉世界的使者。\n\n她的目的是打開通往潘朵拉世界的裂縫，讓那個世界的力量流入這裡。\n\nhttps://i.postimg.cc/VvRfgKfY/dungeon-pandora-nightmare.png\n\n當你踏入潘朵拉的夢魘幻境時，你才真正理解了「現實」的脆弱性..."
+  },
+  {
+    "id": "story_006",
+    "title": "第五章：潘朵拉的真面目",
+    "category": "story",
+    "unlock_requirements": {
+      "dungeon": "dungeon_pandora_nightmare",
+      "clear_count": 2
+    },
+    "sort": 6,
+    "content": "帝國大臣迪菲爾向你揭示了驚人的真相。\n\n這個世界、次元界、還有潘朵拉世界，都是由三個創世主創造的。\n\nhttps://i.postimg.cc/GtLksdmd/dungeon-siant.png\n\n而現在，時空萬象正試圖破壞這個平衡，你必須前往聖天教會尋求更多的答案..."
+  },
+  {
+    "id": "setting_worlds",
+    "title": "三個世界",
+    "category": "settings",
+    "unlock_requirements": {
+      "dungeon": null,
+      "clear_count": 0
+    },
+    "sort": 1,
+    "content": "【主世界】\n我們的世界，魔法與科技並存的地方。這裡的人們大多不知道其他世界的存在。\n\n【次元界】\n一個高度科技化的世界，由無機生物統治。他們的創世主是「天啟王」。\n\n【潘朵拉世界】\n一個充滿魔法和夢境的世界，現實與虛幻的界線十分模糊。創世主是「迪菲爾」。"
+  },
+  {
+    "id": "setting_creators",
+    "title": "三個創世主", 
+    "category": "settings",
+    "unlock_requirements": {
+      "dungeon": "dungeon_magictown",
+      "clear_count": 1
+    },
+    "sort": 2,
+    "content": "【主世界創世主】\n身份神秘，很少直接干預世界的運行。\n\n【天啟王】\n次元界的無機生物統治者，追求絕對的秩序和效率。與時空萬象合作。\n\n【迪菲爾】\n潘朵拉世界的創世主，掌控夢境與現實的力量。看似友善，但動機不明。"
+  },
+  {
+    "id": "setting_elements",
+    "title": "屬性系統",
+    "category": "settings", 
+    "unlock_requirements": {
+      "dungeon": null,
+      "clear_count": 0
+    },
+    "sort": 3,
+    "content": "【基礎屬性】\n火、水、自然、雷 - 形成相剋循環\n\n【特殊屬性】\n光、暗 - 互相剋制\n\n【萬能屬性】\n全屬性 - 克制所有基礎屬性，但被無屬性克制\n\n【無屬性】\n純物理攻擊，不受屬性克制影響，但克制全屬性"
+  },
+  {
+    "id": "setting_cards",
+    "title": "卡片系統",
+    "category": "settings",
+    "unlock_requirements": {
+      "dungeon": "dungeon_moss", 
+      "clear_count": 1
+    },
+    "sort": 4,
+    "content": "【副本卡片】\n每個副本都有對應的卡片，可以通過收集材料來製作和升級。\n\n【鑲嵌系統】\n每個角色有5個卡片槽位，可以裝備不同的卡片來提升屬性。\n\n【升級機制】\n卡片可以從1級升級到5級，每次升級都需要特定的材料和一定的成功率。"
+  },
+  {
+    "id": "setting_world_boss",
+    "title": "世界王系統",
+    "category": "settings",
+    "unlock_requirements": {
+      "dungeon": "dungeon_siant",
+      "clear_count": 1
+    },
+    "sort": 5,
+    "content": "【世界王】\n需要全世界玩家共同協力擊敗的超強敵人。\n\n【階段機制】\n世界王會根據血量進入不同階段，每個階段都有不同的特效和難度。\n\n【獎勵系統】\n根據對世界王造成的傷害百分比給予不同等級的獎勵。"
+  }
+]
