@@ -1208,16 +1208,12 @@ body.world-boss-mode::before {
 }
 
 .victory-icon, .defeat-icon, .battle-icon {
-  /* 確保支援 emoji 顯示的字體 */
-  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Orbitron', sans-serif !important;
-  font-size: 6em;
-  margin-bottom: 30px;
-  animation: victoryIconSpin 3s ease-in-out infinite;
-  /* 確保 emoji 正確顯示 */
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiOne Mozilla', 'Orbitron', sans-serif !important;
   font-variant-emoji: emoji !important;
   text-rendering: optimizeLegibility;
   -webkit-font-feature-settings: "liga" on;
   font-feature-settings: "liga" on;
+  line-height: 1 !important; /* 確保行高不會影響佈局 */
 }
 
 /* 世界王戰鬥結果遮罩在手機上的顯示 */
@@ -1225,15 +1221,21 @@ body.world-boss-mode::before {
 /* 基礎戰鬥結果遮罩樣式 */
 .victory-overlay, .defeat-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0;
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 140, 0, 0.8), rgba(255, 69, 0, 0.9));
   display: none;
   justify-content: center;
   align-items: center;
   z-index: 20000;
   animation: victoryFadeIn 1s ease-in-out;
-  padding: 20px; /* 新增：確保有邊距 */
-  box-sizing: border-box; /* 新增：確保padding不會增加總尺寸 */
+  
+  /* 🔧 關鍵修正：更保守的邊距和盒模型 */
+  padding: 5px;
+  box-sizing: border-box;
+  overflow: hidden; /* 防止內容溢出 */
 }
 
 .victory-content, .defeat-content {
@@ -1241,109 +1243,153 @@ body.world-boss-mode::before {
   color: white;
   font-family: 'Orbitron', sans-serif;
   position: relative;
-  max-width: 90%; /* 新增：限制最大寬度 */
-  max-height: 90vh; /* 新增：限制最大高度 */
-  overflow-y: auto; /* 新增：允許滾動 */
-  padding: 20px; /* 新增：內部間距 */
+  
+  /* 🔧 關鍵修正：更保守的尺寸限制 */
+  max-width: 85%; /* 從 90% 降到 85% */
+  width: 100%;
+  max-height: 70vh; /* 從 90vh 大幅降到 70vh */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 15px;
   box-sizing: border-box;
+  
+  /* 🔧 新增：確保內容居中且不超出 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  
+  /* 🔧 新增：背景和邊框確保可見性 */
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 768px) {
+  .effect-button {
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
+    touch-action: manipulation; /* 防止雙擊縮放 */
+  }
 }
 
 /* 手機版響應式優化 */
 @media (max-width: 768px) {
   .victory-overlay, .defeat-overlay {
-    padding: 10px; /* 手機版減少外邊距 */
+    padding: 3px; /* 進一步減少外邊距 */
   }
   
   .victory-content, .defeat-content {
-    max-width: 95%; /* 手機版用更多螢幕空間 */
-    max-height: 85vh; /* 手機版留更多空間給系統UI */
-    padding: 15px;
+    max-width: 90%; /* 重新調整為90% */
+    max-height: 65vh; /* 🔧 關鍵：大幅降低高度限制 */
+    padding: 12px;
+    min-height: auto; /* 確保不會有最小高度限制 */
   }
   
-  /* 大幅縮小圖示尺寸 */
+  /* 🔧 大幅縮小所有元素 */
   .victory-icon, .defeat-icon {
-    font-size: 3em !important; /* 從 6em 降到 3em */
-    margin-bottom: 15px !important; /* 減少間距 */
-  }
-  
-  /* 縮小標題尺寸 */
-  .victory-title, .defeat-title {
-    font-size: 2em !important; /* 從 4em 降到 2em */
-    margin-bottom: 15px !important; /* 減少間距 */
-    line-height: 1.2; /* 改善行高 */
-  }
-  
-  /* 調整訊息文字大小 */
-  .victory-message, .defeat-message {
-    font-size: 1.1em !important; /* 從 1.5em 降到 1.1em */
-    margin-bottom: 20px !important; /* 減少間距 */
-    line-height: 1.4; /* 改善可讀性 */
-  }
-  
-  /* 優化按鈕樣式 */
-  .effect-button {
-    font-size: 1em !important; /* 確保按鈕文字不會太小 */
-    padding: 12px 24px !important; /* 確保按鈕夠大好按 */
-    min-width: 120px; /* 設定最小寬度 */
-    min-height: 44px; /* iOS建議的最小觸控面積 */
-    margin-top: 10px; /* 確保按鈕與上方內容有間距 */
-  }
-}
-
-/* 極小螢幕優化 (小於 480px) */
-@media (max-width: 480px) {
-  .victory-content, .defeat-content {
-    max-height: 80vh; /* 更保守的高度限制 */
-    padding: 10px;
-  }
-  
-  .victory-icon, .defeat-icon {
-    font-size: 2.5em !important; /* 進一步縮小 */
+    font-size: 2.5em !important; /* 從 3em 進一步降到 2.5em */
     margin-bottom: 10px !important;
+    line-height: 1;
   }
   
   .victory-title, .defeat-title {
-    font-size: 1.6em !important; /* 進一步縮小標題 */
+    font-size: 1.6em !important; /* 從 2em 降到 1.6em */
     margin-bottom: 10px !important;
+    line-height: 1.1;
+    word-break: break-word; /* 防止長標題破版 */
   }
   
   .victory-message, .defeat-message {
-    font-size: 1em !important;
+    font-size: 0.9em !important; /* 從 1.1em 降到 0.9em */
     margin-bottom: 15px !important;
+    line-height: 1.3;
+    max-height: 150px; /* 🔧 限制訊息最大高度 */
+    overflow-y: auto;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
   }
   
   .effect-button {
     font-size: 0.9em !important;
     padding: 10px 20px !important;
-    width: 80%; /* 按鈕佔用更多寬度，更好按 */
-    max-width: 200px;
+    min-width: 100px;
+    min-height: 40px; /* 從 44px 降到 40px */
+    margin-top: 8px;
+    flex-shrink: 0; /* 確保按鈕不會被壓縮 */
+  }
+}
+
+/* 極小螢幕優化 (小於 480px) */
+/* 🔧 極小螢幕優化 (小於 480px) - 更保守 */
+@media (max-width: 480px) {
+  .victory-content, .defeat-content {
+    max-height: 55vh !important; /* 🔧 進一步降低高度 */
+    max-width: 92%;
+    padding: 8px;
+  }
+  
+  .victory-icon, .defeat-icon {
+    font-size: 1.8em !important; /* 進一步縮小 */
+    margin-bottom: 6px !important;
+  }
+  
+  .victory-title, .defeat-title {
+    font-size: 1.3em !important;
+    margin-bottom: 6px !important;
+  }
+  
+  .victory-message, .defeat-message {
+    font-size: 0.8em !important;
+    margin-bottom: 8px !important;
+    max-height: 100px; /* 更嚴格的高度限制 */
+  }
+  
+  .effect-button {
+    font-size: 0.85em !important;
+    padding: 8px 16px !important;
+    width: 70%;
+    max-width: 150px;
+    min-height: 36px;
   }
 }
 
 /* 橫屏手機優化 */
 @media (max-width: 768px) and (orientation: landscape) {
   .victory-content, .defeat-content {
-    max-height: 70vh; /* 橫屏時高度更受限 */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    max-height: 50vh !important; /* 🔧 橫屏時大幅降低高度 */
+    max-width: 70%; /* 橫屏時縮小寬度 */
+    padding: 6px;
   }
   
   .victory-icon, .defeat-icon {
-    font-size: 2em !important; /* 橫屏時圖示更小 */
-    margin-bottom: 8px !important;
+    font-size: 1.5em !important;
+    margin-bottom: 4px !important;
   }
   
   .victory-title, .defeat-title {
-    font-size: 1.4em !important; /* 橫屏時標題更小 */
-    margin-bottom: 8px !important;
+    font-size: 1.2em !important;
+    margin-bottom: 4px !important;
   }
   
   .victory-message, .defeat-message {
-    font-size: 0.9em !important;
-    margin-bottom: 10px !important;
-    max-height: 100px; /* 限制訊息高度 */
-    overflow-y: auto; /* 訊息過長時可滾動 */
+    font-size: 0.75em !important;
+    margin-bottom: 6px !important;
+    max-height: 60px; /* 橫屏時嚴格限制訊息高度 */
+    line-height: 1.2;
+  }
+  
+  .effect-button {
+    font-size: 0.8em !important;
+    padding: 6px 12px !important;
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 480px) and (-webkit-min-device-pixel-ratio: 2) {
+  .victory-content, .defeat-content {
+    max-height: 50vh !important; /* 高解析度小螢幕更保守的高度 */
+    font-size: 14px; /* 設定基礎字體大小 */
   }
 }
 
@@ -1382,11 +1428,44 @@ body.world-boss-mode::before {
   white-space: pre-wrap; /* 保持換行，但允許自動換行 */
 }
 
+/* 🔧 三星 A22-5G 特定優化 (HD+ 720x1600, 20:9) */
+@media (max-width: 768px) and (max-height: 1600px) and (min-height: 1400px) {
+  .victory-content, .defeat-content {
+    max-height: 60vh !important; /* 🔧 專門為長螢幕手機設定更低的高度 */
+    padding: 10px;
+  }
+  
+  .victory-icon, .defeat-icon {
+    font-size: 2em !important; /* 進一步縮小圖示 */
+    margin-bottom: 8px !important;
+  }
+  
+  .victory-title, .defeat-title {
+    font-size: 1.4em !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .victory-message, .defeat-message {
+    font-size: 0.85em !important;
+    margin-bottom: 10px !important;
+    max-height: 120px; /* 進一步限制訊息高度 */
+  }
+}
+
+
 /* 安全區域支援（針對有瀏海或Home Indicator的設備）*/
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   @media (max-width: 768px) {
     .victory-overlay, .defeat-overlay {
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      padding-top: max(5px, env(safe-area-inset-top));
+      padding-bottom: max(5px, env(safe-area-inset-bottom));
+      padding-left: max(3px, env(safe-area-inset-left));
+      padding-right: max(3px, env(safe-area-inset-right));
+    }
+    
+    .victory-content, .defeat-content {
+      /* 🔧 考慮安全區域後進一步調整高度 */
+      max-height: calc(60vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     }
   }
 }
@@ -1407,4 +1486,39 @@ body.world-boss-mode::before {
 @keyframes legendaryItemGlow {
   from { text-shadow: 0 0 8px rgba(255, 69, 0, 0.8); }
   to { text-shadow: 0 0 15px rgba(255, 69, 0, 1), 0 0 20px rgba(255, 140, 0, 0.7); }
+}
+
+/* 🔧 滾動條優化 - 確保在小螢幕上可見 */
+@media (max-width: 768px) {
+  .victory-content::-webkit-scrollbar,
+  .defeat-content::-webkit-scrollbar {
+    width: 4px; /* 更細的滾動條 */
+  }
+  
+  .victory-content::-webkit-scrollbar-track,
+  .defeat-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+  }
+  
+  .victory-content::-webkit-scrollbar-thumb,
+  .defeat-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 2px;
+  }
+}
+
+
+/* 動畫定義 */
+@keyframes victoryFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes victoryIconSpin {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(90deg); }
+  50% { transform: scale(1) rotate(180deg); }
+  75% { transform: scale(1.1) rotate(270deg); }
+  100% { transform: scale(1) rotate(360deg); }
 }
