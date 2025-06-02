@@ -24,6 +24,20 @@
   <h1 class="fancy-title">📚 故事與世界設定</h1>
   
   <div class="main-container">
+    <!-- 🔧 修改1：將設定區域移到故事區域上面 -->
+    <div class="section settings-section">
+      <div class="settings-header">
+        <h2 class="fancy-subtitle">⚙️ 世界設定</h2>
+        <!-- 🔧 修改3：設定按鈕改成正方形並增加間距 -->
+        <button class="settings-toggle-btn-square" onclick="toggleSettings()">
+          <span id="settingsToggleText">📋</span>
+        </button>
+      </div>
+      <div class="settings-grid" id="settingsGrid">
+        <!-- 設定項目動態生成 -->
+      </div>
+    </div>
+
     <!-- 故事區域 -->
     <div class="section">
       <h2 class="fancy-subtitle">📖 主線故事</h2>
@@ -31,22 +45,12 @@
         <!-- 故事項目動態生成 -->
       </div>
     </div>
-
-    <!-- 設定區域 -->
-    <div class="section settings-section">
-      <h2 class="fancy-subtitle">⚙️ 世界設定</h2>
-      <button class="settings-toggle-btn" onclick="toggleSettings()">
-        <span id="settingsToggleText">📋 顯示設定資料</span>
-      </button>
-      <div class="settings-grid" id="settingsGrid">
-        <!-- 設定項目動態生成 -->
-      </div>
-    </div>
   </div>
 
   <!-- 故事對話框 -->
   <div class="story-dialog" id="storyDialog">
     <div class="story-dialog-content">
+      <!-- 🔧 修改1：叉叉按鈕現在會固定在視窗右上角 -->
       <button class="story-close-btn" onclick="closeStoryDialog()">×</button>
       <h3 class="story-dialog-title" id="storyDialogTitle">載入中...</h3>
       <div class="story-dialog-body" id="storyDialogBody">
@@ -223,7 +227,7 @@
       document.body.style.overflow = "";
     }
 
-    // 切換設定顯示
+    // 🔧 修改3：更新切換設定顯示的函數，處理新的按鈕樣式
     function toggleSettings() {
       const settingsGrid = document.getElementById("settingsGrid");
       const toggleText = document.getElementById("settingsToggleText");
@@ -232,10 +236,12 @@
       
       if (settingsVisible) {
         settingsGrid.classList.add("show");
-        toggleText.textContent = "📋 隱藏設定資料";
+        toggleText.textContent = "📋";
+        toggleText.title = "隱藏設定資料";
       } else {
         settingsGrid.classList.remove("show");
-        toggleText.textContent = "📋 顯示設定資料";
+        toggleText.textContent = "📋";
+        toggleText.title = "顯示設定資料";
       }
     }
 
