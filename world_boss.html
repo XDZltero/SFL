@@ -764,35 +764,27 @@ async function challengeWorldBoss() {
       
       showBattleResult(true, title, message, result.damage_dealt);
       
-      // 更新顯示
+      // 🚀 優化：直接使用後端返回的資料更新顯示，避免額外API調用
       updatePlayerDamage(result.total_damage, result.current_rank, playerData.challenge_count + 1);
       
-      // 重新載入資料以獲取最新的統計資訊
+      // 🚀 優化：使用後端返回的世界王血量資料更新顯示
+      if (result.world_boss_hp) {
+        updateWorldBossHP(result.world_boss_hp.current, result.world_boss_hp.max);
+      }
+      
+      // 🚀 批次更新：只在必要時才重新載入完整資料
       setTimeout(async () => {
         try {
-          // 載入最新的世界王狀態
-          const statusRes = await SecureAPI.get(`${API_BASE}/world_boss_status`);
-          if (statusRes.ok) {
-            const latestBossData = await statusRes.json();
-            
-            // 更新全球統計顯示
-            updateWorldBossInfo(latestBossData);
-            updateWorldBossStats(latestBossData);
-            
-            // 更新排行榜
-            const leaderboardRes = await SecureAPI.get(`${API_BASE}/world_boss_leaderboard?limit=50`);
-            if (leaderboardRes.ok) {
-              const leaderboardResult = await leaderboardRes.json();
-              updateLeaderboard(leaderboardResult.leaderboard || []);
-            }
-            
-            console.log(`📊 攻擊後更新 - 全球總攻擊: ${latestBossData.total_participants}, 獨特玩家: ${latestBossData.unique_players}`);
-            
+          // 只重新載入排行榜，因為其他資料已經從戰鬥結果獲得
+          const leaderboardRes = await SecureAPI.get(`${API_BASE}/world_boss_leaderboard?limit=50`);
+          if (leaderboardRes.ok) {
+            const leaderboardResult = await leaderboardRes.json();
+            updateLeaderboard(leaderboardResult.leaderboard || []);
           }
         } catch (updateError) {
-          console.warn('更新統計資訊失敗:', updateError);
+          console.warn('更新排行榜失敗:', updateError);
         }
-      }, 1000);
+      }, 500); // 減少延遲
       
       // 開始冷卻計時
       startCooldownTimer(result.cooldown_end_time);
