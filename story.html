@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>故事與設定</title>
+  <link rel="icon" href="favicon.ico" />
+  <link href="css/inventory.css" rel="stylesheet"/>
+  <link href="css/story.css" rel="stylesheet"/>
+</head>
+<body>
+  <div id="initialOverlay">載入中...</div>
+  <div id="loading-placeholder"></div>
+  <script src="js/loading.js"></script>
+  <script>
+    fetch("loadingOverlay.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("loading-placeholder").innerHTML = html;
+        document.getElementById("initialOverlay")?.remove();
+        if (typeof startPageLoadingProgress === "function") startPageLoadingProgress();
+      });
+  </script>
+
+  <h1 class="fancy-title">📚 故事與世界設定</h1>
+  
+  <div class="main-container">
+    <!-- 故事區域 -->
+    <div class="section">
+      <h2 class="fancy-subtitle">📖 主線故事</h2>
+      <div class="story-list" id="storyList">
+        <!-- 故事項目動態生成 -->
+      </div>
+    </div>
+
+    <!-- 設定區域 -->
+    <div class="section settings-section">
+      <h2 class="fancy-subtitle">⚙️ 世界設定</h2>
+      <button class="settings-toggle-btn" onclick="toggleSettings()">
+        <span id="settingsToggleText">📋 顯示設定資料</span>
+      </button>
+      <div class="settings-grid" id="settingsGrid">
+        <!-- 設定項目動態生成 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 故事對話框 -->
+  <div class="story-dialog" id="storyDialog">
+    <div class="story-dialog-content">
+      <button class="story-close-btn" onclick="closeStoryDialog()">×</button>
+      <h3 class="story-dialog-title" id="storyDialogTitle">載入中...</h3>
+      <div class="story-dialog-body" id="storyDialogBody">
+        載入故事內容...
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, SecureAPI } from "./js/firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    let storyData = [];
+    let userClearLog = {};
+    let settingsVisible = false;
+
+    function showLoading(show) {
+      const loading = document.getElementById("loadingOverlay");
+      if (loading) loading.style.display = show ? "flex" : "none";
+    }
+
+    // 載入故事資料
+    async function loadStoryData() {
+      try {
+        const response = await fetch("parameter/story.json");
+        storyData = await response.json();
+        console.log("✅ 故事資料載入完成");
+      } catch (error) {
+        console.error("❌ 載入故事資料失敗:", error);
+        throw error;
+      }
+    }
+
+    // 載入使用者進度
+    async function loadUserProgress() {
+      try {
+        const statusRes = await SecureAPI.getStatus();
+        const userData = await statusRes.json();
+        userClearLog = userData.ClearLog || {};
+        console.log("✅ 使用者進度載入完成:", userClearLog);
+      } catch (error) {
+        console.error("❌ 載入使用者進度失敗:", error);
+        throw error;
+      }
+    }
+
+    // 檢查解鎖條件
+    function checkUnlockRequirement(story) {
+      const req = story.unlock_requirements;
+      
+      // 如果沒有要求，直接解鎖
+      if (!req.dungeon || req.clear_count === 0) {
+        return { unlocked: true, message: "" };
+      }
+      
+      const userClearCount = userClearLog[req.dungeon] || 0;
+      const unlocked = userClearCount >= req.clear_count;
+      
+      let message = "";
+      if (!unlocked) {
+        // 根據副本ID找到副本名稱
+        const dungeonNames = {
+          "dungeon_moss": "腐爛沼澤地",
+          "dungeon_skycity": "天空之城", 
+          "dungeon_ironcity": "鋼鐵都市",
+          "dungeon_magictown": "紫魔之城",
+          "dungeon_pandora_nightmare": "潘朵拉：夢魘幻境",
+          "dungeon_siant": "潘朵拉：聖天教會",
+          "dungeon_obelisk": "次元界：第一要塞"
+        };
+        
+        const dungeonName = dungeonNames[req.dungeon] || req.dungeon;
+        message = `需要通關「${dungeonName}」${req.clear_count}次 (目前: ${userClearCount}/${req.clear_count})`;
+      }
+      
+      return { unlocked, message };
+    }
+
+    // 渲染故事列表
+    function renderStoryList() {
+      const storyList = document.getElementById("storyList");
+      const stories = storyData.filter(item => item.category === "story")
+                               .sort((a, b) => a.sort - b.sort);
+      
+      let html = "";
+      
+      stories.forEach(story => {
+        const unlockStatus = checkUnlockRequirement(story);
+        const isLocked = !unlockStatus.unlocked;
+        
+        html += `
+          <div class="story-item ${isLocked ? 'locked' : ''}" ${!isLocked ? `onclick="openStory('${story.id}')"` : ''}>
+            <div class="story-title">${story.title}</div>
+            ${isLocked ? 
+              `<div class="story-unlock-requirement">🔒 ${unlockStatus.message}</div>` :
+              `<div class="story-preview">點擊閱讀這個故事章節...</div>`
+            }
+          </div>
+        `;
+      });
+      
+      storyList.innerHTML = html || '<div class="story-item locked"><div class="story-title">暫無故事內容</div></div>';
+    }
+
+    // 渲染設定列表
+    function renderSettingsList() {
+      const settingsGrid = document.getElementById("settingsGrid");
+      const settings = storyData.filter(item => item.category === "settings")
+                                .sort((a, b) => a.sort - b.sort);
+      
+      let html = "";
+      
+      settings.forEach(setting => {
+        const unlockStatus = checkUnlockRequirement(setting);
+        const isLocked = !unlockStatus.unlocked;
+        
+        html += `
+          <div class="settings-item ${isLocked ? 'locked' : ''}" ${!isLocked ? `onclick="openStory('${setting.id}')"` : ''}>
+            <div class="settings-title">${setting.title}</div>
+            ${isLocked ? `<div style="font-size: 0.8em; color: #ff6b6b; margin-top: 5px;">🔒 ${unlockStatus.message}</div>` : ''}
+          </div>
+        `;
+      });
+      
+      settingsGrid.innerHTML = html || '<div class="settings-item"><div class="settings-title">暫無設定內容</div></div>';
+    }
+
+    // 處理故事內容，解析換行和圖片
+    function processStoryContent(content) {
+      // 先處理換行符號
+      let processed = content.replace(/\\n/g, '\n');
+      
+      // 分割內容，處理圖片
+      const parts = processed.split('\n\n');
+      let html = '';
+      
+      parts.forEach(part => {
+        const trimmed = part.trim();
+        if (!trimmed) return;
+        
+        // 檢查是否為圖片URL
+        if (trimmed.match(/^https?:\/\/.*\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) {
+          html += `<img src="${trimmed}" alt="故事插圖" loading="lazy" />`;
+        } else {
+          // 處理文字內容，保留換行
+          const textWithBreaks = trimmed.replace(/\n/g, '<br>');
+          html += `<p>${textWithBreaks}</p>`;
+        }
+      });
+      
+      return html;
+    }
+
+    // 開啟故事對話框
+    function openStory(storyId) {
+      const story = storyData.find(item => item.id === storyId);
+      if (!story) return;
+      
+      const unlockStatus = checkUnlockRequirement(story);
+      if (!unlockStatus.unlocked) {
+        alert(`🔒 ${unlockStatus.message}`);
+        return;
+      }
+      
+      document.getElementById("storyDialogTitle").textContent = story.title;
+      document.getElementById("storyDialogBody").innerHTML = processStoryContent(story.content);
+      document.getElementById("storyDialog").style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+
+    // 關閉故事對話框
+    function closeStoryDialog() {
+      document.getElementById("storyDialog").style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    // 切換設定顯示
+    function toggleSettings() {
+      const settingsGrid = document.getElementById("settingsGrid");
+      const toggleText = document.getElementById("settingsToggleText");
+      
+      settingsVisible = !settingsVisible;
+      
+      if (settingsVisible) {
+        settingsGrid.classList.add("show");
+        toggleText.textContent = "📋 隱藏設定資料";
+      } else {
+        settingsGrid.classList.remove("show");
+        toggleText.textContent = "📋 顯示設定資料";
+      }
+    }
+
+    // 全域函數
+    window.openStory = openStory;
+    window.closeStoryDialog = closeStoryDialog;
+    window.toggleSettings = toggleSettings;
+
+    // 點擊對話框外部關閉
+    document.getElementById("storyDialog").addEventListener("click", (e) => {
+      if (e.target.id === "storyDialog") {
+        closeStoryDialog();
+      }
+    });
+
+    // ESC鍵關閉對話框
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.getElementById("storyDialog").style.display === "flex") {
+        closeStoryDialog();
+      }
+    });
+
+    // 主要初始化函數
+    async function initStoryPage() {
+      showLoading(true);
+      
+      try {
+        // 並行載入資料
+        await Promise.all([
+          loadStoryData(),
+          loadUserProgress()
+        ]);
+        
+        // 渲染頁面
+        renderStoryList();
+        renderSettingsList();
+        
+        console.log("🎉 故事頁面初始化完成");
+        
+      } catch (error) {
+        console.error("❌ 故事頁面初始化失敗:", error);
+        alert("載入故事資料失敗，請重新整理頁面");
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // 監聽登入狀態
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        initStoryPage();
+      } else {
+        window.parent.location.href = "/SFL/login.html";
+      }
+    });
+  </script>
+</body>
+</html>
