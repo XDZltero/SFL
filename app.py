@@ -1498,6 +1498,32 @@ def update_world_boss_global_stats(damage_dealt):
         import traceback
         traceback.print_exc()
         return None
+def update_world_boss_global_stats_immediate(damage_dealt):
+    """
+    立即更新世界王全域統計（舊版本兼容性）
+    ⚠️ 警告：此函數直接更新資料庫，可能造成資料不一致
+    建議使用 update_world_boss_global_stats() + 批次操作
+    """
+    print("⚠️ 使用了舊版本的立即更新函數，建議改用批次操作")
+    
+    update_data = update_world_boss_global_stats(damage_dealt)
+    if not update_data:
+        return None
+    
+    try:
+        # 執行立即更新
+        global_ref = db.collection("world_boss_global").document("current_status")
+        global_ref.update(update_data["updates"])
+        
+        # 返回更新後的狀態
+        updated_state = update_data["previous_state"].copy()
+        updated_state.update(update_data["updates"])
+        return updated_state
+        
+    except Exception as e:
+        print(f"❌ 立即更新世界王全域統計失敗: {e}")
+        return None
+
 
 # 🌍 世界王 API 端點
 
@@ -1723,36 +1749,6 @@ def world_boss_challenge():
         traceback.print_exc()
         print(f"🔥 世界王挑戰完全失敗: {str(e)}")
         return jsonify({"success": False, "error": f"挑戰失敗: {str(e)}"}), 500
-
-def prepare_world_boss_global_updates(damage_dealt):
-    """準備世界王全域狀態更新（不立即執行）"""
-    try:
-        global_state = get_world_boss_global_state()
-        if not global_state:
-            return None
-        
-        current_hp = global_state.get("current_hp", 0)
-        new_hp = max(0, current_hp - damage_dealt)
-        new_total_damage = global_state.get("total_damage_dealt", 0) + damage_dealt
-        new_total_participants = global_state.get("total_participants", 0) + 1
-        
-        try:
-            new_phase = get_current_world_boss_phase()
-        except Exception:
-            new_phase = global_state.get("current_phase", 1)
-        
-        return {
-            "current_hp": new_hp,
-            "max_hp": global_state.get("max_hp", 999999999),
-            "current_phase": new_phase,
-            "total_damage_dealt": new_total_damage,
-            "total_participants": new_total_participants,
-            "last_update_time": time.time()
-        }
-        
-    except Exception as e:
-        print(f"❌ 準備世界王全域更新失敗: {e}")
-        return None
 
 @app.route("/world_boss_player_data", methods=["GET"])
 @require_auth
