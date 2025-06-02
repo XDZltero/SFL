@@ -35,7 +35,7 @@
   {
     "id": "dungeon_magictown",
     "name": "紫魔之城",
-    "description": "一股不明的紫色魔力席捲王城，神秘的女巫帶來的究竟只有災禍嗎？",
+    "description": "一股不明的紫色魔力席捲王城，神秘女巫帶來的只有災禍嗎？",
     "bossId": "purple_witch_evitina",
     "min_level": 30,
     "image": "https://i.postimg.cc/85n124n1/dungeon-purpletwon.png",
@@ -46,7 +46,7 @@
   {
     "id": "dungeon_pandora_nightmare",
     "name": "潘朵拉：夢魘幻境",
-    "description": "在紫魔女巫的實驗室中，居然發現了另一個世界的裂縫。這是紫色魔力的來源－－「潘朵拉世界」，而首當其衝映入眼簾的居然是一個夢境領土，似乎告誡著其他世界的人們－「非請勿入」。",
+    "description": "在紫魔女巫的實驗室中，居然發現了另一個世界的裂縫。這是紫色魔力的來源－－「潘朵拉世界」，而首當其衝映入眼簾的居然是一個夢境領土，似乎告誡著其他世界的人們－－「非請勿入」。",
     "bossId": "imperial_minister_defile",
     "min_level": 45,
     "image": "https://i.postimg.cc/VvRfgKfY/dungeon-pandora-nightmare.png",
