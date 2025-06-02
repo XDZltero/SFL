@@ -52,7 +52,7 @@
       "clear_count": 1
     },
     "sort": 5,
-    "content": "你以為艾畢蒂娜不只是個普通的女巫，但結果她只是單純誤打誤撞用魔法撕裂的空間來到了這裡，她只是一名喜愛魔法研究的天才少女。\n\nhttps://i.postimg.cc/YjcyZzFX/witch-shy.png\n\n「所以你說這裡不是潘朵拉?」\n似乎連本人都不知道這裡已經不是她熟悉的世界，她的所作所為在潘朵拉甚至不會造成的任何魔力災害。\n然而，她依舊打開了通往潘朵拉世界的裂縫，為追尋真相，你一腳踏入了潘朵拉世界的入口。\n\nhttps://i.postimg.cc/VvRfgKfY/dungeon-pandora-nightmare.png\n\n當你睜開了眼，你才真正理解了「現實」的脆弱性...。"
+    "content": "你以為艾畢蒂娜不只是個普通的女巫，但結果她只是單純誤打誤撞用魔法撕裂的空間來到了這裡，她只是一名喜愛魔法研究的天才少女。\n\nhttps://i.postimg.cc/RFDymnyH/witch-shy.png\n\n「所以你說這裡不是潘朵拉?」\n似乎連本人都不知道這裡已經不是她熟悉的世界，她的所作所為在潘朵拉甚至不會造成的任何魔力災害。\n然而，她依舊打開了通往潘朵拉世界的裂縫，為追尋真相，你一腳踏入了潘朵拉世界的入口。\n\nhttps://i.postimg.cc/VvRfgKfY/dungeon-pandora-nightmare.png\n\n當你睜開了眼，你才真正理解了「現實」的脆弱性...。"
   },
   {
     "id": "story_006",
@@ -67,7 +67,7 @@
   },
   {
     "id": "story_007",
-    "title": "第六章：邀請",
+    "title": "第六章：測試",
     "category": "story",
     "unlock_requirements": {
       "dungeon": "dungeon_siant",
