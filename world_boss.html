@@ -219,6 +219,11 @@ function checkLevelRequirement() {
   const currentLevelEl = document.getElementById("currentLevelDisplay");
   const levelShortageEl = document.getElementById("levelShortage");
   
+  // 🚀 如果按鈕正在載入中，不要修改狀態
+  if (isChallengeButtonLoading()) {
+    return;
+  }
+  
   if (userLevel < REQUIRED_LEVEL) {
     // 等級不足
     if (levelNoticeEl) levelNoticeEl.style.display = "block";
@@ -229,8 +234,6 @@ function checkLevelRequirement() {
       challengeBtnEl.disabled = true;
       challengeBtnEl.textContent = `⚡ 需要 ${REQUIRED_LEVEL} 等`;
       challengeBtnEl.dataset.levelLocked = "true";
-      
-      // 設定特殊樣式
       challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
       challengeBtnEl.style.color = "#adb5bd";
       challengeBtnEl.style.cursor = "not-allowed";
@@ -389,16 +392,23 @@ function updateCooldownDisplay(cooldownEndTime) {
   const cooldownTimerEl = document.getElementById("cooldownTimer");
   const challengeBtnEl = document.getElementById("challengeBtn");
   
+  // 🚀 如果按鈕正在載入中，不要修改狀態
+  if (isChallengeButtonLoading()) {
+    return;
+  }
+  
   if (!cooldownEndTime) {
     cooldownInfoEl.style.display = "none";
     challengeBtnEl.dataset.cooling = "false";
     
-    // 🚀 新增：檢查等級限制
+    // 🚀 檢查等級限制
     if (userLevel < REQUIRED_LEVEL) {
       checkLevelRequirement();
     } else if (!isWeekend()) {
       challengeBtnEl.disabled = false;
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+      challengeBtnEl.style.background = "";
+      challengeBtnEl.style.cursor = "";
     }
     return;
   }
@@ -410,12 +420,14 @@ function updateCooldownDisplay(cooldownEndTime) {
     cooldownInfoEl.style.display = "none";
     challengeBtnEl.dataset.cooling = "false";
     
-    // 🚀 新增：檢查等級限制
+    // 🚀 檢查等級限制
     if (userLevel < REQUIRED_LEVEL) {
       checkLevelRequirement();
     } else if (!isWeekend()) {
       challengeBtnEl.disabled = false;
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+      challengeBtnEl.style.background = "";
+      challengeBtnEl.style.cursor = "";
     }
     
     if (cooldownTimer) {
@@ -424,6 +436,18 @@ function updateCooldownDisplay(cooldownEndTime) {
     }
     return;
   }
+  
+  const minutes = Math.floor(remaining / (1000 * 60));
+  const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+  
+  cooldownInfoEl.style.display = "block";
+  cooldownTimerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  challengeBtnEl.disabled = true;
+  challengeBtnEl.dataset.cooling = "true";
+  challengeBtnEl.textContent = "⏰ 冷卻中";
+  challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
+  challengeBtnEl.style.cursor = "not-allowed";
+}
   
   const minutes = Math.floor(remaining / (1000 * 60));
   const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
@@ -766,16 +790,29 @@ async function challengeWorldBoss() {
   }
   
   const challengeBtnEl = document.getElementById("challengeBtn");
-  if (challengeBtnEl.disabled) return;
   
+  // 🔒 防重複點擊：如果按鈕已經被禁用，直接返回
+  if (challengeBtnEl.disabled) {
+    console.log('⚠️ 按鈕已被禁用，忽略重複點擊');
+    return;
+  }
+  
+  // 立即設置載入狀態，防止連續點擊
   challengeBtnEl.disabled = true;
-  challengeBtnEl.textContent = "⚔️ 戰鬥中...";
+  challengeBtnEl.textContent = "📡 載入中...勿跳轉";
+  challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
+  challengeBtnEl.style.cursor = "not-allowed";
+  
+  // 新增：設置載入中的標記，用於其他函數判斷狀態
+  challengeBtnEl.dataset.loading = "true";
   
   try {
+    // 發送挑戰請求
     const response = await SecureAPI.post(`${API_BASE}/world_boss_challenge`, {});
     const result = await response.json();
     
     if (response.ok && result.success) {
+      // ✅ 挑戰成功
       const message = `
         <div style="text-align: left; line-height: 1.6;">
           <div style="margin-bottom: 15px;">
@@ -796,7 +833,7 @@ async function challengeWorldBoss() {
         </div>
       `;
       
-      // 🚀 根據獎勵等級顯示不同的標題和圖示
+      // 根據獎勵等級顯示不同的標題和圖示
       let title = "⚔️ 戰鬥成功！";
       
       switch(result.reward_tier) {
@@ -816,18 +853,17 @@ async function challengeWorldBoss() {
       
       showBattleResult(true, title, message, result.damage_dealt);
       
-      // 🚀 優化：直接使用後端返回的資料更新顯示，避免額外API調用
+      // 直接使用後端返回的資料更新顯示
       updatePlayerDamage(result.total_damage, result.current_rank, playerData.challenge_count + 1);
       
-      // 🚀 優化：使用後端返回的世界王血量資料更新顯示
+      // 使用後端返回的世界王血量資料更新顯示
       if (result.world_boss_hp) {
         updateWorldBossHP(result.world_boss_hp.current, result.world_boss_hp.max);
       }
       
-      // 🚀 批次更新：只在必要時才重新載入完整資料
+      // 批次更新：只在必要時才重新載入完整資料
       setTimeout(async () => {
         try {
-          // 只重新載入排行榜，因為其他資料已經從戰鬥結果獲得
           const leaderboardRes = await SecureAPI.get(`${API_BASE}/world_boss_leaderboard?limit=50`);
           if (leaderboardRes.ok) {
             const leaderboardResult = await leaderboardRes.json();
@@ -836,12 +872,13 @@ async function challengeWorldBoss() {
         } catch (updateError) {
           console.warn('更新排行榜失敗:', updateError);
         }
-      }, 500); // 減少延遲
+      }, 500);
       
-      // 開始冷卻計時
+      // 成功後立即設置冷卻狀態
       startCooldownTimer(result.cooldown_end_time);
       
     } else {
+      // ❌ 挑戰失敗
       // 處理等級不足錯誤
       if (result.required_level && result.current_level) {
         showBattleResult(false, "等級限制", 
@@ -850,19 +887,60 @@ async function challengeWorldBoss() {
         showBattleResult(false, "挑戰失敗", result.error || "未知錯誤");
       }
       
-      // 重新檢查等級限制狀態
-      checkLevelRequirement();
+      // 失敗時恢復按鈕狀態
+      restoreChallengeButton();
     }
     
   } catch (error) {
     console.error('挑戰世界王失敗:', error);
     showBattleResult(false, "連線錯誤", "挑戰過程發生錯誤，請稍後再試");
     
-    // 重新檢查等級限制狀態
-    checkLevelRequirement();
+    // 發生錯誤時也要恢復按鈕狀態
+    restoreChallengeButton();
   }
 }
 
+// 恢復挑戰按鈕的專用函數
+function restoreChallengeButton() {
+  const challengeBtnEl = document.getElementById("challengeBtn");
+  if (!challengeBtnEl) return;
+  
+  // 🔓 清除載入中標記
+  challengeBtnEl.dataset.loading = "false";
+  
+  // 🔄 根據當前狀態恢復按鈕
+  if (userLevel < REQUIRED_LEVEL) {
+    // 等級不足
+    challengeBtnEl.disabled = true;
+    challengeBtnEl.textContent = `⚡ 需要 ${REQUIRED_LEVEL} 等`;
+    challengeBtnEl.dataset.levelLocked = "true";
+    challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
+    challengeBtnEl.style.color = "#adb5bd";
+    challengeBtnEl.style.cursor = "not-allowed";
+  } else if (isWeekend()) {
+    // 週日限制
+    challengeBtnEl.disabled = true;
+    challengeBtnEl.textContent = "⏰ 週日休整中";
+    challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
+    challengeBtnEl.style.cursor = "not-allowed";
+  } else {
+    // 正常狀態
+    challengeBtnEl.disabled = false;
+    challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+    challengeBtnEl.dataset.levelLocked = "false";
+    challengeBtnEl.style.background = "";
+    challengeBtnEl.style.color = "";
+    challengeBtnEl.style.cursor = "";
+  }
+  
+  console.log('🔄 挑戰按鈕狀態已恢復');
+}
+
+// 檢查按鈕是否在載入中
+function isChallengeButtonLoading() {
+  const challengeBtnEl = document.getElementById("challengeBtn");
+  return challengeBtnEl && challengeBtnEl.dataset.loading === "true";
+}
 
 // 專門更新統計資訊的函數
 function updateGlobalStats(bossData) {
