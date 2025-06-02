@@ -132,7 +132,7 @@ def apply_drops(db, user_id, drops, user_luck=0):
             round_1_rate = 1.0
         else:
             # 非100%掉落率進行幸運加成，上限95%
-            round_1_rate = min(base_rate + round_1_bonus_rate, 0.95)
+            round_1_rate = min(base_rate * (1 + round_1_bonus_rate), 0.95)
         
         if random.random() <= round_1_rate:
             # 第一輪掉落成功
