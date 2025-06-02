@@ -28,9 +28,9 @@
     <div class="section settings-section">
       <div class="settings-header">
         <h2 class="fancy-subtitle">⚙️ 世界設定</h2>
-        <!-- 🔧 修改3：設定按鈕改成正方形並增加間距 -->
-        <button class="settings-toggle-btn-square" onclick="toggleSettings()">
-          <span id="settingsToggleText">📋【展開/隱藏 世界觀設定】</span>
+        <!-- 🔧 修改3：設定按鈕靠近標題並顯示完整文字 -->
+        <button class="settings-toggle-btn" onclick="toggleSettings()">
+          <span id="settingsToggleText">📋 顯示設定資料</span>
         </button>
       </div>
       <div class="settings-grid" id="settingsGrid">
@@ -227,7 +227,7 @@
       document.body.style.overflow = "";
     }
 
-    // 🔧 修改3：更新切換設定顯示的函數，處理新的按鈕樣式
+    // 🔧 修改3：更新切換設定顯示的函數，恢復原來的文字顯示
     function toggleSettings() {
       const settingsGrid = document.getElementById("settingsGrid");
       const toggleText = document.getElementById("settingsToggleText");
@@ -236,12 +236,10 @@
       
       if (settingsVisible) {
         settingsGrid.classList.add("show");
-        toggleText.textContent = "📋";
-        toggleText.title = "隱藏設定資料";
+        toggleText.textContent = "📋 隱藏設定資料";
       } else {
         settingsGrid.classList.remove("show");
-        toggleText.textContent = "📋";
-        toggleText.title = "顯示設定資料";
+        toggleText.textContent = "📋 顯示設定資料";
       }
     }
 
