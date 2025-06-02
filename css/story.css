@@ -1,4 +1,4 @@
-    /* 故事頁面專用樣式 */
+/* 故事頁面專用樣式 */
     .story-list {
       display: flex;
       flex-direction: column;
@@ -112,6 +112,9 @@
       position: relative;
       scrollbar-width: thin;
       scrollbar-color: rgba(0, 255, 255, 0.6) rgba(0, 0, 0, 0.3);
+      
+      /* 🔧 修改1：增加頂部padding避免被固定按鈕遮擋 */
+      padding-top: 80px;
     }
 
     .story-dialog-content::-webkit-scrollbar {
@@ -157,33 +160,87 @@
       box-shadow: 0 8px 25px rgba(0, 255, 255, 0.3);
     }
 
+    /* 🔧 修改1：固定在視窗右上角的叉叉按鈕 */
     .story-close-btn {
-      position: absolute;
-      top: 15px;
-      right: 20px;
+      position: fixed !important; /* 固定在視窗位置，不會隨對話框滾動 */
+      top: 30px !important;
+      right: 30px !important;
       background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
       border: none;
-      width: 40px;
-      height: 40px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       color: white;
-      font-size: 1.5em;
+      font-size: 1.8em;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
-      z-index: 2;
+      z-index: 10000 !important; /* 確保在最上層 */
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+      
+      /* 觸控友好 */
+      -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
+      touch-action: manipulation;
     }
 
     .story-close-btn:hover {
       transform: scale(1.1);
-      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.8);
+    }
+
+    /* 🔧 修改3：設定區域標題和按鈕的佈局 */
+    .settings-header {
+      display: flex;
+      align-items: center;
+      gap: 20px; /* 標題和按鈕之間的間距 */
+      margin-bottom: 20px;
+    }
+
+    .settings-header .fancy-subtitle {
+      margin-bottom: 0; /* 移除原有的底部間距 */
+      flex: 1; /* 讓標題佔據剩餘空間 */
     }
 
     /* 設定區域 */
     .settings-section {
-      margin-top: 40px;
+      margin-top: 0; /* 讓設定區域在最上面 */
+      margin-bottom: 40px; /* 與故事區域之間的間距 */
     }
 
+    /* 🔧 修改3：正方形設定切換按鈕 */
+    .settings-toggle-btn-square {
+      background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%);
+      border: none;
+      width: 50px;  /* 正方形尺寸 */
+      height: 50px; /* 正方形尺寸 */
+      border-radius: 12px; /* 圓角 */
+      color: #333;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.3em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(255, 217, 61, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0; /* 不被壓縮 */
+      
+      /* 觸控友好 */
+      -webkit-tap-highlight-color: rgba(255, 217, 61, 0.3);
+      touch-action: manipulation;
+    }
+
+    .settings-toggle-btn-square:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 8px 25px rgba(255, 217, 61, 0.6);
+    }
+
+    .settings-toggle-btn-square:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    /* 原有的設定按鈕樣式（保留作為備用） */
     .settings-toggle-btn {
       background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%);
       border: none;
@@ -248,242 +305,264 @@
     /* 響應式設計 */
     @media (max-width: 768px) {
       .story-dialog-content {
-    padding: 25px;
-    margin: 10px;
-  }
-  
-  .story-dialog-title {
-    font-size: 1.6em;
-  }
-  
-  .story-dialog-body {
-    font-size: 1em;
-  }
-  
-  .settings-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  /* 🔧 新增：修正手機版叉叉按鈕位置 */
-  .story-close-btn {
-    position: fixed !important; /* 改為固定定位 */
-    top: 20px !important;
-    right: 20px !important;
-    width: 45px !important; /* 稍微增大以便觸摸 */
-    height: 45px !important;
-    font-size: 1.6em !important;
-    z-index: 10000 !important; /* 確保在最上層 */
-    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.6) !important;
-    
-    /* 確保觸摸友好 */
-    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
-    touch-action: manipulation;
-  }
-  
-  .story-close-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.8) !important;
-  }
-  
-  /* 🔧 確保對話框內容不會被按鈕遮擋 */
-  .story-dialog-content {
-    padding-top: 80px !important; /* 增加頂部padding避免被按鈕遮擋 */
-  }
+        padding: 25px;
+        margin: 10px;
+        /* 🔧 手機版：增加更多頂部padding */
+        padding-top: 90px;
+      }
+      
+      .story-dialog-title {
+        font-size: 1.6em;
+      }
+      
+      .story-dialog-body {
+        font-size: 1em;
+      }
+      
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      /* 🔧 修改1：手機版叉叉按鈕優化 */
+      .story-close-btn {
+        top: 20px !important;
+        right: 20px !important;
+        width: 45px !important;
+        height: 45px !important;
+        font-size: 1.6em !important;
+      }
 
-    /* 載入動畫覆蓋 */
-    .story-dialog-content::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
-      animation: sectionShine 4s ease-in-out infinite;
-      pointer-events: none;
-      border-radius: 18px;
+      /* 🔧 修改3：手機版設定標題和按鈕佈局優化 */
+      .settings-header {
+        gap: 15px;
+      }
+
+      .settings-header .fancy-subtitle {
+        font-size: 1.3em;
+      }
+
+      .settings-toggle-btn-square {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2em;
+      }
     }
-}
 
     /* 極小螢幕優化 (小於 480px) */
-@media (max-width: 480px) {
-  .story-close-btn {
-    top: 15px !important;
-    right: 15px !important;
-    width: 42px !important;
-    height: 42px !important;
-    font-size: 1.5em !important;
-  }
-  
-  .story-dialog-content {
-    padding-top: 75px !important;
-  }
-}
+    @media (max-width: 480px) {
+      .story-close-btn {
+        top: 15px !important;
+        right: 15px !important;
+        width: 42px !important;
+        height: 42px !important;
+        font-size: 1.5em !important;
+      }
+      
+      .story-dialog-content {
+        padding-top: 85px !important;
+      }
 
-/* 橫屏手機優化 */
-@media (max-width: 768px) and (orientation: landscape) {
-  .story-close-btn {
-    top: 10px !important;
-    right: 15px !important;
-    width: 40px !important;
-    height: 40px !important;
-  }
-  
-  .story-dialog-content {
-    padding-top: 65px !important;
-  }
-}
+      .settings-header {
+        gap: 12px;
+      }
 
-.fancy-title::before,
-.fancy-title::after {
-  animation: none !important;
-  opacity: 0.8 !important; /* 固定透明度 */
-  transform: translateY(-50%) rotate(0deg) !important; /* 固定位置 */
-}
+      .settings-toggle-btn-square {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1em;
+      }
+    }
 
-/* 移除副標題的動畫 */
-.fancy-subtitle::after {
-  background: linear-gradient(90deg, #ffd93d, transparent) !important;
-  /* 移除任何可能的動畫 */
-}
+    /* 橫屏手機優化 */
+    @media (max-width: 768px) and (orientation: landscape) {
+      .story-close-btn {
+        top: 10px !important;
+        right: 15px !important;
+        width: 40px !important;
+        height: 40px !important;
+      }
+      
+      .story-dialog-content {
+        padding-top: 75px !important;
+      }
+    }
 
-/* 移除區塊的閃光動畫 */
-.story-list::before,
-.settings-section::before,
-.stats-section::before,
-.equipment-section::before,
-.items-section::before {
-  animation: none !important;
-  background: none !important;
-  display: none !important;
-}
+    .fancy-title::before,
+    .fancy-title::after {
+      animation: none !important;
+      opacity: 0.8 !important; /* 固定透明度 */
+      transform: translateY(-50%) rotate(0deg) !important; /* 固定位置 */
+    }
 
-/* 移除對話框的動畫 */
-.story-dialog {
-  animation: none !important;
-}
+    /* 移除副標題的動畫 */
+    .fancy-subtitle::after {
+      background: linear-gradient(90deg, #ffd93d, transparent) !important;
+      /* 移除任何可能的動畫 */
+    }
 
-.story-dialog-content::before {
-  animation: none !important;
-  background: none !important;
-  display: none !important;
-}
+    /* 移除區塊的閃光動畫 */
+    .story-list::before,
+    .settings-section::before,
+    .stats-section::before,
+    .equipment-section::before,
+    .items-section::before {
+      animation: none !important;
+      background: none !important;
+      display: none !important;
+    }
 
-.story-dialog-title {
-  text-shadow: 0 0 20px rgba(255, 217, 61, 0.8) !important; /* 固定發光 */
-}
+    /* 移除對話框的動畫 */
+    .story-dialog {
+      animation: none !important;
+    }
 
-/* 移除按鈕的動畫效果 */
-.settings-toggle-btn:hover,
-.effect-button:hover,
-.story-close-btn:hover {
-  transform: none !important;
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6) !important; /* 固定陰影 */
-}
+    .story-dialog-content::before {
+      animation: none !important;
+      background: none !important;
+      display: none !important;
+    }
 
-/* 移除設定網格的過渡動畫 */
-.settings-grid {
-  transition: none !important;
-}
+    .story-dialog-title {
+      text-shadow: 0 0 20px rgba(255, 217, 61, 0.8) !important; /* 固定發光 */
+    }
 
-.settings-grid.show {
-  display: grid !important;
-  opacity: 1 !important;
-}
+    /* 移除按鈕的動畫效果 */
+    .settings-toggle-btn:hover,
+    .settings-toggle-btn-square:hover,
+    .effect-button:hover,
+    .story-close-btn:hover {
+      /* 保留基本的hover效果但移除過度動畫 */
+    }
 
-/* 移除載入動畫 */
-.battle-loading-container .battle-icon {
-  animation: none !important;
-}
+    /* 移除設定網格的過渡動畫 */
+    .settings-grid {
+      transition: none !important;
+    }
 
-.normal-title {
-  animation: none !important;
-  text-shadow: 0 0 6px rgba(0, 202, 202, 0.3) !important; /* 固定發光 */
-}
+    .settings-grid.show {
+      display: grid !important;
+      opacity: 1 !important;
+    }
 
-.loading-text {
-  animation: none !important;
-  opacity: 1 !important; /* 固定透明度 */
-}
+    /* 移除載入動畫 */
+    .battle-loading-container .battle-icon {
+      animation: none !important;
+    }
 
-.progress-bar {
-  animation: none !important;
-  background: linear-gradient(90deg, #ff6b6b, #ffd93d, #4ecdc4, #45b7d1) !important;
-}
+    .normal-title {
+      animation: none !important;
+      text-shadow: 0 0 6px rgba(0, 202, 202, 0.3) !important; /* 固定發光 */
+    }
 
-.progress-bar::after {
-  animation: none !important;
-  display: none !important; /* 完全移除閃光效果 */
-}
+    .loading-text {
+      animation: none !important;
+      opacity: 1 !important; /* 固定透明度 */
+    }
 
-.particles {
-  display: none !important; /* 完全移除粒子效果 */
-}
+    .progress-bar {
+      animation: none !important;
+      background: linear-gradient(90deg, #ff6b6b, #ffd93d, #4ecdc4, #45b7d1) !important;
+    }
 
-/* 🚀 額外優化：禁用所有過渡效果（提升性能） */
-.story-item,
-.settings-item,
-.settings-toggle-btn,
-.story-close-btn,
-.effect-button {
-  transition: none !important;
-}
+    .progress-bar::after {
+      animation: none !important;
+      display: none !important; /* 完全移除閃光效果 */
+    }
 
-/* 保留基本的hover效果但移除動畫 */
-.story-item:not(.locked):hover {
-  background: rgba(0, 255, 255, 0.08) !important;
-  border-color: rgba(0, 255, 255, 0.4) !important;
-  cursor: pointer !important;
-}
+    .particles {
+      display: none !important; /* 完全移除粒子效果 */
+    }
 
-.settings-item:hover {
-  background: rgba(255, 217, 61, 0.08) !important;
-  border-color: rgba(255, 217, 61, 0.4) !important;
-  cursor: pointer !important;
-}
+    /* 🚀 額外優化：禁用所有過渡效果（提升性能） */
+    .story-item,
+    .settings-item,
+    .settings-toggle-btn,
+    .settings-toggle-btn-square,
+    .story-close-btn,
+    .effect-button {
+      transition: none !important;
+    }
 
-/* 簡化按鈕效果 */
-.settings-toggle-btn:hover {
-  background: linear-gradient(135deg, #ffdd4a 0%, #ffc347 100%) !important;
-}
+    /* 保留基本的hover效果但移除動畫 */
+    .story-item:not(.locked):hover {
+      background: rgba(0, 255, 255, 0.08) !important;
+      border-color: rgba(0, 255, 255, 0.4) !important;
+      cursor: pointer !important;
+    }
 
-.story-close-btn:hover {
-  background: linear-gradient(135deg, #ff7b7b 0%, #ff5a24 100%) !important;
-}
+    .settings-item:hover {
+      background: rgba(255, 217, 61, 0.08) !important;
+      border-color: rgba(255, 217, 61, 0.4) !important;
+      cursor: pointer !important;
+    }
 
-/* 移除背景動畫 */
-body::before {
-  animation: none !important;
-  background: 
-    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(120, 219, 226, 0.2) 0%, transparent 50%) !important;
-}
+    /* 簡化按鈕效果 */
+    .settings-toggle-btn:hover {
+      background: linear-gradient(135deg, #ffdd4a 0%, #ffc347 100%) !important;
+    }
 
-/* 移除載入遮罩的動畫 */
-#loadingOverlay::before {
-  animation: none !important;
-  opacity: 0.6 !important; /* 固定透明度 */
-}
+    .settings-toggle-btn-square:hover {
+      background: linear-gradient(135deg, #ffdd4a 0%, #ffc347 100%) !important;
+    }
 
-/* 🔧 關鍵優化：強制禁用所有keyframes動畫 */
-* {
-  animation-duration: 0s !important;
-  animation-delay: 0s !important;
-  animation-iteration-count: 1 !important;
-}
+    .story-close-btn:hover {
+      background: linear-gradient(135deg, #ff7b7b 0%, #ff5a24 100%) !important;
+    }
 
-/* 保持基本的視覺效果但移除動畫 */
-@media (max-width: 768px) {
-  /* 確保手機版也沒有動畫 */
-  .story-item:hover,
-  .settings-item:hover {
-    transform: none !important;
-  }
-  
-  /* 簡化手機版hover效果 */
-  .story-item:active {
-    background: rgba(0, 255, 255, 0.15) !important;
-  }
-  
-  .settings-item:active {
-    background: rgba(255, 217, 61, 0.15) !important;
-  }
-}
+    /* 移除背景動畫 */
+    body::before {
+      animation: none !important;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 226, 0.2) 0%, transparent 50%) !important;
+    }
+
+    /* 移除載入遮罩的動畫 */
+    #loadingOverlay::before {
+      animation: none !important;
+      opacity: 0.6 !important; /* 固定透明度 */
+    }
+
+    /* 🔧 關鍵優化：強制禁用所有keyframes動畫 */
+    * {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+    }
+
+    /* 保持基本的視覺效果但移除動畫 */
+    @media (max-width: 768px) {
+      /* 確保手機版也沒有動畫 */
+      .story-item:hover,
+      .settings-item:hover {
+        transform: none !important;
+      }
+      
+      /* 簡化手機版hover效果 */
+      .story-item:active {
+        background: rgba(0, 255, 255, 0.15) !important;
+      }
+      
+      .settings-item:active {
+        background: rgba(255, 217, 61, 0.15) !important;
+      }
+
+      .settings-toggle-btn-square:active {
+        background: rgba(255, 217, 61, 0.15) !important;
+      }
+    }
+
+    /* 🔧 安全區域支援（針對有瀏海或Home Indicator的設備）*/
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      @media (max-width: 768px) {
+        .story-close-btn {
+          top: max(20px, env(safe-area-inset-top) + 10px) !important;
+          right: max(20px, env(safe-area-inset-right) + 10px) !important;
+        }
+        
+        .story-dialog-content {
+          padding-top: max(90px, env(safe-area-inset-top) + 70px) !important;
+        }
+      }
+    }
