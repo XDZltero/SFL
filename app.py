@@ -1437,19 +1437,22 @@ def get_current_world_boss_phase(world_boss_config=None):
         return 1
 
 def update_world_boss_global_stats(damage_dealt):
-    """更新世界王全域統計"""
+    """
+    計算世界王全域統計更新資料（不直接更新資料庫）
+    返回需要更新的資料，供批次操作使用
+    
+    注意：此函數不再直接更新資料庫，需要調用方使用返回的資料進行批次更新
+    """
     try:
-        global_ref = db.collection("world_boss_global").document("current_status")
         global_state = get_world_boss_global_state()
         
         if not global_state:
             print("⚠️ 全域狀態不存在，嘗試初始化")
-            config = get_world_boss_config()
-            global_state = initialize_world_boss_global_state()
-        
-        if not global_state:
-            print("❌ 無法獲取或初始化全域狀態")
-            return None
+            initialize_state = initialize_world_boss_global_state()
+            if not initialize_state:
+                print("❌ 無法獲取或初始化全域狀態")
+                return None
+            global_state = initialize_state
         
         # 更新數據，增加更多錯誤檢查
         current_hp = global_state.get("current_hp", 0)
@@ -1460,7 +1463,7 @@ def update_world_boss_global_stats(damage_dealt):
         new_hp = max(0, current_hp - damage_dealt)
         new_total_damage = global_state.get("total_damage_dealt", 0) + damage_dealt
         
-        # 🚀 新增：每次攻擊都增加參與次數
+        # 🚀 每次攻擊都增加參與次數
         new_total_participants = global_state.get("total_participants", 0) + 1
         
         # 安全地獲取新階段
@@ -1470,26 +1473,28 @@ def update_world_boss_global_stats(damage_dealt):
             print(f"⚠️ 獲取階段失敗: {phase_error}, 使用預設值1")
             new_phase = 1
         
+        # 🚀 重要修改：只返回更新資料，不直接更新資料庫
         updated_state = {
             "current_hp": new_hp,
             "max_hp": global_state.get("max_hp", 999999999),
             "current_phase": new_phase,
             "total_damage_dealt": new_total_damage,
-            "total_participants": new_total_participants,  # 🚀 新增：總攻擊次數
+            "total_participants": new_total_participants,
             "last_update_time": time.time()
         }
         
-        print(f"🔄 更新世界王狀態: HP {current_hp} -> {new_hp}, 傷害 +{damage_dealt}, 總攻擊次數: {new_total_participants}")
+        print(f"🔄 準備世界王狀態更新: HP {current_hp} -> {new_hp}, 傷害 +{damage_dealt}, 總攻擊次數: {new_total_participants}")
         
-        # 合併更新，保留其他欄位
-        global_ref.update(updated_state)
-        
-        # 返回更新後的完整狀態
-        global_state.update(updated_state)
-        return global_state
+        # 🚀 返回完整的更新資料供批次操作使用
+        return {
+            "updates": updated_state,
+            "previous_state": global_state,
+            "damage_dealt": damage_dealt,
+            "hp_change": current_hp - new_hp
+        }
         
     except Exception as e:
-        print(f"❌ 更新世界王全域統計失敗: {e}")
+        print(f"❌ 計算世界王全域統計更新失敗: {e}")
         import traceback
         traceback.print_exc()
         return None
