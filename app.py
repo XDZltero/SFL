@@ -1681,35 +1681,42 @@ def world_boss_challenge():
         batch.update(user_ref, {"exp": new_exp})
         
         # 4. 準備道具掉落（如果有的話）
-        item_updates = {}
-        if damage_dealt >= 10:
-            # 計算掉落但不立即寫入
+        # 🆕 修正：改進道具掉落邏輯
+        dropped_items = {}
+        
+        # 🎯 重要：只要參與挑戰就有掉落機會，移除傷害最低限制
+        try:
+            # 取得現有道具數量
+            item_doc = db.collection("user_items").document(user_id).get()
+            current_items = item_doc.to_dict().get("items", {}) if item_doc.exists else {}
+            
+            # 🎲 計算每個掉落物品
             import random
             for drop in config["rewards"]["drops"]:
                 if random.random() <= drop["rate"]:
                     item_id = drop["id"]
                     item_value = drop["value"]
                     
-                    # 取得現有道具數量
-                    item_doc = db.collection("user_items").document(user_id).get()
-                    current_items = item_doc.to_dict().get("items", {}) if item_doc.exists else {}
+                    # 🆕 記錄本次掉落的道具（用於前端顯示）
+                    dropped_items[item_id] = dropped_items.get(item_id, 0) + item_value
                     
-                    # 準備更新
+                    # 🆕 更新玩家道具庫存
                     current_items[item_id] = current_items.get(item_id, 0) + item_value
-                    item_updates = {"items": current_items}
+            
+            # 🆕 如果有道具掉落，加入批次操作
+            if dropped_items:
+                item_ref = db.collection("user_items").document(user_id)
+                batch.set(item_ref, {"items": current_items}, merge=True)
+            
+        except Exception as drop_error:
+            print(f"⚠️ 世界王道具掉落處理失敗: {drop_error}")
         
-        # 如果有道具更新，加入批次操作
-        if item_updates:
-            item_ref = db.collection("user_items").document(user_id)
-            batch.set(item_ref, item_updates, merge=True)
-        
-        # 🎯 關鍵：原子性提交所有操作
+        # 原子性提交所有操作
         try:
             batch.commit()
             print(f"🌍 世界王挑戰批次操作成功 - 使用者: {user_id}")
         except Exception as batch_error:
             print(f"❌ 批次操作失敗: {batch_error}")
-            # 如果批次操作失敗，整個挑戰失敗
             return jsonify({
                 "success": False, 
                 "error": "資料儲存失敗，請稍後再試"
@@ -1723,6 +1730,16 @@ def world_boss_challenge():
                 rank = i + 1
                 break
         
+        # 🆕 計算掉落率顯示資訊（供前端參考）
+        drop_info = []
+        for drop in config["rewards"]["drops"]:
+            item_id = drop["id"]
+            rate = drop["rate"]
+            if item_id in dropped_items:
+                drop_info.append(f"{item_id}(獲得)")
+            else:
+                drop_info.append(f"{item_id}({rate*100:.1f}%)")
+        
         # 🎯 只有在所有操作都成功後才回傳成功
         result = {
             "success": True,
@@ -1734,7 +1751,10 @@ def world_boss_challenge():
             "damage_percentage": round(damage_percentage, 4),
             "reward_tier": reward_tier,
             "tier_description": tier_desc,
-            "rewards": {"items": item_updates.get("items", {})},
+            "rewards": {
+                "items": dropped_items,  # 🆕 修正：只返回本次掉落的道具
+                "drop_rates": drop_info   # 🆕 新增：掉落率資訊
+            },
             "cooldown_end_time": new_cooldown_end_time,
             "world_boss_hp": {
                 "current": new_hp,
