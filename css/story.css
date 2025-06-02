@@ -1,4 +1,3 @@
-<style>
     /* 故事頁面專用樣式 */
     .story-list {
       display: flex;
@@ -20,18 +19,15 @@
     }
 
     .story-item::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
-      animation: sectionShine 4s ease-in-out infinite;
-      pointer-events: none;
+      animation: none !important;
+      background: none !important;
     }
 
     .story-item:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(0, 255, 255, 0.3);
-      border-color: rgba(0, 255, 255, 0.4);
+      transform: none !important;
+      box-shadow: none !important;
+      background: rgba(0, 255, 255, 0.08) !important; /* 簡單的背景色變化 */
+      border-color: rgba(0, 255, 255, 0.4) !important;
     }
 
     .story-item.locked {
@@ -229,10 +225,16 @@
       text-align: center;
     }
 
+    .settings-item::before {
+      animation: none !important;
+      background: none !important;
+    }
+    
     .settings-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 217, 61, 0.3);
-      border-color: rgba(255, 217, 61, 0.5);
+      transform: none !important;
+      box-shadow: none !important;
+      background: rgba(255, 217, 61, 0.08) !important;
+      border-color: rgba(255, 217, 61, 0.4) !important;
     }
 
     .settings-title {
@@ -328,4 +330,160 @@
     padding-top: 65px !important;
   }
 }
-  </style>
+
+.fancy-title::before,
+.fancy-title::after {
+  animation: none !important;
+  opacity: 0.8 !important; /* 固定透明度 */
+  transform: translateY(-50%) rotate(0deg) !important; /* 固定位置 */
+}
+
+/* 移除副標題的動畫 */
+.fancy-subtitle::after {
+  background: linear-gradient(90deg, #ffd93d, transparent) !important;
+  /* 移除任何可能的動畫 */
+}
+
+/* 移除區塊的閃光動畫 */
+.story-list::before,
+.settings-section::before,
+.stats-section::before,
+.equipment-section::before,
+.items-section::before {
+  animation: none !important;
+  background: none !important;
+  display: none !important;
+}
+
+/* 移除對話框的動畫 */
+.story-dialog {
+  animation: none !important;
+}
+
+.story-dialog-content::before {
+  animation: none !important;
+  background: none !important;
+  display: none !important;
+}
+
+.story-dialog-title {
+  text-shadow: 0 0 20px rgba(255, 217, 61, 0.8) !important; /* 固定發光 */
+}
+
+/* 移除按鈕的動畫效果 */
+.settings-toggle-btn:hover,
+.effect-button:hover,
+.story-close-btn:hover {
+  transform: none !important;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6) !important; /* 固定陰影 */
+}
+
+/* 移除設定網格的過渡動畫 */
+.settings-grid {
+  transition: none !important;
+}
+
+.settings-grid.show {
+  display: grid !important;
+  opacity: 1 !important;
+}
+
+/* 移除載入動畫 */
+.battle-loading-container .battle-icon {
+  animation: none !important;
+}
+
+.normal-title {
+  animation: none !important;
+  text-shadow: 0 0 6px rgba(0, 202, 202, 0.3) !important; /* 固定發光 */
+}
+
+.loading-text {
+  animation: none !important;
+  opacity: 1 !important; /* 固定透明度 */
+}
+
+.progress-bar {
+  animation: none !important;
+  background: linear-gradient(90deg, #ff6b6b, #ffd93d, #4ecdc4, #45b7d1) !important;
+}
+
+.progress-bar::after {
+  animation: none !important;
+  display: none !important; /* 完全移除閃光效果 */
+}
+
+.particles {
+  display: none !important; /* 完全移除粒子效果 */
+}
+
+/* 🚀 額外優化：禁用所有過渡效果（提升性能） */
+.story-item,
+.settings-item,
+.settings-toggle-btn,
+.story-close-btn,
+.effect-button {
+  transition: none !important;
+}
+
+/* 保留基本的hover效果但移除動畫 */
+.story-item:not(.locked):hover {
+  background: rgba(0, 255, 255, 0.08) !important;
+  border-color: rgba(0, 255, 255, 0.4) !important;
+  cursor: pointer !important;
+}
+
+.settings-item:hover {
+  background: rgba(255, 217, 61, 0.08) !important;
+  border-color: rgba(255, 217, 61, 0.4) !important;
+  cursor: pointer !important;
+}
+
+/* 簡化按鈕效果 */
+.settings-toggle-btn:hover {
+  background: linear-gradient(135deg, #ffdd4a 0%, #ffc347 100%) !important;
+}
+
+.story-close-btn:hover {
+  background: linear-gradient(135deg, #ff7b7b 0%, #ff5a24 100%) !important;
+}
+
+/* 移除背景動畫 */
+body::before {
+  animation: none !important;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 226, 0.2) 0%, transparent 50%) !important;
+}
+
+/* 移除載入遮罩的動畫 */
+#loadingOverlay::before {
+  animation: none !important;
+  opacity: 0.6 !important; /* 固定透明度 */
+}
+
+/* 🔧 關鍵優化：強制禁用所有keyframes動畫 */
+* {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+}
+
+/* 保持基本的視覺效果但移除動畫 */
+@media (max-width: 768px) {
+  /* 確保手機版也沒有動畫 */
+  .story-item:hover,
+  .settings-item:hover {
+    transform: none !important;
+  }
+  
+  /* 簡化手機版hover效果 */
+  .story-item:active {
+    background: rgba(0, 255, 255, 0.15) !important;
+  }
+  
+  .settings-item:active {
+    background: rgba(255, 217, 61, 0.15) !important;
+  }
+}
