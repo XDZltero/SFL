@@ -66,7 +66,8 @@
     const musicSources = {
       main: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3",
       boss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/Last_Boss_Battle_theme_v2-zrhJSBVfzYfK17ro58EyHtmr0smIxi.mp3",
-      worldBoss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/World_Boss_Battle_theme-1iojoQSoKrHoSGqZX5R6NrXmPwGAJ0.mp3" 
+      worldBoss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/World_Boss_Battle_theme-1iojoQSoKrHoSGqZX5R6NrXmPwGAJ0.mp3",
+      story: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/StoryBGM-故事背景音樂.mp3"
     };
 
     // 🎵 音樂切換函數
@@ -111,7 +112,11 @@
         case "restoreMainMusic":
           switchMusic("main");
           break;
-          
+
+        case "switchToStoryMusic": // 🆕 新增故事音樂指令
+          switchMusic("story");
+          break;
+      
         default:
           console.log("未知的音樂指令:", data.command);
       }
@@ -213,14 +218,15 @@
     const controlButtons = document.getElementById("controlButtons");
   
     function loadPage(page) {
-      console.log(`📄 載入頁面：${page}`);
       
       // 🎵 根據頁面自動切換音樂
       if (page.includes("world_boss.html")) {
         switchMusic("worldBoss");
+      } else if (page.includes("story.html")) {
+        switchMusic("story");
       } else if (page.includes("dungeon_layer") && currentBgm === "boss") {
         // 保持 boss 音樂
-      } else if (!page.includes("dungeon_layer") && currentBgm !== "main") {
+      } else if (!page.includes("dungeon_layer") && !page.includes("story.html") && currentBgm !== "main") {
         switchMusic("main");
       }
     
