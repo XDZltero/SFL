@@ -154,7 +154,8 @@ let cooldownTimer = null;
 let currentUserNickname = "";
 let userLevel = 0;
 const REQUIRED_LEVEL = 30;
-  
+let itemNameMap = {};
+
 // 階段配置
 const PHASES = {
   1: {
@@ -174,6 +175,62 @@ const PHASES = {
   }
 };
 
+async function loadItemNames() {
+  try {
+    const itemsRes = await SecureAPI.get(`${API_BASE}/items_table`);
+    const itemsData = await itemsRes.json();
+    
+    // 將道具資料轉換為 id -> name 的映射
+    for (const [itemId, itemData] of Object.entries(itemsData)) {
+      itemNameMap[itemId] = itemData.name;
+    }
+    
+    console.log('✅ 道具名稱載入完成');
+  } catch (error) {
+    console.warn('載入道具名稱失敗:', error);
+  }
+}
+
+// 格式化掉落物品顯示
+function formatDroppedItems(rewardItems) {
+  if (!rewardItems || Object.keys(rewardItems).length === 0) {
+    return '';
+  }
+  
+  const itemList = [];
+  for (const [itemId, quantity] of Object.entries(rewardItems)) {
+    const itemName = itemNameMap[itemId] || itemId;
+    
+    // 根據道具稀有度設定顏色
+    let colorClass = '';
+    if (itemId === 'world_boss_token') {
+      colorClass = 'color: #ffd700; font-weight: bold;'; // 金色 - 必得道具
+    } else if (itemId === 'chaos_breath') {
+      colorClass = 'color: #ff6ec7; font-weight: bold;'; // 粉紫色 - 稀有道具
+    } else if (itemId === 'reset_stats_ticket') {
+      colorClass = 'color: #ff4500; font-weight: bold; text-shadow: 0 0 5px rgba(255,69,0,0.8);'; // 橙紅色 - 超稀有道具
+    }
+    
+    itemList.push(`<span style="${colorClass}">${itemName} ×${quantity}</span>`);
+  }
+  
+  return `
+    <div style="background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,140,0,0.1)); 
+                border: 1px solid rgba(255,215,0,0.4); 
+                border-radius: 8px; 
+                padding: 12px; 
+                margin: 12px 0;">
+      <div style="color: #ffd700; font-size: 1.1em; font-weight: bold; margin-bottom: 8px;">
+        🎁 獲得道具
+      </div>
+      <div style="line-height: 1.5;">
+        ${itemList.join('<br>')}
+      </div>
+    </div>
+  `;
+}
+
+  
 // 載入頁面初始化
 function createPageParticles() {
   const particlesContainer = document.getElementById("pageParticles");
@@ -810,6 +867,8 @@ async function challengeWorldBoss() {
     
     if (response.ok && result.success) {
       // ✅ 挑戰成功
+      const rewardItemsDisplay = formatDroppedItems(result.rewards?.items);
+      
       const message = `
         <div style="text-align: left; line-height: 1.6;">
           <div style="margin-bottom: 15px;">
@@ -821,10 +880,13 @@ async function challengeWorldBoss() {
               傷害百分比：<span style="color: #00ffff; font-weight: bold;">${result.damage_percentage.toFixed(4)}%</span><br>
               獲得經驗：<span style="color: #ffd700; font-weight: bold;">+${result.exp_gained.toLocaleString()}</span>
             </div>
+            
+            ${rewardItemsDisplay}
+            
             <div style="background: rgba(0,255,255,0.1); padding: 8px; border-radius: 6px;">
               累積傷害：${result.total_damage.toLocaleString()}<br>
               當前排名：#${result.current_rank}<br>
-              <span style="color: #ffd700;">🎯 這是你的第 ${playerData.challenge_count + 1} 次攻擊</span>
+              <span style="color: #ffd700;">🎯 這是你的第 ${(playerData?.challenge_count || 0) + 1} 次攻擊</span>
             </div>
           </div>
         </div>
@@ -833,9 +895,21 @@ async function challengeWorldBoss() {
       // 根據獎勵等級顯示不同的標題和圖示
       let title = "⚔️ 戰鬥成功！";
       
+      // 🆕 如果有掉落稀有道具，升級標題
+      if (result.rewards?.items) {
+        const hasRareDrops = Object.keys(result.rewards.items).some(itemId => 
+          itemId === 'chaos_breath' || itemId === 'reset_stats_ticket'
+        );
+        
+        if (hasRareDrops) {
+          title = "🌟 幸運爆擊！" + title.slice(2); // 保留原有等級，但加上幸運標記
+        }
+      }
+      
       switch(result.reward_tier) {
         case "S級傷害":
-          title = "🌟 完美攻擊！";
+          title = result.rewards?.items && Object.keys(result.rewards.items).length > 1 ? 
+                  "🌟 完美攻擊！" : "🌟 完美攻擊！";
           break;
         case "A級傷害":
           title = "💥 強力攻擊！";
@@ -858,7 +932,7 @@ async function challengeWorldBoss() {
         updateWorldBossHP(result.world_boss_hp.current, result.world_boss_hp.max);
       }
       
-      // 🚀 【關鍵修正】：在設置冷卻之前，先清除 loading 狀態
+      // 在設置冷卻之前，先清除 loading 狀態
       const challengeBtnEl = document.getElementById("challengeBtn");
       if (challengeBtnEl) {
         challengeBtnEl.dataset.loading = "false";
@@ -1042,36 +1116,11 @@ function initWorldBoss() {
   createPageParticles();
   startPageLoadingProgress();
   
-  // 🔧 開發者模式：添加管理員控制
-  if (isDeveloper) {
-    const challengeArea = document.querySelector('.challenge-button-area');
-    if (challengeArea) {
-      const adminBtn = document.createElement('button');
-      adminBtn.textContent = '🔧 重置世界王 (管理員)';
-      adminBtn.style.cssText = `
-        background: linear-gradient(135deg, #dc3545, #c82333);
-        border: none;
-        padding: 10px 20px;
-        border-radius: 20px;
-        color: white;
-        font-family: 'Orbitron', sans-serif;
-        font-weight: 600;
-        cursor: pointer;
-        margin-top: 10px;
-        width: 100%;
-        font-size: 0.9em;
-      `;
-      adminBtn.onclick = resetWorldBoss;
-      challengeArea.appendChild(adminBtn);
-      
-      console.log('🔧 開發者模式已啟用，管理員功能可用');
-    }
-  }
-  
   // 載入使用者等級和世界王資料
   setTimeout(async () => {
-    await loadUserLevel();  // 先載入使用者等級
-    await loadWorldBossData();
+    await loadItemNames();     // 載入道具名稱
+    await loadUserLevel();     // 載入使用者等級
+    await loadWorldBossData(); // 載入世界王資料
     hidePageLoading();
   }, 2000);
   
