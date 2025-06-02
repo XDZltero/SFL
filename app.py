@@ -1592,11 +1592,33 @@ def world_boss_challenge():
         # 計算傷害
         damage_dealt, hit_message = calculate_world_boss_damage(user_data, config)
         
-        # 記錄挑戰時間
-        challenge_time = time.time()
-        new_cooldown_end_time = int((challenge_time + 3600) * 1000)  # 1小時後，轉為毫秒
+       # 使用批次操作確保原子性
+        batch = db.batch()
         
-        # 更新玩家世界王資料
+        # 準備所有更新操作，但不立即執行
+        challenge_time = time.time()
+        new_cooldown_end_time = int((challenge_time + 3600) * 1000)
+        
+        # 1. 準備世界王全域狀態更新
+        global_ref = db.collection("world_boss_global").document("current_status")
+        global_state = get_world_boss_global_state()
+        
+        current_hp = global_state.get("current_hp", 0)
+        new_hp = max(0, current_hp - damage_dealt)
+        new_total_damage = global_state.get("total_damage_dealt", 0) + damage_dealt
+        new_total_participants = global_state.get("total_participants", 0) + 1
+        
+        global_updates = {
+            "current_hp": new_hp,
+            "total_damage_dealt": new_total_damage,
+            "total_participants": new_total_participants,
+            "current_phase": get_current_world_boss_phase(),
+            "last_update_time": challenge_time
+        }
+        
+        batch.update(global_ref, global_updates)
+        
+        # 2. 準備玩家世界王資料更新
         player_ref = db.collection("world_boss_players").document(user_id)
         player_doc = player_ref.get()
         
@@ -1612,18 +1634,57 @@ def world_boss_challenge():
                 "last_challenge_time": 0
             }
         
-        # 更新數據
+        # 更新玩家資料
         player_data["total_damage"] = player_data.get("total_damage", 0) + damage_dealt
         player_data["challenge_count"] = player_data.get("challenge_count", 0) + 1
         player_data["last_challenge_time"] = challenge_time
-        player_data["nickname"] = user_data.get("nickname", user_id)  # 更新暱稱
+        player_data["nickname"] = user_data.get("nickname", user_id)
         
-        player_ref.set(player_data)
+        batch.set(player_ref, player_data)
         
-        # 更新世界王全域統計
-        global_stats = update_world_boss_global_stats(damage_dealt)
+        # 3. 準備經驗值更新
+        exp_gained, damage_percentage, reward_tier, tier_desc = calculate_world_boss_exp_reward(damage_dealt, config)
+        new_exp = user_data.get("exp", 0) + exp_gained
         
-        # 計算玩家排名
+        user_ref = db.collection("users").document(user_id)
+        batch.update(user_ref, {"exp": new_exp})
+        
+        # 4. 準備道具掉落（如果有的話）
+        item_updates = {}
+        if damage_dealt >= 10:
+            # 計算掉落但不立即寫入
+            import random
+            for drop in config["rewards"]["drops"]:
+                if random.random() <= drop["rate"]:
+                    item_id = drop["id"]
+                    item_value = drop["value"]
+                    
+                    # 取得現有道具數量
+                    item_doc = db.collection("user_items").document(user_id).get()
+                    current_items = item_doc.to_dict().get("items", {}) if item_doc.exists else {}
+                    
+                    # 準備更新
+                    current_items[item_id] = current_items.get(item_id, 0) + item_value
+                    item_updates = {"items": current_items}
+        
+        # 如果有道具更新，加入批次操作
+        if item_updates:
+            item_ref = db.collection("user_items").document(user_id)
+            batch.set(item_ref, item_updates, merge=True)
+        
+        # 🎯 關鍵：原子性提交所有操作
+        try:
+            batch.commit()
+            print(f"🌍 世界王挑戰批次操作成功 - 使用者: {user_id}")
+        except Exception as batch_error:
+            print(f"❌ 批次操作失敗: {batch_error}")
+            # 如果批次操作失敗，整個挑戰失敗
+            return jsonify({
+                "success": False, 
+                "error": "資料儲存失敗，請稍後再試"
+            }), 500
+        
+        # 計算排名（在成功提交後）
         all_players = db.collection("world_boss_players").order_by("total_damage", direction=firestore.Query.DESCENDING).stream()
         rank = 1
         for i, doc in enumerate(all_players):
@@ -1631,24 +1692,7 @@ def world_boss_challenge():
                 rank = i + 1
                 break
         
-        # 🚀 新的經驗值計算系統
-        exp_gained, damage_percentage, reward_tier, tier_desc = calculate_world_boss_exp_reward(damage_dealt, config)
-        user_data["exp"] += exp_gained
-        
-        # 更新使用者經驗值
-        db.collection("users").document(user_id).update({"exp": user_data["exp"]})
-        
-        # 道具獎勵（保持原有邏輯）
-        drop_result = {"items": {}}
-        if damage_dealt >= 10:  # 只有造成足夠傷害才有道具獎勵
-            from battle import apply_drops
-            drop_result = apply_drops(db, user_id, config["rewards"]["drops"], user_data.get("luck", 10))
-        
-        # 🔧 修復：正確獲取最大HP值
-        max_hp = config.get("initial_stats", {}).get("max_hp", 9999999)
-        if global_stats:
-            max_hp = global_stats.get("max_hp", max_hp)
-        
+        # 🎯 只有在所有操作都成功後才回傳成功
         result = {
             "success": True,
             "damage_dealt": damage_dealt,
@@ -1656,14 +1700,14 @@ def world_boss_challenge():
             "total_damage": player_data["total_damage"],
             "current_rank": rank,
             "exp_gained": exp_gained,
-            "damage_percentage": round(damage_percentage, 4),  # 保留4位小數
+            "damage_percentage": round(damage_percentage, 4),
             "reward_tier": reward_tier,
             "tier_description": tier_desc,
-            "rewards": drop_result,
+            "rewards": {"items": item_updates.get("items", {})},
             "cooldown_end_time": new_cooldown_end_time,
             "world_boss_hp": {
-                "current": global_stats.get("current_hp", 0) if global_stats else 0,
-                "max": max_hp
+                "current": new_hp,
+                "max": global_state.get("max_hp", config["initial_stats"]["max_hp"])
             }
         }
         
@@ -1672,8 +1716,38 @@ def world_boss_challenge():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"🔥 世界王挑戰錯誤詳情: {str(e)}")
-        return jsonify({"error": f"挑戰世界王失敗: {str(e)}"}), 500
+        print(f"🔥 世界王挑戰完全失敗: {str(e)}")
+        return jsonify({"success": False, "error": f"挑戰失敗: {str(e)}"}), 500
+
+def prepare_world_boss_global_updates(damage_dealt):
+    """準備世界王全域狀態更新（不立即執行）"""
+    try:
+        global_state = get_world_boss_global_state()
+        if not global_state:
+            return None
+        
+        current_hp = global_state.get("current_hp", 0)
+        new_hp = max(0, current_hp - damage_dealt)
+        new_total_damage = global_state.get("total_damage_dealt", 0) + damage_dealt
+        new_total_participants = global_state.get("total_participants", 0) + 1
+        
+        try:
+            new_phase = get_current_world_boss_phase()
+        except Exception:
+            new_phase = global_state.get("current_phase", 1)
+        
+        return {
+            "current_hp": new_hp,
+            "max_hp": global_state.get("max_hp", 999999999),
+            "current_phase": new_phase,
+            "total_damage_dealt": new_total_damage,
+            "total_participants": new_total_participants,
+            "last_update_time": time.time()
+        }
+        
+    except Exception as e:
+        print(f"❌ 準備世界王全域更新失敗: {e}")
+        return None
 
 @app.route("/world_boss_player_data", methods=["GET"])
 @require_auth
