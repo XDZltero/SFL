@@ -1390,3 +1390,21 @@ body.world-boss-mode::before {
     }
   }
 }
+
+.reward-item-rare {
+  animation: rareItemGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes rareItemGlow {
+  from { text-shadow: 0 0 5px rgba(255, 110, 199, 0.6); }
+  to { text-shadow: 0 0 10px rgba(255, 110, 199, 1), 0 0 15px rgba(255, 110, 199, 0.5); }
+}
+
+.reward-item-legendary {
+  animation: legendaryItemGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes legendaryItemGlow {
+  from { text-shadow: 0 0 8px rgba(255, 69, 0, 0.8); }
+  to { text-shadow: 0 0 15px rgba(255, 69, 0, 1), 0 0 20px rgba(255, 140, 0, 0.7); }
+}
