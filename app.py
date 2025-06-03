@@ -2636,8 +2636,8 @@ def get_current_reset_periods():
         'daily': daily_period
     }
 
-def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
-    """驗證商店購買請求 - 支援禮包驗證"""
+def validate_shop_purchase(user_id, item_id, user_items, user_purchases, user_level=None):
+    """驗證商店購買請求 - 支援禮包驗證和等級限制"""
     try:
         shop_items = get_shop_items()
         shop_item = next((item for item in shop_items if item["id"] == item_id), None)
@@ -2647,6 +2647,11 @@ def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
         
         if not shop_item.get("available", True):
             return False, "商品暫時不可購買"
+        
+        # 🆕 等級限制檢查
+        required_level = shop_item.get("required_level", 1)
+        if user_level and user_level < required_level:
+            return False, f"等級不足！需要達到 {required_level} 等才能購買此商品（目前等級：{user_level}）"
         
         # 檢查是否為無限購買道具
         is_unlimited = shop_item.get("unlimited", False) or shop_item.get("limit_per_account", 0) == -1
@@ -2699,7 +2704,7 @@ def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
     except Exception as e:
         print(f"驗證購買失敗: {e}")
         return False, f"驗證過程發生錯誤: {str(e)}"
-
+        
 def process_shop_purchase(user_id, item_id, user_items, user_purchases):
     """處理商店購買邏輯 - 支援多道具禮包"""
     try:
@@ -2843,7 +2848,7 @@ def shop_user_purchases():
 @app.route("/shop_purchase", methods=["POST"])
 @require_auth
 def shop_purchase():
-    """處理商店購買請求 - 支援批量購買"""
+    """處理商店購買請求 - 支援批量購買和等級限制"""
     try:
         data = request.json
         user_id = request.user_id
@@ -2855,6 +2860,14 @@ def shop_purchase():
         
         if quantity_multiplier < 1 or quantity_multiplier > 50:
             return jsonify({"success": False, "error": "購買數量必須在1-50之間"}), 400
+        
+        # 🆕 取得用戶等級
+        user_doc = db.collection("users").document(user_id).get()
+        if not user_doc.exists:
+            return jsonify({"success": False, "error": "找不到使用者"}), 404
+        
+        user_data = user_doc.to_dict()
+        user_level = user_data.get("level", 1)
         
         # 清除相關快取確保資料一致性
         invalidate_user_cache(user_id)
@@ -2878,9 +2891,9 @@ def shop_purchase():
             "last_update_time": 0
         }
         
-        # 🆕 批量購買驗證
+        # 🆕 批量購買驗證（包含等級檢查）
         for i in range(quantity_multiplier):
-            is_valid, error_message = validate_shop_purchase(user_id, item_id, user_items, user_purchases)
+            is_valid, error_message = validate_shop_purchase(user_id, item_id, user_items, user_purchases, user_level)
             if not is_valid:
                 if i == 0:
                     return jsonify({"success": False, "error": error_message}), 400
@@ -2894,8 +2907,8 @@ def shop_purchase():
         # 🆕 執行批量購買
         for i in range(quantity_multiplier):
             try:
-                # 重新驗證每次購買
-                is_valid, error_message = validate_shop_purchase(user_id, item_id, user_items, user_purchases)
+                # 重新驗證每次購買（包含等級檢查）
+                is_valid, error_message = validate_shop_purchase(user_id, item_id, user_items, user_purchases, user_level)
                 if not is_valid:
                     break
                 
@@ -2913,9 +2926,17 @@ def shop_purchase():
                 shop_items = get_shop_items()
                 shop_item = next((item for item in shop_items if item["id"] == item_id), None)
                 if shop_item:
-                    target_item = shop_item["item_id"]
-                    item_quantity = shop_item["quantity"]
-                    total_items_received[target_item] = total_items_received.get(target_item, 0) + item_quantity
+                    if shop_item["type"] == "bundle" and "items" in shop_item:
+                        # 禮包：記錄多個道具
+                        for item_data in shop_item["items"]:
+                            target_item = item_data["item_id"]
+                            item_quantity = item_data["quantity"]
+                            total_items_received[target_item] = total_items_received.get(target_item, 0) + item_quantity
+                    else:
+                        # 單一道具
+                        target_item = shop_item["item_id"]
+                        item_quantity = shop_item["quantity"]
+                        total_items_received[target_item] = total_items_received.get(target_item, 0) + item_quantity
                 
             except Exception as single_purchase_error:
                 print(f"單次購買失敗 (第{i+1}次): {single_purchase_error}")
@@ -2977,7 +2998,8 @@ def shop_purchase():
                 "requested_purchases": quantity_multiplier,
                 "total_items_received": total_items_received,
                 "purchase_type": purchase_type,
-                "purchase_time": user_purchases["last_update_time"]
+                "purchase_time": user_purchases["last_update_time"],
+                "user_level": user_level  # 🆕 返回用戶等級信息
             }
         })
         
