@@ -1475,7 +1475,7 @@ def update_world_boss_global_stats(damage_dealt):
     返回需要更新的資料，供批次操作使用
 
     """
-     try:
+    try:
         # 1. 獲取當前狀態並驗證
         global_state = get_world_boss_global_state()
         
@@ -1739,6 +1739,72 @@ def world_boss_status():
                 "server_time": time.time(),
                 "message": "世界王系統暫時無法使用，請稍後再試"
             }), 500
+
+def validate_world_boss_global_state(state, context=""):
+    """
+    驗證世界王全域狀態資料的完整性和合理性
+    
+    Args:
+        state: 世界王狀態字典
+        context: 驗證的上下文（用於日誌記錄）
+    
+    Returns:
+        tuple: (is_valid, error_code)
+    """
+    try:
+        if not state or not isinstance(state, dict):
+            return False, "STATE_NOT_DICT"
+        
+        # 檢查必要欄位
+        required_fields = ["current_hp", "max_hp"]
+        for field in required_fields:
+            if field not in state:
+                return False, f"MISSING_FIELD_{field.upper()}"
+        
+        current_hp = state.get("current_hp")
+        max_hp = state.get("max_hp")
+        
+        # 檢查數值類型
+        if not isinstance(current_hp, (int, float)):
+            return False, "INVALID_CURRENT_HP_TYPE"
+        
+        if not isinstance(max_hp, (int, float)):
+            return False, "INVALID_MAX_HP_TYPE"
+        
+        # 檢查數值合理性
+        if max_hp <= 0:
+            return False, "INVALID_MAX_HP_VALUE"
+        
+        if max_hp > 500000:  # 世界王血量不應該超過50萬
+            return False, "MAX_HP_TOO_HIGH"
+        
+        if current_hp < 0:
+            return False, "NEGATIVE_CURRENT_HP"
+        
+        if current_hp > max_hp:
+            return False, "CURRENT_HP_EXCEEDS_MAX"
+        
+        # 檢查階段合理性
+        current_phase = state.get("current_phase", 1)
+        if not isinstance(current_phase, int) or current_phase < 1 or current_phase > 3:
+            return False, "INVALID_PHASE"
+        
+        # 檢查統計數據合理性
+        total_participants = state.get("total_participants", 0)
+        total_damage = state.get("total_damage_dealt", 0)
+        
+        if not isinstance(total_participants, (int, float)) or total_participants < 0:
+            return False, "INVALID_PARTICIPANTS"
+        
+        if not isinstance(total_damage, (int, float)) or total_damage < 0:
+            return False, "INVALID_TOTAL_DAMAGE"
+        
+        # 所有檢查都通過
+        return True, "VALID"
+        
+    except Exception as e:
+        print(f"❌ 驗證世界王狀態時發生異常 ({context}): {e}")
+        return False, f"VALIDATION_EXCEPTION_{str(e)[:20]}"
 
 @app.route("/world_boss_challenge", methods=["POST"])
 @require_auth
