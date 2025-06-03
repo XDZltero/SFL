@@ -472,6 +472,34 @@ function updateCountdown() {
   const timeRestrictionEl = document.getElementById("timeRestriction");
   const challengeBtnEl = document.getElementById("challengeBtn");
   
+  // 🚀 新增：優先檢查世界王是否已死亡
+  if (worldBossData && worldBossData.current_hp <= 0) {
+    if (countdownEl) {
+      countdownEl.textContent = "世界王已殞落";
+      countdownEl.classList.add("boss-defeated");
+    }
+    
+    if (timeRestrictionEl) {
+      timeRestrictionEl.style.display = "block";
+      timeRestrictionEl.querySelector('.restriction-title').textContent = "👑 世界王已被擊敗！";
+      timeRestrictionEl.querySelector('.restriction-message').innerHTML = 
+        "🎉 恭喜全世界的冒險者成功擊敗世界王！<br>" +
+        "🕐 世界王將於下週一 00:31 復活並重置挑戰";
+    }
+    
+    if (challengeBtnEl && !challengeBtnEl.dataset.levelLocked) {
+      challengeBtnEl.disabled = true;
+      challengeBtnEl.textContent = "👑 世界王已殞落";
+      challengeBtnEl.dataset.bossDefeated = "true";
+    }
+    return;
+  }
+  
+  // 移除死亡狀態樣式
+  if (countdownEl) {
+    countdownEl.classList.remove("boss-defeated");
+  }
+  
   // ✅ 優先檢查維護時間
   if (isMaintenanceTime()) {
     countdownEl.textContent = getMaintenanceCountdown();
@@ -483,9 +511,38 @@ function updateCountdown() {
     if (!challengeBtnEl.dataset.levelLocked || challengeBtnEl.dataset.levelLocked === "false") {
       challengeBtnEl.disabled = true;
       challengeBtnEl.textContent = "🔧 維護中";
+      challengeBtnEl.dataset.bossDefeated = "false";
     }
     return;
   }
+  
+  // 檢查週日限制
+  if (isWeekend()) {
+    countdownEl.textContent = getNextMondayCountdown();
+    timeRestrictionEl.style.display = "block";
+    timeRestrictionEl.querySelector('.restriction-title').textContent = "⏰ 挑戰時間限制";
+    timeRestrictionEl.querySelector('.restriction-message').innerHTML = 
+      "世界王每週日進行休整，無法挑戰<br>挑戰將於下週一 00:31 重新開放";
+    
+    if (!challengeBtnEl.dataset.levelLocked || challengeBtnEl.dataset.levelLocked === "false") {
+      challengeBtnEl.disabled = true;
+      challengeBtnEl.textContent = "⏰ 週日休整中";
+      challengeBtnEl.dataset.bossDefeated = "false";
+    }
+    return;
+  }
+  
+  // 正常開放時間
+  timeRestrictionEl.style.display = "none";
+  countdownEl.textContent = "挑戰開放中";
+  
+  // 移除死亡狀態標記
+  if (challengeBtnEl) {
+    challengeBtnEl.dataset.bossDefeated = "false";
+  }
+  
+  checkLevelRequirement();
+}
   
   // 檢查週日限制
   if (isWeekend()) {
@@ -624,25 +681,30 @@ function updateWorldBossHP(current, max) {
   hpBar.style.width = percentage + "%";
   
   if (current <= 0) {
-    // 世界王已死亡的特殊顯示
+    // 🚀 世界王已死亡的特殊顯示
     hpText.textContent = "已殞落 - 等待下週重置";
-    hpBar.style.background = "linear-gradient(90deg, #8b0000, #4a0000, #2d0000)";
-    hpText.style.color = "#ffcccb";
+    hpBar.classList.add("boss-defeated");
+    hpText.classList.add("boss-defeated");
     
-    // 播放死亡特效
+    // 🚀 確保死亡動畫正確應用
     hpBar.style.animation = "bossDefeatedPulse 2s ease-in-out infinite";
+    
+    console.log("👑 世界王已死亡，UI已更新為死亡狀態");
   } else {
+    // 🚀 世界王還活著，恢復正常顯示
     hpText.textContent = `${current.toLocaleString()} / ${max.toLocaleString()} (${percentage.toFixed(1)}%)`;
-    hpBar.style.background = ""; // 恢復原始樣式
-    hpText.style.color = "";
+    hpBar.classList.remove("boss-defeated");
+    hpText.classList.remove("boss-defeated");
     hpBar.style.animation = "";
+    
+    console.log(`📊 世界王血量更新: ${percentage.toFixed(1)}%`);
   }
   
   // 更新階段
   const currentPhase = getCurrentPhase(current, max);
   updatePhaseDisplay(currentPhase);
   
-  // 檢查世界王死亡狀態
+  // 🚀 重要：每次血量更新後都要檢查死亡狀態
   checkWorldBossDeathStatus();
 }
 
@@ -762,18 +824,22 @@ async function loadWorldBossData() {
     ]);
     
     // 處理世界王狀態
+    // 處理世界王狀態
     if (bossRes.ok) {
       worldBossData = await bossRes.json();
-      if (worldBossData.phases) {
-        console.log('✅ 階段資料載入成功:', Object.keys(worldBossData.phases));
-      } else {
-        console.warn('⚠️ 階段資料載入失敗');
-      }
       
+      // 🚀 重要：先更新基本資訊
       updateWorldBossInfo(worldBossData);
       updateWorldBossStats(worldBossData);
       
-      console.log(`📊 世界王統計 - 總攻擊: ${worldBossData.total_participants}, 獨特玩家: ${worldBossData.unique_players}`);
+      // 🚀 重要：然後檢查死亡狀態（這是關鍵步驟）
+      const isDefeated = checkWorldBossDeathStatus();
+      
+      if (isDefeated) {
+        console.log("👑 載入時發現世界王已死亡，已設置相應的UI狀態");
+      }
+      
+      console.log(`📊 世界王血量: ${worldBossData.current_hp}/${worldBossData.max_hp}`);
     } else {
       throw new Error(`載入世界王狀態失敗: ${bossRes.status}`);
     }
@@ -825,6 +891,32 @@ async function loadWorldBossData() {
   }
 }
 
+// 專門用於強制刷新世界王狀態的函數
+async function forceRefreshWorldBossStatus() {
+  try {
+    console.log("🔄 強制刷新世界王狀態...");
+    
+    const bossRes = await SecureAPI.get(`${API_BASE}/world_boss_status`, false);
+    if (bossRes.ok) {
+      const freshWorldBossData = await bossRes.json();
+      
+      // 更新全域變數
+      worldBossData = freshWorldBossData;
+      
+      // 立即檢查並更新死亡狀態
+      updateWorldBossHP(worldBossData.current_hp, worldBossData.max_hp);
+      
+      console.log("✅ 世界王狀態刷新完成");
+      return true;
+    } else {
+      console.error("❌ 刷新世界王狀態失敗");
+      return false;
+    }
+  } catch (error) {
+    console.error("❌ 強制刷新失敗:", error);
+    return false;
+  }
+}
 
 function updateWorldBossInfo(boss) {
   document.getElementById("bossName").innerHTML = boss.name.replace(/\n/g, "<br>");
@@ -1183,23 +1275,30 @@ async function resetWorldBoss() {
 function checkWorldBossDeathStatus() {
   const challengeBtnEl = document.getElementById("challengeBtn");
   const timeRestrictionEl = document.getElementById("timeRestriction");
+  const countdownEl = document.getElementById("countdownDisplay");
   
-  if (!worldBossData) return;
+  if (!worldBossData) {
+    console.warn("⚠️ worldBossData 未載入，無法檢查死亡狀態");
+    return false;
+  }
   
   const currentHp = worldBossData.current_hp || 0;
   
   if (currentHp <= 0) {
-    // 世界王已死亡，禁用挑戰按鈕
+    console.log("💀 檢測到世界王已死亡，設置死亡狀態");
+    
+    // 🚀 禁用挑戰按鈕並設置死亡狀態
     if (challengeBtnEl) {
       challengeBtnEl.disabled = true;
       challengeBtnEl.textContent = "👑 世界王已殞落";
+      challengeBtnEl.dataset.bossDefeated = "true";
       challengeBtnEl.style.background = "linear-gradient(135deg, #8b0000 0%, #4a0000 100%)";
       challengeBtnEl.style.color = "#ffcccb";
       challengeBtnEl.style.cursor = "not-allowed";
-      challengeBtnEl.dataset.bossDefeated = "true";
+      challengeBtnEl.style.animation = "none";
     }
     
-    // 顯示世界王死亡提示
+    // 🚀 顯示世界王死亡提示
     if (timeRestrictionEl) {
       timeRestrictionEl.style.display = "block";
       timeRestrictionEl.querySelector('.restriction-title').textContent = "👑 世界王已被擊敗！";
@@ -1208,20 +1307,30 @@ function checkWorldBossDeathStatus() {
         "🕐 世界王將於下週一 00:31 復活並重置挑戰";
     }
     
-    // 更新倒數計時顯示
-    const countdownEl = document.getElementById("countdownDisplay");
+    // 🚀 更新倒數計時顯示
     if (countdownEl) {
       countdownEl.textContent = "世界王已殞落";
-      countdownEl.style.color = "#ff6b6b";
+      countdownEl.classList.add("boss-defeated");
     }
     
     return true; // 世界王已死亡
   } else {
-    // 世界王還活著，移除死亡狀態
+    // 🚀 世界王還活著，移除死亡狀態
+    console.log("✅ 世界王仍然存活，移除死亡狀態");
+    
     if (challengeBtnEl && challengeBtnEl.dataset.bossDefeated === "true") {
       challengeBtnEl.dataset.bossDefeated = "false";
-      // 恢復正常狀態檢查
+      challengeBtnEl.style.background = "";
+      challengeBtnEl.style.color = "";
+      challengeBtnEl.style.cursor = "";
+      challengeBtnEl.style.animation = "";
+      
+      // 🚀 恢復正常狀態檢查（等級、週日、維護等）
       checkLevelRequirement();
+    }
+    
+    if (countdownEl) {
+      countdownEl.classList.remove("boss-defeated");
     }
     
     return false; // 世界王還活著
