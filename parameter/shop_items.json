@@ -1,9 +1,75 @@
 [
   {
+    "id": "starter_bundle",
+    "name": "新手禮包",
+    "description": "適合新手的道具組合包，包含基礎製作材料。",
+    "type": "bundle",  // 🆕 新類型：禮包
+    "items": [         // 🆕 多道具配置
+      {
+        "item_id": "bone",
+        "quantity": 10
+      },
+      {
+        "item_id": "slime_core", 
+        "quantity": 5
+      },
+      {
+        "item_id": "moss_branches",
+        "quantity": 3
+      }
+    ],
+    "cost": {
+      "world_boss_token": 5
+    },
+    "reset_type": "weekly",
+    "limit_per_account": 10,
+    "limit_per_reset": 2,
+    "sort": 50,
+    "available": true,
+    "special": 1,
+    "category": "materials"
+  },
+  {
+    "id": "premium_bundle",
+    "name": "高級製作禮包",
+    "description": "高級製作材料禮包，包含稀有材料和混沌氣息。",
+    "type": "bundle",
+    "items": [
+      {
+        "item_id": "chaos_breath",
+        "quantity": 2
+      },
+      {
+        "item_id": "swamp_core",
+        "quantity": 3
+      },
+      {
+        "item_id": "sky_ragments", 
+        "quantity": 2
+      },
+      {
+        "item_id": "magic_fragment",
+        "quantity": 1
+      }
+    ],
+    "cost": {
+      "world_boss_token": 30
+    },
+    "reset_type": "monthly",
+    "limit_per_account": 5,
+    "limit_per_reset": 1,
+    "sort": 10,
+    "available": true,
+    "special": 2,
+    "category": "materials"
+  },
+  
+  // 保持原有的單一道具格式向後相容
+  {
     "id": "shop_chaos_breath",
     "name": "混沌氣息",
     "description": "狩獵怪物有很低的機率掉落的混沌氣息。製作高級卡片的重要材料。",
-    "item_id": "chaos_breath",
+    "item_id": "chaos_breath",  // 單一道具使用舊格式
     "quantity": 1,
     "cost": {
       "world_boss_token": 10
@@ -15,131 +81,6 @@
     "sort": 100,
     "available": true,
     "special": 2,
-    "category": "materials"
-  },
-  {
-    "id": "shop_reset_ticket",
-    "name": "能力值重置券",
-    "description": "能夠完整重置能力值的票券。讓你重新分配所有能力點數。",
-    "item_id": "reset_stats_ticket",
-    "quantity": 1,
-    "cost": {
-      "world_boss_token": 50
-    },
-    "type": "trade",
-    "reset_type": "monthly",
-    "limit_per_account": 5,
-    "limit_per_reset": 1,
-    "sort": 200,
-    "available": true,
-    "special": 3,
-    "category": "consumables"
-  },
-  {
-    "id": "shop_swamp_core",
-    "name": "沼澤核心",
-    "description": "沼澤中核心。狩獵副本 [腐爛沼澤地] 有低機率掉落的特殊素材。",
-    "item_id": "swamp_core",
-    "quantity": 3,
-    "cost": {
-      "world_boss_token": 5
-    },
-    "type": "trade",
-    "reset_type": "weekly",
-    "limit_per_account": 50,
-    "limit_per_reset": 10,
-    "sort": 300,
-    "available": true,
-    "special": 1,
-    "category": "materials"
-  },
-  {
-    "id": "shop_sky_fragments",
-    "name": "天空碎片",
-    "description": "天空之城上撿到的碎片，像是雲朵被封印在了裡面。",
-    "item_id": "sky_ragments",
-    "quantity": 2,
-    "cost": {
-      "world_boss_token": 8
-    },
-    "type": "trade",
-    "reset_type": "weekly",
-    "limit_per_account": 30,
-    "limit_per_reset": 5,
-    "sort": 400,
-    "available": true,
-    "special": 1,
-    "category": "materials"
-  },
-  {
-    "id": "shop_free_slime_core",
-    "name": "【每日免費】史萊姆黏液",
-    "description": "每日免費領取的史萊姆黏液，製作初級卡片的基礎材料。",
-    "item_id": "slime_core",
-    "quantity": 10,
-    "cost": {},
-    "type": "free",
-    "reset_type": "daily",
-    "limit_per_account": 999,
-    "limit_per_reset": 1,
-    "sort": 500,
-    "available": true,
-    "special": 0,
-    "category": "daily_free"
-  },
-  {
-    "id": "shop_bone_bundle",
-    "name": "骨頭組合包",
-    "description": "沼澤中不死者的骨頭組合包，製作材料的好選擇。",
-    "item_id": "bone",
-    "quantity": 20,
-    "cost": {
-      "slime_core": 50
-    },
-    "type": "trade",
-    "reset_type": "weekly",
-    "limit_per_account": 10,
-    "limit_per_reset": 3,
-    "sort": 600,
-    "available": true,
-    "special": 0,
-    "category": "materials"
-  },
-  {
-    "id": "shop_metal_core_pack",
-    "name": "金屬核心禮包",
-    "description": "鋼鐵都市生產的核心組合包，還在發出光芒。",
-    "item_id": "metal_core",
-    "quantity": 5,
-    "cost": {
-      "world_boss_token": 15,
-      "chaos_breath": 1
-    },
-    "type": "trade",
-    "reset_type": "monthly",
-    "limit_per_account": 5,
-    "limit_per_reset": 2,
-    "sort": 700,
-    "available": true,
-    "special": 1,
-    "category": "materials"
-  },
-  {
-    "id": "shop_magic_fragment_set",
-    "name": "魔力碎片禮包",
-    "description": "蘊含純粹魔法能量的神秘碎片禮包。",
-    "item_id": "magic_fragment",
-    "quantity": 8,
-    "cost": {
-      "world_boss_token": 25
-    },
-    "type": "trade",
-    "reset_type": "monthly",
-    "limit_per_account": 3,
-    "limit_per_reset": 1,
-    "sort": 800,
-    "available": true,
-    "special": 1,
     "category": "materials"
   }
 ]
