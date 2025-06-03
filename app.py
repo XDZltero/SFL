@@ -1743,7 +1743,7 @@ def world_boss_status():
 @app.route("/world_boss_challenge", methods=["POST"])
 @require_auth
 def world_boss_challenge():
-    """挑戰世界王 - 修正版本，包含死亡檢查"""
+    """挑戰世界王 - 修正版本，包含死亡檢查和安全資料驗證"""
     try:
         # 檢查週日重置
         check_weekly_reset()
@@ -1754,6 +1754,18 @@ def world_boss_challenge():
         global_state = get_world_boss_global_state()
         if not global_state:
             return jsonify({"error": "無法取得世界王狀態"}), 500
+        
+        # 🛡️ 新增：驗證世界王資料完整性
+        is_valid, error_code = validate_world_boss_global_state(global_state, "challenge_start")
+        if not is_valid:
+            print(f"❌ 世界王挑戰中止：資料異常 {error_code}")
+            print(f"📊 異常資料: {global_state}")
+            
+            return jsonify({
+                "error": "世界王資料異常，挑戰暫時無法進行",
+                "error_code": error_code,
+                "message": "系統檢測到世界王資料異常，請稍後再試或聯繫管理員"
+            }), 500
         
         current_world_boss_hp = global_state.get("current_hp", 0)
         if current_world_boss_hp <= 0:
@@ -1812,6 +1824,18 @@ def world_boss_challenge():
         fresh_global_state = get_world_boss_global_state()
         if not fresh_global_state:
             return jsonify({"error": "無法取得最新世界王狀態"}), 500
+        
+        # 🛡️ 新增：再次驗證最新資料
+        is_valid_fresh, error_code_fresh = validate_world_boss_global_state(fresh_global_state, "challenge_fresh_check")
+        if not is_valid_fresh:
+            print(f"❌ 世界王挑戰中止：最新資料異常 {error_code_fresh}")
+            print(f"📊 異常資料: {fresh_global_state}")
+            
+            return jsonify({
+                "error": "世界王最新資料異常，挑戰暫時無法進行",
+                "error_code": error_code_fresh,
+                "message": "系統檢測到世界王最新資料異常，請稍後再試"
+            }), 500
             
         fresh_current_hp = fresh_global_state.get("current_hp", 0)
         if fresh_current_hp <= 0:
@@ -1822,17 +1846,20 @@ def world_boss_challenge():
                 "participation_acknowledged": True
             }), 403
 
-        # 使用批次操作確保原子性
-        batch = db.batch()
-        
-        # 準備所有更新操作，但不立即執行
+        # 🛡️ 安全計算新狀態（不使用預設值）
         challenge_time = time.time()
-        new_cooldown_end_time = int((challenge_time + 3600) * 1000)
-        
-        # 1. 準備世界王全域狀態更新
-        global_ref = db.collection("world_boss_global").document("current_status")
-        
         current_hp = fresh_global_state.get("current_hp", 0)
+        max_hp = fresh_global_state.get("max_hp", 0)  # 🔥 直接使用驗證過的值，不給預設值
+        
+        # 🛡️ 最後檢查：確保 max_hp 是合理的
+        if max_hp <= 0 or max_hp > 500000:
+            print(f"🚨 檢測到異常最大血量: {max_hp}")
+            return jsonify({
+                "error": "世界王血量資料異常",
+                "message": "系統檢測到世界王血量異常，請聯繫管理員",
+                "debug_max_hp": max_hp
+            }), 500
+        
         new_hp = max(0, current_hp - damage_dealt)
         new_total_damage = fresh_global_state.get("total_damage_dealt", 0) + damage_dealt
         new_total_participants = fresh_global_state.get("total_participants", 0) + 1
@@ -1840,11 +1867,13 @@ def world_boss_challenge():
         # 🚀 新增：標記世界王是否在這次攻擊後死亡
         boss_defeated_this_attack = (current_hp > 0 and new_hp <= 0)
         
+        # 🛡️ 構造安全的更新資料
         global_updates = {
             "current_hp": new_hp,
+            "max_hp": max_hp,  # 🔥 關鍵修復：直接使用驗證過的值
+            "current_phase": get_current_world_boss_phase(),
             "total_damage_dealt": new_total_damage,
             "total_participants": new_total_participants,
-            "current_phase": get_current_world_boss_phase(),
             "last_update_time": challenge_time
         }
         
@@ -1855,6 +1884,25 @@ def world_boss_challenge():
             global_updates["final_blow_nickname"] = user_data.get("nickname", user_id)
             global_updates["boss_defeated"] = True
         
+        # 🛡️ 最後驗證：檢查即將寫入的資料是否合理
+        is_valid_update, error_code_update = validate_world_boss_global_state(global_updates, "before_database_write")
+        if not is_valid_update:
+            print(f"❌ 即將寫入的資料異常，中止操作: {error_code_update}")
+            print(f"📊 原始資料: {fresh_global_state}")
+            print(f"📊 計算後資料: {global_updates}")
+            
+            return jsonify({
+                "error": "計算後的世界王資料異常，為了資料安全已中止操作",
+                "error_code": error_code_update,
+                "message": "系統檢測到計算結果異常，請聯繫管理員"
+            }), 500
+
+        # 使用批次操作確保原子性
+        batch = db.batch()
+        new_cooldown_end_time = int((challenge_time + 3600) * 1000)
+        
+        # 1. 更新世界王全域狀態
+        global_ref = db.collection("world_boss_global").document("current_status")
         batch.update(global_ref, global_updates)
         
         # 2. 準備玩家世界王資料更新
@@ -1948,6 +1996,7 @@ def world_boss_challenge():
         try:
             batch.commit()
             print(f"🌍 世界王挑戰批次操作成功 - 使用者: {user_id}")
+            print(f"📊 血量變化: {current_hp} -> {new_hp} (最大: {max_hp})")
             
             # 🚀 如果擊殺了世界王，記錄到日誌
             if boss_defeated_this_attack:
@@ -1996,7 +2045,7 @@ def world_boss_challenge():
             "cooldown_end_time": new_cooldown_end_time,
             "world_boss_hp": {
                 "current": new_hp,
-                "max": fresh_global_state.get("max_hp", config["initial_stats"]["max_hp"])
+                "max": max_hp  # 🔥 使用驗證過的 max_hp
             }
         }
         
@@ -2007,49 +2056,6 @@ def world_boss_challenge():
         traceback.print_exc()
         print(f"🔥 世界王挑戰完全失敗: {str(e)}")
         return jsonify({"success": False, "error": f"挑戰失敗: {str(e)}"}), 500
-
-def validate_world_boss_global_state(state, context="unknown"):
-    """
-    驗證世界王全域狀態的完整性和合理性
-    如果資料異常，記錄錯誤但不修改資料庫
-    """
-    if not state:
-        print(f"🚨 [{context}] 世界王狀態為空")
-        return False, "world_boss_state_null"
-    
-    # 檢查必要欄位
-    required_fields = ["current_hp", "max_hp", "current_phase"]
-    missing_fields = [f for f in required_fields if f not in state]
-    
-    if missing_fields:
-        print(f"🚨 [{context}] 世界王資料缺少必要欄位: {missing_fields}")
-        print(f"📊 當前狀態: {state}")
-        return False, f"missing_fields_{','.join(missing_fields)}"
-    
-    # 檢查數值類型
-    current_hp = state.get("current_hp")
-    max_hp = state.get("max_hp")
-    
-    if not isinstance(current_hp, (int, float)) or not isinstance(max_hp, (int, float)):
-        print(f"🚨 [{context}] 血量數值類型異常: current_hp={type(current_hp)}({current_hp}), max_hp={type(max_hp)}({max_hp})")
-        return False, "invalid_hp_type"
-    
-    # 檢查數值合理性
-    if max_hp <= 0:
-        print(f"🚨 [{context}] 最大血量異常: {max_hp}")
-        return False, "invalid_max_hp"
-    
-    if current_hp < 0:
-        print(f"⚠️ [{context}] 當前血量小於0: {current_hp}")
-        # 這個可以容忍，只是警告
-    
-    # 🔥 關鍵：檢查是否是異常的大數值
-    if max_hp > 500000:  # 正常世界王血量應該在 20萬左右
-        print(f"🚨 [{context}] 檢測到異常血量: {max_hp}")
-        print(f"📊 完整狀態: {state}")
-        return False, f"abnormal_max_hp_{max_hp}"
-    
-    return True, "valid"
 
 # 世界王死亡狀態檢查端點
 @app.route("/world_boss_death_status", methods=["GET"])
