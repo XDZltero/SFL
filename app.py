@@ -2635,9 +2635,8 @@ def get_current_reset_periods():
     }
 
 def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
-    """驗證商店購買請求"""
+    """驗證商店購買請求 - 支援無限購買"""
     try:
-        # 載入商店配置
         shop_items = get_shop_items()
         shop_item = next((item for item in shop_items if item["id"] == item_id), None)
         
@@ -2647,46 +2646,48 @@ def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
         if not shop_item.get("available", True):
             return False, "商品暫時不可購買"
         
-        # 檢查用戶購買記錄
-        purchases = user_purchases.get("purchases", {})
-        item_purchases = purchases.get(item_id, {})
+        # 🆕 檢查是否為無限購買道具
+        is_unlimited = shop_item.get("unlimited", False) or shop_item.get("limit_per_account", 0) == -1
         
-        # 檢查總限購
-        total_purchased = item_purchases.get("total_purchased", 0)
-        if total_purchased >= shop_item["limit_per_account"]:
-            return False, "已達帳號總限購數量"
-        
-        # 檢查重置週期限購
-        current_periods = get_current_reset_periods()
-        reset_type = shop_item["reset_type"]
-        
-        if reset_type != "none":
-            period_key = f"{reset_type}_period"
-            purchased_key = f"{reset_type}_purchased"
-            last_period_key = f"last_{reset_type}_period"
+        if not is_unlimited:  # 只有非無限購買道具才檢查限制
+            # 檢查用戶購買記錄
+            purchases = user_purchases.get("purchases", {})
+            item_purchases = purchases.get(item_id, {})
             
-            # 檢查是否需要重置計數
-            current_period = current_periods.get(reset_type)
-            last_period = item_purchases.get(last_period_key, "")
+            # 檢查總限購
+            if shop_item["limit_per_account"] > 0:  # -1 表示無限
+                total_purchased = item_purchases.get("total_purchased", 0)
+                if total_purchased >= shop_item["limit_per_account"]:
+                    return False, "已達帳號總限購數量"
             
-            if current_period != last_period:
-                # 新週期，重置計數
-                reset_purchased = 0
-            else:
-                reset_purchased = item_purchases.get(purchased_key, 0)
+            # 檢查重置週期限購
+            current_periods = get_current_reset_periods()
+            reset_type = shop_item["reset_type"]
             
-            if reset_purchased >= shop_item["limit_per_reset"]:
-                reset_names = {"daily": "每日", "weekly": "每週", "monthly": "每月"}
-                return False, f"已達{reset_names.get(reset_type, reset_type)}限購數量"
+            if reset_type != "none" and shop_item["limit_per_reset"] > 0:  # -1 表示無限
+                period_key = f"{reset_type}_period"
+                purchased_key = f"{reset_type}_purchased"
+                last_period_key = f"last_{reset_type}_period"
+                
+                current_period = current_periods.get(reset_type)
+                last_period = item_purchases.get(last_period_key, "")
+                
+                if current_period != last_period:
+                    reset_purchased = 0
+                else:
+                    reset_purchased = item_purchases.get(purchased_key, 0)
+                
+                if reset_purchased >= shop_item["limit_per_reset"]:
+                    reset_names = {"daily": "每日", "weekly": "每週", "monthly": "每月"}
+                    return False, f"已達{reset_names.get(reset_type, reset_type)}限購數量"
         
-        # 檢查消耗道具是否足夠
+        # 其餘驗證邏輯保持不變...
         if shop_item["type"] == "trade":
             for cost_item, cost_amount in shop_item["cost"].items():
                 owned_amount = user_items.get(cost_item, 0)
                 if owned_amount < cost_amount:
                     return False, f"道具 {cost_item} 數量不足 (需要:{cost_amount}, 擁有:{owned_amount})"
         
-        # 檢查目標道具是否會超過999
         target_item = shop_item["item_id"]
         current_amount = user_items.get(target_item, 0)
         if current_amount + shop_item["quantity"] > 999:
