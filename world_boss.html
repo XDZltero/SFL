@@ -282,6 +282,19 @@ function checkLevelRequirement() {
     return;
   }
   
+  // 🚀 優先檢查世界王是否已死亡
+  if (worldBossData && worldBossData.current_hp <= 0) {
+    if (challengeBtnEl) {
+      challengeBtnEl.disabled = true;
+      challengeBtnEl.textContent = "👑 世界王已殞落";
+      challengeBtnEl.dataset.bossDefeated = "true";
+      challengeBtnEl.style.background = "linear-gradient(135deg, #8b0000 0%, #4a0000 100%)";
+      challengeBtnEl.style.color = "#ffcccb";
+      challengeBtnEl.style.cursor = "not-allowed";
+    }
+    return;
+  }
+  
   if (userLevel < REQUIRED_LEVEL) {
     // 等級不足
     if (levelNoticeEl) levelNoticeEl.style.display = "block";
@@ -292,6 +305,7 @@ function checkLevelRequirement() {
       challengeBtnEl.disabled = true;
       challengeBtnEl.textContent = `⚡ 需要 ${REQUIRED_LEVEL} 等`;
       challengeBtnEl.dataset.levelLocked = "true";
+      challengeBtnEl.dataset.bossDefeated = "false";
       challengeBtnEl.style.background = "linear-gradient(135deg, #6c757d 0%, #495057 100%)";
       challengeBtnEl.style.color = "#adb5bd";
       challengeBtnEl.style.cursor = "not-allowed";
@@ -300,10 +314,13 @@ function checkLevelRequirement() {
   } else {
     // 等級足夠
     if (levelNoticeEl) levelNoticeEl.style.display = "none";
-    if (challengeBtnEl) challengeBtnEl.dataset.levelLocked = "false";
+    if (challengeBtnEl) {
+      challengeBtnEl.dataset.levelLocked = "false";
+      challengeBtnEl.dataset.bossDefeated = "false";
+    }
     
     // 恢復正常樣式（如果沒有其他限制）
-    if (!isWeekend() && challengeBtnEl && !challengeBtnEl.dataset.cooling) {
+    if (!isWeekend() && !isMaintenanceTime() && challengeBtnEl && !challengeBtnEl.dataset.cooling) {
       challengeBtnEl.disabled = false;
       challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
       challengeBtnEl.style.background = "";
@@ -312,6 +329,82 @@ function checkLevelRequirement() {
     }
   }
 }
+
+function resetChallengeButtonToNormal() {
+  const challengeBtnEl = document.getElementById("challengeBtn");
+  if (!challengeBtnEl) return;
+  
+  console.log('🔄 重置挑戰按鈕到正常狀態');
+  
+  // 清除所有特殊狀態
+  challengeBtnEl.dataset.loading = "false";
+  challengeBtnEl.dataset.cooling = "false";
+  challengeBtnEl.dataset.bossDefeated = "false";
+  challengeBtnEl.dataset.levelLocked = "false";
+  
+  // 恢復預設樣式
+  challengeBtnEl.style.background = "";
+  challengeBtnEl.style.color = "";
+  challengeBtnEl.style.cursor = "";
+  challengeBtnEl.style.animation = "";
+  
+  // 重新檢查所有限制條件
+  if (worldBossData && worldBossData.current_hp <= 0) {
+    // 世界王死亡
+    challengeBtnEl.disabled = true;
+    challengeBtnEl.textContent = "👑 世界王已殞落";
+    challengeBtnEl.dataset.bossDefeated = "true";
+  } else if (userLevel < REQUIRED_LEVEL) {
+    // 等級不足
+    challengeBtnEl.disabled = true;
+    challengeBtnEl.textContent = `⚡ 需要 ${REQUIRED_LEVEL} 等`;
+    challengeBtnEl.dataset.levelLocked = "true";
+  } else if (isMaintenanceTime()) {
+    // 維護時間
+    challengeBtnEl.disabled = true;
+    challengeBtnEl.textContent = "🔧 維護中";
+  } else if (isWeekend()) {
+    // 週日限制
+    challengeBtnEl.disabled = true;
+    challengeBtnEl.textContent = "⏰ 週日休整中";
+  } else {
+    // 正常狀態
+    challengeBtnEl.disabled = false;
+    challengeBtnEl.textContent = "🌍 挑戰世界王 🌍";
+  }
+}
+
+let lastVisibilityChange = Date.now();
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const timeSinceHidden = Date.now() - lastVisibilityChange;
+    
+    if (timeSinceHidden > 60000) { // 超過1分鐘
+      console.log('🔄 頁面重新可見且超過1分鐘，強制刷新世界王狀態');
+      forceRefreshWorldBossStatus();
+    } else if (timeSinceHidden > 30000) { // 超過30秒
+      console.log('🔄 頁面重新可見，檢查世界王狀態變化');
+      // 輕量級檢查
+      setTimeout(async () => {
+        try {
+          const response = await SecureAPI.get(`${API_BASE}/world_boss_death_status`);
+          if (response.ok) {
+            const statusData = await response.json();
+            if (worldBossData && worldBossData.current_hp !== statusData.current_hp) {
+              console.log('🔄 檢測到血量變化，更新UI');
+              updateWorldBossHP(statusData.current_hp, statusData.max_hp);
+            }
+          }
+        } catch (error) {
+          console.warn('輕量級狀態檢查失敗:', error);
+        }
+      }, 1000);
+    }
+  } else {
+    lastVisibilityChange = Date.now();
+  }
+});
+
 
 function handleWorldBossError(error, context = "未知操作") {
   console.error(`世界王${context}失敗:`, error);
@@ -1370,12 +1463,92 @@ function initWorldBoss() {
     await loadUserLevel();     // 載入使用者等級
     await loadWorldBossData(); // 載入世界王資料
     hidePageLoading();
+    
+    // 🚀 啟動狀態監控
+    startWorldBossStatusMonitoring();
   }, 2000);
   
   // 開始倒數計時器
   updateCountdown();
   setInterval(updateCountdown, 1000);
 }
+
+window.addEventListener('beforeunload', () => {
+  stopWorldBossStatusMonitoring();
+});
+
+// 🚀 新增：錯誤恢復機制
+window.addEventListener('error', (event) => {
+  console.error('頁面錯誤:', event.error);
+  
+  // 如果是世界王相關的錯誤，嘗試恢復
+  if (event.error && event.error.message && 
+      (event.error.message.includes('world_boss') || event.error.message.includes('challengeBtn'))) {
+    console.log('🔧 檢測到世界王相關錯誤，嘗試恢復按鈕狀態');
+    setTimeout(resetChallengeButtonToNormal, 1000);
+  }
+});
+
+// 🚀 新增：全域變數同步檢查
+function validateWorldBossData() {
+  if (!worldBossData) {
+    console.warn('⚠️ worldBossData 未載入');
+    return false;
+  }
+  
+  const requiredFields = ['current_hp', 'max_hp', 'current_phase'];
+  const missingFields = requiredFields.filter(field => !(field in worldBossData));
+  
+  if (missingFields.length > 0) {
+    console.warn('⚠️ worldBossData 缺少必要欄位:', missingFields);
+    return false;
+  }
+  
+  return true;
+}
+  
+let worldBossStatusChecker = null;
+
+function startWorldBossStatusMonitoring() {
+  // 每30秒檢查一次世界王狀態
+  worldBossStatusChecker = setInterval(async () => {
+    try {
+      const response = await SecureAPI.get(`${API_BASE}/world_boss_death_status`);
+      if (response.ok) {
+        const statusData = await response.json();
+        
+        // 如果世界王死亡狀態有變化，立即更新UI
+        const wasDefeated = worldBossData && worldBossData.current_hp <= 0;
+        const isNowDefeated = statusData.boss_defeated;
+        
+        if (wasDefeated !== isNowDefeated) {
+          console.log(`🔄 世界王狀態變化檢測: ${wasDefeated ? '死亡' : '存活'} → ${isNowDefeated ? '死亡' : '存活'}`);
+          
+          // 更新全域資料
+          if (worldBossData) {
+            worldBossData.current_hp = statusData.current_hp;
+            worldBossData.max_hp = statusData.max_hp;
+          }
+          
+          // 立即更新UI
+          updateWorldBossHP(statusData.current_hp, statusData.max_hp);
+          updateCountdown();
+        }
+      }
+    } catch (error) {
+      console.warn('定期狀態檢查失敗:', error);
+    }
+  }, 30000); // 30秒間隔
+}
+
+function stopWorldBossStatusMonitoring() {
+  if (worldBossStatusChecker) {
+    clearInterval(worldBossStatusChecker);
+    worldBossStatusChecker = null;
+    console.log('🛑 已停止世界王狀態監控');
+  }
+}
+  
 
 // 監聽登入狀態
 onAuthStateChanged(auth, async (user) => {
