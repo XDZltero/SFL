@@ -228,182 +228,185 @@
 
     // 渲染商品卡片
     function renderShopItems() {
-      const filteredItems = currentFilter === 'all' 
-        ? shopItems 
-        : shopItems.filter(item => item.category === currentFilter);
+  const filteredItems = currentFilter === 'all' 
+    ? shopItems 
+    : shopItems.filter(item => item.category === currentFilter);
 
-      // 排序：可購買的在前，售完的在後，然後按sort排序
-      const sortedItems = filteredItems.sort((a, b) => {
-        const aCanPurchase = canPurchaseItem(a).canPurchase;
-        const bCanPurchase = canPurchaseItem(b).canPurchase;
-        
-        if (aCanPurchase !== bCanPurchase) {
-          return bCanPurchase ? 1 : -1; // 可購買的排前面
-        }
-        
-        return a.sort - b.sort;
-      });
+  // 排序：可購買的在前，售完的在後，然後按sort排序
+  const sortedItems = filteredItems.sort((a, b) => {
+    const aCanPurchase = canPurchaseItem(a).canPurchase;
+    const bCanPurchase = canPurchaseItem(b).canPurchase;
+    
+    if (aCanPurchase !== bCanPurchase) {
+      return bCanPurchase ? 1 : -1;
+    }
+    
+    return a.sort - b.sort;
+  });
 
-      let html = '';
+  let html = '';
+  
+  sortedItems.forEach(item => {
+    const { canPurchase, reason } = canPurchaseItem(item);
+    const purchases = userPurchases.purchases || {};
+    const itemPurchases = purchases[item.id] || {};
+    
+    let cardClass = 'shop-item-card';
+    if (!canPurchase) cardClass += ' sold-out';
+    if (item.type === 'free') cardClass += ' free';
+    
+    // 🆕 禮包標記
+    if (item.type === 'bundle') cardClass += ' bundle';
+    
+    // 特殊性標記
+    let rarityClass = '';
+    let rarityLabel = '';
+    if (item.special === 1) {
+      rarityClass = 'rare';
+      rarityLabel = '【稀有】';
+    } else if (item.special === 2) {
+      rarityClass = 'super-rare';
+      rarityLabel = '【超稀有】';
+    } else if (item.special === 3) {
+      rarityClass = 'mythical';
+      rarityLabel = '【罕見】';
+    }
+    
+    // 🆕 禮包類型標記
+    if (item.type === 'bundle') {
+      rarityLabel = '【禮包】' + rarityLabel;
+    }
+    
+    // 🆕 生成獲得物品列表
+    let receivedItemsHtml = '';
+    if (item.type === 'bundle' && item.items) {
+      // 禮包：顯示多個道具
+      const itemsList = item.items.map(itemData => {
+        const meta = itemMeta[itemData.item_id];
+        const itemName = meta?.name || itemData.item_id;
+        return `${itemName} x${itemData.quantity}`;
+      }).join('、');
       
-      sortedItems.forEach(item => {
-        const meta = itemMeta[item.item_id];
-        const { canPurchase, reason } = canPurchaseItem(item);
-        const purchases = userPurchases.purchases || {};
-        const itemPurchases = purchases[item.id] || {};
+      receivedItemsHtml = `<div class="shop-item-desc">📦 禮包內容：${itemsList}</div>`;
+    } else if (item.item_id) {
+      // 單一道具
+      const meta = itemMeta[item.item_id];
+      const itemName = meta?.name || item.item_id;
+      receivedItemsHtml = `<div class="shop-item-desc">📦 獲得：${itemName} x${item.quantity}</div>`;
+    }
+    
+    // 生成消費道具列表
+    let costHtml = '';
+    if (item.type === 'free') {
+      costHtml = '<div class="cost-item"><span style="color: #4CAF50;">💰 免費領取</span></div>';
+    } else {
+      Object.entries(item.cost).forEach(([costItem, costAmount]) => {
+        const costMeta = itemMeta[costItem];
+        const owned = userItems[costItem] || 0;
+        const sufficient = owned >= costAmount;
         
-        let cardClass = 'shop-item-card';
-        if (!canPurchase) cardClass += ' sold-out';
-        if (item.type === 'free') cardClass += ' free';
-        
-        // 特殊性標記
-        let rarityClass = '';
-        let rarityLabel = '';
-        if (meta?.special === 1) {
-          rarityClass = 'rare';
-          rarityLabel = '【稀有】';
-        } else if (meta?.special === 2) {
-          rarityClass = 'super-rare';
-          rarityLabel = '【超稀有】';
-        } else if (meta?.special === 3) {
-          rarityClass = 'mythical';
-          rarityLabel = '【罕見】';
-        }
-        
-        // 生成消費道具列表
-        let costHtml = '';
-        if (item.type === 'free') {
-          costHtml = '<div class="cost-item"><span style="color: #4CAF50;">💰 免費領取</span></div>';
-        } else {
-          Object.entries(item.cost).forEach(([costItem, costAmount]) => {
-            const costMeta = itemMeta[costItem];
-            const owned = userItems[costItem] || 0;
-            const sufficient = owned >= costAmount;
-            
-            costHtml += `
-              <div class="cost-item">
-                <span class="cost-name">${costMeta?.name || costItem}:</span>
-                <div>
-                  <span class="cost-amount">${costAmount}</span>
-                  <span class="cost-owned ${sufficient ? '' : 'cost-insufficient'}">(擁有: ${owned})</span>
-                </div>
-              </div>
-            `;
-          });
-        }
-        
-        // 限購資訊
-        const totalPurchased = itemPurchases.total_purchased || 0;
-        const resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
-        
-        html += `
-          <div class="${cardClass} ${rarityClass}">
-            <div class="shop-item-name">${rarityLabel}${item.name}</div>
-            <div class="shop-item-desc">${item.description}</div>
-            <div class="shop-item-desc">獲得：${meta?.name || item.item_id} x${item.quantity}</div>
-            
-            <div class="shop-item-limit ${item.reset_type}">
-              📦 總購買：${totalPurchased}/${item.limit_per_account}
-              ${item.reset_type !== 'none' ? ` | ${getResetTypeName(item.reset_type)}：${resetPurchased}/${item.limit_per_reset}` : ''}
+        costHtml += `
+          <div class="cost-item">
+            <span class="cost-name">${costMeta?.name || costItem}:</span>
+            <div>
+              <span class="cost-amount">${costAmount}</span>
+              <span class="cost-owned ${sufficient ? '' : 'cost-insufficient'}">(擁有: ${owned})</span>
             </div>
-            
-            <div class="shop-item-cost">
-              ${costHtml}
-            </div>
-            
-            ${!canPurchase ? 
-              `<div style="color: #ff6b6b; font-weight: bold; text-align: center; margin: 10px 0;">❌ ${reason}</div>` :
-              `<button class="square-btn" onclick="openPurchaseDialog('${item.id}')" style="width: 100%; margin-top: 10px;">
-                ${item.type === 'free' ? '🎁 免費領取' : '💰 購買'}
-              </button>`
-            }
           </div>
         `;
       });
-
-      document.getElementById("shopItemGrid").innerHTML = html || '<div class="shop-item-card">此分類暫無商品</div>';
-      
-      // 更新分類計數
-      updateCategoryCounts();
     }
-
-    // 更新分類計數
-    function updateCategoryCounts() {
-      const categories = ['all', 'daily_free', 'materials', 'consumables'];
-      
-      categories.forEach(category => {
-        const count = category === 'all' 
-          ? shopItems.length 
-          : shopItems.filter(item => item.category === category).length;
-        
-        const countEl = document.getElementById(`count-${category}`);
-        if (countEl) countEl.textContent = count;
-      });
-    }
-
-    // 開啟購買確認對話框
-    async function openPurchaseDialog(itemId) {
-      const item = shopItems.find(i => i.id === itemId);
-      if (!item) return;
-      
-      const meta = itemMeta[item.item_id];
-      const { canPurchase, reason } = canPurchaseItem(item);
-      
-      if (!canPurchase) {
-        alert(`無法購買：${reason}`);
-        return;
-      }
-      
-      const dialog = document.getElementById("dialogContainer");
-      
-      let costSummary = '';
-      if (item.type === 'free') {
-        costSummary = '<div style="color: #4CAF50; text-align: center; font-weight: bold;">🎁 此為免費道具</div>';
-      } else {
-        Object.entries(item.cost).forEach(([costItem, costAmount]) => {
-          const costMeta = itemMeta[costItem];
-          const owned = userItems[costItem] || 0;
-          
-          costSummary += `
-            <div class="cost-item">
-              <span>消耗 ${costMeta?.name || costItem}:</span>
-              <span>${costAmount} (剩餘: ${owned - costAmount})</span>
-            </div>
-          `;
-        });
-      }
-      
-      const currentAmount = userItems[item.item_id] || 0;
-      
-      let html = `
-        <div class='purchase-dialog'>
-          <h3>💰 購買確認</h3>
-          
-          <div class="purchase-summary">
-            <h4>📦 購買物品</h4>
-            <div><strong>${item.name}</strong></div>
-            <div>數量：${item.quantity}</div>
-            <div>購買後總計：${currentAmount} + ${item.quantity} = ${currentAmount + item.quantity}</div>
-          </div>
-          
-          <div class="purchase-summary">
-            <h4>💸 消耗道具</h4>
-            ${costSummary}
-          </div>
-          
-          <div class="btn-group">
-            <button class="square-btn" onclick="confirmPurchase('${itemId}')" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);">
-              ✅ 確認${item.type === 'free' ? '領取' : '購買'}
-            </button>
-            <button class="square-btn" onclick="closeDialog()">❌ 取消</button>
-          </div>
+    
+    // 限購資訊
+    const totalPurchased = itemPurchases.total_purchased || 0;
+    const resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
+    
+    // 🆕 無限購買標記
+    const isUnlimited = item.unlimited || item.limit_per_account === -1;
+    let limitDisplay = '';
+    
+    if (isUnlimited) {
+      limitDisplay = `
+        <div class="shop-item-limit unlimited">
+          ♾️ 無限購買 | 已購買：${totalPurchased} 次
         </div>
       `;
+    } else {
+      limitDisplay = `
+        <div class="shop-item-limit ${item.reset_type}">
+          📦 總購買：${totalPurchased}/${item.limit_per_account}
+          ${item.reset_type !== 'none' ? ` | ${getResetTypeName(item.reset_type)}：${resetPurchased}/${item.limit_per_reset}` : ''}
+        </div>
+      `;
+    }
+    
+    html += `
+      <div class="${cardClass} ${rarityClass}">
+        <div class="shop-item-name">${rarityLabel}${item.name}</div>
+        <div class="shop-item-desc">${item.description}</div>
+        ${receivedItemsHtml}
+        
+        ${limitDisplay}
+        
+        <div class="shop-item-cost">
+          ${costHtml}
+        </div>
+        
+        ${!canPurchase ? 
+          `<div style="color: #ff6b6b; font-weight: bold; text-align: center; margin: 10px 0;">❌ ${reason}</div>` :
+          `<button class="square-btn" onclick="openPurchaseDialog('${item.id}')" style="width: 100%; margin-top: 10px;">
+            ${item.type === 'free' ? '🎁 免費領取' : 
+              item.type === 'bundle' ? '📦 購買禮包' : '💰 購買'}
+          </button>`
+        }
+      </div>
+    `;
+  });
+
+  document.getElementById("shopItemGrid").innerHTML = html || '<div class="shop-item-card">此分類暫無商品</div>';
+  
+  // 更新分類計數
+  updateCategoryCounts();
+}
+
+    // 計算最大可購買數量
+    function calculateMaxPurchasable(item) {
+      const purchases = userPurchases.purchases || {};
+      const itemPurchases = purchases[item.id] || {};
       
-      dialog.innerHTML = html;
-      dialog.style.display = "flex";
-      document.body.style.overflow = "hidden";
-      document.body.classList.add("dialog-open");
+      // 考慮限購限制
+      let maxByLimit = Infinity;
+      if (item.limit_per_account > 0) {
+        maxByLimit = Math.min(maxByLimit, item.limit_per_account - (itemPurchases.total_purchased || 0));
+      }
+      if (item.reset_type !== "none" && item.limit_per_reset > 0) {
+        const resetKey = `${item.reset_type}_purchased`;
+        maxByLimit = Math.min(maxByLimit, item.limit_per_reset - (itemPurchases[resetKey] || 0));
+      }
+      
+      // 考慮道具數量限制
+      let maxByCost = Infinity;
+      for (const [costItem, costAmount] of Object.entries(item.cost)) {
+        const owned = userItems[costItem] || 0;
+        maxByCost = Math.min(maxByCost, Math.floor(owned / costAmount));
+      }
+      
+      // 考慮999上限
+      const currentAmount = userItems[item.item_id] || 0;
+      const maxByLimit999 = Math.floor((999 - currentAmount) / item.quantity);
+      
+      return Math.max(1, Math.min(maxByLimit, maxByCost, maxByLimit999, 50)); // 最多50個
+    }
+    
+    // 調整數量
+    function adjustQuantity(delta) {
+      const input = document.getElementById('purchaseQuantity');
+      if (!input) return;
+      
+      const current = parseInt(input.value) || 1;
+      const newValue = Math.max(1, Math.min(parseInt(input.max), current + delta));
+      input.value = newValue;
+      updatePurchasePreview();
     }
 
     // 確認購買
@@ -440,6 +443,49 @@
         showLoading(false);
       }
     }
+
+    // 更新購買預覽
+function updatePurchasePreview() {
+  const quantityInput = document.getElementById('purchaseQuantity');
+  if (!quantityInput) return;
+  
+  const quantity = parseInt(quantityInput.value) || 1;
+  const itemId = quantityInput.closest('.purchase-dialog').querySelector('[onclick*="confirmPurchase"]').onclick.toString().match(/'([^']+)'/)[1];
+  const item = shopItems.find(i => i.id === itemId);
+  
+  if (!item) return;
+  
+  const currentAmount = userItems[item.item_id] || 0;
+  const totalReceived = item.quantity * quantity;
+  
+  // 更新顯示
+  document.getElementById('quantityDisplay').textContent = `數量：${item.quantity} x ${quantity} = ${totalReceived}`;
+  document.getElementById('totalDisplay').textContent = `購買後總計：${currentAmount} + ${totalReceived} = ${currentAmount + totalReceived}`;
+  document.getElementById('costDisplay').innerHTML = generateCostSummary(item, quantity);
+}
+
+// 生成消費道具摘要
+function generateCostSummary(item, quantity = 1) {
+  if (item.type === 'free') {
+    return '<div style="color: #4CAF50; text-align: center; font-weight: bold;">🎁 此為免費道具</div>';
+  }
+  
+  let costSummary = '';
+  Object.entries(item.cost).forEach(([costItem, costAmount]) => {
+    const costMeta = itemMeta[costItem];
+    const totalCost = costAmount * quantity;
+    const owned = userItems[costItem] || 0;
+    
+    costSummary += `
+      <div class="cost-item">
+        <span>消耗 ${costMeta?.name || costItem}:</span>
+        <span>${totalCost} (剩餘: ${owned - totalCost})</span>
+      </div>
+    `;
+  });
+  
+  return costSummary;
+}
 
     // 關閉對話框
     function closeDialog() {
@@ -498,6 +544,93 @@
       }
     }
 
+    async function openPurchaseDialog(itemId) {
+  const item = shopItems.find(i => i.id === itemId);
+  if (!item) return;
+  
+  const { canPurchase, reason } = canPurchaseItem(item);
+  
+  if (!canPurchase) {
+    alert(`無法購買：${reason}`);
+    return;
+  }
+  
+  const dialog = document.getElementById("dialogContainer");
+  
+  // 🆕 生成獲得物品摘要
+  let receivedItemsSummary = '';
+  if (item.type === 'bundle' && item.items) {
+    receivedItemsSummary = '<h4>📦 禮包內容</h4>';
+    item.items.forEach(itemData => {
+      const meta = itemMeta[itemData.item_id];
+      const itemName = meta?.name || itemData.item_id;
+      const currentAmount = userItems[itemData.item_id] || 0;
+      
+      receivedItemsSummary += `
+        <div class="cost-item">
+          <span>${itemName}:</span>
+          <span>+${itemData.quantity} (總計: ${currentAmount + itemData.quantity})</span>
+        </div>
+      `;
+    });
+  } else if (item.item_id) {
+    const meta = itemMeta[item.item_id];
+    const itemName = meta?.name || item.item_id;
+    const currentAmount = userItems[item.item_id] || 0;
+    
+    receivedItemsSummary = `
+      <h4>📦 購買物品</h4>
+      <div><strong>${item.name}</strong></div>
+      <div>數量：${item.quantity}</div>
+      <div>購買後總計：${currentAmount} + ${item.quantity} = ${currentAmount + item.quantity}</div>
+    `;
+  }
+  
+  let costSummary = '';
+  if (item.type === 'free') {
+    costSummary = '<div style="color: #4CAF50; text-align: center; font-weight: bold;">🎁 此為免費道具</div>';
+  } else {
+    Object.entries(item.cost).forEach(([costItem, costAmount]) => {
+      const costMeta = itemMeta[costItem];
+      const owned = userItems[costItem] || 0;
+      
+      costSummary += `
+        <div class="cost-item">
+          <span>消耗 ${costMeta?.name || costItem}:</span>
+          <span>${costAmount} (剩餘: ${owned - costAmount})</span>
+        </div>
+      `;
+    });
+  }
+  
+  let html = `
+    <div class='purchase-dialog'>
+      <h3>💰 ${item.type === 'bundle' ? '禮包購買' : '購買'}確認</h3>
+      
+      <div class="purchase-summary">
+        ${receivedItemsSummary}
+      </div>
+      
+      <div class="purchase-summary">
+        <h4>💸 消耗道具</h4>
+        ${costSummary}
+      </div>
+      
+      <div class="btn-group">
+        <button class="square-btn" onclick="confirmPurchase('${itemId}')" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);">
+          ✅ 確認${item.type === 'free' ? '領取' : item.type === 'bundle' ? '購買禮包' : '購買'}
+        </button>
+        <button class="square-btn" onclick="closeDialog()">❌ 取消</button>
+      </div>
+    </div>
+  `;
+  
+  dialog.innerHTML = html;
+  dialog.style.display = "flex";
+  document.body.style.overflow = "hidden";
+  document.body.classList.add("dialog-open");
+}
+
     // 監聽登入狀態
     onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -506,6 +639,7 @@
         window.parent.location.href = "/SFL/login.html";
       }
     });
+  
   </script>
 </body>
 </html>
