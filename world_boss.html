@@ -751,17 +751,15 @@ function getCurrentPhase(currentHp, maxHp) {
 function updatePhaseDisplay(phase) {
   const phaseIndicatorEl = document.getElementById("phaseIndicator");
   const phaseDescriptionEl = document.getElementById("phaseDescription");
-  const currentPhaseEl = document.getElementById("currentPhase");
   
+  // 🚀 確保使用後端傳來的階段配置
   const phaseInfo = worldBossData?.phases?.[phase.toString()];
   if (phaseInfo) {
     phaseIndicatorEl.textContent = phaseInfo.name;
     phaseDescriptionEl.textContent = phaseInfo.description;
-    currentPhaseEl.textContent = `${phase} / 3`;
   } else {
+    console.warn('階段配置未找到，使用預設值');
     phaseIndicatorEl.textContent = `【第${phase}階段】`;
-    phaseDescriptionEl.textContent = "階段資料載入中...";
-    currentPhaseEl.textContent = `${phase} / 3`;
   }
 }
 
@@ -917,13 +915,11 @@ async function loadWorldBossData() {
     ]);
     
     // 處理世界王狀態
-    // 處理世界王狀態
     if (bossRes.ok) {
       worldBossData = await bossRes.json();
       
       // 🚀 重要：先更新基本資訊
       updateWorldBossInfo(worldBossData);
-      updateWorldBossStats(worldBossData);
       
       // 🚀 重要：然後檢查死亡狀態（這是關鍵步驟）
       const isDefeated = checkWorldBossDeathStatus();
@@ -1015,13 +1011,11 @@ function updateWorldBossInfo(boss) {
   document.getElementById("bossName").innerHTML = boss.name.replace(/\n/g, "<br>");
   document.getElementById("bossImage").src = boss.image;
   document.getElementById("bossDescription").textContent = boss.description;
-  document.getElementById("bossLevel").textContent = boss.level;
   
-  // 🚀 統一使用新的統計更新函數
+  // 🚀 只使用這一個統計更新函數
   updateGlobalStats(boss);
   
   updateWorldBossHP(boss.current_hp, boss.max_hp);
-  
   const currentPhase = getCurrentPhase(boss.current_hp, boss.max_hp);
   updatePhaseDisplay(currentPhase);
 }
