@@ -1543,6 +1543,7 @@ def update_world_boss_global_stats_immediate(damage_dealt):
 
 @app.route("/world_boss_status", methods=["GET"])
 def world_boss_status():
+    """取得世界王狀態 - 修正版本，包含死亡狀態"""
     try:
         # ✅ 檢查週重置
         check_weekly_reset()
@@ -1556,10 +1557,25 @@ def world_boss_status():
         if not global_state:
             return jsonify({"error": "無法取得世界王狀態"}), 500
         
-        # 🚀 修改：直接從全域狀態取得總攻擊次數，不再查詢資料庫
+        current_hp = global_state.get("current_hp", config["initial_stats"]["max_hp"])
+        max_hp = global_state.get("max_hp", config["initial_stats"]["max_hp"])
+        
+        # 🚀 新增：檢查世界王是否已死亡
+        boss_defeated = current_hp <= 0
+        defeated_info = {}
+        
+        if boss_defeated:
+            defeated_info = {
+                "defeated": True,
+                "defeated_time": global_state.get("defeated_time", 0),
+                "final_blow_by": global_state.get("final_blow_by", ""),
+                "final_blow_nickname": global_state.get("final_blow_nickname", "未知英雄"),
+                "reset_message": "世界王將於下週一 00:31 重新復活"
+            }
+        
+        # 計算總攻擊次數和獨特玩家數
         total_attacks = global_state.get("total_participants", 0)
         
-        # 🚀 新增：計算獨特玩家數（可選，作為額外統計）
         try:
             players_ref = db.collection("world_boss_players").where("total_damage", ">", 0)
             unique_players_count = len([doc for doc in players_ref.stream()])
@@ -1573,16 +1589,18 @@ def world_boss_status():
             "image": config["image"],
             "level": config["level"],
             "element": config["element"],
-            "current_hp": global_state.get("current_hp", config["initial_stats"]["max_hp"]),
-            "max_hp": global_state.get("max_hp", config["initial_stats"]["max_hp"]),
+            "current_hp": current_hp,
+            "max_hp": max_hp,
             "current_phase": global_state.get("current_phase", 1),
-            "total_participants": total_attacks,  # 🚀 修改：現在代表總攻擊次數
-            "unique_players": unique_players_count,  # 🚀 新增：獨特玩家數
+            "total_participants": total_attacks,
+            "unique_players": unique_players_count,
             "total_damage_dealt": global_state.get("total_damage_dealt", 0),
             "phases": config["phases"],
             "last_update_time": global_state.get("last_update_time", global_state.get("created_time", time.time())),
             "is_maintenance": is_maintenance,
-            "maintenance_message": maintenance_msg if is_maintenance else None
+            "maintenance_message": maintenance_msg if is_maintenance else None,
+            "boss_defeated": boss_defeated,  # 🚀 新增：世界王死亡狀態
+            "defeated_info": defeated_info   # 🚀 新增：死亡詳細資訊
         }
         
         return jsonify(result)
@@ -1593,13 +1611,26 @@ def world_boss_status():
 @app.route("/world_boss_challenge", methods=["POST"])
 @require_auth
 def world_boss_challenge():
-    # 挑戰世界王
+    """挑戰世界王 - 修正版本，包含死亡檢查"""
     try:
-
         # 檢查週日重置
         check_weekly_reset()
         
         user_id = request.user_id
+        
+        # 🚀 新增：檢查世界王是否已死亡
+        global_state = get_world_boss_global_state()
+        if not global_state:
+            return jsonify({"error": "無法取得世界王狀態"}), 500
+        
+        current_world_boss_hp = global_state.get("current_hp", 0)
+        if current_world_boss_hp <= 0:
+            return jsonify({
+                "error": "世界王已被擊敗！",
+                "boss_defeated": True,
+                "message": "🎉 恭喜全世界的冒險者成功擊敗世界王！\n👑 世界王將於下週一 00:31 復活並重置挑戰\n🏆 感謝你參與這場史詩級的戰鬥！",
+                "reset_info": "下週一 00:31 自動重置"
+            }), 403
         
         # 檢查跨日維護時間
         is_maintenance, maintenance_msg = is_maintenance_time()
@@ -1638,21 +1669,28 @@ def world_boss_challenge():
                 "cooldown_end_time": cooldown_end_time
             }), 400
         
-        # 取得使用者資料
-        user_doc = db.collection("users").document(user_id).get()
-        if not user_doc.exists:
-            return jsonify({"error": "找不到使用者"}), 404
-        
-        user_data = user_doc.to_dict()
-        user_data["user_id"] = user_id
-        
         # 載入世界王配置
         config = get_world_boss_config()
         
         # 計算傷害
         damage_dealt, hit_message = calculate_world_boss_damage(user_data, config)
         
-       # 使用批次操作確保原子性
+        # 🚀 重要修正：在更新血量前再次檢查當前狀態
+        # 這是為了防止併發請求導致的競態條件
+        fresh_global_state = get_world_boss_global_state()
+        if not fresh_global_state:
+            return jsonify({"error": "無法取得最新世界王狀態"}), 500
+            
+        fresh_current_hp = fresh_global_state.get("current_hp", 0)
+        if fresh_current_hp <= 0:
+            return jsonify({
+                "error": "世界王已在你攻擊前被其他冒險者擊敗！",
+                "boss_defeated": True,
+                "message": "⚔️ 雖然你沒能給予最後一擊，但你仍是擊敗世界王的英雄之一！",
+                "participation_acknowledged": True
+            }), 403
+
+        # 使用批次操作確保原子性
         batch = db.batch()
         
         # 準備所有更新操作，但不立即執行
@@ -1661,12 +1699,14 @@ def world_boss_challenge():
         
         # 1. 準備世界王全域狀態更新
         global_ref = db.collection("world_boss_global").document("current_status")
-        global_state = get_world_boss_global_state()
         
-        current_hp = global_state.get("current_hp", 0)
+        current_hp = fresh_global_state.get("current_hp", 0)
         new_hp = max(0, current_hp - damage_dealt)
-        new_total_damage = global_state.get("total_damage_dealt", 0) + damage_dealt
-        new_total_participants = global_state.get("total_participants", 0) + 1
+        new_total_damage = fresh_global_state.get("total_damage_dealt", 0) + damage_dealt
+        new_total_participants = fresh_global_state.get("total_participants", 0) + 1
+        
+        # 🚀 新增：標記世界王是否在這次攻擊後死亡
+        boss_defeated_this_attack = (current_hp > 0 and new_hp <= 0)
         
         global_updates = {
             "current_hp": new_hp,
@@ -1675,6 +1715,13 @@ def world_boss_challenge():
             "current_phase": get_current_world_boss_phase(),
             "last_update_time": challenge_time
         }
+        
+        # 🚀 如果世界王在這次攻擊後死亡，記錄擊殺時間和擊殺者
+        if boss_defeated_this_attack:
+            global_updates["defeated_time"] = challenge_time
+            global_updates["final_blow_by"] = user_id
+            global_updates["final_blow_nickname"] = user_data.get("nickname", user_id)
+            global_updates["boss_defeated"] = True
         
         batch.update(global_ref, global_updates)
         
@@ -1700,20 +1747,30 @@ def world_boss_challenge():
         player_data["last_challenge_time"] = challenge_time
         player_data["nickname"] = user_data.get("nickname", user_id)
         
+        # 🚀 如果玩家擊殺了世界王，標記榮譽
+        if boss_defeated_this_attack:
+            player_data["delivered_final_blow"] = True
+            player_data["final_blow_time"] = challenge_time
+        
         batch.set(player_ref, player_data)
         
         # 3. 準備經驗值更新
         exp_gained, damage_percentage, reward_tier, tier_desc = calculate_world_boss_exp_reward(damage_dealt, config)
+        
+        # 🚀 如果玩家擊殺了世界王，給予額外獎勵
+        if boss_defeated_this_attack:
+            exp_gained += 2000  # 擊殺獎勵
+            reward_tier = "擊殺獎勵"
+            tier_desc = "給予世界王最後一擊！"
+        
         new_exp = user_data.get("exp", 0) + exp_gained
         
         user_ref = db.collection("users").document(user_id)
         batch.update(user_ref, {"exp": new_exp})
         
-        # 4. 準備道具掉落（如果有的話）
-        # 🆕 修正：改進道具掉落邏輯
+        # 4. 準備道具掉落
         dropped_items = {}
         
-        # 🎯 重要：只要參與挑戰就有掉落機會，移除傷害最低限制
         try:
             # 取得現有道具數量
             item_doc = db.collection("user_items").document(user_id).get()
@@ -1722,17 +1779,32 @@ def world_boss_challenge():
             # 🎲 計算每個掉落物品
             import random
             for drop in config["rewards"]["drops"]:
-                if random.random() <= drop["rate"]:
+                drop_rate = drop["rate"]
+                
+                # 🚀 如果擊殺了世界王，掉落率提升
+                if boss_defeated_this_attack:
+                    drop_rate = min(1.0, drop_rate * 2.0)  # 擊殺掉落率翻倍，但不超過100%
+                
+                if random.random() <= drop_rate:
                     item_id = drop["id"]
                     item_value = drop["value"]
                     
-                    # 🆕 記錄本次掉落的道具（用於前端顯示）
-                    dropped_items[item_id] = dropped_items.get(item_id, 0) + item_value
+                    # 🚀 擊殺額外獎勵
+                    if boss_defeated_this_attack:
+                        item_value = int(item_value * 1.5)  # 擊殺獎勵增加50%
                     
-                    # 🆕 更新玩家道具庫存
+                    dropped_items[item_id] = dropped_items.get(item_id, 0) + item_value
                     current_items[item_id] = current_items.get(item_id, 0) + item_value
             
-            # 🆕 如果有道具掉落，加入批次操作
+            # 🚀 擊殺世界王的特殊獎勵
+            if boss_defeated_this_attack:
+                # 保證掉落創世精髓
+                special_drop_id = "world_boss_token"
+                special_drop_amount = 3  # 擊殺者額外獲得
+                dropped_items[special_drop_id] = dropped_items.get(special_drop_id, 0) + special_drop_amount
+                current_items[special_drop_id] = current_items.get(special_drop_id, 0) + special_drop_amount
+            
+            # 如果有道具掉落，加入批次操作
             if dropped_items:
                 item_ref = db.collection("user_items").document(user_id)
                 batch.set(item_ref, {"items": current_items}, merge=True)
@@ -1744,6 +1816,11 @@ def world_boss_challenge():
         try:
             batch.commit()
             print(f"🌍 世界王挑戰批次操作成功 - 使用者: {user_id}")
+            
+            # 🚀 如果擊殺了世界王，記錄到日誌
+            if boss_defeated_this_attack:
+                print(f"👑 世界王被擊敗！最後一擊由 {user_data.get('nickname', user_id)} 完成")
+                
         except Exception as batch_error:
             print(f"❌ 批次操作失敗: {batch_error}")
             return jsonify({
@@ -1759,35 +1836,35 @@ def world_boss_challenge():
                 rank = i + 1
                 break
         
-        # 🆕 計算掉落率顯示資訊（供前端參考）
-        drop_info = []
-        for drop in config["rewards"]["drops"]:
-            item_id = drop["id"]
-            rate = drop["rate"]
-            if item_id in dropped_items:
-                drop_info.append(f"{item_id}(獲得)")
-            else:
-                drop_info.append(f"{item_id}({rate*100:.1f}%)")
+        # 🚀 準備回應訊息
+        success_message = hit_message
         
-        # 🎯 只有在所有操作都成功後才回傳成功
+        if boss_defeated_this_attack:
+            success_message = f"🎉 恭喜！你給予了世界王最後一擊！\n👑 世界王已被全體冒險者擊敗\n⚔️ {hit_message}"
+            reward_tier = "👑 世界王終結者"
+            tier_desc = "給予最後一擊的傳奇英雄！"
+        
+        # 🎯 成功回應
         result = {
             "success": True,
             "damage_dealt": damage_dealt,
-            "hit_message": hit_message,
+            "hit_message": success_message,
             "total_damage": player_data["total_damage"],
             "current_rank": rank,
             "exp_gained": exp_gained,
             "damage_percentage": round(damage_percentage, 4),
             "reward_tier": reward_tier,
             "tier_description": tier_desc,
+            "boss_defeated": boss_defeated_this_attack,  # 🚀 新增：世界王是否被擊敗
+            "final_blow": boss_defeated_this_attack,     # 🚀 新增：是否為最後一擊
             "rewards": {
-                "items": dropped_items,  # 🆕 修正：只返回本次掉落的道具
-                "drop_rates": drop_info   # 🆕 新增：掉落率資訊
+                "items": dropped_items,
+                "bonus_for_final_blow": boss_defeated_this_attack
             },
             "cooldown_end_time": new_cooldown_end_time,
             "world_boss_hp": {
                 "current": new_hp,
-                "max": global_state.get("max_hp", config["initial_stats"]["max_hp"])
+                "max": fresh_global_state.get("max_hp", config["initial_stats"]["max_hp"])
             }
         }
         
