@@ -1195,18 +1195,19 @@ def get_world_boss_config():
         return json.load(f)
 
 def initialize_world_boss_global_state():
-    """初始化世界王全域狀態（僅在首次運行時）"""
     try:
         global_ref = db.collection("world_boss_global").document("current_status")
         global_doc = global_ref.get()
         
         if not global_doc.exists:
             config = get_world_boss_config()
+            correct_max_hp = config["initial_stats"]["max_hp"]  # ✅ 從配置檔讀取
+            
             initial_state = {
-                "current_hp": config["initial_stats"]["max_hp"],
-                "max_hp": config["initial_stats"]["max_hp"],
+                "current_hp": correct_max_hp,  # ✅ 使用正確血量
+                "max_hp": correct_max_hp,      # ✅ 使用正確血量
                 "current_phase": 1,
-                "total_participants": 0,  # 🚀 修改：現在代表總攻擊次數
+                "total_participants": 0,
                 "total_damage_dealt": 0,
                 "created_time": time.time(),
                 "last_reset_time": time.time(),
@@ -1214,7 +1215,7 @@ def initialize_world_boss_global_state():
             }
             
             global_ref.set(initial_state)
-            print("✅ 世界王全域狀態已初始化")
+            print(f"✅ 世界王全域狀態已初始化，血量：{correct_max_hp}")
             return initial_state
         else:
             return global_doc.to_dict()
@@ -1224,36 +1225,49 @@ def initialize_world_boss_global_state():
         return None
 
 def get_world_boss_global_state():
-    """取得世界王全域狀態"""
     try:
         global_ref = db.collection("world_boss_global").document("current_status")
         global_doc = global_ref.get()
         
         if global_doc.exists:
             state = global_doc.to_dict()
-            # 驗證關鍵欄位
+            
+            # ✅ 只檢查，絕不自動修復
             required_fields = ["current_hp", "max_hp"]
-            for field in required_fields:
-                if field not in state:
-                    print(f"⚠️ 缺少關鍵欄位 {field}，嘗試修復")
-                    if field == "current_hp":
-                        state[field] = 999999999
-                    elif field == "max_hp":
-                        state[field] = 999999999
-                    # 更新到資料庫
-                    global_ref.update({field: state[field]})
+            missing_fields = [f for f in required_fields if f not in state]
+            
+            if missing_fields:
+                print(f"🚨 世界王資料異常！缺少欄位：{missing_fields}")
+                print(f"📊 當前狀態：{state}")
+                print(f"⚠️ 需要管理員手動處理，系統不會自動修復")
+                # 返回 None，讓前端顯示錯誤
+                return None
             
             return state
         else:
-            print("⚠️ 全域狀態文檔不存在，自動初始化")
+            print("📝 世界王狀態文檔不存在，需要初始化")
             return initialize_world_boss_global_state()
             
     except Exception as e:
-        print(f"❌ 取得世界王全域狀態失敗: {e}")
+        print(f"❌ 取得世界王狀態失敗: {e}")
         return None
 
+def is_maintenance_time():
+    """檢查是否為跨日維護時間 (23:30~00:30)"""
+    taipei_tz = pytz.timezone('Asia/Taipei')
+    now_taipei = datetime.datetime.now(taipei_tz)
+    current_hour = now_taipei.hour
+    current_minute = now_taipei.minute
+    
+    # 23:30~23:59 或 00:00~00:30
+    if (current_hour == 23 and current_minute >= 30) or \
+       (current_hour == 0 and current_minute <= 30):
+        return True, "世界王跨日維護中 (23:30~00:30)，請稍後再來挑戰！"
+    
+    return False, ""
+
 def is_weekend_restriction():
-    """檢查是否為週日限制時間 (UTC+8)"""
+    """檢查是否為週日限制時間"""
     taipei_tz = pytz.timezone('Asia/Taipei')
     now_taipei = datetime.datetime.now(taipei_tz)
     
@@ -1529,12 +1543,13 @@ def update_world_boss_global_stats_immediate(damage_dealt):
 
 @app.route("/world_boss_status", methods=["GET"])
 def world_boss_status():
-    """取得世界王當前狀態"""
     try:
-        config = get_world_boss_config()
+        # ✅ 新增：維護時間檢查
+        is_maintenance, maintenance_msg = is_maintenance_time()
         
-        # 取得或初始化全域狀態
+        config = get_world_boss_config()
         global_state = get_world_boss_global_state()
+        
         if not global_state:
             return jsonify({"error": "無法取得世界王狀態"}), 500
         
@@ -1562,7 +1577,9 @@ def world_boss_status():
             "unique_players": unique_players_count,  # 🚀 新增：獨特玩家數
             "total_damage_dealt": global_state.get("total_damage_dealt", 0),
             "phases": config["phases"],
-            "last_update_time": global_state.get("last_update_time", global_state.get("created_time", time.time()))
+            "last_update_time": global_state.get("last_update_time", global_state.get("created_time", time.time())),
+            "is_maintenance": is_maintenance,
+            "maintenance_message": maintenance_msg if is_maintenance else None
         }
         
         return jsonify(result)
@@ -1573,9 +1590,14 @@ def world_boss_status():
 @app.route("/world_boss_challenge", methods=["POST"])
 @require_auth
 def world_boss_challenge():
-    """挑戰世界王"""
+    # 挑戰世界王
     try:
         user_id = request.user_id
+        
+        # ✅ 新增：檢查跨日維護時間
+        is_maintenance, maintenance_msg = is_maintenance_time()
+        if is_maintenance:
+            return jsonify({"error": maintenance_msg}), 403
         
         # 檢查週日限制
         is_restricted, restriction_msg = is_weekend_restriction()
