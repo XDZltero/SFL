@@ -366,7 +366,7 @@ function percent(val) {
             let remainingCooldown = currentRemainingTime;
             
             const cooldownParam = remainingCooldown > 2 ? `&cooldown=${remainingCooldown}` : '';
-            const nextUrl = `dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
+            const nextUrl = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
             
             setTimeout(() => {
               window.parent.loadPage(nextUrl);
@@ -374,7 +374,7 @@ function percent(val) {
           } catch (error) {
             console.error("準備跳轉時發生錯誤:", error);
             setTimeout(() => {
-              window.parent.loadPage(`dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}`);
+              window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
             }, 500);
           }
         };
@@ -490,7 +490,7 @@ function percent(val) {
     function leaveDungeon() {
       window.parent.postMessage({ command: "restoreMainMusic" }, "*");
       setTimeout(() => {
-	    window.parent.loadPage('dungeons_test.html');
+	    window.parent.loadPage('dungeons.html');
 	  }, 300);
     }
     window.leaveDungeon = leaveDungeon;
@@ -924,7 +924,7 @@ function percent(val) {
     function checkProgressBeforeBattle() {
       if (layer > currentProgress) {
         alert("層數異常（尚未解鎖），請重新進入副本");
-        window.parent.loadPage('dungeons_test.html');
+        window.parent.loadPage('dungeons.html');
         return false;
       }
       return true;
@@ -1141,7 +1141,7 @@ function percent(val) {
                 let remainingCooldown = currentRemainingTime;
                 
                 const cooldownParam = remainingCooldown > 2 ? `&cooldown=${remainingCooldown}` : '';
-                const nextUrl = `dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
+                const nextUrl = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
                 
                 setTimeout(() => {
                   window.parent.loadPage(nextUrl);
@@ -1149,7 +1149,7 @@ function percent(val) {
               } catch (error) {
                 console.error("準備跳轉時發生錯誤:", error);
                 setTimeout(() => {
-                  window.parent.loadPage(`dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}`);
+                  window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
                 }, 500);
               }
             };
