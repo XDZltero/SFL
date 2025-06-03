@@ -49,8 +49,8 @@
 </div>
 <div class="progress-text" id="pageProgressText">0%</div>
 <div class="battle-tips">
-        🗡️ 準備好迎接挑戰了嗎？<br/>
-        📊 檢查你的裝備和技能配置
+        🗡️ 升級卡片通關會更容易！<br/>
+        📊 記得配置能力點與技能！
       </div>
 </div>
 </div>
@@ -68,7 +68,7 @@
 <div class="progress-text" id="progressText">0%</div>
 <div class="battle-tips" id="battleTips">
         💡 戰鬥小提示：善用屬性克制關係可以提高勝率！<br/>
-        🛡️ 記得提升裝備來增強戰鬥力
+        🛡️ 記得切換不同技能來應對不同關卡
       </div>
 </div>
 </div>
@@ -157,9 +157,12 @@ function percent(val) {
     let cooldownTimer = null;
     let userData = null;
 	let levelExp = {};
-	let dungeonData = null; // 🚀 新增：快取副本資料
-	let startCooldownTime = null; // 🎯 新增：記錄冷卻開始時間
-	let originalCooldownTime = 0; // 🎯 新增：記錄原始冷卻時間
+	let dungeonData = null;
+	let startCooldownTime = null;
+	let originalCooldownTime = 0;
+	let currentProgress = 0; 
+	let isLastLayer = false;
+	
 	class BoundedMonsterCache {
 	  constructor(maxSize = 50) {
 	    this.cache = new Map();
@@ -181,7 +184,6 @@ function percent(val) {
   get(key) {
 	    const value = this.cache.get(key);
 	    if (value) {
-	      // LRU: 重新插入到末尾
 	      this.cache.delete(key);
 	      this.cache.set(key, value);
 	    }
@@ -219,7 +221,6 @@ function percent(val) {
     const dungeon = params.get("dungeon");
     let layer = parseInt(params.get("layer") || "0");
     
-    // 🎯 新增：從URL參數獲取傳遞的冷卻時間
     const inheritedCooldown = parseInt(params.get("cooldown") || "0");
     console.log("URL參數中的冷卻時間:", inheritedCooldown);
 
@@ -233,7 +234,7 @@ function percent(val) {
     const retryBtn = document.getElementById("retryBtn");
     const nextBtn = document.getElementById("nextBtn");
 
-    // 戰鬥冷卻相關函數 - 改為直接使用伺服器提供的冷卻時間
+    // 戰鬥冷卻相關函數
     function updateBattleButton(buttonElement, remainingSeconds, buttonText = "開始戰鬥") {
       if (remainingSeconds > 0) {
         buttonElement.classList.add("cooldown-button");
@@ -246,8 +247,7 @@ function percent(val) {
       }
     }
 
-    // ✅ 修正：改進的冷卻計時器，移除會造成干擾的時間同步機制
-    let currentRemainingTime = 0; // 🎯 新增：追蹤當前倒數器的實際剩餘時間
+    let currentRemainingTime = 0;
     function startCooldownTimer(initialRemaining) {
       console.log("開始冷卻計時器，初始剩餘時間:", initialRemaining);
       
@@ -255,20 +255,17 @@ function percent(val) {
         clearInterval(cooldownTimer);
       }
       
-      // 🎯 記錄開始時間和原始冷卻時間，用於跳轉時計算
       startCooldownTime = Date.now();
       originalCooldownTime = initialRemaining;
-      currentRemainingTime = Math.ceil(initialRemaining); // 🎯 初始化當前剩餘時間
+      currentRemainingTime = Math.ceil(initialRemaining);
       
-      // 🎯 記錄開始時間，用於本地計時
       const startTime = Date.now();
       let remaining = Math.ceil(initialRemaining);
       
       cooldownTimer = setInterval(() => {
-        // 📊 計算實際經過的時間（以客戶端時間為準）
         const elapsedSeconds = (Date.now() - startTime) / 1000;
         remaining = Math.ceil(initialRemaining - elapsedSeconds);
-        currentRemainingTime = remaining; // 🎯 更新當前剩餘時間
+        currentRemainingTime = remaining;
         
         console.log("冷卻倒數:", remaining);
         
@@ -280,7 +277,7 @@ function percent(val) {
           cooldownTimer = null;
           startCooldownTime = null;
           originalCooldownTime = 0;
-          currentRemainingTime = 0; // 🎯 重置當前剩餘時間
+          currentRemainingTime = 0;
         } else {
           updateBattleButton(battleBtn, remaining, "開始戰鬥");
           if (retryBtn.style.display !== "none") {
@@ -289,24 +286,22 @@ function percent(val) {
         }
       }, 1000);
     }
+    
     function validateCooldownTime(serverTime, inheritedTime) {
-	  console.log(`🔍 驗證冷卻時間 - 服務器: ${serverTime}s, 繼承: ${inheritedTime}s`);
+	  // 驗證冷卻時間
 	  
-	  // 如果服務器返回異常大的數值（超過35秒），可能是錯誤
 	  if (serverTime > 35) {
-	    console.warn(`⚠️ 服務器冷卻時間異常: ${serverTime}s，使用繼承時間: ${inheritedTime}s`);
+	    // ⚠️ 服務器冷卻時間異常，使用繼承時間
 	    return Math.max(0, inheritedTime);
 	  }
 	  
-	  // 如果有繼承時間且服務器時間明顯不合理
 	  if (inheritedTime > 0 && Math.abs(serverTime - inheritedTime) > 10) {
-	    console.warn(`⚠️ 服務器與繼承時間差異過大，優先使用繼承時間`);
+	    // ⚠️ 服務器與繼承時間差異過大，優先使用繼承時間
 	    return Math.max(0, inheritedTime);
 	  }
 	  
-	  // 如果服務器時間小於1秒，視為已冷卻完成
 	  if (serverTime < 1) {
-	    console.log(`✅ 服務器冷卻時間很短，視為已完成`);
+	    // 服務器冷卻時間很短，視為已完成
 	    return 0;
 	  }
 	  
@@ -323,26 +318,71 @@ function percent(val) {
 	  const serverReady = userData.battle_ready !== false;
 	  
 	  if (inheritedCooldown > 0) {
-	    // 🚀 使用智能驗證
 	    remaining = validateCooldownTime(serverCooldown, inheritedCooldown);
 	    isReady = remaining <= 0;
-	    console.log(`📊 冷卻驗證結果 - 最終剩餘: ${remaining}s, 準備狀態: ${isReady}`);
 	  } else {
-	    // 沒有繼承冷卻時，信任服務器數據但做基本驗證
 	    remaining = validateCooldownTime(serverCooldown, 0);
 	    isReady = remaining <= 0 && serverReady;
-	    console.log(`📊 使用服務器數據 - 剩餘: ${remaining}s, 準備狀態: ${isReady}`);
 	  }
 	  
 	  if (!isReady && remaining > 0) {
-	    console.log(`🕒 開始冷卻倒數: ${remaining}秒`);
+	    // 冷卻倒數
 	    updateBattleButton(battleBtn, remaining, "開始戰鬥");
 	    startCooldownTimer(remaining);
 	  } else {
-	    console.log("✅ 戰鬥按鈕已準備好");
+	    // 戰鬥按鈕準備完成
 	    updateBattleButton(battleBtn, 0, "開始戰鬥");
 	  }
 	}
+
+    // 設定初始按鈕狀態的函數
+    function setInitialButtonState() {
+      console.log(`設定初始按鈕狀態 - 當前層: ${layer}, 進度: ${currentProgress}, 是否BOSS: ${isLastLayer}`);
+      
+      // 隱藏所有按鈕
+      battleBtn.style.display = "none";
+      retryBtn.style.display = "none";
+      nextBtn.style.display = "none";
+      document.getElementById("leaveBtn").style.display = "none";
+      
+      if (isLastLayer) {
+        // BOSS層：只有當層數等於進度時才顯示開始戰鬥，否則不應該到這裡
+        battleBtn.style.display = "inline-block";
+        // BOSS層 - 顯示開始戰鬥
+      } else if (layer < currentProgress) {
+        // 回到上一層：顯示再戰一次和下一層
+        retryBtn.style.display = "inline-block";
+        nextBtn.style.display = "inline-block";
+        // 回到上一層 - 顯示再戰一次和下一層
+        
+        // 設定下一層按鈕功能
+        nextBtn.onclick = async () => {
+          if (cooldownTimer) {
+            clearInterval(cooldownTimer);
+            cooldownTimer = null;
+          }
+          
+          try {
+            let remainingCooldown = currentRemainingTime;
+            
+            const cooldownParam = remainingCooldown > 2 ? `&cooldown=${remainingCooldown}` : '';
+            const nextUrl = `dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
+            
+            setTimeout(() => {
+              window.parent.loadPage(nextUrl);
+            }, 500);
+          } catch (error) {
+            console.error("準備跳轉時發生錯誤:", error);
+            setTimeout(() => {
+              window.parent.loadPage(`dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}`);
+            }, 500);
+          }
+        };
+      } else {
+        // 新挑戰：顯示開始戰鬥
+        battleBtn.style.display = "inline-block";
+      }
+    }
 
     // 特效控制函數
     function showVictoryEffect() {
@@ -450,7 +490,7 @@ function percent(val) {
     function leaveDungeon() {
       window.parent.postMessage({ command: "restoreMainMusic" }, "*");
       setTimeout(() => {
-	    window.parent.loadPage('dungeons.html');  // 建議延遲避免 race condition
+	    window.parent.loadPage('dungeons_test.html');
 	  }, 300);
     }
     window.leaveDungeon = leaveDungeon;
@@ -539,19 +579,15 @@ function percent(val) {
 	  try {
 	    const res = force ? await SecureAPI.getStatus(true) : await SecureAPI.getStatus(false);
 	    const data = await res.json();
-	
-	    console.log('✅ 使用者資料載入完成' + (res.cached ? ' (來自快取)' : ' (API呼叫)'));
 	    return data;
 	
 	  } catch (error) {
 	    console.error('載入使用者資料失敗:', error);
-		    
-		// 🔄 降級機制：嘗試使用過期快取
 		try {
 		  const fallbackRes = await SecureAPI.getWithRetry(API + '/status', 1, true);
 		  return await fallbackRes.json();
 		} catch (fallbackError) {
-		  console.error('降級載入也失敗:', fallbackError);
+		  console.error('降級載入失敗:', fallbackError);
 		  throw new Error('無法載入使用者資料');
 		}
 	  } finally {
@@ -564,7 +600,6 @@ function percent(val) {
 	  PerformanceMonitor.startTiming('fetchMonster');
 	  
 	  try {
-	    // 檢查前端快取
 	    if (monsterCache.has(monsterId)) {
 	      console.log(`🎯 怪物資料快取命中: ${monsterId}`);
 	      return monsterCache.get(monsterId);
@@ -577,14 +612,11 @@ function percent(val) {
 	    
 	    const monsterData = await res.json();
 	    
-	    // 🚀 儲存到前端快取（10分鐘）
 	    monsterCache.set(monsterId, monsterData);
 	    setTimeout(() => {
 	      monsterCache.delete(monsterId);
-	      console.log(`🗑️ 怪物快取過期: ${monsterId}`);
 	    }, 10 * 60 * 1000);
 	    
-	    console.log(`💾 怪物資料已快取: ${monsterId}`);
 	    return monsterData;
 	    
 	  } catch (error) {
@@ -599,7 +631,6 @@ function percent(val) {
 	  PerformanceMonitor.startTiming('loadStaticData');
 	  
 	  try {
-	    // 🎯 並行載入靜態資料，優先使用快取
 	    const [levelExpRes, equipRes, dungeonRes] = await Promise.all([
 	      SecureAPI.getStaticData('exp_table'),
 	      SecureAPI.getStaticData('equips_table'),
@@ -610,16 +641,14 @@ function percent(val) {
 	    equipData = Array.isArray(equipRes) ? equipRes : Object.values(equipRes);
 	    dungeonData = dungeonRes;
 	    
-	    console.log('✅ 靜態資料載入完成');
+	    // 靜態資料載入完成
 	    
 	  } catch (error) {
 	    console.error('載入靜態資料失敗:', error);
 	    
-	    // 🔄 降級方案：逐個載入
 	    try {
-	      console.log('🔄 嘗試降級載入...');
+	      console.log('嘗試降級載入...');
 	      
-	      // 經驗值表（最重要）
 	      try {
 	        const expRes = await fetch(`${API}/exp_table`);
 	        levelExp = await expRes.json();
@@ -627,7 +656,6 @@ function percent(val) {
 	        console.warn('經驗值表載入失敗:', e);
 	      }
 	      
-	      // 裝備資料
 	      try {
 	        const equipResponse = await fetch(`${API}/equips_table`);
 	        const equipResult = await equipResponse.json();
@@ -637,7 +665,6 @@ function percent(val) {
 	        equipData = [];
 	      }
 	      
-	      // 副本資料
 	      try {
 	        const dungeonResponse = await fetch(`${API}/dungeon_table`);
 	        dungeonData = await dungeonResponse.json();
@@ -646,7 +673,7 @@ function percent(val) {
 	      }
 	      
 	    } catch (fallbackError) {
-	      console.error('降級載入也失敗:', fallbackError);
+	      console.error('降級載入失敗:', fallbackError);
 	      alert('載入基礎資料失敗，部分功能可能受限');
 	    }
 	  } finally {
@@ -677,7 +704,6 @@ function percent(val) {
 	  return bonus;
 	}
 
-    // 🚀 優化的 formatStats 函數 - 使用新的 CSS 類
     function formatStats(data) {
       const b = data.base_stats;
       const e = calculateEquipmentBonus(data.equipment || {}, equipData);
@@ -719,7 +745,6 @@ function percent(val) {
         { key: "skill_points", label: "剩餘技能點", value: data.skill_points }
       ];
 
-      // 🎨 使用新的結構和 CSS 類
       let html = `
         <div class="player-info-container">
           <h3 class="player-name">👤 ${data.nickname}</h3>
@@ -739,12 +764,9 @@ function percent(val) {
       return html;
     }
 
-    // 🚀 新增：優化的怪物資訊格式化函數
     function formatMonsterInfo(mon, isLastLayer) {
-      // 處理說明文字的換行（將 /n 轉換為實際換行）
       const description = (mon.info || '').replace(/\/n/g, '\n');
       
-      // 處理屬性顯示
       const elementText = Array.isArray(mon.element) 
         ? mon.element.map(e => elementMap[e] || e).join("、") 
         : (elementMap[mon.element] || mon.element);
@@ -807,45 +829,35 @@ function percent(val) {
 	  PerformanceMonitor.startTiming('loadLayer');
 	  
 	  try {
-	    // 🎯 並行載入使用者資料和靜態資料
 	    const [userDataPromise, staticDataPromise] = await Promise.allSettled([
 	      fetchUser(true),
 	      loadStaticData()
 	    ]);
 	    
-	    // 處理使用者資料
 	    if (userDataPromise.status === 'fulfilled') {
 	  userData = userDataPromise.value;
-	  console.log("✅ 使用者資料載入完成:", userData.nickname);
 	
-	  // ✅ 修正：在這裡才初始化冷卻邏輯
 	  initializeBattleButtons(userData);
 	} else {
 	      throw new Error('使用者資料載入失敗: ' + userDataPromise.reason);
 	    }
 	    
-	    // 處理靜態資料結果
 	    if (staticDataPromise.status === 'rejected') {
 	      console.warn('靜態資料載入失敗:', staticDataPromise.reason);
 	    }
 	    
-	    // 傳遞使用者名稱給父視窗
 	    window.parent.postMessage({
 	      nickname: userData.nickname
 	    }, "*");
 	    
-	    // 初始化戰鬥按鈕冷卻狀態
 	    initializeBattleButtons(userData);
 	    
-	    // 🎨 使用新的格式化函數
 	    userDiv.innerHTML = formatStats(userData);
 	
-	    // 🚀 使用快取的副本資料或API載入
 	    let current;
 	    if (dungeonData) {
 	      current = dungeonData.find(d => d.id === dungeon);
 	    } else {
-	      // 降級：直接API載入
 	      const dungeonRes = await fetch(`${API}/dungeon_table`);
 	      const allDungeons = await dungeonRes.json();
 	      current = allDungeons.find(d => d.id === dungeon);
@@ -853,16 +865,22 @@ function percent(val) {
 	    
 	    if (!current) throw new Error("副本不存在");
 	
-	    const isLastLayer = (layer === current.monsters.length);
+	    const totalLayers = current.monsters.length + 1;
+	    isLastLayer = (layer === totalLayers - 1);
+	    
+	    const progRes = await SecureAPI.get(`${API}/get_progress?force=1`);
+	    const progData = await progRes.json();
+	    currentProgress = progData.progress?.[dungeon] ?? 0;
+	    
+	    console.log(`副本狀態 - 當前層: ${layer}, 總層數: ${totalLayers}, 進度: ${currentProgress}, 是否BOSS: ${isLastLayer}`);
+	
 	    const monsterId = isLastLayer ? current.bossId : current.monsters[layer];
 	    const mon = await fetchMonster(monsterId);
 	
 	    if (isLastLayer) {
-	      // 加上整體 boss 模式樣式
 	      document.body.classList.add("boss-mode");
 	      window.parent.postMessage({ command: "switchToBossMusic" }, "*");
 	
-	      // 加上戰鬥載入畫面 boss 樣式
 	      document.getElementById("battleLoadingOverlay")?.classList.add("boss-battle");
 	      document.getElementById("battleIcon")?.classList.add("boss");
 	      document.getElementById("battleTitle")?.classList.add("boss");
@@ -871,18 +889,19 @@ function percent(val) {
 	      document.getElementById("progressText")?.classList.add("boss");
 	      document.getElementById("battleTips")?.classList.add("boss");
 	
-	      // 選擇怪物區塊也可以加強
 	      document.getElementById("monsterInfo")?.classList.add("boss");
 	    }
 	
+	    // 重置按鈕狀態並設定初始狀態
 	    retryBtn.style.display = "none";
 	    nextBtn.style.display = "none";
 	    document.getElementById("leaveBtn").style.display = "none";
-	
-	    // 🎨 使用新的怪物資訊格式化函數
+	    
 	    monsterDiv.innerHTML = formatMonsterInfo(mon, isLastLayer);
 	    
-	    // 所有資料載入完成後隱藏頁面載入畫面
+	    // 設定初始按鈕狀態
+	    setInitialButtonState();
+	    
 	    hidePageLoading();
 	    
 	  } catch (err) {
@@ -893,8 +912,6 @@ function percent(val) {
 	    PerformanceMonitor.endTiming('loadLayer');
 	  }
 	}
-
-    let currentProgress = 0;
 
     async function fetchProgress(force = false) {
 	  const url = `${API}/get_progress${force ? "?force=1" : ""}`;
@@ -907,13 +924,12 @@ function percent(val) {
     function checkProgressBeforeBattle() {
       if (layer > currentProgress) {
         alert("層數異常（尚未解鎖），請重新進入副本");
-        window.parent.loadPage('dungeons.html');
+        window.parent.loadPage('dungeons_test.html');
         return false;
       }
       return true;
     }
 
-    // 強制滾動到底部的函數
     function scrollLogToBottom() {
       setTimeout(() => {
         logArea.scrollTop = logArea.scrollHeight;
@@ -934,31 +950,21 @@ function percent(val) {
   battleBtn.disabled = true;
   retryBtn.disabled = true;
   
-  console.log("🔍 執行戰鬥前的完整檢查...");
   
   try {
-    // 🚀 修正：更詳細的狀態檢查
-    console.log("🔄 獲取最新戰鬥狀態...");
-    const latestUser = await fetchUser(true); // 強制重新獲取
+    // 獲取最新戰鬥狀態
+    const latestUser = await fetchUser(true);
     userData = latestUser;
     
     const serverRemaining = userData?.battle_cooldown_remaining || 0;
     const serverReady = userData?.battle_ready !== false;
     
-    // 🚀 使用智能驗證來判斷是否真的需要等待
     const validatedRemaining = validateCooldownTime(serverRemaining, 0);
     const shouldAllowBattle = validatedRemaining <= 0;
-    
-    console.log(`🔍 戰鬥前檢查結果:`);
-    console.log(`   服務器冷卻: ${serverRemaining}s`);
-    console.log(`   驗證後冷卻: ${validatedRemaining}s`);
-    console.log(`   服務器準備狀態: ${serverReady}`);
-    console.log(`   最終允許戰鬥: ${shouldAllowBattle}`);
     
     if (!shouldAllowBattle && validatedRemaining > 0) {
       console.warn(`❌ 戰鬥被冷卻阻止，剩餘: ${validatedRemaining}秒`);
       
-      // 🚀 如果冷卻時間過長，顯示額外的重置選項
       if (validatedRemaining > 30) {
         const shouldReset = confirm(`檢測到冷卻時間異常 (${validatedRemaining}秒)，這可能是系統錯誤。\n\n是否要重新整理頁面來重置狀態？`);
         if (shouldReset) {
@@ -969,13 +975,11 @@ function percent(val) {
         alert(`戰鬥冷卻中，請等待 ${validatedRemaining} 秒`);
       }
       
-      // 重新初始化按鈕狀態
       initializeBattleButtons(userData);
       isBattleInProgress = false;
       return;
     }
     
-    // 🚀 如果冷卻檢查通過，但服務器數據看起來有問題，給出警告但允許繼續
     if (serverRemaining > 30 && shouldAllowBattle) {
       console.warn(`⚠️ 服務器冷卻數據異常但允許戰鬥，可能需要檢查後端邏輯`);
     }
@@ -983,7 +987,6 @@ function percent(val) {
   } catch (error) {
     console.error("獲取最新狀態失敗:", error);
     
-    // 🚀 網路錯誤時的寬鬆處理
     if (error.message.includes('fetch') || error.message.includes('network')) {
       const shouldProceed = confirm("無法確認戰鬥狀態（網路問題），是否仍要嘗試戰鬥？");
       if (!shouldProceed) {
@@ -1001,7 +1004,6 @@ function percent(val) {
     }
   }
   
-  // 繼續原有的戰鬥邏輯...
   showBattleLoading(true);
   logArea.innerHTML = "";
   retryBtn.style.display = "none";
@@ -1010,7 +1012,7 @@ function percent(val) {
   document.getElementById("leaveBtn").style.display = "none";
 
   try {
-    console.log("🚀 發送戰鬥請求...");
+    // 發送戰鬥請求
     const res = await SecureAPI.post(`${API}/battle_dungeon`, {
       dungeon: dungeon,
       layer: layer
@@ -1043,7 +1045,15 @@ function percent(val) {
           console.error("更新使用者狀態失敗:", e);
         }
         showBattleLoading(false);
-        battleBtn.style.display = "inline-block";
+        
+        // 根據當前狀態恢復按鈕
+        if (layer < currentProgress && !isLastLayer) {
+          retryBtn.style.display = "inline-block";
+          nextBtn.style.display = "inline-block";
+        } else {
+          battleBtn.style.display = "inline-block";
+        }
+        
         isBattleInProgress = false;
         return;
       }
@@ -1051,53 +1061,41 @@ function percent(val) {
     }
     
     const data = await res.json();
-    console.log("✅ 戰鬥成功完成");
     
     const log = data.battle_log;
     if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
 
-    // 更新本地使用者資料
     if (data.user) {
       userData = data.user;
-      console.log("戰鬥後更新的使用者資料:", userData);
     }
 
-    // 🚀 戰鬥完成後清除相關快取
     try {
-      // 清除使用者相關快取
       if (window.devTools?.cache) {
         window.devTools.clearUserCache();
       }
       
-      // 清除怪物快取（如果怪物狀態可能改變）
       if (data.success) {
         monsterCache.clear();
-        console.log('🧹 已清除怪物快取');
       }
     } catch (cacheError) {
       console.warn('清除快取失敗:', cacheError);
     }
 
-    // 確保進度條達到 100% 後再隱藏載入畫面
     setTimeout(() => {
       showBattleLoading(false);
       playBattleLog(log).then(() => {
-        // 戰鬥完成，重置執行標誌
         isBattleInProgress = false;
         
         if (data.success) {
-          // 🚀 戰鬥勝利後重新載入使用者資料（強制刷新）
+          // 戰鬥勝利後重新載入使用者資料
           fetchUser(true).then(updatedUser => {
             userData = updatedUser;
             console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser);
-            // 🎨 使用新的格式化函數更新顯示
             userDiv.innerHTML = formatStats(updatedUser);
             
-            // ✅ 修正：使用伺服器返回的實際冷卻時間
             const serverCooldown = updatedUser.battle_cooldown_remaining || 0;
             console.log("伺服器返回的冷卻時間:", serverCooldown);
             
-            // 初始化按鈕狀態
             initializeBattleButtons(updatedUser);
           }).catch(error => {
             console.error('重新載入使用者資料失敗:', error);
@@ -1107,21 +1105,18 @@ function percent(val) {
             showVictoryEffect();
             document.getElementById("leaveBtn").style.display = "inline-block";
           } else {
+            // 戰鬥勝利後，總是顯示再戰一次和下一層（除非是BOSS）
             retryBtn.style.display = "inline-block";
             nextBtn.style.display = "inline-block";
             
-            // 🚀 修正：戰鬥勝利後立即顯示30秒冷卻並開始倒數
-            console.log("🕒 戰鬥勝利，立即設定30秒冷卻並開始倒數");
             updateBattleButton(retryBtn, 30, "再戰一次");
             startCooldownTimer(30);
             
-            // 🔄 然後異步獲取實際冷卻時間並更正
             fetchUser(true).then(updatedUser => {
               const actualCooldown = updatedUser.battle_cooldown_remaining || 0;
               console.log("🔧 API回應後更正冷卻時間:", actualCooldown);
               
               if (actualCooldown > 0 && Math.abs(actualCooldown - 30) > 1) {
-                // 如果實際冷卻時間與30秒差距大於1秒，則更正
                 console.log("⚠️ 更正冷卻時間差異過大，重新設定為:", actualCooldown);
                 if (cooldownTimer) {
                   clearInterval(cooldownTimer);
@@ -1135,36 +1130,26 @@ function percent(val) {
             });
             
             nextBtn.onclick = async () => {
-              // 🔄 先強制刷新一次進度，避免快取
               await fetchProgress();
               
-              // ⚠️ 清除當前頁面的計時器，避免影響下一頁
               if (cooldownTimer) {
                 clearInterval(cooldownTimer);
                 cooldownTimer = null;
               }
               
-              // 🎯 修正：直接使用當前倒數器顯示的剩餘時間
               try {
-                let remainingCooldown = currentRemainingTime; // 🚀 使用全域追蹤的當前剩餘時間
+                let remainingCooldown = currentRemainingTime;
                 
-                console.log(`🎯 使用當前倒數器的剩餘時間: ${remainingCooldown}s`);
-                
-                // 🚀 只有當剩餘時間大於2秒時才傳遞參數，避免傳遞微小誤差
                 const cooldownParam = remainingCooldown > 2 ? `&cooldown=${remainingCooldown}` : '';
-                const nextUrl = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
+                const nextUrl = `dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
                 
-                console.log("🔗 跳轉到:", nextUrl);
-                
-                // ⏳ 等動畫結束後跳轉
                 setTimeout(() => {
                   window.parent.loadPage(nextUrl);
                 }, 500);
               } catch (error) {
                 console.error("準備跳轉時發生錯誤:", error);
-                // 降級：直接跳轉，不傳遞參數
                 setTimeout(() => {
-                  window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
+                  window.parent.loadPage(`dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}`);
                 }, 500);
               }
             };
@@ -1175,16 +1160,15 @@ function percent(val) {
           logArea.appendChild(winMsg);
           scrollLogToBottom();
 
-		// 獎勵
 		if (data.rewards) {
 		  const { 
 		    base_exp, 
 		    exp_luck_bonus, 
 		    leveled_up, 
 		    actual_drops, 
-		    round_1_bonus,  // 第一輪額外獲得（基於幸運的額外掉落機率）
-		    round_2_bonus,  // 第二輪額外獲得（第二輪判定成功）
-		    round_3_bonus,  // 第三輪額外獲得（第三輪判定成功）
+		    round_1_bonus,
+		    round_2_bonus,
+		    round_3_bonus,
 		    drops 
 		  } = data.rewards;
 		  
@@ -1192,37 +1176,31 @@ function percent(val) {
 		    const rewardLog = document.createElement("div");
 		    rewardLog.className = "reward-message";
 		    
-		    // 💎 經驗值顯示
 		    let expText = `<br><strong>🎁 戰利品：</strong><br>獲得 ${base_exp} 經驗值`;
 		    
-		    // 🌟 經驗值幸運加成
 		    if (exp_luck_bonus > 0) {
 		      expText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>🍀 幸運加成！額外獲得 ${exp_luck_bonus} 經驗值！</span>`;
 		    }
 		    
-		    // 🎊 等級提升
 		    if (leveled_up) {
 		      expText += `<br><span style='color:red'>🎊 等級提升！</span>`;
 		    }
 		    
 		    let dropText = "";
 		    
-		    // 🎯 處理掉落物品顯示
 		    const hasActualDrops = actual_drops && Object.keys(actual_drops).length > 0;
 		    const originalDrops = drops || [];
 		    
 		    if (hasActualDrops) {
 		      dropText += "<br><strong>📦 獲得物品：</strong>";
 		      
-		      // 統計各輪的獎勵資訊
-		      const round1Items = round_1_bonus || {}; // 第一輪額外獲得
-		      const round2Items = round_2_bonus || {}; // 第二輪額外獲得  
-		      const round3Items = round_3_bonus || {}; // 第三輪額外獲得
+		      const round1Items = round_1_bonus || {};
+		      const round2Items = round_2_bonus || {};
+		      const round3Items = round_3_bonus || {};
 		      
 		      for (const [itemId, totalQuantity] of Object.entries(actual_drops)) {
 		        const meta = itemMap[itemId] || { name: itemId, special: 0 };
 		        
-		        // 🎲 分析各輪獲得情況
 		        const round1Bonus = round1Items[itemId] || 0;
 		        const round2Bonus = round2Items[itemId] || 0;
 		        const round3Bonus = round3Items[itemId] || 0;
@@ -1231,7 +1209,6 @@ function percent(val) {
 		        
 		        let itemText = "";
 		        
-		        // 根據稀有度設定顏色
 		        if (meta.special === 2) {
 		          itemText = `<br><span style='color:crimson'>【超稀有】${meta.name} × ${totalQuantity}</span>`;
 		        } else if (meta.special === 1) {
@@ -1242,7 +1219,6 @@ function percent(val) {
 		          itemText = `<br>${meta.name} × ${totalQuantity}`;
 		        }
 		        
-		        // 🍀 詳細顯示幸運加成的構成
 		        if (totalLuckBonus > 0) {
 		          let bonusDetails = [];
 		          
@@ -1263,7 +1239,6 @@ function percent(val) {
 		        dropText += itemText;
 		      }
 		      
-		      // 🎊 統計總體幸運效果
 		      const allLuckItems = {...round1Items, ...round2Items, ...round3Items};
 		      const totalLuckQuantity = Object.values(allLuckItems).reduce((sum, qty) => sum + qty, 0);
 		      const uniqueLuckItems = Object.keys(allLuckItems).length;
@@ -1271,7 +1246,6 @@ function percent(val) {
 		      if (totalLuckQuantity > 0) {
 		        dropText += `<br><br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>✨ 幸運觸發了 ${uniqueLuckItems} 種道具，總計額外獲得 ${totalLuckQuantity} 個道具！</span>`;
 		        
-		        // 💡 如果有多輪觸發，顯示各輪統計
 		        const round1Total = Object.values(round1Items).reduce((sum, qty) => sum + qty, 0);
 		        const round2Total = Object.values(round2Items).reduce((sum, qty) => sum + qty, 0);
 		        const round3Total = Object.values(round3Items).reduce((sum, qty) => sum + qty, 0);
@@ -1287,11 +1261,9 @@ function percent(val) {
 		      }
 		      
 		    } else {
-		      // ✅ 改進：更精確地檢查背包滿的情況
 		      let hasGuaranteedDrops = false;
 		      let totalGuaranteedItems = 0;
 		      
-		      // 檢查原始掉落表中100%掉落的物品
 		      for (const drop of originalDrops) {
 		        if (drop.rate >= 1.0) {
 		          hasGuaranteedDrops = true;
@@ -1302,7 +1274,6 @@ function percent(val) {
 		      if (hasGuaranteedDrops) {
 		        dropText += `<br><span style='color:orange'>⚠️ 背包已滿，無法獲得 ${totalGuaranteedItems} 種必定掉落的道具</span>`;
 		      } else {
-		        // 檢查是否有基於幸運的可能掉落但都失敗了
 		        const hasAnyDropChance = originalDrops.some(drop => drop.rate > 0);
 		        if (hasAnyDropChance) {
 		          dropText += "<br>本次運氣不佳，沒有掉落物品 😔";
@@ -1336,7 +1307,15 @@ function percent(val) {
     showBattleLoading(false);
     logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
     document.getElementById("leaveBtn").style.display = "inline-block";
-    battleBtn.style.display = "inline-block";
+    
+    // 根據當前狀態恢復按鈕
+    if (layer < currentProgress && !isLastLayer) {
+      retryBtn.style.display = "inline-block";
+      nextBtn.style.display = "inline-block";
+    } else {
+      battleBtn.style.display = "inline-block";
+    }
+    
     battleBtn.disabled = false;
     isBattleInProgress = false;
   }
@@ -1347,7 +1326,6 @@ function percent(val) {
 
     // 重試戰鬥函數
     function retryBattle() {
-	  // 防止在戰鬥進行中重試
 	  if (isBattleInProgress) {
 	    console.log("戰鬥已在進行中，忽略重試請求");
 	    return;
@@ -1383,15 +1361,12 @@ function percent(val) {
           const line = round.actions[actionIndex];
           const entry = document.createElement("div");
           
-          // 🎨 為血量添加顏色
           let formattedLine = line;
           
-          // 🟢 玩家血量的所有情況：
           if (formattedLine.includes('你受到') || 
               formattedLine.includes('你的 HP') ||
               formattedLine.includes('對你造成') ||
               (formattedLine.includes('你使用') && formattedLine.includes('目前 HP'))) {
-            // 玩家相關的血量 - 綠色
             formattedLine = formattedLine.replace(
               /（目前 HP：(\d+\/\d+)）/g, 
               '（目前 HP：<span class="player-hp">$1</span>）'
@@ -1401,21 +1376,17 @@ function percent(val) {
               '你的 HP：<span class="player-hp">$1</span>'
             );
           }
-          // 🔴 怪物血量的情況：
           else {
-            // 對方血量
             formattedLine = formattedLine.replace(
               /（對方 HP：(\d+\/\d+)）/g, 
               '（對方 HP：<span class="monster-hp">$1</span>）'
             );
-            // 其他目前血量（怪物受傷、持續傷害等）
             formattedLine = formattedLine.replace(
               /（目前 HP：(\d+\/\d+)）/g, 
               '（目前 HP：<span class="monster-hp">$1</span>）'
             );
           }
           
-          // 如果有格式化的內容，使用 innerHTML，否則使用 textContent
           if (formattedLine !== line) {
             entry.innerHTML = formattedLine;
           } else {
@@ -1437,16 +1408,13 @@ function percent(val) {
     }
 
 async function preloadDungeonData() {
-  console.log('🎯 預載入副本相關資料...');
   
   try {
-    // 預載入當前副本的所有怪物資料
     if (dungeonData) {
       const currentDungeon = dungeonData.find(d => d.id === dungeon);
       if (currentDungeon) {
         const allMonsterIds = [...currentDungeon.monsters, currentDungeon.bossId];
         
-        // 並行預載入所有怪物
         const preloadPromises = allMonsterIds.map(monsterId => 
           fetchMonster(monsterId).catch(error => {
             console.warn(`預載入怪物 ${monsterId} 失敗:`, error);
@@ -1455,7 +1423,6 @@ async function preloadDungeonData() {
         );
         
         await Promise.allSettled(preloadPromises);
-        console.log('✅ 副本怪物資料預載入完成');
       }
     }
   } catch (error) {
@@ -1470,13 +1437,11 @@ async function preloadDungeonData() {
 	      await fetchProgress(true);
 	      await loadLayer();
 	      
-	      // 🎯 背景預載入副本資料
 	      preloadDungeonData().catch(error => {
 	        console.warn('背景預載入失敗:', error);
 	      });
 	      
 	      PerformanceMonitor.endTiming('dungeonPageInit');
-	      console.log('🎉 副本頁面初始化完成');
 	      
 	    } catch (error) {
 	      console.error('副本頁面初始化失敗:', error);
@@ -1488,21 +1453,15 @@ async function preloadDungeonData() {
 	});
 
 if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
-  // 每30秒監控一次記憶體使用
   setInterval(() => {
     const cacheSize = monsterCache.size;
     const memoryUsage = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : '未知';
     
-    console.log(`📊 記憶體狀態 - 怪物快取: ${cacheSize} 項目, JS記憶體: ${memoryUsage}MB`);
-    
-    // 如果快取項目過多，清理舊項目
     if (cacheSize > 20) {
       monsterCache.clear();
-      console.log('🧹 清理過多的怪物快取項目');
     }
   }, 30000);
   
-  // 全域除錯工具
   window.dungeonDebug = {
     cache: monsterCache,
     userData: () => userData,
@@ -1522,20 +1481,19 @@ window.emergencyResetCooldown = function() {
     }
     updateBattleButton(battleBtn, 0, "開始戰鬥");
     updateBattleButton(retryBtn, 0, "再戰一次");
-    console.log('🚨 緊急重置完成');
+    console.log('緊急重置完成');
   }
 };
 
 if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
-  // 每10秒檢查一次狀態
   setInterval(async () => {
     if (userData) {
       try {
-        const currentUser = await fetchUser(false); // 使用緩存
+        const currentUser = await fetchUser(false);
         const serverCooldown = currentUser.battle_cooldown_remaining || 0;
         const currentCooldown = currentRemainingTime;
         
-        console.log(`🔍 狀態監控 - 服務器: ${serverCooldown.toFixed(2)}s, 本地: ${currentCooldown}s`);
+        console.log(`狀態監控 - 服務器: ${serverCooldown.toFixed(2)}s, 本地: ${currentCooldown}s`);
         
         if (Math.abs(serverCooldown - currentCooldown) > 5 && serverCooldown > 0) {
           console.warn(`⚠️ 冷卻時間差異較大，可能需要同步`);
