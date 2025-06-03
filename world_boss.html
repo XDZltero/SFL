@@ -401,6 +401,51 @@ function isWeekend() {
   return taipeiTime.getDay() === 0; // 週日
 }
 
+// 維護時間檢查 (23:30~00:30)
+function isMaintenanceTime() {
+  const now = new Date();
+  const taipeiTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+  const hour = taipeiTime.getHours();
+  const minute = taipeiTime.getMinutes();
+  
+  // 23:30~23:59 或 00:00~00:30
+  if ((hour === 23 && minute >= 30) || (hour === 0 && minute <= 30)) {
+    return true;
+  }
+  
+  return false;
+}
+
+function getMaintenanceCountdown() {
+  const now = new Date();
+  const taipeiTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+  const hour = taipeiTime.getHours();
+  const minute = taipeiTime.getMinutes();
+  
+  let targetTime;
+  
+  if (hour === 23 && minute >= 30) {
+    // 如果是 23:30 之後，倒數到明天 00:30
+    targetTime = new Date(taipeiTime);
+    targetTime.setDate(targetTime.getDate() + 1);
+    targetTime.setHours(0, 30, 0, 0);
+  } else if (hour === 0 && minute <= 30) {
+    // 如果是 00:00~00:30，倒數到今天 00:30
+    targetTime = new Date(taipeiTime);
+    targetTime.setHours(0, 30, 0, 0);
+  }
+  
+  const diff = targetTime - taipeiTime;
+  
+  if (diff <= 0) return "00:00:00";
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
 function getNextMondayCountdown() {
   const now = new Date();
   const taipeiTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
@@ -422,26 +467,45 @@ function getNextMondayCountdown() {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// 倒數計時器
 function updateCountdown() {
   const countdownEl = document.getElementById("countdownDisplay");
   const timeRestrictionEl = document.getElementById("timeRestriction");
   const challengeBtnEl = document.getElementById("challengeBtn");
   
+  // ✅ 優先檢查維護時間
+  if (isMaintenanceTime()) {
+    countdownEl.textContent = getMaintenanceCountdown();
+    timeRestrictionEl.style.display = "block";
+    timeRestrictionEl.querySelector('.restriction-title').textContent = "🔧 系統維護中";
+    timeRestrictionEl.querySelector('.restriction-message').innerHTML = 
+      "世界王跨日維護中 (23:30~00:30)<br>請稍後再來挑戰";
+    
+    if (!challengeBtnEl.dataset.levelLocked || challengeBtnEl.dataset.levelLocked === "false") {
+      challengeBtnEl.disabled = true;
+      challengeBtnEl.textContent = "🔧 維護中";
+    }
+    return;
+  }
+  
+  // 檢查週日限制
   if (isWeekend()) {
     countdownEl.textContent = getNextMondayCountdown();
     timeRestrictionEl.style.display = "block";
+    timeRestrictionEl.querySelector('.restriction-title').textContent = "⏰ 挑戰時間限制";
+    timeRestrictionEl.querySelector('.restriction-message').innerHTML = 
+      "世界王每週日進行休整，無法挑戰<br>挑戰將於下週一 00:31 重新開放";
+    
     if (!challengeBtnEl.dataset.levelLocked || challengeBtnEl.dataset.levelLocked === "false") {
       challengeBtnEl.disabled = true;
       challengeBtnEl.textContent = "⏰ 週日休整中";
     }
-  } else {
-    timeRestrictionEl.style.display = "none";
-    countdownEl.textContent = "挑戰開放中";
-    
-    // 🚀 新增：重新檢查等級限制
-    checkLevelRequirement();
+    return;
   }
+  
+  // 正常開放時間
+  timeRestrictionEl.style.display = "none";
+  countdownEl.textContent = "挑戰開放中";
+  checkLevelRequirement();
 }
 
 // 更新冷卻時間顯示
