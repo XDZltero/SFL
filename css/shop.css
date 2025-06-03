@@ -198,6 +198,190 @@
     
     .category-count {
       font-size: 0.8em;
+
+
+    /* 禮包卡片特殊樣式 */
+.shop-item-card.bundle {
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  background: linear-gradient(135deg, 
+    rgba(255, 215, 0, 0.1) 0%, 
+    rgba(15, 15, 35, 0.9) 50%, 
+    rgba(255, 140, 0, 0.1) 100%);
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+  position: relative;
+}
+
+.shop-item-card.bundle::before {
+  background: linear-gradient(45deg, 
+    transparent 30%, 
+    rgba(255, 215, 0, 0.1) 50%, 
+    transparent 70%);
+}
+
+.shop-item-card.bundle:hover {
+  box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
+}
+
+/* 禮包圖標 */
+.shop-item-card.bundle .shop-item-name::before {
+  content: '📦 ';
+  font-size: 1.2em;
+}
+
+/* 無限購買標記 */
+.shop-item-limit.unlimited {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(255, 119, 198, 0.2) 100%);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  animation: unlimitedPulse 3s ease-in-out infinite;
+}
+
+@keyframes unlimitedPulse {
+  0%, 100% { 
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+  }
+}
+
+/* 批量購買控制器樣式 */
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 10px;
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.quantity-btn {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.quantity-input {
+  width: 80px;
+  padding: 8px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+/* 禮包內容列表樣式 */
+.bundle-contents {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0;
+}
+
+.bundle-contents h5 {
+  color: #ffd93d;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.bundle-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.bundle-item:last-child {
+  border-bottom: none;
+}
+
+.bundle-item-name {
+  color: #fff;
+  font-weight: 600;
+}
+
+.bundle-item-quantity {
+  color: #ffd93d;
+  font-weight: bold;
+}
+
+/* 購買成功動畫 */
+@keyframes purchaseSuccess {
+  0% { 
+    transform: scale(1);
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  }
+  50% { 
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #66BB6A 0%, #5CB85C 100%);
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.6);
+  }
+  100% { 
+    transform: scale(1);
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  }
+}
+
+.purchase-success {
+  animation: purchaseSuccess 0.6s ease-in-out;
+}
+
+/* 響應式調整 */
+@media (max-width: 768px) {
+  .shop-item-card.bundle .shop-item-name {
+    font-size: 1em;
+  }
+  
+  .quantity-controls {
+    gap: 8px;
+  }
+  
+  .quantity-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 1em;
+  }
+  
+  .quantity-input {
+    width: 60px;
+    font-size: 1em;
+  }
+}
       color: #888;
       margin-left: 5px;
     }
