@@ -560,6 +560,7 @@ function getNextMondayCountdown() {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
+// 修正 updateCountdown 函數（移除重複代碼）
 function updateCountdown() {
   const countdownEl = document.getElementById("countdownDisplay");
   const timeRestrictionEl = document.getElementById("timeRestriction");
@@ -634,27 +635,6 @@ function updateCountdown() {
     challengeBtnEl.dataset.bossDefeated = "false";
   }
   
-  checkLevelRequirement();
-}
-  
-  // 檢查週日限制
-  if (isWeekend()) {
-    countdownEl.textContent = getNextMondayCountdown();
-    timeRestrictionEl.style.display = "block";
-    timeRestrictionEl.querySelector('.restriction-title').textContent = "⏰ 挑戰時間限制";
-    timeRestrictionEl.querySelector('.restriction-message').innerHTML = 
-      "世界王每週日進行休整，無法挑戰<br>挑戰將於下週一 00:31 重新開放";
-    
-    if (!challengeBtnEl.dataset.levelLocked || challengeBtnEl.dataset.levelLocked === "false") {
-      challengeBtnEl.disabled = true;
-      challengeBtnEl.textContent = "⏰ 週日休整中";
-    }
-    return;
-  }
-  
-  // 正常開放時間
-  timeRestrictionEl.style.display = "none";
-  countdownEl.textContent = "挑戰開放中";
   checkLevelRequirement();
 }
 
@@ -1018,25 +998,6 @@ function updateWorldBossInfo(boss) {
   updateWorldBossHP(boss.current_hp, boss.max_hp);
   const currentPhase = getCurrentPhase(boss.current_hp, boss.max_hp);
   updatePhaseDisplay(currentPhase);
-}
-
-function updateWorldBossStats(boss) {
-  // 更新主要統計資訊
-  document.getElementById("totalAttacks").textContent = (boss.total_participants || 0).toLocaleString();
-  document.getElementById("bossLevel").textContent = boss.level;
-  document.getElementById("currentPhase").textContent = `${boss.current_phase || 1} / 3`;
-  
-  // 顯示詳細統計資訊
-  const statsContainer = document.querySelector('.world-boss-stats');
-  if (statsContainer && boss.unique_players !== undefined) {
-    // 清除現有統計並重新建立
-    statsContainer.innerHTML = `
-      <div class="world-stat-item">總攻擊次數: <span class="world-stat-value" id="totalAttacks">${(boss.total_participants || 0).toLocaleString()}</span></div>
-      <div class="world-stat-item">參與玩家: <span class="world-stat-value" id="uniquePlayers">${(boss.unique_players || 0).toLocaleString()}</span></div>
-      <div class="world-stat-item">等級: <span class="world-stat-value" id="bossLevel">${boss.level}</span></div>
-      <div class="world-stat-item">階段: <span class="world-stat-value" id="currentPhase">${boss.current_phase || 1} / 3</span></div>
-    `;
-  }
 }
 
 // 開始冷卻計時器
