@@ -348,3 +348,35 @@
     }
   }
 }
+
+.world-hp-text.boss-defeated {
+  color: #ffcccb !important;
+  text-shadow: 0 0 10px rgba(255, 204, 203, 0.8);
+  font-weight: 900;
+}
+
+/* 挑戰按鈕死亡狀態 */
+.world-challenge-btn[data-boss-defeated="true"] {
+  background: linear-gradient(135deg, #8b0000 0%, #4a0000 100%) !important;
+  color: #ffcccb !important;
+  cursor: not-allowed !important;
+  animation: none !important;
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4) !important;
+}
+
+.world-challenge-btn[data-boss-defeated="true"]:hover {
+  transform: none !important;
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4) !important;
+}
+
+/* 倒數計時器死亡狀態 */
+.countdown-value.boss-defeated {
+  color: #ff6b6b !important;
+  text-shadow: 0 0 15px rgba(255, 107, 107, 0.8);
+  animation: deadCountdownPulse 3s ease-in-out infinite;
+}
+
+@keyframes deadCountdownPulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; transform: scale(1.05); }
+}
