@@ -3,8 +3,8 @@
     "id": "starter_bundle",
     "name": "新手禮包",
     "description": "適合新手的道具組合包，包含基礎製作材料。",
-    "type": "bundle",  // 🆕 新類型：禮包
-    "items": [         // 🆕 多道具配置
+    "type": "bundle",  
+    "items": [     
       {
         "item_id": "bone",
         "quantity": 10
@@ -64,12 +64,11 @@
     "category": "materials"
   },
   
-  // 保持原有的單一道具格式向後相容
   {
     "id": "shop_chaos_breath",
     "name": "混沌氣息",
     "description": "狩獵怪物有很低的機率掉落的混沌氣息。製作高級卡片的重要材料。",
-    "item_id": "chaos_breath",  // 單一道具使用舊格式
+    "item_id": "chaos_breath",
     "quantity": 1,
     "cost": {
       "world_boss_token": 10
