@@ -9,8 +9,10 @@ from firebase_admin import credentials, firestore, auth as firebase_auth
 from battle import simulate_battle, get_equipment_bonus, calculate_hit, calculate_damage, get_element_multiplier, level_damage_modifier
 from functools import lru_cache, wraps
 import re
-import datetime 
+from datetime import datetime, timedelta
 import pytz
+import threading
+import schedule
 
 from urllib.parse import urlencode
 
@@ -2635,7 +2637,7 @@ def get_current_reset_periods():
     }
 
 def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
-    """驗證商店購買請求 - 支援無限購買"""
+    """驗證商店購買請求 - 支援禮包驗證"""
     try:
         shop_items = get_shop_items()
         shop_item = next((item for item in shop_items if item["id"] == item_id), None)
@@ -2646,25 +2648,24 @@ def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
         if not shop_item.get("available", True):
             return False, "商品暫時不可購買"
         
-        # 🆕 檢查是否為無限購買道具
+        # 檢查是否為無限購買道具
         is_unlimited = shop_item.get("unlimited", False) or shop_item.get("limit_per_account", 0) == -1
         
-        if not is_unlimited:  # 只有非無限購買道具才檢查限制
-            # 檢查用戶購買記錄
+        if not is_unlimited:
+            # 限購檢查（保持原有邏輯）
             purchases = user_purchases.get("purchases", {})
             item_purchases = purchases.get(item_id, {})
             
-            # 檢查總限購
-            if shop_item["limit_per_account"] > 0:  # -1 表示無限
+            if shop_item["limit_per_account"] > 0:
                 total_purchased = item_purchases.get("total_purchased", 0)
                 if total_purchased >= shop_item["limit_per_account"]:
                     return False, "已達帳號總限購數量"
             
-            # 檢查重置週期限購
+            # 重置週期限購檢查...（保持原有邏輯）
             current_periods = get_current_reset_periods()
             reset_type = shop_item["reset_type"]
             
-            if reset_type != "none" and shop_item["limit_per_reset"] > 0:  # -1 表示無限
+            if reset_type != "none" and shop_item["limit_per_reset"] > 0:
                 period_key = f"{reset_type}_period"
                 purchased_key = f"{reset_type}_purchased"
                 last_period_key = f"last_{reset_type}_period"
@@ -2681,17 +2682,17 @@ def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
                     reset_names = {"daily": "每日", "weekly": "每週", "monthly": "每月"}
                     return False, f"已達{reset_names.get(reset_type, reset_type)}限購數量"
         
-        # 其餘驗證邏輯保持不變...
-        if shop_item["type"] == "trade":
+        # 檢查消耗道具是否足夠
+        if shop_item["type"] == "trade" or shop_item["type"] == "bundle":
             for cost_item, cost_amount in shop_item["cost"].items():
                 owned_amount = user_items.get(cost_item, 0)
                 if owned_amount < cost_amount:
                     return False, f"道具 {cost_item} 數量不足 (需要:{cost_amount}, 擁有:{owned_amount})"
         
-        target_item = shop_item["item_id"]
-        current_amount = user_items.get(target_item, 0)
-        if current_amount + shop_item["quantity"] > 999:
-            return False, "購買後會超過999個上限"
+        # 🆕 檢查禮包道具999限制
+        is_valid_limit, limit_error = validate_bundle_limits(shop_item, user_items)
+        if not is_valid_limit:
+            return False, limit_error
         
         return True, ""
         
@@ -2700,7 +2701,7 @@ def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
         return False, f"驗證過程發生錯誤: {str(e)}"
 
 def process_shop_purchase(user_id, item_id, user_items, user_purchases):
-    """處理商店購買邏輯"""
+    """處理商店購買邏輯 - 支援多道具禮包"""
     try:
         shop_items = get_shop_items()
         shop_item = next((item for item in shop_items if item["id"] == item_id), None)
@@ -2712,17 +2713,25 @@ def process_shop_purchase(user_id, item_id, user_items, user_purchases):
         updated_items = user_items.copy()
         
         # 消耗道具 (只有非免費道具才需要消耗)
-        if shop_item["type"] == "trade":
+        if shop_item["type"] == "trade" or shop_item["type"] == "bundle":
             for cost_item, cost_amount in shop_item["cost"].items():
                 updated_items[cost_item] = updated_items.get(cost_item, 0) - cost_amount
                 if updated_items[cost_item] <= 0:
                     del updated_items[cost_item]
         
-        # 添加目標道具
-        target_item = shop_item["item_id"]
-        updated_items[target_item] = updated_items.get(target_item, 0) + shop_item["quantity"]
+        # 🆕 處理多道具禮包
+        if shop_item["type"] == "bundle" and "items" in shop_item:
+            # 禮包：添加多個道具
+            for item_data in shop_item["items"]:
+                target_item = item_data["item_id"]
+                item_quantity = item_data["quantity"]
+                updated_items[target_item] = updated_items.get(target_item, 0) + item_quantity
+        else:
+            # 單一道具：使用原有邏輯
+            target_item = shop_item["item_id"]
+            updated_items[target_item] = updated_items.get(target_item, 0) + shop_item["quantity"]
         
-        # 更新購買記錄
+        # 更新購買記錄（邏輯保持不變）
         updated_purchases = user_purchases.copy()
         purchases = updated_purchases.get("purchases", {})
         item_purchases = purchases.get(item_id, {
@@ -2777,6 +2786,26 @@ def process_shop_purchase(user_id, item_id, user_items, user_purchases):
         raise e
 
 # 🏪 商店系統API端點
+# 驗證禮包是否會超過999限制
+def validate_bundle_limits(shop_item, user_items):
+    """驗證禮包購買是否會超過道具999限制"""
+    if shop_item["type"] == "bundle" and "items" in shop_item:
+        for item_data in shop_item["items"]:
+            target_item = item_data["item_id"]
+            item_quantity = item_data["quantity"]
+            current_amount = user_items.get(target_item, 0)
+            
+            if current_amount + item_quantity > 999:
+                return False, f"道具 {target_item} 購買後會超過999個上限"
+    else:
+        # 單一道具驗證
+        target_item = shop_item["item_id"]
+        current_amount = user_items.get(target_item, 0)
+        if current_amount + shop_item["quantity"] > 999:
+            return False, "購買後會超過999個上限"
+    
+    return True, ""
+
 
 @app.route("/shop_items", methods=["GET"])
 def shop_items_endpoint():
@@ -2814,16 +2843,20 @@ def shop_user_purchases():
 @app.route("/shop_purchase", methods=["POST"])
 @require_auth
 def shop_purchase():
-    """處理商店購買請求"""
+    """處理商店購買請求 - 支援批量購買"""
     try:
         data = request.json
         user_id = request.user_id
         item_id = data.get("item_id")
+        quantity_multiplier = data.get("quantity", 1)  # 🆕 批量購買倍數
         
         if not item_id:
             return jsonify({"success": False, "error": "缺少商品ID"}), 400
         
-        # 🛡️ 清除相關快取確保資料一致性
+        if quantity_multiplier < 1 or quantity_multiplier > 50:
+            return jsonify({"success": False, "error": "購買數量必須在1-50之間"}), 400
+        
+        # 清除相關快取確保資料一致性
         invalidate_user_cache(user_id)
         
         # 取得用戶道具資料
@@ -2845,73 +2878,113 @@ def shop_purchase():
             "last_update_time": 0
         }
         
-        # 🔍 驗證購買請求
-        is_valid, error_message = validate_shop_purchase(user_id, item_id, user_items, user_purchases)
-        if not is_valid:
-            return jsonify({"success": False, "error": error_message}), 400
+        # 🆕 批量購買驗證
+        for i in range(quantity_multiplier):
+            is_valid, error_message = validate_shop_purchase(user_id, item_id, user_items, user_purchases)
+            if not is_valid:
+                if i == 0:
+                    return jsonify({"success": False, "error": error_message}), 400
+                else:
+                    # 部分成功購買
+                    break
         
-        # 📦 處理購買
-        try:
-            updated_items, updated_purchases = process_shop_purchase(
-                user_id, item_id, user_items, user_purchases
-            )
-        except Exception as process_error:
-            return jsonify({
-                "success": False, 
-                "error": f"處理購買失敗: {str(process_error)}"
-            }), 500
+        successful_purchases = 0
+        total_items_received = {}
         
-        # 💾 使用批次操作原子性更新資料庫
+        # 🆕 執行批量購買
+        for i in range(quantity_multiplier):
+            try:
+                # 重新驗證每次購買
+                is_valid, error_message = validate_shop_purchase(user_id, item_id, user_items, user_purchases)
+                if not is_valid:
+                    break
+                
+                # 處理單次購買
+                updated_items, updated_purchases = process_shop_purchase(
+                    user_id, item_id, user_items, user_purchases
+                )
+                
+                # 更新本地變數
+                user_items = updated_items
+                user_purchases = updated_purchases
+                successful_purchases += 1
+                
+                # 記錄獲得的道具
+                shop_items = get_shop_items()
+                shop_item = next((item for item in shop_items if item["id"] == item_id), None)
+                if shop_item:
+                    target_item = shop_item["item_id"]
+                    item_quantity = shop_item["quantity"]
+                    total_items_received[target_item] = total_items_received.get(target_item, 0) + item_quantity
+                
+            except Exception as single_purchase_error:
+                print(f"單次購買失敗 (第{i+1}次): {single_purchase_error}")
+                break
+        
+        if successful_purchases == 0:
+            return jsonify({"success": False, "error": "無法完成任何購買"}), 400
+        
+        # 💾 批次更新資料庫
         batch = db.batch()
+        batch.set(item_ref, {"items": user_items})
+        batch.set(purchase_ref, user_purchases)
         
-        # 更新用戶道具
-        batch.set(item_ref, {"items": updated_items})
-        
-        # 更新購買記錄
-        batch.set(purchase_ref, updated_purchases)
-        
-        # 提交批次操作
         try:
             batch.commit()
-            print(f"🏪 商店購買成功 - 使用者: {user_id}, 商品: {item_id}")
+            print(f"🏪 批量購買成功 - 使用者: {user_id}, 商品: {item_id}, 成功次數: {successful_purchases}")
             
         except Exception as batch_error:
-            print(f"❌ 商店購買批次操作失敗: {batch_error}")
+            print(f"❌ 批量購買批次操作失敗: {batch_error}")
             return jsonify({
                 "success": False, 
                 "error": "資料儲存失敗，請稍後再試"
             }), 500
         
-        # 🧹 清除快取確保資料一致性
+        # 清除快取確保資料一致性
         invalidate_user_cache(user_id)
         
-        # 📜 取得商品資訊用於回應訊息
+        # 準備回應訊息
         shop_items = get_shop_items()
         shop_item = next((item for item in shop_items if item["id"] == item_id), None)
         
         purchase_type = "領取" if shop_item and shop_item.get("type") == "free" else "購買"
         item_name = shop_item.get("name", item_id) if shop_item else item_id
-        item_quantity = shop_item.get("quantity", 1) if shop_item else 1
         
-        # 🎉 成功回應
+        # 建立獲得道具摘要
+        items_summary = []
+        for item_id_received, qty in total_items_received.items():
+            items_summary.append(f"{item_id_received} x{qty}")
+        
+        success_message = f"成功{purchase_type} {item_name}"
+        if successful_purchases > 1:
+            success_message += f" x{successful_purchases}"
+        if len(items_summary) > 0:
+            success_message += f"，獲得：{', '.join(items_summary)}"
+        
+        # 部分成功提醒
+        if successful_purchases < quantity_multiplier:
+            success_message += f" (僅完成 {successful_purchases}/{quantity_multiplier} 次購買)"
+        
         return jsonify({
             "success": True,
-            "message": f"成功{purchase_type} {item_name} x{item_quantity}",
-            "user_items": updated_items,
-            "purchases": updated_purchases,
+            "message": success_message,
+            "user_items": user_items,
+            "purchases": user_purchases,
             "purchase_info": {
                 "item_id": item_id,
                 "item_name": item_name,
-                "quantity_received": item_quantity,
+                "successful_purchases": successful_purchases,
+                "requested_purchases": quantity_multiplier,
+                "total_items_received": total_items_received,
                 "purchase_type": purchase_type,
-                "purchase_time": updated_purchases["last_update_time"]
+                "purchase_time": user_purchases["last_update_time"]
             }
         })
         
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"🔥 商店購買完全失敗: {str(e)}")
+        print(f"🔥 批量購買完全失敗: {str(e)}")
         return jsonify({"success": False, "error": f"購買失敗: {str(e)}"}), 500
 
 
@@ -2968,7 +3041,187 @@ def admin_user_info():
     except Exception as e:
         return jsonify({"error": f"查詢使用者資料失敗: {str(e)}"}), 500
 
+
+
+
+# 商店重置器
+class ShopResetManager:
+    def __init__(self, db):
+        self.db = db
+        self.reset_thread = None
+        self.running = False
+    
+    def start_scheduler(self):
+        """啟動重置排程器"""
+        if self.running:
+            return
+            
+        self.running = True
+        
+        # 設定重置時間
+        schedule.every().day.at("00:01").do(self.daily_reset)
+        schedule.every().monday.at("00:01").do(self.weekly_reset)
+        schedule.every().month.do(self.monthly_reset)  # 每月1號
+        
+        # 啟動背景執行緒
+        self.reset_thread = threading.Thread(target=self._run_scheduler, daemon=True)
+        self.reset_thread.start()
+        
+        print("🔄 商店重置排程器已啟動")
+    
+    def _run_scheduler(self):
+        """背景執行排程器"""
+        while self.running:
+            try:
+                schedule.run_pending()
+                time_module.sleep(60)  # 每分鐘檢查一次
+            except Exception as e:
+                print(f"排程器錯誤: {e}")
+                time_module.sleep(300)  # 錯誤時等待5分鐘再重試
+    
+    def daily_reset(self):
+        """每日重置"""
+        try:
+            taipei_tz = pytz.timezone('Asia/Taipei')
+            now_taipei = datetime.now(taipei_tz)
+            current_daily_period = f"{now_taipei.year}-{now_taipei.month:02d}-{now_taipei.day:02d}"
+            
+            print(f"🌅 執行每日重置：{current_daily_period}")
+            
+            # 重置所有使用者的每日購買計數
+            users_ref = self.db.collection("shop_purchases")
+            batch = self.db.batch()
+            batch_count = 0
+            
+            for doc in users_ref.stream():
+                user_data = doc.to_dict()
+                purchases = user_data.get("purchases", {})
+                
+                updated = False
+                for item_id, purchase_data in purchases.items():
+                    if purchase_data.get("last_daily_period", "") != current_daily_period:
+                        purchase_data["daily_purchased"] = 0
+                        purchase_data["last_daily_period"] = current_daily_period
+                        updated = True
+                
+                if updated:
+                    user_data["purchases"] = purchases
+                    user_data["last_daily_reset"] = time.time()
+                    batch.update(doc.reference, user_data)
+                    batch_count += 1
+                    
+                    # 批次提交（Firebase限制500個操作）
+                    if batch_count >= 400:
+                        batch.commit()
+                        batch = self.db.batch()
+                        batch_count = 0
+            
+            if batch_count > 0:
+                batch.commit()
+            
+            print(f"✅ 每日重置完成，影響 {batch_count} 個使用者")
+            
+        except Exception as e:
+            print(f"❌ 每日重置失敗: {e}")
+    
+    def weekly_reset(self):
+        """每週重置"""
+        try:
+            taipei_tz = pytz.timezone('Asia/Taipei')
+            now_taipei = datetime.now(taipei_tz)
+            year, week_num, _ = now_taipei.isocalendar()
+            current_weekly_period = f"{year}-W{week_num:02d}"
+            
+            print(f"📅 執行每週重置：{current_weekly_period}")
+            
+            users_ref = self.db.collection("shop_purchases")
+            batch = self.db.batch()
+            batch_count = 0
+            
+            for doc in users_ref.stream():
+                user_data = doc.to_dict()
+                purchases = user_data.get("purchases", {})
+                
+                updated = False
+                for item_id, purchase_data in purchases.items():
+                    if purchase_data.get("last_weekly_period", "") != current_weekly_period:
+                        purchase_data["weekly_purchased"] = 0
+                        purchase_data["last_weekly_period"] = current_weekly_period
+                        updated = True
+                
+                if updated:
+                    user_data["purchases"] = purchases
+                    user_data["last_weekly_reset"] = time.time()
+                    batch.update(doc.reference, user_data)
+                    batch_count += 1
+                    
+                    if batch_count >= 400:
+                        batch.commit()
+                        batch = self.db.batch()
+                        batch_count = 0
+            
+            if batch_count > 0:
+                batch.commit()
+            
+            print(f"✅ 每週重置完成，影響 {batch_count} 個使用者")
+            
+        except Exception as e:
+            print(f"❌ 每週重置失敗: {e}")
+    
+    def monthly_reset(self):
+        """每月重置"""
+        try:
+            taipei_tz = pytz.timezone('Asia/Taipei')
+            now_taipei = datetime.now(taipei_tz)
+            current_monthly_period = f"{now_taipei.year}-{now_taipei.month:02d}"
+            
+            print(f"🗓️ 執行每月重置：{current_monthly_period}")
+            
+            users_ref = self.db.collection("shop_purchases")
+            batch = self.db.batch()
+            batch_count = 0
+            
+            for doc in users_ref.stream():
+                user_data = doc.to_dict()
+                purchases = user_data.get("purchases", {})
+                
+                updated = False
+                for item_id, purchase_data in purchases.items():
+                    if purchase_data.get("last_monthly_period", "") != current_monthly_period:
+                        purchase_data["monthly_purchased"] = 0
+                        purchase_data["last_monthly_period"] = current_monthly_period
+                        updated = True
+                
+                if updated:
+                    user_data["purchases"] = purchases
+                    user_data["last_monthly_reset"] = time.time()
+                    batch.update(doc.reference, user_data)
+                    batch_count += 1
+                    
+                    if batch_count >= 400:
+                        batch.commit()
+                        batch = self.db.batch()
+                        batch_count = 0
+            
+            if batch_count > 0:
+                batch.commit()
+            
+            print(f"✅ 每月重置完成，影響 {batch_count} 個使用者")
+            
+        except Exception as e:
+            print(f"❌ 每月重置失敗: {e}")
+    
+    def stop_scheduler(self):
+        """停止排程器"""
+        self.running = False
+        if self.reset_thread:
+            self.reset_thread.join(timeout=5)
+        print("🛑 商店重置排程器已停止")
+
+shop_reset_manager = ShopResetManager(db)
+
 if __name__ == "__main__":
+    shop_reset_manager.start_scheduler()
     import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
