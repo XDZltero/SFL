@@ -622,11 +622,28 @@ function updateWorldBossHP(current, max) {
   
   const percentage = Math.max(0, (current / max) * 100);
   hpBar.style.width = percentage + "%";
-  hpText.textContent = `${current.toLocaleString()} / ${max.toLocaleString()} (${percentage.toFixed(1)}%)`;
+  
+  if (current <= 0) {
+    // 世界王已死亡的特殊顯示
+    hpText.textContent = "已殞落 - 等待下週重置";
+    hpBar.style.background = "linear-gradient(90deg, #8b0000, #4a0000, #2d0000)";
+    hpText.style.color = "#ffcccb";
+    
+    // 播放死亡特效
+    hpBar.style.animation = "bossDefeatedPulse 2s ease-in-out infinite";
+  } else {
+    hpText.textContent = `${current.toLocaleString()} / ${max.toLocaleString()} (${percentage.toFixed(1)}%)`;
+    hpBar.style.background = ""; // 恢復原始樣式
+    hpText.style.color = "";
+    hpBar.style.animation = "";
+  }
   
   // 更新階段
   const currentPhase = getCurrentPhase(current, max);
   updatePhaseDisplay(currentPhase);
+  
+  // 檢查世界王死亡狀態
+  checkWorldBossDeathStatus();
 }
 
 // 更新玩家傷害顯示
@@ -896,6 +913,15 @@ function closeBattleResult() {
 
 // 挑戰世界王
 async function challengeWorldBoss() {
+  // 檢查世界王是否已死亡
+  if (worldBossData && worldBossData.current_hp <= 0) {
+    showBattleResult(false, "世界王已殞落", 
+      "🎉 世界王已被全體冒險者擊敗！\n" +
+      "👑 請等待下週一重置後再次挑戰\n" +
+      "🏆 感謝你參與這場史詩級的戰鬥！");
+    return;
+  }
+  
   // 前端等級檢查
   if (userLevel < REQUIRED_LEVEL) {
     showBattleResult(false, "等級不足", 
@@ -1154,6 +1180,54 @@ async function resetWorldBoss() {
   }
 }
 
+function checkWorldBossDeathStatus() {
+  const challengeBtnEl = document.getElementById("challengeBtn");
+  const timeRestrictionEl = document.getElementById("timeRestriction");
+  
+  if (!worldBossData) return;
+  
+  const currentHp = worldBossData.current_hp || 0;
+  
+  if (currentHp <= 0) {
+    // 世界王已死亡，禁用挑戰按鈕
+    if (challengeBtnEl) {
+      challengeBtnEl.disabled = true;
+      challengeBtnEl.textContent = "👑 世界王已殞落";
+      challengeBtnEl.style.background = "linear-gradient(135deg, #8b0000 0%, #4a0000 100%)";
+      challengeBtnEl.style.color = "#ffcccb";
+      challengeBtnEl.style.cursor = "not-allowed";
+      challengeBtnEl.dataset.bossDefeated = "true";
+    }
+    
+    // 顯示世界王死亡提示
+    if (timeRestrictionEl) {
+      timeRestrictionEl.style.display = "block";
+      timeRestrictionEl.querySelector('.restriction-title').textContent = "👑 世界王已被擊敗！";
+      timeRestrictionEl.querySelector('.restriction-message').innerHTML = 
+        "🎉 恭喜全世界的冒險者成功擊敗世界王！<br>" +
+        "🕐 世界王將於下週一 00:31 復活並重置挑戰";
+    }
+    
+    // 更新倒數計時顯示
+    const countdownEl = document.getElementById("countdownDisplay");
+    if (countdownEl) {
+      countdownEl.textContent = "世界王已殞落";
+      countdownEl.style.color = "#ff6b6b";
+    }
+    
+    return true; // 世界王已死亡
+  } else {
+    // 世界王還活著，移除死亡狀態
+    if (challengeBtnEl && challengeBtnEl.dataset.bossDefeated === "true") {
+      challengeBtnEl.dataset.bossDefeated = "false";
+      // 恢復正常狀態檢查
+      checkLevelRequirement();
+    }
+    
+    return false; // 世界王還活著
+  }
+}
+  
 // 🔧 開發者模式檢測
 const isDeveloper = window.location.hostname === 'localhost' || 
                    window.location.search.includes('debug=true') ||
