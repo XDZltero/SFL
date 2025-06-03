@@ -1544,7 +1544,10 @@ def update_world_boss_global_stats_immediate(damage_dealt):
 @app.route("/world_boss_status", methods=["GET"])
 def world_boss_status():
     try:
-        # ✅ 新增：維護時間檢查
+        # ✅ 檢查週重置
+        check_weekly_reset()
+        
+        # ✅ 維護時間檢查
         is_maintenance, maintenance_msg = is_maintenance_time()
         
         config = get_world_boss_config()
@@ -1592,9 +1595,13 @@ def world_boss_status():
 def world_boss_challenge():
     # 挑戰世界王
     try:
+
+        # 檢查週日重置
+        check_weekly_reset()
+        
         user_id = request.user_id
         
-        # ✅ 新增：檢查跨日維護時間
+        # 檢查跨日維護時間
         is_maintenance, maintenance_msg = is_maintenance_time()
         if is_maintenance:
             return jsonify({"error": maintenance_msg}), 403
@@ -2151,6 +2158,87 @@ def admin_system_status():
         
     except Exception as e:
         return jsonify({"error": f"取得系統狀態失敗: {str(e)}"}), 500
+
+# 世界王週日重置
+def check_weekly_reset():
+    """檢查是否需要進行週一重置"""
+    try:
+        taipei_tz = pytz.timezone('Asia/Taipei')
+        now_taipei = datetime.datetime.now(taipei_tz)
+        
+        # 只在週一 01:30~02:00 之間進行重置
+        if now_taipei.weekday() == 0 and 1 <= now_taipei.hour <= 2:
+            global_ref = db.collection("world_boss_global").document("current_status")
+            global_doc = global_ref.get()
+            
+            if global_doc.exists:
+                state = global_doc.to_dict()
+                last_reset_time = state.get("weekly_reset_time", "")
+                
+                # 檢查是否本週已經重置過
+                if last_reset_time:
+                    try:
+                        last_reset = datetime.datetime.fromisoformat(last_reset_time.replace('Z', '+00:00'))
+                        last_reset_taipei = last_reset.astimezone(taipei_tz)
+                        
+                        # 如果上次重置是上週，則執行重置
+                        if last_reset_taipei.isocalendar()[1] < now_taipei.isocalendar()[1] or \
+                           last_reset_taipei.year < now_taipei.year:
+                            perform_weekly_reset(now_taipei)
+                            return True
+                    except:
+                        # 如果解析失敗，執行重置
+                        perform_weekly_reset(now_taipei)
+                        return True
+                else:
+                    # 如果沒有重置記錄，執行重置
+                    perform_weekly_reset(now_taipei)
+                    return True
+        
+        return False
+        
+    except Exception as e:
+        print(f"檢查週重置失敗: {e}")
+        return False
+
+def perform_weekly_reset(reset_time):
+    """執行週重置"""
+    try:
+        config = get_world_boss_config()
+        
+        # 使用批次操作確保原子性
+        batch = db.batch()
+        
+        # 1. 重置全域狀態
+        global_ref = db.collection("world_boss_global").document("current_status")
+        reset_data = {
+            "current_hp": config["initial_stats"]["max_hp"],
+            "max_hp": config["initial_stats"]["max_hp"],
+            "current_phase": 1,
+            "total_participants": 0,
+            "total_damage_dealt": 0,
+            "last_reset_time": time.time(),
+            "weekly_reset_time": reset_time.isoformat(),
+            "auto_reset": True,  # 標記為自動重置
+            "unique_players": 0
+        }
+        batch.set(global_ref, reset_data)
+        
+        # 2. 清空排行榜
+        players_ref = db.collection("world_boss_players")
+        for doc in players_ref.stream():
+            batch.delete(doc.reference)
+        
+        # 提交批次操作
+        batch.commit()
+        
+        print(f"🔄 週重置成功執行於：{reset_time.isoformat()}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ 週重置執行失敗: {e}")
+        return False
+
 
 # 🚀 新增：管理員限定的使用者管理 API
 @app.route("/admin_user_info", methods=["GET"])
