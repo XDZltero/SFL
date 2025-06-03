@@ -2606,7 +2606,315 @@ def perform_weekly_reset(reset_time):
         return False
 
 
-# 🚀 新增：管理員限定的使用者管理 API
+# 商店
+@lru_cache(maxsize=128)
+def get_shop_items():
+    """載入商店道具配置"""
+    with open("parameter/shop_items.json", encoding="utf-8") as f:
+        return json.load(f)
+
+def get_current_reset_periods():
+    """取得當前的重置週期字串"""
+    taipei_tz = pytz.timezone('Asia/Taipei')
+    now_taipei = datetime.datetime.now(taipei_tz)
+    
+    # 週重置：以週一為起始的週數 (ISO week)
+    year, week_num, _ = now_taipei.isocalendar()
+    weekly_period = f"{year}-W{week_num:02d}"
+    
+    # 月重置：年-月
+    monthly_period = f"{year}-{now_taipei.month:02d}"
+    
+    # 日重置：年-月-日
+    daily_period = f"{year}-{now_taipei.month:02d}-{now_taipei.day:02d}"
+    
+    return {
+        'weekly': weekly_period,
+        'monthly': monthly_period, 
+        'daily': daily_period
+    }
+
+def validate_shop_purchase(user_id, item_id, user_items, user_purchases):
+    """驗證商店購買請求"""
+    try:
+        # 載入商店配置
+        shop_items = get_shop_items()
+        shop_item = next((item for item in shop_items if item["id"] == item_id), None)
+        
+        if not shop_item:
+            return False, "商品不存在"
+        
+        if not shop_item.get("available", True):
+            return False, "商品暫時不可購買"
+        
+        # 檢查用戶購買記錄
+        purchases = user_purchases.get("purchases", {})
+        item_purchases = purchases.get(item_id, {})
+        
+        # 檢查總限購
+        total_purchased = item_purchases.get("total_purchased", 0)
+        if total_purchased >= shop_item["limit_per_account"]:
+            return False, "已達帳號總限購數量"
+        
+        # 檢查重置週期限購
+        current_periods = get_current_reset_periods()
+        reset_type = shop_item["reset_type"]
+        
+        if reset_type != "none":
+            period_key = f"{reset_type}_period"
+            purchased_key = f"{reset_type}_purchased"
+            last_period_key = f"last_{reset_type}_period"
+            
+            # 檢查是否需要重置計數
+            current_period = current_periods.get(reset_type)
+            last_period = item_purchases.get(last_period_key, "")
+            
+            if current_period != last_period:
+                # 新週期，重置計數
+                reset_purchased = 0
+            else:
+                reset_purchased = item_purchases.get(purchased_key, 0)
+            
+            if reset_purchased >= shop_item["limit_per_reset"]:
+                reset_names = {"daily": "每日", "weekly": "每週", "monthly": "每月"}
+                return False, f"已達{reset_names.get(reset_type, reset_type)}限購數量"
+        
+        # 檢查消耗道具是否足夠
+        if shop_item["type"] == "trade":
+            for cost_item, cost_amount in shop_item["cost"].items():
+                owned_amount = user_items.get(cost_item, 0)
+                if owned_amount < cost_amount:
+                    return False, f"道具 {cost_item} 數量不足 (需要:{cost_amount}, 擁有:{owned_amount})"
+        
+        # 檢查目標道具是否會超過999
+        target_item = shop_item["item_id"]
+        current_amount = user_items.get(target_item, 0)
+        if current_amount + shop_item["quantity"] > 999:
+            return False, "購買後會超過999個上限"
+        
+        return True, ""
+        
+    except Exception as e:
+        print(f"驗證購買失敗: {e}")
+        return False, f"驗證過程發生錯誤: {str(e)}"
+
+def process_shop_purchase(user_id, item_id, user_items, user_purchases):
+    """處理商店購買邏輯"""
+    try:
+        shop_items = get_shop_items()
+        shop_item = next((item for item in shop_items if item["id"] == item_id), None)
+        
+        if not shop_item:
+            raise ValueError("商品不存在")
+        
+        # 更新用戶道具
+        updated_items = user_items.copy()
+        
+        # 消耗道具 (只有非免費道具才需要消耗)
+        if shop_item["type"] == "trade":
+            for cost_item, cost_amount in shop_item["cost"].items():
+                updated_items[cost_item] = updated_items.get(cost_item, 0) - cost_amount
+                if updated_items[cost_item] <= 0:
+                    del updated_items[cost_item]
+        
+        # 添加目標道具
+        target_item = shop_item["item_id"]
+        updated_items[target_item] = updated_items.get(target_item, 0) + shop_item["quantity"]
+        
+        # 更新購買記錄
+        updated_purchases = user_purchases.copy()
+        purchases = updated_purchases.get("purchases", {})
+        item_purchases = purchases.get(item_id, {
+            "total_purchased": 0,
+            "daily_purchased": 0,
+            "weekly_purchased": 0,
+            "monthly_purchased": 0,
+            "last_daily_period": "",
+            "last_weekly_period": "",
+            "last_monthly_period": "",
+            "first_purchase_time": 0,
+            "last_purchase_time": 0
+        })
+        
+        # 取得當前週期
+        current_periods = get_current_reset_periods()
+        reset_type = shop_item["reset_type"]
+        current_time = time.time()
+        
+        # 更新購買計數
+        item_purchases["total_purchased"] += 1
+        item_purchases["last_purchase_time"] = current_time
+        
+        if item_purchases["first_purchase_time"] == 0:
+            item_purchases["first_purchase_time"] = current_time
+        
+        # 處理重置週期計數
+        if reset_type != "none":
+            period_key = f"{reset_type}_period"
+            purchased_key = f"{reset_type}_purchased"
+            last_period_key = f"last_{reset_type}_period"
+            
+            current_period = current_periods.get(reset_type)
+            last_period = item_purchases.get(last_period_key, "")
+            
+            if current_period != last_period:
+                # 新週期，重置計數
+                item_purchases[purchased_key] = 1
+                item_purchases[last_period_key] = current_period
+            else:
+                item_purchases[purchased_key] = item_purchases.get(purchased_key, 0) + 1
+        
+        # 更新購買記錄
+        purchases[item_id] = item_purchases
+        updated_purchases["purchases"] = purchases
+        updated_purchases["last_update_time"] = current_time
+        
+        return updated_items, updated_purchases
+        
+    except Exception as e:
+        print(f"處理購買失敗: {e}")
+        raise e
+
+# 🏪 商店系統API端點
+
+@app.route("/shop_items", methods=["GET"])
+def shop_items_endpoint():
+    """取得商店道具列表"""
+    try:
+        return jsonify(get_shop_items())
+    except Exception as e:
+        return jsonify({"error": f"取得商店道具失敗: {str(e)}"}), 500
+
+@app.route("/shop_user_purchases", methods=["GET"])
+@require_auth
+@cached_response(ttl=60)  # 1分鐘快取
+def shop_user_purchases():
+    """取得用戶商店購買記錄"""
+    try:
+        user_id = request.user_id
+        
+        # 取得用戶購買記錄
+        purchase_ref = db.collection("shop_purchases").document(user_id)
+        purchase_doc = purchase_ref.get()
+        
+        if purchase_doc.exists:
+            return purchase_doc.to_dict()
+        else:
+            # 返回空的購買記錄結構
+            return {
+                "user_id": user_id,
+                "purchases": {},
+                "last_update_time": 0
+            }
+            
+    except Exception as e:
+        return jsonify({"error": f"取得購買記錄失敗: {str(e)}"}), 500
+
+@app.route("/shop_purchase", methods=["POST"])
+@require_auth
+def shop_purchase():
+    """處理商店購買請求"""
+    try:
+        data = request.json
+        user_id = request.user_id
+        item_id = data.get("item_id")
+        
+        if not item_id:
+            return jsonify({"success": False, "error": "缺少商品ID"}), 400
+        
+        # 🛡️ 清除相關快取確保資料一致性
+        invalidate_user_cache(user_id)
+        
+        # 取得用戶道具資料
+        item_ref = db.collection("user_items").document(user_id)
+        item_doc = item_ref.get()
+        
+        if not item_doc.exists:
+            return jsonify({"success": False, "error": "找不到使用者道具資料"}), 404
+        
+        user_items = item_doc.to_dict().get("items", {})
+        
+        # 取得用戶購買記錄
+        purchase_ref = db.collection("shop_purchases").document(user_id)
+        purchase_doc = purchase_ref.get()
+        
+        user_purchases = purchase_doc.to_dict() if purchase_doc.exists else {
+            "user_id": user_id,
+            "purchases": {},
+            "last_update_time": 0
+        }
+        
+        # 🔍 驗證購買請求
+        is_valid, error_message = validate_shop_purchase(user_id, item_id, user_items, user_purchases)
+        if not is_valid:
+            return jsonify({"success": False, "error": error_message}), 400
+        
+        # 📦 處理購買
+        try:
+            updated_items, updated_purchases = process_shop_purchase(
+                user_id, item_id, user_items, user_purchases
+            )
+        except Exception as process_error:
+            return jsonify({
+                "success": False, 
+                "error": f"處理購買失敗: {str(process_error)}"
+            }), 500
+        
+        # 💾 使用批次操作原子性更新資料庫
+        batch = db.batch()
+        
+        # 更新用戶道具
+        batch.set(item_ref, {"items": updated_items})
+        
+        # 更新購買記錄
+        batch.set(purchase_ref, updated_purchases)
+        
+        # 提交批次操作
+        try:
+            batch.commit()
+            print(f"🏪 商店購買成功 - 使用者: {user_id}, 商品: {item_id}")
+            
+        except Exception as batch_error:
+            print(f"❌ 商店購買批次操作失敗: {batch_error}")
+            return jsonify({
+                "success": False, 
+                "error": "資料儲存失敗，請稍後再試"
+            }), 500
+        
+        # 🧹 清除快取確保資料一致性
+        invalidate_user_cache(user_id)
+        
+        # 📜 取得商品資訊用於回應訊息
+        shop_items = get_shop_items()
+        shop_item = next((item for item in shop_items if item["id"] == item_id), None)
+        
+        purchase_type = "領取" if shop_item and shop_item.get("type") == "free" else "購買"
+        item_name = shop_item.get("name", item_id) if shop_item else item_id
+        item_quantity = shop_item.get("quantity", 1) if shop_item else 1
+        
+        # 🎉 成功回應
+        return jsonify({
+            "success": True,
+            "message": f"成功{purchase_type} {item_name} x{item_quantity}",
+            "user_items": updated_items,
+            "purchases": updated_purchases,
+            "purchase_info": {
+                "item_id": item_id,
+                "item_name": item_name,
+                "quantity_received": item_quantity,
+                "purchase_type": purchase_type,
+                "purchase_time": updated_purchases["last_update_time"]
+            }
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"🔥 商店購買完全失敗: {str(e)}")
+        return jsonify({"success": False, "error": f"購買失敗: {str(e)}"}), 500
+
+
+# 新增：管理員限定的使用者管理 API
 @app.route("/admin_user_info", methods=["GET"])
 @require_admin
 def admin_user_info():
