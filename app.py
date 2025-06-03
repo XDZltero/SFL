@@ -1225,6 +1225,7 @@ def initialize_world_boss_global_state():
         return None
 
 def get_world_boss_global_state():
+    """取得世界王全域狀態，包含額外的錯誤檢查"""
     try:
         global_ref = db.collection("world_boss_global").document("current_status")
         global_doc = global_ref.get()
@@ -1232,16 +1233,32 @@ def get_world_boss_global_state():
         if global_doc.exists:
             state = global_doc.to_dict()
             
-            # ✅ 只檢查，絕不自動修復
+            # ✅ 檢查必要欄位
             required_fields = ["current_hp", "max_hp"]
             missing_fields = [f for f in required_fields if f not in state]
             
             if missing_fields:
                 print(f"🚨 世界王資料異常！缺少欄位：{missing_fields}")
                 print(f"📊 當前狀態：{state}")
-                print(f"⚠️ 需要管理員手動處理，系統不會自動修復")
-                # 返回 None，讓前端顯示錯誤
                 return None
+            
+            # ✅ 檢查數值合理性
+            current_hp = state.get("current_hp", 0)
+            max_hp = state.get("max_hp", 0)
+            
+            if not isinstance(current_hp, (int, float)) or not isinstance(max_hp, (int, float)):
+                print(f"🚨 世界王血量數值類型異常: current_hp={type(current_hp)}, max_hp={type(max_hp)}")
+                return None
+            
+            if max_hp <= 0:
+                print(f"🚨 世界王最大血量異常: {max_hp}")
+                return None
+            
+            if current_hp < 0:
+                print(f"⚠️ 世界王當前血量小於0，自動修正為0: {current_hp}")
+                state["current_hp"] = 0
+                # 可選：自動修正到資料庫
+                global_ref.update({"current_hp": 0})
             
             return state
         else:
@@ -1250,6 +1267,8 @@ def get_world_boss_global_state():
             
     except Exception as e:
         print(f"❌ 取得世界王狀態失敗: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def is_maintenance_time():
@@ -1543,7 +1562,7 @@ def update_world_boss_global_stats_immediate(damage_dealt):
 
 @app.route("/world_boss_status", methods=["GET"])
 def world_boss_status():
-    """取得世界王狀態 - 修正版本，包含死亡狀態"""
+    """取得世界王狀態 - 完整版本，包含死亡狀態和詳細資訊"""
     try:
         # ✅ 檢查週重置
         check_weekly_reset()
@@ -1551,62 +1570,183 @@ def world_boss_status():
         # ✅ 維護時間檢查
         is_maintenance, maintenance_msg = is_maintenance_time()
         
+        # 載入世界王配置
         config = get_world_boss_config()
         global_state = get_world_boss_global_state()
         
         if not global_state:
-            return jsonify({"error": "無法取得世界王狀態"}), 500
+            print("❌ 無法取得世界王全域狀態")
+            return jsonify({
+                "error": "無法取得世界王狀態",
+                "error_code": "NO_GLOBAL_STATE",
+                "server_time": time.time()
+            }), 500
         
+        # 取得基本數據
         current_hp = global_state.get("current_hp", config["initial_stats"]["max_hp"])
         max_hp = global_state.get("max_hp", config["initial_stats"]["max_hp"])
         
-        # 🚀 新增：檢查世界王是否已死亡
+        # 🚀 檢查世界王是否已死亡
         boss_defeated = current_hp <= 0
         defeated_info = {}
         
         if boss_defeated:
+            # 世界王已死亡，準備詳細資訊
             defeated_info = {
                 "defeated": True,
                 "defeated_time": global_state.get("defeated_time", 0),
                 "final_blow_by": global_state.get("final_blow_by", ""),
                 "final_blow_nickname": global_state.get("final_blow_nickname", "未知英雄"),
-                "reset_message": "世界王將於下週一 00:31 重新復活"
+                "reset_message": "世界王將於下週一 00:31 重新復活",
+                "status_message": "🎉 世界王已被全體冒險者擊敗！",
+                "next_reset_info": "下週一自動重置",
+                "challenge_disabled": True
             }
+            
+            # 🚀 記錄世界王死亡日誌
+            print(f"💀 API回應：世界王已死亡 (HP: {current_hp}/{max_hp})")
+            if defeated_info["final_blow_nickname"] != "未知英雄":
+                print(f"👑 最後一擊由 {defeated_info['final_blow_nickname']} 完成")
+        else:
+            # 世界王還活著
+            print(f"✅ 世界王狀態正常 (HP: {current_hp}/{max_hp})")
         
         # 計算總攻擊次數和獨特玩家數
         total_attacks = global_state.get("total_participants", 0)
         
         try:
+            # 計算獨特玩家數量（有造成傷害的玩家）
             players_ref = db.collection("world_boss_players").where("total_damage", ">", 0)
             unique_players_count = len([doc for doc in players_ref.stream()])
-        except Exception:
+        except Exception as player_error:
+            print(f"⚠️ 計算獨特玩家數量失敗: {player_error}")
             unique_players_count = 0
         
+        # 🚀 計算當前階段
+        current_phase = get_current_world_boss_phase()
+        
+        # 計算血量百分比
+        hp_percentage = (current_hp / max_hp * 100) if max_hp > 0 else 0
+        
+        # 🚀 準備完整的回應數據
         result = {
+            # 基本世界王資訊
             "boss_id": config["boss_id"],
             "name": config["name"],
             "description": config["description"],
             "image": config["image"],
             "level": config["level"],
             "element": config["element"],
+            
+            # 血量和階段資訊
             "current_hp": current_hp,
             "max_hp": max_hp,
-            "current_phase": global_state.get("current_phase", 1),
+            "hp_percentage": round(hp_percentage, 2),
+            "current_phase": current_phase,
+            
+            # 統計資訊
             "total_participants": total_attacks,
             "unique_players": unique_players_count,
             "total_damage_dealt": global_state.get("total_damage_dealt", 0),
+            
+            # 階段配置
             "phases": config["phases"],
+            
+            # 時間相關資訊
             "last_update_time": global_state.get("last_update_time", global_state.get("created_time", time.time())),
+            "server_time": time.time(),
+            "created_time": global_state.get("created_time", time.time()),
+            
+            # 維護狀態
             "is_maintenance": is_maintenance,
             "maintenance_message": maintenance_msg if is_maintenance else None,
-            "boss_defeated": boss_defeated,  # 🚀 新增：世界王死亡狀態
-            "defeated_info": defeated_info   # 🚀 新增：死亡詳細資訊
+            
+            # 🚀 世界王死亡狀態（核心新增功能）
+            "boss_defeated": boss_defeated,
+            "defeated_info": defeated_info,
+            
+            # 時間限制檢查
+            "is_weekend": is_weekend_restriction()[0],
+            "weekend_message": is_weekend_restriction()[1] if is_weekend_restriction()[0] else None,
+            
+            # API 狀態
+            "api_status": "normal",
+            "response_generated_at": time.time()
         }
+        
+        # 🚀 如果世界王已死亡，添加額外的統計資訊
+        if boss_defeated and defeated_info.get("defeated_time", 0) > 0:
+            defeated_time = defeated_info["defeated_time"]
+            current_time = time.time()
+            time_since_defeat = current_time - defeated_time
+            
+            result["defeated_info"].update({
+                "time_since_defeat_seconds": int(time_since_defeat),
+                "time_since_defeat_hours": round(time_since_defeat / 3600, 1),
+                "defeated_timestamp": defeated_time
+            })
+        
+        # 🚀 添加下次重置時間計算
+        try:
+            taipei_tz = pytz.timezone('Asia/Taipei')
+            now_taipei = datetime.datetime.now(taipei_tz)
+            
+            # 計算下週一 00:31 的時間
+            days_until_monday = (7 - now_taipei.weekday()) % 7
+            if days_until_monday == 0 and now_taipei.hour >= 1:  # 如果是週一且已過01:00
+                days_until_monday = 7
+            
+            next_reset = now_taipei.replace(hour=0, minute=31, second=0, microsecond=0) + datetime.timedelta(days=days_until_monday)
+            
+            result["next_reset_time"] = next_reset.isoformat()
+            result["next_reset_timestamp"] = next_reset.timestamp()
+            
+        except Exception as time_error:
+            print(f"⚠️ 計算下次重置時間失敗: {time_error}")
+        
+        # 🚀 記錄成功的API調用
+        if boss_defeated:
+            print(f"📤 世界王狀態API (已死亡): HP=0/{max_hp}, 攻擊次數={total_attacks}, 玩家數={unique_players_count}")
+        else:
+            print(f"📤 世界王狀態API (存活): HP={current_hp}/{max_hp} ({hp_percentage:.1f}%), 階段={current_phase}")
         
         return jsonify(result)
         
     except Exception as e:
-        return jsonify({"error": f"取得世界王狀態失敗: {str(e)}"}), 500
+        # 🚀 強化錯誤處理和日誌記錄
+        print(f"❌ 取得世界王狀態時發生錯誤: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # 🚀 嘗試提供基本的降級回應
+        try:
+            config = get_world_boss_config()
+            fallback_response = {
+                "error": f"取得世界王狀態失敗: {str(e)}",
+                "error_code": "INTERNAL_ERROR",
+                "api_status": "error",
+                "server_time": time.time(),
+                "fallback_data": {
+                    "boss_id": config.get("boss_id", "unknown"),
+                    "name": config.get("name", "世界王"),
+                    "max_hp": config.get("initial_stats", {}).get("max_hp", 999999999),
+                    "current_hp": 0,  # 安全的預設值
+                    "boss_defeated": False,  # 保守的預設值
+                    "maintenance_mode": True  # 錯誤時視為維護模式
+                }
+            }
+            return jsonify(fallback_response), 500
+            
+        except Exception as fallback_error:
+            # 連降級回應都失敗了，返回最基本的錯誤
+            print(f"❌ 連降級回應都失敗: {fallback_error}")
+            return jsonify({
+                "error": "伺服器內部錯誤",
+                "error_code": "CRITICAL_ERROR",
+                "api_status": "critical",
+                "server_time": time.time(),
+                "message": "世界王系統暫時無法使用，請稍後再試"
+            }), 500
 
 @app.route("/world_boss_challenge", methods=["POST"])
 @require_auth
@@ -1875,6 +2015,48 @@ def world_boss_challenge():
         traceback.print_exc()
         print(f"🔥 世界王挑戰完全失敗: {str(e)}")
         return jsonify({"success": False, "error": f"挑戰失敗: {str(e)}"}), 500
+
+# 世界王死亡狀態檢查端點
+@app.route("/world_boss_death_status", methods=["GET"])
+def world_boss_death_status():
+    """專門檢查世界王是否已死亡的輕量級端點"""
+    try:
+        global_state = get_world_boss_global_state()
+        if not global_state:
+            return jsonify({
+                "error": "無法取得世界王狀態",
+                "boss_defeated": False,
+                "status": "unknown"
+            }), 500
+        
+        current_hp = global_state.get("current_hp", 0)
+        max_hp = global_state.get("max_hp", 1)
+        boss_defeated = current_hp <= 0
+        
+        result = {
+            "boss_defeated": boss_defeated,
+            "current_hp": current_hp,
+            "max_hp": max_hp,
+            "hp_percentage": (current_hp / max_hp * 100) if max_hp > 0 else 0,
+            "status": "defeated" if boss_defeated else "alive",
+            "check_time": time.time()
+        }
+        
+        if boss_defeated:
+            result.update({
+                "defeated_time": global_state.get("defeated_time", 0),
+                "final_blow_by": global_state.get("final_blow_nickname", "未知英雄"),
+                "reset_message": "世界王將於下週一 00:31 重新復活"
+            })
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            "error": f"檢查世界王死亡狀態失敗: {str(e)}",
+            "boss_defeated": False,
+            "status": "error"
+        }), 500
 
 @app.route("/world_boss_player_data", methods=["GET"])
 @require_auth
