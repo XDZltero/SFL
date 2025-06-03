@@ -198,7 +198,9 @@
     
     .category-count {
       font-size: 0.8em;
-
+      color: #888;
+      margin-left: 5px;
+    }
 
     /* 禮包卡片特殊樣式 */
 .shop-item-card.bundle {
@@ -382,6 +384,252 @@
     font-size: 1em;
   }
 }
-      color: #888;
-      margin-left: 5px;
-    }
+
+
+
+/* 添加到 css/shop.css 的等級限制相關樣式 */
+
+/* 等級限制的商品卡片 */
+.shop-item-card.level-restricted {
+  border-color: #ff9500;
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.1) 0%, rgba(15, 15, 35, 0.9) 100%);
+  box-shadow: 0 4px 20px rgba(255, 149, 0, 0.2);
+  opacity: 0.7;
+}
+
+/* 等級要求顯示區塊 */
+.level-requirement {
+  background: rgba(255, 149, 0, 0.1);
+  border: 1px solid rgba(255, 149, 0, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 10px 0;
+  font-size: 0.9em;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* 等級要求滿足時的樣式 */
+.level-requirement.level-met {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: rgba(76, 175, 80, 0.3);
+  color: #4CAF50;
+}
+
+/* 等級要求未滿足時的樣式 */
+.level-requirement.level-not-met {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.3);
+  color: #ff6b6b;
+  animation: levelWarning 2s ease-in-out infinite;
+}
+
+@keyframes levelWarning {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.6);
+  }
+}
+
+/* 用戶信息顯示區塊 */
+.user-info-display {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.1) 100%);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.user-info-display .currency-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+}
+
+.user-info-display .currency-name {
+  color: #00ffff;
+  font-weight: 600;
+}
+
+.user-info-display .currency-amount {
+  color: #ffd93d;
+  font-weight: bold;
+}
+
+/* 等級不足時的購買按鈕禁用樣式 */
+.shop-item-card.level-restricted .square-btn {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+  box-shadow: 0 3px 10px rgba(108, 117, 125, 0.3) !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+.shop-item-card.level-restricted .square-btn:hover {
+  transform: none !important;
+  box-shadow: 0 3px 10px rgba(108, 117, 125, 0.3) !important;
+}
+
+/* 高等級商品的特殊效果 */
+.shop-item-card[data-required-level="60"],
+.shop-item-card[data-required-level="75"],
+.shop-item-card[data-required-level="90"] {
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-item-card[data-required-level="60"]::after,
+.shop-item-card[data-required-level="75"]::after,
+.shop-item-card[data-required-level="90"]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 40px 40px 0;
+  border-color: transparent #FFD306 transparent transparent;
+}
+
+.shop-item-card[data-required-level="60"]::before,
+.shop-item-card[data-required-level="75"]::before,
+.shop-item-card[data-required-level="90"]::before {
+  content: '👑';
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 0.8em;
+  z-index: 1;
+  color: #000;
+}
+
+/* 等級徽章樣式 */
+.level-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75em;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.level-badge.high-level {
+  background: linear-gradient(135deg, #FFD306 0%, #FF8A00 100%);
+  color: #000;
+  box-shadow: 0 2px 8px rgba(255, 211, 6, 0.4);
+}
+
+.level-badge.max-level {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+  animation: maxLevelPulse 2s ease-in-out infinite;
+}
+
+@keyframes maxLevelPulse {
+  0%, 100% { 
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+  }
+  50% { 
+    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.8);
+  }
+}
+
+/* 等級篩選器樣式 */
+.level-filter-section {
+  background: rgba(255, 149, 0, 0.1);
+  border: 1px solid rgba(255, 149, 0, 0.2);
+  border-radius: 10px;
+  padding: 15px;
+  margin: 15px 0;
+}
+
+.level-filter-title {
+  color: #ff9500;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.level-filter-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.level-filter-btn {
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.8) 0%, rgba(255, 69, 0, 0.8) 100%);
+  border: 1px solid rgba(255, 149, 0, 0.3);
+  padding: 6px 12px;
+  border-radius: 15px;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.level-filter-btn:hover, .level-filter-btn.active {
+  background: linear-gradient(135deg, #ff9500 0%, #ff4500 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.4);
+}
+
+/* 響應式設計調整 */
+@media (max-width: 768px) {
+  .level-requirement {
+    font-size: 0.8em;
+    padding: 6px 10px;
+  }
+  
+  .level-filter-buttons {
+    gap: 5px;
+  }
+  
+  .level-filter-btn {
+    font-size: 0.75em;
+    padding: 4px 8px;
+  }
+  
+  .level-badge {
+    font-size: 0.7em;
+    padding: 1px 6px;
+  }
+}
+
+/* 等級進度條樣式（可選） */
+.level-progress-container {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.level-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 5px 0;
+}
+
+.level-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ecdc4, #44a08d);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.level-progress-text {
+  font-size: 0.85em;
+  color: #b8e6ff;
+  text-align: center;
+  margin-top: 5px;
+}
