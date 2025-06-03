@@ -77,6 +77,17 @@
     "Pre-Task-ReqTime" : 3
   },
   {
+    "id": "dungeon_bigship",
+    "name": "次元界：第二要塞「飛船比爾加賽」",
+    "description": "方尖塔內設有通往下一座要塞的傳送門，而當你踏入其中時，竟來到一艘龐大的戰艦之上。迪菲爾向你解釋，這正是三大要塞之一——「大飛船比爾加賽」，一艘如航空母艦般的次元戰艦母艦，承載著多艘戰鬥艦艇。令人驚異的是，那座被稱為「鋼鐵都市」的要塞，竟然就坐落在這艘巨艦的船艙深處……",
+    "bossId": "arctos_phase_2",
+    "min_level": 85,
+    "image": "https://i.postimg.cc/WbywtspM/dungeon-bigship.png",
+    "monsters": ["arctos_phase_1"],
+    "Pre-Task": "dungeon_obelisk",
+    "Pre-Task-ReqTime" : 3
+  },
+  {
     "id": "TEST",
     "name": "測試",
     "description": "Test。",
