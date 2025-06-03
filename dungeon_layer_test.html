@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<title>副本戰鬥</title>
+<link rel="icon" href="favicon.ico" />
+<link href="css/style.css" rel="stylesheet"/>
+<link href="css/dungeon_layer_winning.css" rel="stylesheet"/>
+<link href="css/dungeon_layer.css" rel="stylesheet"/>
+<style>
+.section::before {
+  animation: none !important;
+  background: none !important;
+}
+</style>
+</head>
+<body>
+<!-- 勝利特效遮罩 -->
+<div id="victoryOverlay" class="victory-overlay">
+  <div class="fireworks" id="fireworksContainer"></div>
+  <div class="victory-content">
+    <div class="victory-icon">🏆</div>
+    <div class="victory-title">Victory</div>
+    <div class="victory-message">🌟成功通關副本🌟</div>
+    <button class="effect-button" onclick="hideVictoryEffect()">繼續</button>
+  </div>
+</div>
+
+<!-- 失敗特效遮罩 -->
+<div id="defeatOverlay" class="defeat-overlay">
+  <div class="debris" id="debrisContainer"></div>
+  <div class="defeat-content">
+    <div class="defeat-icon">💀</div>
+    <div class="defeat-title">戰敗</div>
+    <div class="defeat-message" id="defeatMessage">失敗乃成功之母，再接再厲！</div>
+    <button class="effect-button" onclick="hideDefeatEffect()">繼續</button>
+  </div>
+</div>
+
+<!-- 頁面載入遮罩 -->
+<div id="loadingOverlay">
+<div class="particles" id="pageParticles"></div>
+<div class="battle-loading-container">
+<div class="battle-icon">🏰</div>
+<div class="battle-title normal-title">進入副本</div>
+<div class="loading-text" id="pageLoadingText">正在載入副本資料...</div>
+<div class="progress-container">
+<div class="progress-bar" id="pageProgressBar"></div>
+</div>
+<div class="progress-text" id="pageProgressText">0%</div>
+<div class="battle-tips">
+        🗡️ 準備好迎接挑戰了嗎？<br/>
+        📊 檢查你的裝備和技能配置
+      </div>
+</div>
+</div>
+
+<!-- 戰鬥載入遮罩 -->
+<div id="battleLoadingOverlay">
+<div class="particles" id="particles"></div>
+<div class="battle-loading-container">
+<div class="battle-icon" id="battleIcon">⚔️</div>
+<div class="battle-title" id="battleTitle">戰鬥準備中</div>
+<div class="loading-text" id="loadingText">正在分析戰況...</div>
+<div class="progress-container" id="progressContainer">
+<div class="progress-bar" id="progressBar"></div>
+</div>
+<div class="progress-text" id="progressText">0%</div>
+<div class="battle-tips" id="battleTips">
+        💡 戰鬥小提示：善用屬性克制關係可以提高勝率！<br/>
+        🛡️ 記得提升裝備來增強戰鬥力
+      </div>
+</div>
+</div>
+
+<div id="content">
+<div class="section" id="userInfo">🧍 角色資訊載入中...</div>
+<div class="section" id="monsterInfo">👹 怪物資訊載入中...</div>
+<div class="section"><strong>📜 戰鬥紀錄</strong><pre id="logArea"></pre></div>
+</div>
+
+<div id="footer">
+<button id="battleBtn" onclick="startBattle()">開始戰鬥</button>
+<button id="retryBtn" style="display:none" onclick="retryBattle()">再戰一次</button>
+<button id="nextBtn" style="display:none">下一層</button>
+<button id="leaveBtn" onclick="leaveDungeon()" style="display:none">離開副本</button>
+</div>
+
+<script>
+function percent(val) {
+  return (val * 100).toFixed(1) + '%';
+}
+
+	  (function() {
+		function createPageParticles() {
+		  const particlesContainer = document.getElementById("pageParticles");
+		  if (!particlesContainer) return;
+		  particlesContainer.innerHTML = "";
+		  for (let i = 0; i < 30; i++) {
+			const particle = document.createElement("div");
+			particle.className = "particle";
+			particle.style.left = Math.random() * 100 + "%";
+			particle.style.animationDelay = Math.random() * 4 + "s";
+			particle.style.animationDuration = (Math.random() * 2 + 3) + "s";
+			particle.style.background = `rgba(${Math.random() > 0.5 ? '56, 239, 125' : '17, 153, 142'}, 0.7)`;
+			particlesContainer.appendChild(particle);
+		  }
+		}
+
+		function startPageLoadingProgress() {
+		  const progressBar = document.getElementById("pageProgressBar");
+		  const progressText = document.getElementById("pageProgressText");
+		  const loadingText = document.getElementById("pageLoadingText");
+		  if (!progressBar || !progressText || !loadingText) return;
+
+		  const messages = [
+			"正在載入副本資料...",
+			"獲取玩家狀態...",
+			"載入怪物資訊...",
+			"準備戰鬥環境...",
+			"載入完成！"
+		  ];
+
+		  let progress = 0;
+		  let messageIndex = 0;
+		  const progressInterval = setInterval(() => {
+			progress += Math.random() * 20 + 10;
+			if (progress > 100) progress = 100;
+
+			progressBar.style.width = progress + "%";
+			progressText.textContent = Math.round(progress) + "%";
+
+			if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 20) {
+			  messageIndex++;
+			  loadingText.textContent = messages[messageIndex];
+			}
+
+			if (progress >= 100) {
+			  clearInterval(progressInterval);
+			  loadingText.textContent = messages[messages.length - 1];
+			}
+		  }, 300);
+
+		  window.pageLoadingInterval = progressInterval;
+		}
+
+		createPageParticles();
+		startPageLoadingProgress();
+	  })();
+  </script>
+
+<script type="module">
+    import { auth, SecureAPI, PerformanceMonitor } from "./js/firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    let equipData = [];
+    let cooldownTimer = null;
+    let userData = null;
+	let levelExp = {};
+	let dungeonData = null;
+	let startCooldownTime = null;
+	let originalCooldownTime = 0;
+	let currentProgress = 0; // 🚀 新增：當前進度
+	let isLastLayer = false; // 🚀 新增：是否為最後一層
+	
+	class BoundedMonsterCache {
+	  constructor(maxSize = 50) {
+	    this.cache = new Map();
+	    this.maxSize = maxSize;
+	  }
+	  
+	  set(key, value) {
+	    if (this.cache.size >= this.maxSize) {
+	      const firstKey = this.cache.keys().next().value;
+	      this.cache.delete(firstKey);
+	    }
+	    this.cache.set(key, value);
+	  }
+	  
+	  has(key) {
+    return this.cache.has(key);
+  }
+
+  get(key) {
+	    const value = this.cache.get(key);
+	    if (value) {
+	      // LRU: 重新插入到末尾
+	      this.cache.delete(key);
+	      this.cache.set(key, value);
+	    }
+	    return value;
+	  }
+	  
+	  delete(key) {
+    return this.cache.delete(key);
+  }
+
+  clear() {
+	    this.cache.clear();
+	  }
+	  
+	  get size() {
+	    return this.cache.size;
+	  }
+	}
+	
+	let monsterCache = new BoundedMonsterCache(50);
+
+    const elementMap = {
+      "none": "無",
+      "phy": "物理",
+      "pyro": "火",
+      "hydro": "水",
+      "electro": "雷",
+      "nature": "自然",
+      "light": "光",
+      "dark": "暗",
+      "all": "全"
+    };
+    const API = "https://sfl-9cb8.onrender.com";
+    const params = new URLSearchParams(location.search);
+    const dungeon = params.get("dungeon");
+    let layer = parseInt(params.get("layer") || "0");
+    
+    const inheritedCooldown = parseInt(params.get("cooldown") || "0");
+    console.log("URL參數中的冷卻時間:", inheritedCooldown);
+
+    const logArea = document.getElementById("logArea");
+    const userDiv = document.getElementById("userInfo");
+    const monsterDiv = document.getElementById("monsterInfo");
+    const loading = document.getElementById("loadingOverlay");
+    const battleLoading = document.getElementById("battleLoadingOverlay");
+
+    const battleBtn = document.getElementById("battleBtn");
+    const retryBtn = document.getElementById("retryBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    // 戰鬥冷卻相關函數 - 改為直接使用伺服器提供的冷卻時間
+    function updateBattleButton(buttonElement, remainingSeconds, buttonText = "開始戰鬥") {
+      if (remainingSeconds > 0) {
+        buttonElement.classList.add("cooldown-button");
+        buttonElement.disabled = true;
+        buttonElement.innerHTML = `<span class="cooldown-text">冷卻中 (${Math.ceil(remainingSeconds)}s)</span>`;
+      } else {
+        buttonElement.classList.remove("cooldown-button");
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = buttonText;
+      }
+    }
+
+    let currentRemainingTime = 0;
+    function startCooldownTimer(initialRemaining) {
+      console.log("開始冷卻計時器，初始剩餘時間:", initialRemaining);
+      
+      if (cooldownTimer) {
+        clearInterval(cooldownTimer);
+      }
+      
+      startCooldownTime = Date.now();
+      originalCooldownTime = initialRemaining;
+      currentRemainingTime = Math.ceil(initialRemaining);
+      
+      const startTime = Date.now();
+      let remaining = Math.ceil(initialRemaining);
+      
+      cooldownTimer = setInterval(() => {
+        const elapsedSeconds = (Date.now() - startTime) / 1000;
+        remaining = Math.ceil(initialRemaining - elapsedSeconds);
+        currentRemainingTime = remaining;
+        
+        console.log("冷卻倒數:", remaining);
+        
+        if (remaining <= 0) {
+          console.log("冷卻完成，恢復按鈕");
+          updateBattleButton(battleBtn, 0, "開始戰鬥");
+          updateBattleButton(retryBtn, 0, "再戰一次");
+          clearInterval(cooldownTimer);
+          cooldownTimer = null;
+          startCooldownTime = null;
+          originalCooldownTime = 0;
+          currentRemainingTime = 0;
+        } else {
+          updateBattleButton(battleBtn, remaining, "開始戰鬥");
+          if (retryBtn.style.display !== "none") {
+            updateBattleButton(retryBtn, remaining, "再戰一次");
+          }
+        }
+      }, 1000);
+    }
+    
+    function validateCooldownTime(serverTime, inheritedTime) {
+	  console.log(`🔍 驗證冷卻時間 - 服務器: ${serverTime}s, 繼承: ${inheritedTime}s`);
+	  
+	  if (serverTime > 35) {
+	    console.warn(`⚠️ 服務器冷卻時間異常: ${serverTime}s，使用繼承時間: ${inheritedTime}s`);
+	    return Math.max(0, inheritedTime);
+	  }
+	  
+	  if (inheritedTime > 0 && Math.abs(serverTime - inheritedTime) > 10) {
+	    console.warn(`⚠️ 服務器與繼承時間差異過大，優先使用繼承時間`);
+	    return Math.max(0, inheritedTime);
+	  }
+	  
+	  if (serverTime < 1) {
+	    console.log(`✅ 服務器冷卻時間很短，視為已完成`);
+	    return 0;
+	  }
+	  
+	  return Math.max(0, Math.round(serverTime));
+	}
+
+    function initializeBattleButtons(userData) {
+	  console.log("初始化戰鬥按鈕，使用者資料:", userData);
+	  
+	  let remaining = 0;
+	  let isReady = true;
+	  
+	  const serverCooldown = userData.battle_cooldown_remaining || 0;
+	  const serverReady = userData.battle_ready !== false;
+	  
+	  if (inheritedCooldown > 0) {
+	    remaining = validateCooldownTime(serverCooldown, inheritedCooldown);
+	    isReady = remaining <= 0;
+	    console.log(`📊 冷卻驗證結果 - 最終剩餘: ${remaining}s, 準備狀態: ${isReady}`);
+	  } else {
+	    remaining = validateCooldownTime(serverCooldown, 0);
+	    isReady = remaining <= 0 && serverReady;
+	    console.log(`📊 使用服務器數據 - 剩餘: ${remaining}s, 準備狀態: ${isReady}`);
+	  }
+	  
+	  if (!isReady && remaining > 0) {
+	    console.log(`🕒 開始冷卻倒數: ${remaining}秒`);
+	    updateBattleButton(battleBtn, remaining, "開始戰鬥");
+	    startCooldownTimer(remaining);
+	  } else {
+	    console.log("✅ 戰鬥按鈕已準備好");
+	    updateBattleButton(battleBtn, 0, "開始戰鬥");
+	  }
+	}
+
+    // 🚀 新增：設定初始按鈕狀態的函數
+    function setInitialButtonState() {
+      console.log(`🎮 設定初始按鈕狀態 - 當前層: ${layer}, 進度: ${currentProgress}, 是否BOSS: ${isLastLayer}`);
+      
+      // 隱藏所有按鈕
+      battleBtn.style.display = "none";
+      retryBtn.style.display = "none";
+      nextBtn.style.display = "none";
+      document.getElementById("leaveBtn").style.display = "none";
+      
+      if (isLastLayer) {
+        // BOSS層：只有當層數等於進度時才顯示開始戰鬥，否則不應該到這裡
+        battleBtn.style.display = "inline-block";
+        console.log("🐉 BOSS層 - 顯示開始戰鬥");
+      } else if (layer < currentProgress) {
+        // 回到上一層：顯示再戰一次和下一層
+        retryBtn.style.display = "inline-block";
+        nextBtn.style.display = "inline-block";
+        console.log("🔄 回到上一層 - 顯示再戰一次和下一層");
+        
+        // 設定下一層按鈕功能
+        nextBtn.onclick = async () => {
+          if (cooldownTimer) {
+            clearInterval(cooldownTimer);
+            cooldownTimer = null;
+          }
+          
+          try {
+            let remainingCooldown = currentRemainingTime;
+            console.log(`🎯 使用當前倒數器的剩餘時間: ${remainingCooldown}s`);
+            
+            const cooldownParam = remainingCooldown > 2 ? `&cooldown=${remainingCooldown}` : '';
+            const nextUrl = `dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
+            
+            console.log("🔗 跳轉到:", nextUrl);
+            
+            setTimeout(() => {
+              window.parent.loadPage(nextUrl);
+            }, 500);
+          } catch (error) {
+            console.error("準備跳轉時發生錯誤:", error);
+            setTimeout(() => {
+              window.parent.loadPage(`dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}`);
+            }, 500);
+          }
+        };
+      } else {
+        // 新挑戰：顯示開始戰鬥
+        battleBtn.style.display = "inline-block";
+        console.log("⚔️ 新挑戰 - 顯示開始戰鬥");
+      }
+    }
+
+    // 特效控制函數
+    function showVictoryEffect() {
+      const overlay = document.getElementById("victoryOverlay");
+      overlay.style.display = "flex";
+      createFireworks();
+    }
+
+    function hideVictoryEffect() {
+      const overlay = document.getElementById("victoryOverlay");
+      overlay.style.display = "none";
+      clearFireworks();
+    }
+
+    function setRandomDefeatMessage() {
+	    const messages = [
+	      "適當分配技能點數，用最優屬性克制敵人。",
+	      "等級壓制最高可達七等，準備好再來吧。",
+	      "善用屬性克制！水→火→自然→雷→水、光暗互剋。",
+	      "製作與強化卡片提升能力值再來挑戰！",
+	      "不如先試試簡單的怪物提升等級？"
+	    ];
+	    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+	    const messageDiv = document.getElementById("defeatMessage");
+	    if (messageDiv) {
+	      messageDiv.textContent = randomMsg;
+	    }
+	  }
+
+    function showDefeatEffect() {
+      const overlay = document.getElementById("defeatOverlay");
+      overlay.style.display = "flex";
+      createDebris();
+      setRandomDefeatMessage();
+    }
+
+    function hideDefeatEffect() {
+      const overlay = document.getElementById("defeatOverlay");
+      overlay.style.display = "none";
+      clearDebris();
+    }
+
+    // 煙花效果
+    function createFireworks() {
+      const container = document.getElementById("fireworksContainer");
+      container.innerHTML = "";
+      
+      for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+          const firework = document.createElement("div");
+          firework.className = "firework";
+          firework.style.left = Math.random() * 100 + "%";
+          firework.style.top = Math.random() * 100 + "%";
+          firework.style.background = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.8)`;
+          firework.style.animationDelay = Math.random() * 2 + "s";
+          container.appendChild(firework);
+          
+          setTimeout(() => {
+            if (firework.parentNode) {
+              firework.parentNode.removeChild(firework);
+            }
+          }, 2000);
+        }, i * 200);
+      }
+    }
+
+    function clearFireworks() {
+      const container = document.getElementById("fireworksContainer");
+      if (container) container.innerHTML = "";
+    }
+
+    // 碎片效果
+    function createDebris() {
+      const container = document.getElementById("debrisContainer");
+      container.innerHTML = "";
+      
+      for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+          const debris = document.createElement("div");
+          debris.className = "debris-piece";
+          debris.style.left = Math.random() * 100 + "%";
+          debris.style.animationDelay = Math.random() * 1 + "s";
+          debris.style.animationDuration = (Math.random() * 2 + 2) + "s";
+          container.appendChild(debris);
+          
+          setTimeout(() => {
+            if (debris.parentNode) {
+              debris.parentNode.removeChild(debris);
+            }
+          }, 3000);
+        }, i * 100);
+      }
+    }
+
+    function clearDebris() {
+      const container = document.getElementById("debrisContainer");
+      if (container) container.innerHTML = "";
+    }
+
+    // 將特效函數設為全域
+    window.hideVictoryEffect = hideVictoryEffect;
+    window.hideDefeatEffect = hideDefeatEffect;
+
+    // 離開副本函數
+    function leaveDungeon() {
+      window.parent.postMessage({ command: "restoreMainMusic" }, "*");
+      setTimeout(() => {
+	    window.parent.loadPage('dungeons_test.html');
+	  }, 300);
+    }
+    window.leaveDungeon = leaveDungeon;
+
+    // 頁面載入畫面控制
+    function showLoading(show) {
+      loading.style.display = show ? "flex" : "none";
+    }
+
+    // 隱藏頁面載入畫面
+    function hidePageLoading() {
+      if (window.pageLoadingInterval) {
+        clearInterval(window.pageLoadingInterval);
+      }
+      setTimeout(() => {
+        showLoading(false);
+      }, 500);
+    }
+
+    // 戰鬥載入畫面控制
+    function showBattleLoading(show) {
+      battleLoading.style.display = show ? "flex" : "none";
+      if (show) {
+        createParticles();
+        startLoadingProgress();
+      }
+    }
+
+    // 創建粒子效果
+    function createParticles() {
+      const particlesContainer = document.getElementById("particles");
+      particlesContainer.innerHTML = "";
+      
+      for (let i = 0; i < 50; i++) {
+        const particle = document.createElement("div");
+        particle.className = "particle";
+        particle.style.left = Math.random() * 100 + "%";
+        particle.style.animationDelay = Math.random() * 6 + "s";
+        particle.style.animationDuration = (Math.random() * 3 + 4) + "s";
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    // 進度條動畫
+    function startLoadingProgress() {
+      const progressBar = document.getElementById("progressBar");
+      const progressText = document.getElementById("progressText");
+      const loadingText = document.getElementById("loadingText");
+      
+      const messages = [
+        "正在分析戰況...",
+        "計算屬性克制...",
+        "準備戰鬥技能...",
+        "載入怪物資料...",
+        "初始化戰鬥系統...",
+        "準備就緒！"
+      ];
+      
+      let progress = 0;
+      let messageIndex = 0;
+      
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 15 + 5;
+        if (progress > 100) progress = 100;
+        
+        progressBar.style.width = progress + "%";
+        progressText.textContent = Math.round(progress) + "%";
+        
+        if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 15) {
+          messageIndex++;
+          loadingText.textContent = messages[messageIndex];
+        }
+        
+        if (progress >= 100) {
+          clearInterval(progressInterval);
+          loadingText.textContent = messages[messages.length - 1];
+        }
+      }, 200);
+      
+      window.battleProgressInterval = progressInterval;
+    }
+
+    async function fetchUser(force = false) {
+	  PerformanceMonitor.startTiming('fetchUser');
+	
+	  try {
+	    const res = force ? await SecureAPI.getStatus(true) : await SecureAPI.getStatus(false);
+	    const data = await res.json();
+	
+	    console.log('✅ 使用者資料載入完成' + (res.cached ? ' (來自快取)' : ' (API呼叫)'));
+	    return data;
+	
+	  } catch (error) {
+	    console.error('載入使用者資料失敗:', error);
+		    
+		try {
+		  const fallbackRes = await SecureAPI.getWithRetry(API + '/status', 1, true);
+		  return await fallbackRes.json();
+		} catch (fallbackError) {
+		  console.error('降級載入也失敗:', fallbackError);
+		  throw new Error('無法載入使用者資料');
+		}
+	  } finally {
+	    PerformanceMonitor.endTiming('fetchUser');
+	  }
+	}
+	
+
+    async function fetchMonster(monsterId) {
+	  PerformanceMonitor.startTiming('fetchMonster');
+	  
+	  try {
+	    if (monsterCache.has(monsterId)) {
+	      console.log(`🎯 怪物資料快取命中: ${monsterId}`);
+	      return monsterCache.get(monsterId);
+	    }
+	    
+	    const res = await fetch(`${API}/monster?id=${encodeURIComponent(monsterId)}`);
+	    if (!res.ok) {
+	      throw new Error(`載入怪物失敗: ${res.status}`);
+	    }
+	    
+	    const monsterData = await res.json();
+	    
+	    monsterCache.set(monsterId, monsterData);
+	    setTimeout(() => {
+	      monsterCache.delete(monsterId);
+	      console.log(`🗑️ 怪物快取過期: ${monsterId}`);
+	    }, 10 * 60 * 1000);
+	    
+	    console.log(`💾 怪物資料已快取: ${monsterId}`);
+	    return monsterData;
+	    
+	  } catch (error) {
+	    console.error(`載入怪物 ${monsterId} 失敗:`, error);
+	    throw error;
+	  } finally {
+	    PerformanceMonitor.endTiming('fetchMonster');
+	  }
+	}
+
+	async function loadStaticData() {
+	  PerformanceMonitor.startTiming('loadStaticData');
+	  
+	  try {
+	    const [levelExpRes, equipRes, dungeonRes] = await Promise.all([
+	      SecureAPI.getStaticData('exp_table'),
+	      SecureAPI.getStaticData('equips_table'),
+	      SecureAPI.getStaticData('dungeon_table')
+	    ]);
+	    
+	    levelExp = levelExpRes;
+	    equipData = Array.isArray(equipRes) ? equipRes : Object.values(equipRes);
+	    dungeonData = dungeonRes;
+	    
+	    console.log('✅ 靜態資料載入完成');
+	    
+	  } catch (error) {
+	    console.error('載入靜態資料失敗:', error);
+	    
+	    try {
+	      console.log('🔄 嘗試降級載入...');
+	      
+	      try {
+	        const expRes = await fetch(`${API}/exp_table`);
+	        levelExp = await expRes.json();
+	      } catch (e) {
+	        console.warn('經驗值表載入失敗:', e);
+	      }
+	      
+	      try {
+	        const equipResponse = await fetch(`${API}/equips_table`);
+	        const equipResult = await equipResponse.json();
+	        equipData = Array.isArray(equipResult) ? equipResult : Object.values(equipResult);
+	      } catch (e) {
+	        console.warn('裝備資料載入失敗:', e);
+	        equipData = [];
+	      }
+	      
+	      try {
+	        const dungeonResponse = await fetch(`${API}/dungeon_table`);
+	        dungeonData = await dungeonResponse.json();
+	      } catch (e) {
+	        console.warn('副本資料載入失敗:', e);
+	      }
+	      
+	    } catch (fallbackError) {
+	      console.error('降級載入也失敗:', fallbackError);
+	      alert('載入基礎資料失敗，部分功能可能受限');
+	    }
+	  } finally {
+	    PerformanceMonitor.endTiming('loadStaticData');
+	  }
+	}
+
+    // 計算裝備數值
+    function calculateEquipmentBonus(equipment, equipData) {
+	  const bonus = {};
+	
+	  for (let slot = 1; slot <= 5; slot++) {
+	    const equippedCard = equipment[slot];
+	    if (!equippedCard) continue;
+	
+	    const cardId = Object.keys(equippedCard)[0];
+	    const cardLevel = equippedCard[cardId];
+	    const equipInfo = equipData.find(e => e.id === cardId);
+	
+	    if (equipInfo?.value?.[cardLevel]) {
+	      const cardStats = equipInfo.value[cardLevel];
+	      for (const [stat, value] of Object.entries(cardStats)) {
+	        bonus[stat] = (bonus[stat] || 0) + value;
+	      }
+	    }
+	  }
+	
+	  return bonus;
+	}
+
+    function formatStats(data) {
+      const b = data.base_stats;
+      const e = calculateEquipmentBonus(data.equipment || {}, equipData);
+      const levelMaxExp = levelExp[data.level] || 1;
+      const progress = percent(data.exp / levelMaxExp);
+
+      const getValue = (key) => (b[key] || 0) + (e[key] || 0);
+      const getFormatted = (key) => {
+        const isPercent = ["evade", "accuracy", "other_bonus"].includes(key);
+        const total = getValue(key);
+        const base = b[key] || 0;
+        const bonus = e[key] || 0;
+        
+        if (isPercent) {
+          return {
+            total: `${percent(total)}`,
+            detail: `${percent(base)} + ${percent(bonus)}`
+          };
+        } else {
+          return {
+            total: total.toString(),
+            detail: `${base} + ${bonus}`
+          };
+        }
+      };
+
+      const statsList = [
+        { key: "level", label: "等級", value: data.level },
+        { key: "exp", label: "經驗值", value: `${data.exp} (${progress})` },
+        { key: "hp", label: "生命值" },
+        { key: "attack", label: "攻擊力" },
+        { key: "shield", label: "護盾值" },
+        { key: "luck", label: "幸運值" },
+        { key: "accuracy", label: "命中率" },
+        { key: "evade", label: "迴避率" },
+        { key: "atk_speed", label: "攻擊速度" },
+        { key: "other_bonus", label: "額外傷害加成" },
+        { key: "stat_points", label: "剩餘能力值點數", value: data.stat_points },
+        { key: "skill_points", label: "剩餘技能點", value: data.skill_points }
+      ];
+
+      let html = `
+        <div class="player-info-container">
+          <h3 class="player-name">👤 ${data.nickname}</h3>
+          <div class="stats-container">
+      `;
+      
+      statsList.forEach(({ key, label, value }) => {
+        if (value !== undefined) {
+          html += `<div class="stat-item"><span>${label}:</span><span>${value}</span></div>`;
+        } else if (["hp", "attack", "shield", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
+          const formatted = getFormatted(key);
+          html += `<div class="stat-item"><span>${label}:</span><span>${formatted.total} (${formatted.detail})</span></div>`;
+        }
+      });
+      
+      html += '</div></div>';
+      return html;
+    }
+
+    function formatMonsterInfo(mon, isLastLayer) {
+      const description = (mon.info || '').replace(/\/n/g, '\n');
+      
+      const elementText = Array.isArray(mon.element) 
+        ? mon.element.map(e => elementMap[e] || e).join("、") 
+        : (elementMap[mon.element] || mon.element);
+
+      let containerClass = "monster-info-container";
+      let bossTitle = "";
+      
+      if (isLastLayer) {
+        containerClass += " boss";
+        bossTitle = '<div class="boss-title-decoration">BOSS</div>';
+      }
+
+      const html = `
+        <div class="${containerClass}">
+          ${bossTitle}
+          <h2 class="monster-name">${mon.name}</h2>
+          <img src="${mon.image_url}" class="monster-image" width="200">
+          <div class="monster-description">${description}</div>
+          <div class="monster-stats">
+            <div class="monster-stat-item">
+              <span>等級：</span>
+              <span>${mon.level}</span>
+            </div>
+            <div class="monster-stat-item">
+              <span>屬性：</span>
+              <span>${elementText}</span>
+            </div>
+            <div class="monster-stat-item">
+              <span>生命值：</span>
+              <span>${mon.stats.hp}</span>
+            </div>
+            <div class="monster-stat-item">
+              <span>攻擊力：</span>
+              <span>${mon.stats.attack}</span>
+            </div>
+            <div class="monster-stat-item">
+              <span>護盾值：</span>
+              <span>${mon.stats.shield}</span>
+            </div>
+            <div class="monster-stat-item">
+              <span>命中率：</span>
+              <span>${Math.round(mon.stats.accuracy * 100)}%</span>
+            </div>
+            <div class="monster-stat-item">
+              <span>迴避率：</span>
+              <span>${Math.round(mon.stats.evade * 100)}%</span>
+            </div>
+            <div class="monster-stat-item">
+              <span>攻擊速度：</span>
+              <span>${mon.stats.atk_speed}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      return html;
+    }
+
+    async function loadLayer() {
+	  PerformanceMonitor.startTiming('loadLayer');
+	  
+	  try {
+	    const [userDataPromise, staticDataPromise] = await Promise.allSettled([
+	      fetchUser(true),
+	      loadStaticData()
+	    ]);
+	    
+	    if (userDataPromise.status === 'fulfilled') {
+	  userData = userDataPromise.value;
+	  console.log("✅ 使用者資料載入完成:", userData.nickname);
+	
+	  initializeBattleButtons(userData);
+	} else {
+	      throw new Error('使用者資料載入失敗: ' + userDataPromise.reason);
+	    }
+	    
+	    if (staticDataPromise.status === 'rejected') {
+	      console.warn('靜態資料載入失敗:', staticDataPromise.reason);
+	    }
+	    
+	    window.parent.postMessage({
+	      nickname: userData.nickname
+	    }, "*");
+	    
+	    initializeBattleButtons(userData);
+	    
+	    userDiv.innerHTML = formatStats(userData);
+	
+	    let current;
+	    if (dungeonData) {
+	      current = dungeonData.find(d => d.id === dungeon);
+	    } else {
+	      const dungeonRes = await fetch(`${API}/dungeon_table`);
+	      const allDungeons = await dungeonRes.json();
+	      current = allDungeons.find(d => d.id === dungeon);
+	    }
+	    
+	    if (!current) throw new Error("副本不存在");
+	
+	    // 🚀 更新全域變數
+	    const totalLayers = current.monsters.length + 1;
+	    isLastLayer = (layer === totalLayers - 1);
+	    
+	    // 🚀 獲取當前進度
+	    const progRes = await SecureAPI.get(`${API}/get_progress?force=1`);
+	    const progData = await progRes.json();
+	    currentProgress = progData.progress?.[dungeon] ?? 0;
+	    
+	    console.log(`🎮 副本狀態 - 當前層: ${layer}, 總層數: ${totalLayers}, 進度: ${currentProgress}, 是否BOSS: ${isLastLayer}`);
+	
+	    const monsterId = isLastLayer ? current.bossId : current.monsters[layer];
+	    const mon = await fetchMonster(monsterId);
+	
+	    if (isLastLayer) {
+	      document.body.classList.add("boss-mode");
+	      window.parent.postMessage({ command: "switchToBossMusic" }, "*");
+	
+	      document.getElementById("battleLoadingOverlay")?.classList.add("boss-battle");
+	      document.getElementById("battleIcon")?.classList.add("boss");
+	      document.getElementById("battleTitle")?.classList.add("boss");
+	      document.getElementById("loadingText")?.classList.add("boss");
+	      document.getElementById("progressContainer")?.classList.add("boss");
+	      document.getElementById("progressText")?.classList.add("boss");
+	      document.getElementById("battleTips")?.classList.add("boss");
+	
+	      document.getElementById("monsterInfo")?.classList.add("boss");
+	    }
+	
+	    // 🚀 重置按鈕狀態並設定初始狀態
+	    retryBtn.style.display = "none";
+	    nextBtn.style.display = "none";
+	    document.getElementById("leaveBtn").style.display = "none";
+	    
+	    monsterDiv.innerHTML = formatMonsterInfo(mon, isLastLayer);
+	    
+	    // 🚀 設定初始按鈕狀態
+	    setInitialButtonState();
+	    
+	    hidePageLoading();
+	    
+	  } catch (err) {
+	    console.error("載入層級失敗:", err);
+	    monsterDiv.innerHTML = "❌ 載入資料失敗";
+	    hidePageLoading();
+	  } finally {
+	    PerformanceMonitor.endTiming('loadLayer');
+	  }
+	}
+
+    async function fetchProgress(force = false) {
+	  const url = `${API}/get_progress${force ? "?force=1" : ""}`;
+	  const res = await SecureAPI.get(url);
+	  const data = await res.json();
+	  currentProgress = data.progress?.[dungeon] ?? 0;
+	  return data;
+	}		
+
+    function checkProgressBeforeBattle() {
+      if (layer > currentProgress) {
+        alert("層數異常（尚未解鎖），請重新進入副本");
+        window.parent.loadPage('dungeons_test.html');
+        return false;
+      }
+      return true;
+    }
+
+    function scrollLogToBottom() {
+      setTimeout(() => {
+        logArea.scrollTop = logArea.scrollHeight;
+      }, 50);
+    }
+	
+    let isBattleInProgress = false;
+    // 執行戰鬥
+    async function executeBattle() {
+  if (isBattleInProgress) {
+    console.log("戰鬥已在進行中，忽略重複點擊");
+    return;
+  }
+  
+  if (!checkProgressBeforeBattle()) return;
+  
+  isBattleInProgress = true;
+  battleBtn.disabled = true;
+  retryBtn.disabled = true;
+  
+  console.log("🔍 執行戰鬥前的完整檢查...");
+  
+  try {
+    console.log("🔄 獲取最新戰鬥狀態...");
+    const latestUser = await fetchUser(true);
+    userData = latestUser;
+    
+    const serverRemaining = userData?.battle_cooldown_remaining || 0;
+    const serverReady = userData?.battle_ready !== false;
+    
+    const validatedRemaining = validateCooldownTime(serverRemaining, 0);
+    const shouldAllowBattle = validatedRemaining <= 0;
+    
+    console.log(`🔍 戰鬥前檢查結果:`);
+    console.log(`   服務器冷卻: ${serverRemaining}s`);
+    console.log(`   驗證後冷卻: ${validatedRemaining}s`);
+    console.log(`   服務器準備狀態: ${serverReady}`);
+    console.log(`   最終允許戰鬥: ${shouldAllowBattle}`);
+    
+    if (!shouldAllowBattle && validatedRemaining > 0) {
+      console.warn(`❌ 戰鬥被冷卻阻止，剩餘: ${validatedRemaining}秒`);
+      
+      if (validatedRemaining > 30) {
+        const shouldReset = confirm(`檢測到冷卻時間異常 (${validatedRemaining}秒)，這可能是系統錯誤。\n\n是否要重新整理頁面來重置狀態？`);
+        if (shouldReset) {
+          window.location.reload();
+          return;
+        }
+      } else {
+        alert(`戰鬥冷卻中，請等待 ${validatedRemaining} 秒`);
+      }
+      
+      initializeBattleButtons(userData);
+      isBattleInProgress = false;
+      return;
+    }
+    
+    if (serverRemaining > 30 && shouldAllowBattle) {
+      console.warn(`⚠️ 服務器冷卻數據異常但允許戰鬥，可能需要檢查後端邏輯`);
+    }
+    
+  } catch (error) {
+    console.error("獲取最新狀態失敗:", error);
+    
+    if (error.message.includes('fetch') || error.message.includes('network')) {
+      const shouldProceed = confirm("無法確認戰鬥狀態（網路問題），是否仍要嘗試戰鬥？");
+      if (!shouldProceed) {
+        isBattleInProgress = false;
+        battleBtn.disabled = false;
+        retryBtn.disabled = false;
+        return;
+      }
+    } else {
+      alert("無法確認戰鬥狀態，請重新整理頁面");
+      isBattleInProgress = false;
+      battleBtn.disabled = false;
+      retryBtn.disabled = false;
+      return;
+    }
+  }
+  
+  showBattleLoading(true);
+  logArea.innerHTML = "";
+  retryBtn.style.display = "none";
+  nextBtn.style.display = "none";
+  battleBtn.style.display = "none";
+  document.getElementById("leaveBtn").style.display = "none";
+
+  try {
+    console.log("🚀 發送戰鬥請求...");
+    const res = await SecureAPI.post(`${API}/battle_dungeon`, {
+      dungeon: dungeon,
+      layer: layer
+    });
+    
+    console.log("戰鬥請求回應狀態:", res.status);
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.log("戰鬥錯誤資料:", errorData);
+      
+      if (errorData.cooldown_remaining) {
+        const cooldownTime = validateCooldownTime(errorData.cooldown_remaining, 0);
+        
+        if (cooldownTime > 30) {
+          const shouldReset = confirm(`服務器返回異常冷卻時間 (${cooldownTime}秒)，這可能是系統錯誤。\n\n是否要重新整理頁面？`);
+          if (shouldReset) {
+            window.location.reload();
+            return;
+          }
+        }
+        
+        alert(`戰鬥冷卻中，請等待 ${cooldownTime} 秒`);
+        
+        try {
+          const updatedUser = await fetchUser();
+          userData = updatedUser;
+          initializeBattleButtons(updatedUser);
+        } catch (e) {
+          console.error("更新使用者狀態失敗:", e);
+        }
+        showBattleLoading(false);
+        
+        // 🚀 根據當前狀態恢復按鈕
+        if (layer < currentProgress && !isLastLayer) {
+          retryBtn.style.display = "inline-block";
+          nextBtn.style.display = "inline-block";
+        } else {
+          battleBtn.style.display = "inline-block";
+        }
+        
+        isBattleInProgress = false;
+        return;
+      }
+      throw new Error(errorData.error || '戰鬥失敗');
+    }
+    
+    const data = await res.json();
+    console.log("✅ 戰鬥成功完成");
+    
+    const log = data.battle_log;
+    if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
+
+    if (data.user) {
+      userData = data.user;
+      console.log("戰鬥後更新的使用者資料:", userData);
+    }
+
+    try {
+      if (window.devTools?.cache) {
+        window.devTools.clearUserCache();
+      }
+      
+      if (data.success) {
+        monsterCache.clear();
+        console.log('🧹 已清除怪物快取');
+      }
+    } catch (cacheError) {
+      console.warn('清除快取失敗:', cacheError);
+    }
+
+    setTimeout(() => {
+      showBattleLoading(false);
+      playBattleLog(log).then(() => {
+        isBattleInProgress = false;
+        
+        if (data.success) {
+          // 🚀 戰鬥勝利後重新載入使用者資料
+          fetchUser(true).then(updatedUser => {
+            userData = updatedUser;
+            console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser);
+            userDiv.innerHTML = formatStats(updatedUser);
+            
+            const serverCooldown = updatedUser.battle_cooldown_remaining || 0;
+            console.log("伺服器返回的冷卻時間:", serverCooldown);
+            
+            initializeBattleButtons(updatedUser);
+          }).catch(error => {
+            console.error('重新載入使用者資料失敗:', error);
+          });
+
+          if (data.is_last_layer) {
+            showVictoryEffect();
+            document.getElementById("leaveBtn").style.display = "inline-block";
+          } else {
+            // 🚀 戰鬥勝利後，總是顯示再戰一次和下一層（除非是BOSS）
+            retryBtn.style.display = "inline-block";
+            nextBtn.style.display = "inline-block";
+            
+            console.log("🕒 戰鬥勝利，立即設定30秒冷卻並開始倒數");
+            updateBattleButton(retryBtn, 30, "再戰一次");
+            startCooldownTimer(30);
+            
+            fetchUser(true).then(updatedUser => {
+              const actualCooldown = updatedUser.battle_cooldown_remaining || 0;
+              console.log("🔧 API回應後更正冷卻時間:", actualCooldown);
+              
+              if (actualCooldown > 0 && Math.abs(actualCooldown - 30) > 1) {
+                console.log("⚠️ 更正冷卻時間差異過大，重新設定為:", actualCooldown);
+                if (cooldownTimer) {
+                  clearInterval(cooldownTimer);
+                  cooldownTimer = null;
+                }
+                updateBattleButton(retryBtn, actualCooldown, "再戰一次");
+                startCooldownTimer(actualCooldown);
+              }
+            }).catch(error => {
+              console.error('獲取實際冷卻時間失敗:', error);
+            });
+            
+            nextBtn.onclick = async () => {
+              await fetchProgress();
+              
+              if (cooldownTimer) {
+                clearInterval(cooldownTimer);
+                cooldownTimer = null;
+              }
+              
+              try {
+                let remainingCooldown = currentRemainingTime;
+                
+                console.log(`🎯 使用當前倒數器的剩餘時間: ${remainingCooldown}s`);
+                
+                const cooldownParam = remainingCooldown > 2 ? `&cooldown=${remainingCooldown}` : '';
+                const nextUrl = `dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
+                
+                console.log("🔗 跳轉到:", nextUrl);
+                
+                setTimeout(() => {
+                  window.parent.loadPage(nextUrl);
+                }, 500);
+              } catch (error) {
+                console.error("準備跳轉時發生錯誤:", error);
+                setTimeout(() => {
+                  window.parent.loadPage(`dungeon_layer_test.html?dungeon=${dungeon}&layer=${layer + 1}`);
+                }, 500);
+              }
+            };
+          }
+
+          const winMsg = document.createElement("div");
+          winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
+          logArea.appendChild(winMsg);
+          scrollLogToBottom();
+
+		if (data.rewards) {
+		  const { 
+		    base_exp, 
+		    exp_luck_bonus, 
+		    leveled_up, 
+		    actual_drops, 
+		    round_1_bonus,
+		    round_2_bonus,
+		    round_3_bonus,
+		    drops 
+		  } = data.rewards;
+		  
+		  fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
+		    const rewardLog = document.createElement("div");
+		    rewardLog.className = "reward-message";
+		    
+		    let expText = `<br><strong>🎁 戰利品：</strong><br>獲得 ${base_exp} 經驗值`;
+		    
+		    if (exp_luck_bonus > 0) {
+		      expText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>🍀 幸運加成！額外獲得 ${exp_luck_bonus} 經驗值！</span>`;
+		    }
+		    
+		    if (leveled_up) {
+		      expText += `<br><span style='color:red'>🎊 等級提升！</span>`;
+		    }
+		    
+		    let dropText = "";
+		    
+		    const hasActualDrops = actual_drops && Object.keys(actual_drops).length > 0;
+		    const originalDrops = drops || [];
+		    
+		    if (hasActualDrops) {
+		      dropText += "<br><strong>📦 獲得物品：</strong>";
+		      
+		      const round1Items = round_1_bonus || {};
+		      const round2Items = round_2_bonus || {};
+		      const round3Items = round_3_bonus || {};
+		      
+		      for (const [itemId, totalQuantity] of Object.entries(actual_drops)) {
+		        const meta = itemMap[itemId] || { name: itemId, special: 0 };
+		        
+		        const round1Bonus = round1Items[itemId] || 0;
+		        const round2Bonus = round2Items[itemId] || 0;
+		        const round3Bonus = round3Items[itemId] || 0;
+		        const totalLuckBonus = round1Bonus + round2Bonus + round3Bonus;
+		        const baseQuantity = totalQuantity - totalLuckBonus;
+		        
+		        let itemText = "";
+		        
+		        if (meta.special === 2) {
+		          itemText = `<br><span style='color:crimson'>【超稀有】${meta.name} × ${totalQuantity}</span>`;
+		        } else if (meta.special === 1) {
+		          itemText = `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${totalQuantity}</span>`;
+		        } else if (meta.special === 3) {
+		          itemText = `<br><span style='color:#FFD306'>【罕見】${meta.name} × ${totalQuantity}</span>`;
+		        } else {
+		          itemText = `<br>${meta.name} × ${totalQuantity}`;
+		        }
+		        
+		        if (totalLuckBonus > 0) {
+		          let bonusDetails = [];
+		          
+		          if (round1Bonus > 0) {
+		            bonusDetails.push(`第一輪幸運 +${round1Bonus}`);
+		          }
+		          if (round2Bonus > 0) {
+		            bonusDetails.push(`第二輪幸運 +${round2Bonus}`);
+		          }
+		          if (round3Bonus > 0) {
+		            bonusDetails.push(`第三輪幸運 +${round3Bonus}`);
+		          }
+		          
+		          const bonusText = bonusDetails.join('，');
+		          itemText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;margin-left:20px;'>🍀 幸運觸發！${bonusText}，額外獲得 ${totalLuckBonus} 個</span>`;
+		        }
+		        
+		        dropText += itemText;
+		      }
+		      
+		      const allLuckItems = {...round1Items, ...round2Items, ...round3Items};
+		      const totalLuckQuantity = Object.values(allLuckItems).reduce((sum, qty) => sum + qty, 0);
+		      const uniqueLuckItems = Object.keys(allLuckItems).length;
+		      
+		      if (totalLuckQuantity > 0) {
+		        dropText += `<br><br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>✨ 幸運觸發了 ${uniqueLuckItems} 種道具，總計額外獲得 ${totalLuckQuantity} 個道具！</span>`;
+		        
+		        const round1Total = Object.values(round1Items).reduce((sum, qty) => sum + qty, 0);
+		        const round2Total = Object.values(round2Items).reduce((sum, qty) => sum + qty, 0);
+		        const round3Total = Object.values(round3Items).reduce((sum, qty) => sum + qty, 0);
+		        
+		        let roundDetails = [];
+		        if (round1Total > 0) roundDetails.push(`第一輪: ${round1Total}個`);
+		        if (round2Total > 0) roundDetails.push(`第二輪: ${round2Total}個`);
+		        if (round3Total > 0) roundDetails.push(`第三輪: ${round3Total}個`);
+		        
+		        if (roundDetails.length > 1) {
+		          dropText += `<br><span style='color:gold;font-size:0.9em;margin-left:20px;'>各輪詳情：${roundDetails.join('，')}</span>`;
+		        }
+		      }
+		      
+		    } else {
+		      let hasGuaranteedDrops = false;
+		      let totalGuaranteedItems = 0;
+		      
+		      for (const drop of originalDrops) {
+		        if (drop.rate >= 1.0) {
+		          hasGuaranteedDrops = true;
+		          totalGuaranteedItems++;
+		        }
+		      }
+		      
+		      if (hasGuaranteedDrops) {
+		        dropText += `<br><span style='color:orange'>⚠️ 背包已滿，無法獲得 ${totalGuaranteedItems} 種必定掉落的道具</span>`;
+		      } else {
+		        const hasAnyDropChance = originalDrops.some(drop => drop.rate > 0);
+		        if (hasAnyDropChance) {
+		          dropText += "<br>本次運氣不佳，沒有掉落物品 😔";
+		        } else {
+		          dropText += "<br>此怪物沒有掉落物品";
+		        }
+		      }
+		    }
+		    
+		    rewardLog.innerHTML = expText + dropText;
+		    logArea.appendChild(rewardLog);
+		    scrollLogToBottom();
+		  });
+		}
+        } else {
+          showDefeatEffect();
+          const loseMsg = document.createElement("div");
+          loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
+          logArea.appendChild(loseMsg);
+          const failMsg = document.createElement("div");
+          failMsg.innerHTML = `<br>❌ ${data.message}`;
+          logArea.appendChild(failMsg);
+          scrollLogToBottom();
+          document.getElementById("leaveBtn").style.display = "inline-block";
+        }
+      });
+    }, 1000);
+    
+  } catch (err) {
+    console.error("戰鬥執行錯誤:", err);
+    showBattleLoading(false);
+    logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
+    document.getElementById("leaveBtn").style.display = "inline-block";
+    
+    // 🚀 根據當前狀態恢復按鈕
+    if (layer < currentProgress && !isLastLayer) {
+      retryBtn.style.display = "inline-block";
+      nextBtn.style.display = "inline-block";
+    } else {
+      battleBtn.style.display = "inline-block";
+    }
+    
+    battleBtn.disabled = false;
+    isBattleInProgress = false;
+  }
+}
+
+    // 開始戰鬥函數
+    window.startBattle = executeBattle;
+
+    // 重試戰鬥函數
+    function retryBattle() {
+	  if (isBattleInProgress) {
+	    console.log("戰鬥已在進行中，忽略重試請求");
+	    return;
+	  }
+	  
+	  hideVictoryEffect();
+	  hideDefeatEffect();
+	  executeBattle();
+	}
+    window.retryBattle = retryBattle;
+
+    function playBattleLog(log) {
+      return new Promise((resolve) => {
+        logArea.innerHTML = "";
+        let roundIndex = 0;
+        let actionIndex = 0;
+
+        function nextLine() {
+          if (roundIndex >= log.length) {
+            clearInterval(player);
+            resolve();
+            return;
+          }
+
+          const round = log[roundIndex];
+          if (actionIndex === 0) {
+            const roundTitle = document.createElement("div");
+            roundTitle.innerHTML = `<span style='color:#ffa500'>────────────── 第 ${round.round} 回合 ──────────────</span>`;
+            logArea.appendChild(roundTitle);
+            scrollLogToBottom();
+          }
+
+          const line = round.actions[actionIndex];
+          const entry = document.createElement("div");
+          
+          let formattedLine = line;
+          
+          if (formattedLine.includes('你受到') || 
+              formattedLine.includes('你的 HP') ||
+              formattedLine.includes('對你造成') ||
+              (formattedLine.includes('你使用') && formattedLine.includes('目前 HP'))) {
+            formattedLine = formattedLine.replace(
+              /（目前 HP：(\d+\/\d+)）/g, 
+              '（目前 HP：<span class="player-hp">$1</span>）'
+            );
+            formattedLine = formattedLine.replace(
+              /你的 HP：(\d+\/\d+)/g, 
+              '你的 HP：<span class="player-hp">$1</span>'
+            );
+          }
+          else {
+            formattedLine = formattedLine.replace(
+              /（對方 HP：(\d+\/\d+)）/g, 
+              '（對方 HP：<span class="monster-hp">$1</span>）'
+            );
+            formattedLine = formattedLine.replace(
+              /（目前 HP：(\d+\/\d+)）/g, 
+              '（目前 HP：<span class="monster-hp">$1</span>）'
+            );
+          }
+          
+          if (formattedLine !== line) {
+            entry.innerHTML = formattedLine;
+          } else {
+            entry.textContent = line;
+          }
+          
+          logArea.appendChild(entry);
+          scrollLogToBottom();
+
+          actionIndex++;
+          if (actionIndex >= round.actions.length) {
+            roundIndex++;
+            actionIndex = 0;
+          }
+        }
+
+        const player = setInterval(nextLine, 400);
+      });
+    }
+
+async function preloadDungeonData() {
+  console.log('🎯 預載入副本相關資料...');
+  
+  try {
+    if (dungeonData) {
+      const currentDungeon = dungeonData.find(d => d.id === dungeon);
+      if (currentDungeon) {
+        const allMonsterIds = [...currentDungeon.monsters, currentDungeon.bossId];
+        
+        const preloadPromises = allMonsterIds.map(monsterId => 
+          fetchMonster(monsterId).catch(error => {
+            console.warn(`預載入怪物 ${monsterId} 失敗:`, error);
+            return null;
+          })
+        );
+        
+        await Promise.allSettled(preloadPromises);
+        console.log('✅ 副本怪物資料預載入完成');
+      }
+    }
+  } catch (error) {
+    console.warn('預載入副本資料失敗:', error);
+  }
+}
+
+    onAuthStateChanged(auth, async (user) => {
+	  if (user) {
+	    try {
+	      PerformanceMonitor.startTiming('dungeonPageInit');
+	      await fetchProgress(true);
+	      await loadLayer();
+	      
+	      preloadDungeonData().catch(error => {
+	        console.warn('背景預載入失敗:', error);
+	      });
+	      
+	      PerformanceMonitor.endTiming('dungeonPageInit');
+	      console.log('🎉 副本頁面初始化完成');
+	      
+	    } catch (error) {
+	      console.error('副本頁面初始化失敗:', error);
+	      alert('頁面載入失敗，請重新整理');
+	    }
+	  } else {
+	    window.parent.location.href = "/SFL/login.html";
+	  }
+	});
+
+if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+  setInterval(() => {
+    const cacheSize = monsterCache.size;
+    const memoryUsage = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : '未知';
+    
+    console.log(`📊 記憶體狀態 - 怪物快取: ${cacheSize} 項目, JS記憶體: ${memoryUsage}MB`);
+    
+    if (cacheSize > 20) {
+      monsterCache.clear();
+      console.log('🧹 清理過多的怪物快取項目');
+    }
+  }, 30000);
+  
+  window.dungeonDebug = {
+    cache: monsterCache,
+    userData: () => userData,
+    clearMonsterCache: () => {
+      monsterCache.clear();
+      console.log('🧹 怪物快取已清除');
+    },
+    preloadAll: preloadDungeonData
+  };
+}
+
+window.emergencyResetCooldown = function() {
+  if (confirm('緊急重置冷卻狀態？（僅限開發測試）')) {
+    if (cooldownTimer) {
+      clearInterval(cooldownTimer);
+      cooldownTimer = null;
+    }
+    updateBattleButton(battleBtn, 0, "開始戰鬥");
+    updateBattleButton(retryBtn, 0, "再戰一次");
+    console.log('🚨 緊急重置完成');
+  }
+};
+
+if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+  setInterval(async () => {
+    if (userData) {
+      try {
+        const currentUser = await fetchUser(false);
+        const serverCooldown = currentUser.battle_cooldown_remaining || 0;
+        const currentCooldown = currentRemainingTime;
+        
+        console.log(`🔍 狀態監控 - 服務器: ${serverCooldown.toFixed(2)}s, 本地: ${currentCooldown}s`);
+        
+        if (Math.abs(serverCooldown - currentCooldown) > 5 && serverCooldown > 0) {
+          console.warn(`⚠️ 冷卻時間差異較大，可能需要同步`);
+        }
+      } catch (error) {
+        console.warn('狀態監控失敗:', error);
+      }
+    }
+  }, 10000);
+  
+  console.log('🔧 開發模式已啟用，使用 emergencyResetCooldown() 來緊急重置冷卻');
+}
+  </script>
+</body>
+</html>
