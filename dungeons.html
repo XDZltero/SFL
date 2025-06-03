@@ -61,15 +61,39 @@
         for (const dungeon of dungeons) {
           const totalLayers = dungeon.monsters.length + 1;
           const current = progress[dungeon.id] ?? 0;
-          const targetLayer = Math.min(current, totalLayers - 1);
+          
+          let targetLayer;
+          let isReturnToLayer = false; // 標記是否為回到上一層
+          
+          if (current === 0) {
+            // 無進度記錄，從第0層開始
+            targetLayer = 0;
+          } else {
+            // 有進度記錄，進入上一層（但不能小於0）
+            targetLayer = Math.max(current - 1, 0);
+            isReturnToLayer = current > 0; // 標記這是回到上一層
+          }
+          
+          // 確保不超過最大層數
+          targetLayer = Math.min(targetLayer, totalLayers - 1);
+          
+          const isLastLayer = (targetLayer === totalLayers - 1);
 
-          let text = `進入第 ${targetLayer + 1} 層`;
-          let cls = "button-normal";
-          if (targetLayer === totalLayers - 1) {
+          let text, cls;
+          
+          if (isLastLayer) {
+            // BOSS關卡
             text = "進入 BOSS 關卡";
             cls = "button-boss";
+          } else if (isReturnToLayer) {
+            // 回到上一層
+            text = `回到第 ${targetLayer + 1} 層`;
+            cls = "button-normal";
+          } else {
+            // 首次挑戰或從第一層開始
+            text = targetLayer === 0 ? "從第一層開始" : `進入第 ${targetLayer + 1} 層`;
+            cls = "button-normal";
           }
-          if (targetLayer === 0) text = "從第一層開始";
 
           let lockReason = "";
           const preTaskId = dungeon["Pre-Task"];
@@ -87,7 +111,7 @@
             lockReason = lockReason ? `${lockReason}<br>${taskText}` : taskText;
           }
 
-          let buttonHtml = `<button class="${cls}" onclick="window.parent.loadPage('dungeon_layer.html?dungeon=${dungeon.id}&layer=${targetLayer}')">${text}</button>`;
+          let buttonHtml = `<button class="${cls}" onclick="window.parent.loadPage('dungeon_layer_test.html?dungeon=${dungeon.id}&layer=${targetLayer}')">${text}</button>`;
           if (lockReason) {
             buttonHtml = `<p style=\"color:red\">${lockReason}</p>`;
           }
@@ -101,6 +125,9 @@
                 <h2>${dungeon.name}</h2>
                 <p>${dungeon.description}</p>
                 <p>層數：${totalLayers}，入場限制：Lv.${dungeon.min_level}</p>
+                <p style="color: #ffd93d; font-size: 0.9em;">
+                  ${current > 0 ? `目前進度：第 ${current} 層已通關` : '尚未挑戰'}
+                </p>
                 ${buttonHtml}
               </div>
             </div>
