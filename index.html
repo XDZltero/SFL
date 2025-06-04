@@ -67,7 +67,8 @@
       main: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/MainBGM-7xSR0UHxcWpAzsEaWxPzP5oJQYoK44.mp3",
       boss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/Last_Boss_Battle_theme_v2-zrhJSBVfzYfK17ro58EyHtmr0smIxi.mp3",
       worldBoss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/World_Boss_Battle_theme-1iojoQSoKrHoSGqZX5R6NrXmPwGAJ0.mp3",
-      story: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/StoryPage-XBTqYtVyxoO0C48l0UPrKtutWNgB2t.mp3"
+      story: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/StoryPage-XBTqYtVyxoO0C48l0UPrKtutWNgB2t.mp3",
+      shop: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/shopping-q24OYvstO8UhhwbbZBgoh17nRQyFG7.mp3"
     };
 
     // 🎵 音樂切換函數
@@ -90,7 +91,9 @@
         let targetVolume = volumeSlider.value;
         // if (musicType === "story") {
         //   targetVolume = volumeSlider.value * 0.7; // 故事模式音量降低30%，營造安靜閱讀氛圍
-        // }
+        // }else if (musicType === "shop") {
+            targetVolume = volumeSlider.value * 0.8; // 商店模式音量降低20%
+          }
         
         bgm.volume = targetVolume;
         bgm.muted = muted;
@@ -109,7 +112,7 @@
           switchMusic("boss");
           break;
           
-        case "switchToWorldBossMusic": // 🆕 世界王音樂
+        case "switchToWorldBossMusic": //世界王音樂
           switchMusic("worldBoss");
           break;
           
@@ -117,8 +120,12 @@
           switchMusic("main");
           break;
 
-        case "switchToStoryMusic": // 🆕 新增故事音樂指令
+        case "switchToStoryMusic": // 故事音樂指令
           switchMusic("story");
+          break;
+
+        case "switchToShopMusic": // 商店音樂指令
+          switchMusic("shop");
           break;
       
         default:
@@ -225,14 +232,16 @@
       // 🎵 根據頁面自動切換音樂
       if (page.includes("world_boss.html")) {
         switchMusic("worldBoss");
-      } else if (page.includes("story.html")) { // 🆕 進入故事頁面立即切換音樂
-        console.log("🎵 進入故事頁面，切換到故事音樂");
+      } else if (page.includes("story.html")) { // 故事頁面
         switchMusic("story");
-      } else if (page.includes("dungeon_layer") && currentBgm === "boss") {
-        // 保持 boss 音樂
+      }else if (page.includes("shop.html")) { // 商店頁面
+      switchMusic("shop");
+      }else if (page.includes("dungeon_layer") && currentBgm === "boss") {
+        // boss 音樂
       } else if (!page.includes("dungeon_layer") && 
                  !page.includes("story.html") && 
                  !page.includes("world_boss.html") && 
+                 !page.includes("shop.html") &&
                  currentBgm !== "main") {
         // 🎵 離開特殊頁面時恢復主音樂
         switchMusic("main");
