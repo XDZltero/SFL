@@ -198,8 +198,9 @@
     
     .category-count {
       font-size: 0.8em;
-      color: #888;
-      margin-left: 5px;
+      color: #aaa;
+      font-weight: bold;
+      text-shadow: 0 0 3px rgba(255,255,255,0.2);
     }
 
     /* 禮包卡片特殊樣式 */
