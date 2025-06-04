@@ -13,6 +13,7 @@
     "evade": 0.25,
     "atk_speed": 100,
     "luck": 300,
+    "penetrate": 100,
     "other_bonus": 0.1
   },
   "phases": {
