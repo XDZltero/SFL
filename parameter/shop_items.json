@@ -19,25 +19,19 @@
   {
     "id": "starter_bundle",
     "name": "新手禮包",
-    "description": "適合新手的道具組合包，包含基礎製作材料。",
+    "description": "贈送給新手的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，可透過 30 等解鎖世界王低機率取得。",
     "type": "bundle",  
     "items": [     
       {
-        "item_id": "bone",
-        "quantity": 10
-      },
-      {
-        "item_id": "slime_core", 
+        "item_id": "reset_stats_ticket",
         "quantity": 5
       },
       {
-        "item_id": "moss_branches",
-        "quantity": 3
+        "item_id": "chaos_breath", 
+        "quantity": 5
       }
     ],
-    "cost": {
-      "world_boss_token": 5
-    },
+    "cost": {},
     "reset_type": "weekly",
     "limit_per_account": 10,
     "limit_per_reset": 2,
