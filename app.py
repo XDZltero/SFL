@@ -2819,7 +2819,9 @@ def validate_shop_purchase(user_id, item_id, user_items, user_purchases, user_le
                     return False, f"已達{reset_names.get(reset_type, reset_type)}限購數量"
         
         # 檢查消耗道具是否足夠
-        if shop_item["type"] == "trade" or shop_item["type"] == "bundle":
+        if not shop_item.get("cost") or len(shop_item["cost"]) == 0:
+            pass
+        elif shop_item["type"] == "trade" or shop_item["type"] == "bundle":
             for cost_item, cost_amount in shop_item["cost"].items():
                 owned_amount = user_items.get(cost_item, 0)
                 if owned_amount < cost_amount:
@@ -2849,7 +2851,7 @@ def process_shop_purchase(user_id, item_id, user_items, user_purchases):
         updated_items = user_items.copy()
         
         # 消耗道具 (只有非免費道具才需要消耗)
-        if shop_item["type"] == "trade" or shop_item["type"] == "bundle":
+        if shop_item.get("cost") and len(shop_item["cost"]) > 0 and (shop_item["type"] == "trade" or shop_item["type"] == "bundle"):
             for cost_item, cost_amount in shop_item["cost"].items():
                 updated_items[cost_item] = updated_items.get(cost_item, 0) - cost_amount
                 if updated_items[cost_item] <= 0:
