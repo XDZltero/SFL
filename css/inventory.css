@@ -706,5 +706,57 @@ body.dialog-open .dialog-box::before {
 }
 
 
+.guaranteed-success {
+  animation: neonGlow 1.5s ease-in-out infinite alternate;
+  text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+  color: #00ff00 !important;
+  font-weight: 900;
+}
 
+@keyframes neonGlow {
+  from {
+    text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+    transform: scale(1);
+  }
+  to {
+    text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00, 0 0 45px #00ff00, 0 0 60px #00ff00;
+    transform: scale(1.05);
+  }
+}
+
+/* 失敗加成說明樣式 */
+.failure-bonus {
+  color: #ff6b6b;
+  font-weight: 600;
+  text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+}
+
+.success-rate-display {
+  font-size: 1.1em;
+  font-weight: 700;
+  margin: 5px 0;
+}
+
+.craft-success-rate {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+}
+
+/* 強化按鈕特效 */
+.guaranteed-craft-btn {
+  background: linear-gradient(135deg, #00ff00 0%, #00cc00 100%) !important;
+  box-shadow: 0 6px 20px rgba(0, 255, 0, 0.6) !important;
+  animation: guaranteedButtonPulse 2s ease-in-out infinite;
+}
+
+@keyframes guaranteedButtonPulse {
+  0%, 100% { 
+    box-shadow: 0 6px 20px rgba(0, 255, 0, 0.6);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 10px 30px rgba(0, 255, 0, 0.8);
+    transform: scale(1.02);
+  }
+}
 
