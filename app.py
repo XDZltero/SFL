@@ -3423,14 +3423,7 @@ class ShopResetManager:
         except Exception as e:
             print(f"❌ 檢查月度重置失敗: {e}")
 
-# ✅ 修正：將初始化代碼移到類定義外部
 shop_reset_manager = ShopResetManager(db)
-
-try:
-    shop_reset_manager.start_scheduler()
-    print("✅ 商店重置排程器已啟動")
-except Exception as e:
-    print(f"❌ 排程器啟動失敗: {e}")
 
 if __name__ == "__main__":
     shop_reset_manager.start_scheduler()
