@@ -39,6 +39,15 @@
   <div class="reset-timer">
     <h3>⏰ 商店重置時間</h3>
     <div id="resetTimerDisplay">載入中...</div>
+      <div style="margin-top: 15px; text-align: center;">
+      <button class="square-btn" onclick="manualRefreshShop()" id="manualRefreshBtn" 
+              style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); min-width: 150px;">
+        🔄 手動刷新商店
+      </button>
+      <div id="lastRefreshTime" style="margin-top: 5px; font-size: 0.8em; color: #888;">
+        
+      </div>
+    </div>
   </div>
   
   <!-- 分類篩選 -->
@@ -114,6 +123,77 @@
         console.error("載入商店資料失敗:", error);
         alert("載入商店資料失敗，請重新整理頁面");
         throw error;
+      }
+    }
+
+    async function manualRefreshShop() {
+      const btn = document.getElementById("manualRefreshBtn");
+      const lastRefreshEl = document.getElementById("lastRefreshTime");
+      
+      // 防止重複點擊
+      if (btn.disabled) return;
+      
+      try {
+        btn.disabled = true;
+        btn.textContent = "🔄 刷新中...";
+        btn.style.opacity = "0.6";
+        
+        showLoading(true);
+        
+        // 清除快取
+        SecureAPI.clearCache();
+        
+        // 重新載入資料
+        await loadShopData();
+        
+        // 重新渲染
+        updateUserInfoDisplay();
+        updateUserCurrencyDisplay();
+        renderShopItems();
+        updateResetTimerDisplay();
+        
+        // 更新最後刷新時間
+        const now = new Date();
+        const taipeiTime = now.toLocaleString("zh-TW", {
+          timeZone: "Asia/Taipei",
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        
+        lastRefreshEl.textContent = `最後刷新：${taipeiTime}`;
+        
+        // 🎉 成功提示
+        btn.textContent = "✅ 刷新完成";
+        btn.style.background = "linear-gradient(135deg, #4CAF50 0%, #45a049 100%)";
+        
+        setTimeout(() => {
+          btn.textContent = "🔄 手動刷新商店";
+          btn.style.background = "";
+        }, 2000);
+        
+        console.log("✅ 手動刷新商店完成");
+        
+      } catch (error) {
+        console.error("❌ 手動刷新失敗:", error);
+        
+        btn.textContent = "❌ 刷新失敗";
+        btn.style.background = "linear-gradient(135deg, #f44336 0%, #d32f2f 100%)";
+        
+        setTimeout(() => {
+          btn.textContent = "🔄 手動刷新商店";
+          btn.style.background = "";
+        }, 3000);
+        
+        alert("刷新失敗，請稍後再試");
+        
+      } finally {
+        showLoading(false);
+        btn.disabled = false;
+        btn.style.opacity = "1";
       }
     }
 
@@ -735,7 +815,8 @@
         window.parent.location.href = "/SFL/login.html";
       }
     });
-  
+
+    window.manualRefreshShop = manualRefreshShop;
   </script>
 </body>
 </html>
