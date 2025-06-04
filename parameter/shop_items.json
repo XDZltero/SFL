@@ -45,8 +45,8 @@
       { "item_id": "chaos_breath", "quantity": 5 }
     ],
     "cost": {},
-    "reset_type": "weekly",
-    "limit_per_account": -1,
+    "reset_type": "none",
+    "limit_per_account": 1,
     "limit_per_reset": 1,
     "required_level": 5,
     "sort": 10,
@@ -189,16 +189,16 @@
     "item_id": "chaos_breath",
     "quantity": 1,
     "cost": {
-      "world_boss_token": 10
+      "world_boss_token": 3
     },
     "type": "trade",
     "reset_type": "weekly",
     "limit_per_account": 20,
     "limit_per_reset": 3,
-    "required_level": 20,
+    "required_level": 30,
     "sort": 100,
     "available": true,
-    "special": 2,
+    "special": 1,
     "category": "materials"
   },
   {
