@@ -200,26 +200,31 @@
       "1": {
         "attack": 20,
         "shield": 100,
+        "penetrate": 5,
         "atk_speed": 20
       },
       "2": {
         "attack": 20,
         "shield": 100,
+        "penetrate": 10,
         "atk_speed": 25
       },
       "3": {
         "attack": 20,
         "shield": 100,
+        "penetrate": 15,
         "atk_speed": 30
       },
       "4": {
         "attack": 20,
         "shield": 100,
+        "penetrate": 20,
         "atk_speed": 35
       },
       "5": {
         "attack": 20,
         "shield": 100,
+        "penetrate": 25,
         "atk_speed": 40,
         "other_bonus": 0.1
       }
