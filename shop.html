@@ -273,8 +273,7 @@
       const filteredItems = currentFilter === 'all' 
         ? shopItems 
         : shopItems.filter(item => item.category === currentFilter);
-
-      // 排序：可購買的在前，售完的在後，然後按sort排序
+    
       const sortedItems = filteredItems.sort((a, b) => {
         const aCanPurchase = canPurchaseItem(a).canPurchase;
         const bCanPurchase = canPurchaseItem(b).canPurchase;
@@ -285,7 +284,7 @@
         
         return a.sort - b.sort;
       });
-
+    
       let html = '';
       
       sortedItems.forEach(item => {
@@ -298,11 +297,7 @@
         let cardClass = 'shop-item-card';
         if (!canPurchase) cardClass += ' sold-out';
         if (item.type === 'free') cardClass += ' free';
-        
-        // 🆕 禮包標記
         if (item.type === 'bundle') cardClass += ' bundle';
-        
-        // 🆕 等級限制特殊樣式
         if (levelRestricted) cardClass += ' level-restricted';
         
         // 特殊性標記
@@ -319,30 +314,25 @@
           rarityLabel = '【罕見】';
         }
         
-        // 🆕 禮包類型標記
         if (item.type === 'bundle') {
           rarityLabel = '【禮包】' + rarityLabel;
         }
         
-        // 🆕 生成獲得物品列表
+        // 獲得物品列表 中文
         let receivedItemsHtml = '';
         if (item.type === 'bundle' && item.items) {
-          // 禮包：顯示多個道具
-          const itemsList = item.items.map(itemData => {
-            const meta = itemMeta[itemData.item_id];
-            const itemName = meta?.name || itemData.item_id;
-            return `${itemName} x${itemData.quantity}`;
+          const chineseItemsList = item.items.map(itemData => {
+            const chineseName = getItemChineseName(itemData.item_id);
+            return `${chineseName} x${itemData.quantity}`;
           }).join('、');
           
-          receivedItemsHtml = `<div class="shop-item-desc">📦 禮包內容：${itemsList}</div>`;
+          receivedItemsHtml = `<div class="shop-item-desc">📦 禮包內容：${chineseItemsList}</div>`;
         } else if (item.item_id) {
-          // 單一道具
-          const meta = itemMeta[item.item_id];
-          const itemName = meta?.name || item.item_id;
-          receivedItemsHtml = `<div class="shop-item-desc">📦 獲得：${itemName} x${item.quantity}</div>`;
+          const chineseName = getItemChineseName(item.item_id);
+          receivedItemsHtml = `<div class="shop-item-desc">📦 獲得：${chineseName} x${item.quantity}</div>`;
         }
         
-        // 🆕 等級要求顯示
+        // 等級要求顯示
         let levelRequirementHtml = '';
         if (requiredLevel > 1) {
           const levelStatusClass = userLevel >= requiredLevel ? 'level-met' : 'level-not-met';
@@ -354,20 +344,20 @@
           `;
         }
         
-        // 生成消費道具列表
+        // 消費道具列表 中文
         let costHtml = '';
         const itemIsFree = isFreeItem(item);
         if (itemIsFree) {
           costHtml = '<div class="cost-item"><span style="color: #4CAF50;">💰 免費領取</span></div>';
         } else {
           Object.entries(item.cost).forEach(([costItem, costAmount]) => {
-            const costMeta = itemMeta[costItem];
+            const chineseName = getItemChineseName(costItem);
             const owned = userItems[costItem] || 0;
             const sufficient = owned >= costAmount;
         
             costHtml += `
               <div class="cost-item">
-                <span class="cost-name">${costMeta?.name || costItem}:</span>
+                <span class="cost-name">${chineseName}:</span>
                 <div>
                   <span class="cost-amount">${costAmount}</span><br>
                   <span class="cost-owned ${sufficient ? '' : 'cost-insufficient'}">(擁有: ${owned})</span>
@@ -376,13 +366,11 @@
             `;
           });
         }
-
-        
+    
         // 限購資訊
         const totalPurchased = itemPurchases.total_purchased || 0;
         const resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
         
-        // 無限購買標記
         const isUnlimited = item.unlimited || item.limit_per_account === -1;
         let limitDisplay = '';
         
@@ -423,7 +411,7 @@
           </div>
         `;
       });
-
+    
       document.getElementById("shopItemGrid").innerHTML = html || '<div class="shop-item-card">此分類暫無商品</div>';
       
       // 更新分類計數
@@ -462,25 +450,23 @@
       const userLevel = userData.level || 1;
       const requiredLevel = item.required_level || 1;
       
-      // 🆕 生成獲得物品摘要
+      // 🆕 生成獲得物品摘要（使用中文名稱）
       let receivedItemsSummary = '';
       if (item.type === 'bundle' && item.items) {
         receivedItemsSummary = '<h4>📦 禮包內容</h4>';
         item.items.forEach(itemData => {
-          const meta = itemMeta[itemData.item_id];
-          const itemName = meta?.name || itemData.item_id;
+          const chineseName = getItemChineseName(itemData.item_id);
           const currentAmount = userItems[itemData.item_id] || 0;
           
           receivedItemsSummary += `
             <div class="cost-item">
-              <span>${itemName}:</span>
+              <span>${chineseName}:</span>
               <span>+${itemData.quantity} (總計: ${currentAmount + itemData.quantity})</span>
             </div>
           `;
         });
       } else if (item.item_id) {
-        const meta = itemMeta[item.item_id];
-        const itemName = meta?.name || item.item_id;
+        const chineseName = getItemChineseName(item.item_id);
         const currentAmount = userItems[item.item_id] || 0;
         
         receivedItemsSummary = `
@@ -491,7 +477,7 @@
         `;
       }
       
-      // 🆕 等級信息顯示
+      // 等級信息顯示
       let levelInfoHtml = '';
       if (requiredLevel > 1) {
         levelInfoHtml = `
@@ -509,6 +495,7 @@
         `;
       }
       
+      // 🆕 消費道具摘要（使用中文名稱）
       let costSummary = '';
       const itemIsFree = isFreeItem(item);
       
@@ -516,12 +503,12 @@
         costSummary = '<div style="color: #4CAF50; text-align: center; font-weight: bold;">🎁 此為免費道具</div>';
       } else {
         Object.entries(item.cost).forEach(([costItem, costAmount]) => {
-          const costMeta = itemMeta[costItem];
+          const chineseName = getItemChineseName(costItem);
           const owned = userItems[costItem] || 0;
           
           costSummary += `
             <div class="cost-item">
-              <span>消耗 ${costMeta?.name || costItem}:</span>
+              <span>消耗 ${chineseName}:</span>
               <span>${costAmount} (剩餘: ${owned - costAmount})</span>
             </div>
           `;
@@ -570,7 +557,46 @@
         const result = await response.json();
         
         if (response.ok && result.success) {
-          alert(`✅ ${result.message}`);
+          // 🆕 構建完全中文化的成功訊息
+          let successMessage = '';
+          
+          // 取得購買的商品資訊
+          const purchaseInfo = result.purchase_info || {};
+          const itemName = purchaseInfo.item_name || '未知商品';
+          const purchaseType = purchaseInfo.purchase_type || '購買';
+          const successfulPurchases = purchaseInfo.successful_purchases || 1;
+          
+          // 基本成功訊息
+          successMessage = `✅ 成功${purchaseType} ${itemName}`;
+          
+          // 如果是批量購買
+          if (successfulPurchases > 1) {
+            successMessage += ` x${successfulPurchases}`;
+          }
+          
+          // 🆕 處理獲得的道具（完全中文化）
+          const totalItemsReceived = purchaseInfo.total_items_received || {};
+          if (Object.keys(totalItemsReceived).length > 0) {
+            const chineseItemsList = [];
+            
+            for (const [itemId, quantity] of Object.entries(totalItemsReceived)) {
+              const chineseName = getItemChineseName(itemId);
+              chineseItemsList.push(`${chineseName} x${quantity}`);
+            }
+            
+            if (chineseItemsList.length > 0) {
+              successMessage += `\n\n📦 獲得道具：\n${chineseItemsList.join('\n')}`;
+            }
+          }
+          
+          // 部分成功提醒
+          const requestedPurchases = 1;
+          if (successfulPurchases < requestedPurchases) {
+            successMessage += `\n\n⚠️ 注意：僅完成 ${successfulPurchases}/${requestedPurchases} 次購買`;
+          }
+          
+          // 顯示完全中文化的成功訊息
+          alert(successMessage);
           
           // 更新本地資料
           userItems = result.user_items || userItems;
@@ -587,10 +613,30 @@
         
       } catch (error) {
         console.error("購買錯誤:", error);
-        alert("購買過程發生錯誤");
+        alert("❌ 購買過程發生錯誤");
       } finally {
         showLoading(false);
       }
+    }
+    // 將道具ID轉換為中文名稱
+    function getItemChineseName(itemId) {
+      const meta = itemMeta[itemId];
+      return meta ? meta.name : itemId;
+    }
+    
+    // 輔助函數：格式化道具列表為中文
+    function formatItemsListInChinese(itemsObject) {
+      if (!itemsObject || Object.keys(itemsObject).length === 0) {
+        return '';
+      }
+      
+      const itemsList = [];
+      for (const [itemId, quantity] of Object.entries(itemsObject)) {
+        const chineseName = getItemChineseName(itemId);
+        itemsList.push(`${chineseName} x${quantity}`);
+      }
+      
+      return itemsList.join('、');
     }
 
     // 關閉對話框
