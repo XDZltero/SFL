@@ -371,7 +371,9 @@
         const totalPurchased = itemPurchases.total_purchased || 0;
         const resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
         
-        const isUnlimited = item.unlimited || item.limit_per_account === -1;
+        const isUnlimited = (item.unlimited || item.limit_per_account === -1) && 
+                   (item.limit_per_reset === -1 || item.reset_type === 'none');
+
         let limitDisplay = '';
         
         if (isUnlimited) {
@@ -381,10 +383,29 @@
             </div>
           `;
         } else {
+          // 🚀 改進：根據不同限制類型顯示相應信息
+          let limitInfo = [];
+          
+          // 帳號總限制（如果不是-1）
+          if (item.limit_per_account !== -1) {
+            limitInfo.push(`總購買：${totalPurchased}/${item.limit_per_account}`);
+          }
+          
+          // 重置週期限制（如果有的話）
+          if (item.reset_type !== 'none' && item.limit_per_reset !== -1) {
+            const resetTypeName = getResetTypeName(item.reset_type);
+            limitInfo.push(`${resetTypeName}：${resetPurchased}/${item.limit_per_reset}`);
+          }
+          
+          // 🎯 特殊情況：只有帳號總限制是無限，但有重置限制
+          if (item.limit_per_account === -1 && item.reset_type !== 'none' && item.limit_per_reset !== -1) {
+            const resetTypeName = getResetTypeName(item.reset_type);
+            limitInfo = [`${resetTypeName}限購：${resetPurchased}/${item.limit_per_reset}`];
+          }
+          
           limitDisplay = `
             <div class="shop-item-limit ${item.reset_type}">
-              📦 總購買：${totalPurchased}/${item.limit_per_account}
-              ${item.reset_type !== 'none' ? ` | ${getResetTypeName(item.reset_type)}：${resetPurchased}/${item.limit_per_reset}` : ''}
+              📦 ${limitInfo.join(' | ')}
             </div>
           `;
         }
