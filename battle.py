@@ -625,6 +625,7 @@ def simulate_battle(user, monster, user_skill_dict):
                                          user_battle_stats["luck"]):
                             ele_mod = get_element_multiplier(skill.get("element", []), monster.get("element", []))
                             atk = user_battle_stats["attack"] * user_stats_mod["attack"]
+                            shield = monster["stats"]["shield"] * mon_stats_mod["shield"]
                             penetrate = user_battle_stats.get("penetrate", 0)
                             dmg = calculate_damage(atk, multiplier, user.get("other_bonus", 0), shield, penetrate)
                             dmg = round(dmg * user_level_mod * ele_mod * user_stats_mod["all_damage"])
@@ -792,7 +793,7 @@ def simulate_battle(user, monster, user_skill_dict):
                         atk = monster["stats"]["attack"] * mon_stats_mod["attack"]
                         shield = user_battle_stats["shield"] * user_stats_mod["shield"]
                         mon_penetrate = monster["stats"].get("penetrate", 0)
-                        dmg = calculate_damage(atk, skill["multiplier"], monster["stats"].get("phys_bonus", 0), shield, mon_penetrate)
+                        dmg = calculate_damage(atk, skill["multiplier"], monster["stats"].get("other_bonus", 0), shield, mon_penetrate)
                         dmg = round(dmg * mon_level_mod * ele_mod * mon_stats_mod["all_damage"])
                         
                         if target_invincible:
