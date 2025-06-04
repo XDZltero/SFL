@@ -65,7 +65,7 @@
   { "id": "moss_branches", "name": "青苔樹枝", "special": 0, "description": "沼澤中變異的樹木樹枝。" },
   { "id": "bone", "name": "骨頭", "special": 0, "description": "沼澤中不死者的骨頭。" },
   { "id": "slime_core", "name": "史萊姆黏液", "special": 0, "description": "棲息在沼澤地的史萊姆所產生的黏液。" },
-  { "id": "world_boss_token", "name": "「世界王」創世的精髓", "special": 3, "description": "凝聚創造的力量的精髓。\n參加 [世界王討伐] 必定能獲得的道具。" },
+  { "id": "world_boss_token", "name": "「世界王」創世精髓", "special": 3, "description": "凝聚創造的力量的精髓。\n參加 [世界王討伐] 必定能獲得的道具。" },
   { "id": "daily_coin", "name": "活躍硬幣", "special": 1, "description": "每日登入領取每日禮包獲得的硬幣。\n可在商店兌換道具。" },
   { "id": "reset_stats_ticket", "name": "能力值重置券", "special": 3, "description": "能夠完整重置能力值的票券。\n取得不易請謹慎使用。" }
 ]
