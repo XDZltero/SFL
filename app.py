@@ -2752,6 +2752,7 @@ def get_current_reset_periods():
     now_taipei = datetime.now(taipei_tz)
     
     # 週重置：以週一為起始的週數 (ISO week)
+    year = now_taipei.year
     year, week_num, _ = now_taipei.isocalendar()
     weekly_period = f"{year}-W{week_num:02d}"
     
@@ -3389,6 +3390,12 @@ class ShopResetManager:
 
 # ✅ 修正：將初始化代碼移到類定義外部
 shop_reset_manager = ShopResetManager(db)
+
+try:
+    shop_reset_manager.start_scheduler()
+    print("✅ 商店重置排程器已啟動")
+except Exception as e:
+    print(f"❌ 排程器啟動失敗: {e}")
 
 if __name__ == "__main__":
     shop_reset_manager.start_scheduler()
