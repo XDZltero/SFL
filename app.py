@@ -897,6 +897,77 @@ def user_cardss():
     cards_owned = user_data.get("cards_owned", {})
     return cards_owned  # 直接返回資料
 
+# 取得卡片失敗次數
+@app.route("/card_failure_counts", methods=["GET"])
+@require_auth
+@cached_response(ttl=30)  # 30秒快取
+def get_card_failure_counts():
+    """取得使用者所有卡片的失敗次數"""
+    try:
+        user_id = request.user_id
+        
+        failure_ref = db.collection("card_failure_counts").document(user_id)
+        failure_doc = failure_ref.get()
+        
+        if failure_doc.exists:
+            return failure_doc.to_dict().get("failure_counts", {})
+        else:
+            return {}
+            
+    except Exception as e:
+        return jsonify({"error": f"取得失敗次數失敗: {str(e)}"}), 500
+
+def calculate_enhanced_success_rate(base_rate, failure_count):
+    """計算強化後的成功率"""
+    # 每次失敗增加5%成功率，最高100%
+    enhanced_rate = base_rate + (failure_count * 0.05)
+    return min(enhanced_rate, 1.0)  # 最高100%
+
+def get_user_card_failure_counts(user_id):
+    """取得使用者卡片失敗次數"""
+    try:
+        failure_ref = db.collection("card_failure_counts").document(user_id)
+        failure_doc = failure_ref.get()
+        
+        if failure_doc.exists:
+            return failure_doc.to_dict().get("failure_counts", {})
+        else:
+            return {}
+    except Exception as e:
+        print(f"取得失敗次數失敗: {e}")
+        return {}
+
+def update_card_failure_count(user_id, card_id, is_success):
+    """更新卡片失敗次數"""
+    try:
+        failure_ref = db.collection("card_failure_counts").document(user_id)
+        failure_doc = failure_ref.get()
+        
+        if failure_doc.exists:
+            failure_data = failure_doc.to_dict()
+        else:
+            failure_data = {"user_id": user_id, "failure_counts": {}}
+        
+        failure_counts = failure_data.get("failure_counts", {})
+        
+        if is_success:
+            # 成功時清空失敗次數
+            if card_id in failure_counts:
+                del failure_counts[card_id]
+        else:
+            # 失敗時增加失敗次數
+            failure_counts[card_id] = failure_counts.get(card_id, 0) + 1
+        
+        failure_data["failure_counts"] = failure_counts
+        failure_data["last_update_time"] = time.time()
+        
+        failure_ref.set(failure_data)
+        return True
+        
+    except Exception as e:
+        print(f"更新失敗次數失敗: {e}")
+        return False
+
 @app.route("/cache_stats_detailed")
 def cache_stats_detailed():
     """提供詳細的快取統計資訊"""
@@ -967,10 +1038,17 @@ def craft_card():
     user_id = request.user_id
     card_id = data.get("card_id")
     materials = data.get("materials")
-    success_rate = data.get("success_rate", 1.0)
+    base_success_rate = data.get("success_rate", 1.0)
 
     if not card_id or not materials:
         return jsonify({"success": False, "error": "缺少必要參數"}), 400
+
+    # 🚀 新增：取得失敗次數並計算強化成功率
+    failure_counts = get_user_card_failure_counts(user_id)
+    failure_count = failure_counts.get(card_id, 0)
+    enhanced_success_rate = calculate_enhanced_success_rate(base_success_rate, failure_count)
+    
+    print(f"🎲 卡片 {card_id} 強化：基礎成功率 {base_success_rate*100:.0f}%，失敗次數 {failure_count}，強化後成功率 {enhanced_success_rate*100:.0f}%")
 
     # 取得卡片資訊
     user_ref = db.collection("users").document(user_id)
@@ -1007,22 +1085,60 @@ def craft_card():
         if user_items[mat_id] <= 0:
             del user_items[mat_id]
 
-    # 判斷成功與否
+    # 🚀 修改：使用強化後的成功率判斷成功與否
     import random
-    is_success = random.random() <= success_rate
+    is_success = random.random() <= enhanced_success_rate
+
+    # 使用批次操作確保原子性
+    batch = db.batch()
 
     # 更新道具資料
-    item_ref.set({"items": user_items})
+    batch.set(item_ref, {"items": user_items})
 
     if is_success:
         current_level = cards_owned.get(card_id, 0)
         cards_owned[card_id] = current_level + 1
         user_data["cards_owned"] = cards_owned
-        user_ref.set(user_data)
-
-        return jsonify({"success": True, "message": "製作成功"})
+        batch.set(user_ref, user_data)
+        
+        # 🚀 新增：成功時清空失敗次數
+        update_success = update_card_failure_count(user_id, card_id, True)
+        
+        success_message = "製作成功"
+        if failure_count > 0:
+            success_message += f"！（累積失敗 {failure_count} 次後成功）"
+        
+        try:
+            batch.commit()
+            print(f"✅ 卡片 {card_id} 強化成功，失敗次數已重置")
+            return jsonify({
+                "success": True, 
+                "message": success_message,
+                "failure_count_reset": failure_count > 0,
+                "previous_failure_count": failure_count
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": f"資料儲存失敗: {str(e)}"}), 500
     else:
-        return jsonify({"success": False, "message": "製作失敗，材料已消耗"})
+        # 🚀 新增：失敗時增加失敗次數
+        update_card_failure_count(user_id, card_id, False)
+        new_failure_count = failure_count + 1
+        
+        # 計算下次強化的成功率
+        next_success_rate = calculate_enhanced_success_rate(base_success_rate, new_failure_count)
+        
+        try:
+            batch.commit()
+            print(f"❌ 卡片 {card_id} 強化失敗，失敗次數增加至 {new_failure_count}")
+            return jsonify({
+                "success": False, 
+                "message": "製作失敗，材料已消耗",
+                "failure_count": new_failure_count,
+                "next_success_rate": next_success_rate,
+                "bonus_rate": (new_failure_count * 5)
+            })
+        except Exception as e:
+            return jsonify({"success": False, "error": f"資料儲存失敗: {str(e)}"}), 500
 
 @app.route("/save_equipment", methods=["POST"])
 @require_auth
