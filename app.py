@@ -1213,7 +1213,7 @@ def initialize_world_boss_global_state():
                 "total_damage_dealt": 0,
                 "created_time": time.time(),
                 "last_reset_time": time.time(),
-                "weekly_reset_time": datetime.datetime.now(pytz.timezone('Asia/Taipei')).isoformat()
+                "weekly_reset_time": datetime.now(pytz.timezone('Asia/Taipei')).isoformat()
             }
             
             global_ref.set(initial_state)
@@ -1276,7 +1276,7 @@ def get_world_boss_global_state():
 def is_maintenance_time():
     """檢查是否為跨日維護時間 (23:30~00:30)"""
     taipei_tz = pytz.timezone('Asia/Taipei')
-    now_taipei = datetime.datetime.now(taipei_tz)
+    now_taipei = datetime.now(taipei_tz)
     current_hour = now_taipei.hour
     current_minute = now_taipei.minute
     
@@ -1290,7 +1290,7 @@ def is_maintenance_time():
 def is_weekend_restriction():
     """檢查是否為週日限制時間"""
     taipei_tz = pytz.timezone('Asia/Taipei')
-    now_taipei = datetime.datetime.now(taipei_tz)
+    now_taipei = datetime.now(taipei_tz)
     
     # 週日 (0=週一, 6=週日)
     if now_taipei.weekday() == 6:  # 週日
@@ -1683,7 +1683,7 @@ def world_boss_status():
         # 🚀 添加下次重置時間計算
         try:
             taipei_tz = pytz.timezone('Asia/Taipei')
-            now_taipei = datetime.datetime.now(taipei_tz)
+            now_taipei = datetime.now(taipei_tz)
             
             # 計算下週一 00:31 的時間
             days_until_monday = (7 - now_taipei.weekday()) % 7
@@ -2229,7 +2229,7 @@ def world_boss_reset():
             "total_participants": 0,
             "total_damage_dealt": 0,
             "last_reset_time": time.time(),
-            "weekly_reset_time": datetime.datetime.now(pytz.timezone('Asia/Taipei')).isoformat(),
+            "weekly_reset_time": datetime.now(pytz.timezone('Asia/Taipei')).isoformat(),
             "created_time": time.time(),
             "reset_by": request.user_id  # 🚀 記錄重置者
         }
@@ -2532,7 +2532,7 @@ def check_weekly_reset():
     """檢查是否需要進行週一重置"""
     try:
         taipei_tz = pytz.timezone('Asia/Taipei')
-        now_taipei = datetime.datetime.now(taipei_tz)
+        now_taipei = datetime.now(taipei_tz)
         
         # 只在週一 01:30~02:00 之間進行重置
         if now_taipei.weekday() == 0 and 1 <= now_taipei.hour <= 2:
@@ -2546,7 +2546,7 @@ def check_weekly_reset():
                 # 檢查是否本週已經重置過
                 if last_reset_time:
                     try:
-                        last_reset = datetime.datetime.fromisoformat(last_reset_time.replace('Z', '+00:00'))
+                        last_reset = datetime.fromisoformat(last_reset_time.replace('Z', '+00:00'))
                         last_reset_taipei = last_reset.astimezone(taipei_tz)
                         
                         # 如果上次重置是上週，則執行重置
@@ -2618,7 +2618,7 @@ def get_shop_items():
 def get_current_reset_periods():
     """取得當前的重置週期字串"""
     taipei_tz = pytz.timezone('Asia/Taipei')
-    now_taipei = datetime.datetime.now(taipei_tz)
+    now_taipei = datetime.now(taipei_tz)
     
     # 週重置：以週一為起始的週數 (ISO week)
     year, week_num, _ = now_taipei.isocalendar()
