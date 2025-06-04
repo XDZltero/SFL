@@ -1408,7 +1408,7 @@ def calculate_world_boss_damage(user_data, world_boss_config):
                           element_multiplier * 
                           speed_multiplier * 
                           crit_multiplier * 
-                          player_damage_multiplier)  # 🚀 新增：階段傷害增益
+                          player_damage_multiplier)  # 階段傷害增益
         
         # 確保最小傷害
         final_damage = max(final_damage, 1)
