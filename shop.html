@@ -452,6 +452,32 @@ function setupVisibilityChangeDetection() {
       if (itemPurchases[resetKey] >= item.limit_per_reset) {
         return { canPurchase: false, reason: `已達${getResetTypeName(item.reset_type)}限購數量` };
       }
+
+      // 檢查重置週期限購時要考慮跨日重置
+      const resetType = item.reset_type;
+      if (resetType !== "none" && item.limit_per_reset > 0) {
+        const resetKey = `${resetType}_purchased`;
+        const lastPeriodKey = `last_${resetType}_period`;
+        
+        let currentPurchased = itemPurchases[resetKey] || 0;
+        const lastPeriod = itemPurchases[lastPeriodKey] || "";
+        const currentPeriod = getCurrentPeriod(resetType);
+        
+        //  如果週期已經改變，重置計數
+        if (lastPeriod !== currentPeriod && lastPeriod !== "") {
+          console.log(`🔄 前端檢測到週期變化 ${item.id}: ${lastPeriod} → ${currentPeriod}`);
+          currentPurchased = 0; // 重置為0
+        }
+        
+        // 使用重置後的計數進行檢查
+        if (currentPurchased >= item.limit_per_reset) {
+          return { 
+            canPurchase: false, 
+            reason: `已達${getResetTypeName(resetType)}限購數量` 
+          };
+        }
+      }
+      
       
       // 檢查道具是否足夠
       for (const [costItem, costAmount] of Object.entries(item.cost)) {
@@ -484,7 +510,36 @@ function setupVisibilityChangeDetection() {
       return names[resetType] || resetType;
     }
 
-    // 🆕 渲染商品卡片（支援等級限制顯示）
+    // 取得當前週期的函數
+function getCurrentPeriod(resetType) {
+  const now = new Date();
+  const taipeiTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+  
+  const year = taipeiTime.getFullYear();
+  const month = String(taipeiTime.getMonth() + 1).padStart(2, '0');
+  const day = String(taipeiTime.getDate()).padStart(2, '0');
+  
+  switch(resetType) {
+    case 'daily':
+      return `${year}-${month}-${day}`;
+    
+    case 'weekly':
+      // 計算 ISO 週數
+      const startOfYear = new Date(year, 0, 1);
+      const startOfWeek = startOfYear.getDay() || 7; // 週一為1，週日為7
+      const dayOfYear = Math.floor((taipeiTime - startOfYear) / (24 * 60 * 60 * 1000)) + 1;
+      const weekNum = Math.ceil((dayOfYear - startOfWeek + 1) / 7);
+      return `${year}-W${String(weekNum).padStart(2, '0')}`;
+    
+    case 'monthly':
+      return `${year}-${month}`;
+    
+    default:
+      return '';
+  }
+}
+
+    // 渲染商品卡片（支援等級限制顯示）
     function renderShopItems() {
       const filteredItems = currentFilter === 'all' 
         ? shopItems 
@@ -534,7 +589,7 @@ function setupVisibilityChangeDetection() {
           rarityLabel = '【禮包】' + rarityLabel;
         }
         
-        // 獲得物品列表 中文
+        // 獲得物品列表
         let receivedItemsHtml = '';
         if (item.type === 'bundle' && item.items) {
           const chineseItemsList = item.items.map(itemData => {
@@ -560,7 +615,7 @@ function setupVisibilityChangeDetection() {
           `;
         }
         
-        // 消費道具列表 中文
+        // 消費道具列表
         let costHtml = '';
         const itemIsFree = isFreeItem(item);
         if (itemIsFree) {
@@ -583,13 +638,23 @@ function setupVisibilityChangeDetection() {
           });
         }
     
-        // 限購資訊
+        // 🔥 修復：智能限購資訊顯示
         const totalPurchased = itemPurchases.total_purchased || 0;
-        const resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
+        
+        // 🔥 關鍵：計算當前週期的實際購買次數
+        let resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
+        if (item.reset_type !== 'none') {
+          const lastPeriod = itemPurchases[`last_${item.reset_type}_period`] || "";
+          const currentPeriod = getCurrentPeriod(item.reset_type);
+          
+          if (lastPeriod !== currentPeriod && lastPeriod !== "") {
+            resetPurchased = 0; // 跨週期重置顯示
+          }
+        }
         
         const isUnlimited = (item.unlimited || item.limit_per_account === -1) && 
-                   (item.limit_per_reset === -1 || item.reset_type === 'none');
-
+                           (item.limit_per_reset === -1 || item.reset_type === 'none');
+    
         let limitDisplay = '';
         
         if (isUnlimited) {
@@ -599,21 +664,20 @@ function setupVisibilityChangeDetection() {
             </div>
           `;
         } else {
-          // 🚀 改進：根據不同限制類型顯示相應信息
           let limitInfo = [];
           
-          // 帳號總限制（如果不是-1）
+          // 帳號總限制
           if (item.limit_per_account !== -1) {
             limitInfo.push(`總購買：${totalPurchased}/${item.limit_per_account}`);
           }
           
-          // 重置週期限制（如果有的話）
+          // 重置週期限制（使用修正後的計數）
           if (item.reset_type !== 'none' && item.limit_per_reset !== -1) {
             const resetTypeName = getResetTypeName(item.reset_type);
             limitInfo.push(`${resetTypeName}：${resetPurchased}/${item.limit_per_reset}`);
           }
           
-          // 🎯 特殊情況：只有帳號總限制是無限，但有重置限制
+          // 特殊情況處理
           if (item.limit_per_account === -1 && item.reset_type !== 'none' && item.limit_per_reset !== -1) {
             const resetTypeName = getResetTypeName(item.reset_type);
             limitInfo = [`${resetTypeName}限購：${resetPurchased}/${item.limit_per_reset}`];
