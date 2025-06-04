@@ -636,68 +636,50 @@
 }
 
 .user-section-row {
-  display: flex;
+  display: flex !important;
   justify-content: space-between;
   gap: 20px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.user-section-row .half {
-  flex: 1 1 calc(50% - 10px); /* 50% 寬度減去間距 */
-  min-width: 280px; /* 最小寬度確保內容可讀 */
+/* 修正：確保每個卡片佔一半寬度 */
+.user-section-row .user-currency.half {
+  flex: 1 1 calc(50% - 10px) !important;
+  min-width: 280px;
+  margin-bottom: 0 !important;
+  box-sizing: border-box;
 }
 
-/* 確保兩個卡片高度一致 */
+/* 保持原有的卡片樣式但調整佈局 */
 .user-section-row .user-currency {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.1) 100%);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 15px;
   height: auto;
-  min-height: 120px; /* 設定最小高度 */
+  min-height: 120px;
   display: flex;
   flex-direction: column;
 }
 
+/* 確保標題和內容的佈局 */
 .user-section-row .user-currency .fancy-subtitle {
-  margin-top: 0;
-  margin-bottom: 15px;
-  flex-shrink: 0; /* 標題不縮小 */
+  margin-top: 0 !important;
+  margin-bottom: 15px !important;
+  flex-shrink: 0;
 }
 
 .user-section-row .user-currency > div:last-child {
-  flex: 1; /* 內容區域占用剩餘空間 */
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-/* 響應式設計 - 手機版改為垂直排列 */
-@media (max-width: 768px) {
-  .user-section-row {
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .user-section-row .half {
-    flex: 1 1 100%;
-    min-width: auto;
-  }
-  
-  .user-section-row .user-currency {
-    min-height: auto;
-  }
-}
-
-/* 中等螢幕優化 */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .user-section-row {
-    gap: 15px;
-  }
-  
-  .user-section-row .half {
-    min-width: 250px;
-  }
-}
-
-/* 確保內容對齊 */
+/* 內容項目樣式 */
 .user-section-row .currency-item {
   display: flex;
   justify-content: space-between;
@@ -710,10 +692,48 @@
   border-bottom: none;
 }
 
-/* 如果內容較少，垂直居中對齊 */
-.user-info-minimal {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 80px;
+.user-section-row .currency-name {
+  color: #00ffff;
+  font-weight: 600;
+}
+
+.user-section-row .currency-amount {
+  color: #ffd93d;
+  font-weight: bold;
+}
+
+/* 響應式設計 - 平板電腦 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .user-section-row {
+    gap: 15px;
+  }
+  
+  .user-section-row .user-currency.half {
+    min-width: 250px;
+  }
+}
+
+/* 響應式設計 - 手機版改為垂直排列 */
+@media (max-width: 768px) {
+  .user-section-row {
+    flex-direction: column !important;
+    gap: 15px;
+  }
+  
+  .user-section-row .user-currency.half {
+    flex: 1 1 100% !important;
+    min-width: auto !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .user-section-row .user-currency {
+    min-height: auto;
+  }
+}
+
+/* 確保不會有奇怪的間距問題 */
+.user-section-row::after {
+  content: '';
+  display: table;
+  clear: both;
 }
