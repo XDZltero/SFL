@@ -1,8 +1,27 @@
 [
   {
-    "id": "daily_slime_core",
-    "name": "每日史萊姆黏液",
-    "description": "每天免費領取一個史萊姆黏液，適合新手使用。",
+    "id": "daily_bundle",
+    "name": "每日登入獎勵",
+    "description": "每天可以在商店領取一份登入禮物。",
+    "type": "bundle",  
+    "items": [     
+      { "item_id": "daily_coin", "quantity": 1 },
+      { "item_id": "chaos_breath", "quantity": 2 }
+    ],
+    "cost": {},
+    "reset_type": "daily",
+    "limit_per_account": -1,
+    "limit_per_reset": 1,
+    "required_level": 5,
+    "sort": 10,
+    "available": true,
+    "special": 1,
+    "category": "materials"
+  },
+  {
+    "id": "daily_chaos_breath",
+    "name": "混沌氣息",
+    "description": "每天免費領取一個混沌氣息。",
     "item_id": "slime_core",
     "quantity": 1,
     "cost": {},
@@ -22,21 +41,15 @@
     "description": "贈送給新手的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，可透過 30 等解鎖世界王低機率取得。",
     "type": "bundle",  
     "items": [     
-      {
-        "item_id": "reset_stats_ticket",
-        "quantity": 5
-      },
-      {
-        "item_id": "chaos_breath", 
-        "quantity": 5
-      }
+      { "item_id": "reset_stats_ticket", "quantity": 5 },
+      { "item_id": "chaos_breath", "quantity": 5 }
     ],
     "cost": {},
     "reset_type": "weekly",
-    "limit_per_account": 10,
-    "limit_per_reset": 2,
+    "limit_per_account": -1,
+    "limit_per_reset": 1,
     "required_level": 5,
-    "sort": 50,
+    "sort": 10,
     "available": true,
     "special": 1,
     "category": "materials"
@@ -195,12 +208,12 @@
     "item_id": "reset_stats_ticket",
     "quantity": 1,
     "cost": {
-      "world_boss_token": 50
+      "world_boss_token": 10
     },
     "type": "trade",
-    "reset_type": "monthly",
-    "limit_per_account": 3,
-    "limit_per_reset": 1,
+    "reset_type": "none",
+    "limit_per_account": -1,
+    "limit_per_reset": -1,
     "required_level": 30,
     "sort": 90,
     "available": true,
