@@ -57,6 +57,7 @@
     let itemMeta = [];
     let cardData = [];
     let userCards = {};
+    let cardFailureCounts = {};
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
@@ -65,16 +66,16 @@
       if (spinner) spinner.style.display = show ? "block" : "none";
     }
 
-    // 🚀 優化的遊戲資料載入（使用快取）
+    // 遊戲資料載入
     async function loadGameData() {
       PerformanceMonitor.startTiming('loadGameData');
       
       try {
-        // 🎯 並行載入所有靜態資料，優先使用快取
+        // 並行載入所有靜態資料，使用快取
         const [equipRes, itemRes, cardRes] = await Promise.all([
           SecureAPI.getStaticData('equips_table'),
           SecureAPI.getStaticData('items_table'), 
-          SecureAPI.getStaticData('cards_data') // 假設有這個端點
+          SecureAPI.getStaticData('cards_data')
         ]);
         
         equipData = Array.isArray(equipRes) ? equipRes : Object.values(equipRes);
@@ -88,7 +89,7 @@
           throw new Error('無效的道具資料格式');
         }
         
-        // cardData 可能需要從檔案載入
+        // cardData
         try {
           const cardResponse = await fetch("parameter/cards_data.json");
           cardData = await cardResponse.json();
@@ -106,6 +107,48 @@
       } finally {
         PerformanceMonitor.endTiming('loadGameData');
       }
+    }
+
+    async function loadCardFailureCounts() {
+      try {
+        const response = await SecureAPI.get(`${API_BASE}/card_failure_counts`, true);
+        if (response && response.ok) {
+          cardFailureCounts = await response.json();
+        } else {
+          cardFailureCounts = {};
+        }
+      } catch (error) {
+        console.error("載入卡片失敗次數失敗:", error);
+        cardFailureCounts = {};
+      }
+    }
+
+    function calculateEnhancedSuccessRate(baseRate, failureCount) {
+      const enhancedRate = baseRate + (failureCount * 0.05);
+      return Math.min(enhancedRate, 1.0); // 最高100%
+    }
+
+    // 格式化成功率顯示
+    function formatSuccessRateDisplay(baseRate, failureCount) {
+      const enhancedRate = calculateEnhancedSuccessRate(baseRate, failureCount);
+      const enhancedPercentage = (enhancedRate * 100).toFixed(0);
+      const bonusPercentage = failureCount * 5;
+      
+      let html = `<span class="craft-success-rate">成功率: `;
+      
+      if (enhancedRate >= 1.0) {
+        // 100% 必定成功
+        html += `<span class="guaranteed-success">必定成功 ${enhancedPercentage}%</span>`;
+      } else {
+        html += `${enhancedPercentage}%`;
+      }
+      
+      if (failureCount > 0) {
+        html += ` <span class="failure-bonus">(失敗加成 ${failureCount} 次：成功率增加 ${bonusPercentage}%)</span>`;
+      }
+      
+      html += `</span>`;
+      return html;
     }
 
 
@@ -388,6 +431,9 @@
     async function openCraftUI() {
       PerformanceMonitor.startTiming('openCraftUI');
       
+      // 載入失敗次數資料
+      await loadCardFailureCounts();
+      
       const dialog = document.getElementById("dialogContainer");
       
       let html = `
@@ -435,16 +481,20 @@
           const hasAllMaterials = Object.entries(levelData.materials)
             .every(([matId, qty]) => (userItems[matId] || 0) >= qty);
           
-          const successRate = (levelData.chance * 100).toFixed(0);
+          // 取得失敗次數並計算強化成功率
+          const failureCount = cardFailureCounts[card.id] || 0;
+          const baseSuccessRate = levelData.chance;
+          const successRateDisplay = formatSuccessRateDisplay(baseSuccessRate, failureCount);
+          const isGuaranteed = calculateEnhancedSuccessRate(baseSuccessRate, failureCount) >= 1.0;
           
           html += `
             <div class="craft-item">
               <strong>${card.name}</strong> Lv.${currentLevel} → Lv.${nextLevel}<br>
               <span class="materials-list">${card.description}</span><br>
               <span class="materials-list">所需材料: ${materials}</span><br>
-              <span class="materials-list">成功率: ${successRate}%</span><br>
+              <div class="success-rate-display">${successRateDisplay}</div>
               ${hasAllMaterials ? 
-                `<button class="square-btn" onclick="craftCard('${card.id}', ${currentLevel})">${currentLevel === 0 ? '製作' : '升級'}</button>` :
+                `<button class="square-btn ${isGuaranteed ? 'guaranteed-craft-btn' : ''}" onclick="craftCard('${card.id}', ${currentLevel})">${currentLevel === 0 ? '製作' : '升級'}${isGuaranteed ? ' (必定成功!)' : ''}</button>` :
                 '<span style="color: red">材料不足</span>'
               }
             </div>
@@ -485,8 +535,25 @@
           return;
         }
       }
-            
-      if (!confirm(`確定要${currentLevel === 0 ? '製作' : '升級'} ${card.name} 嗎？\n成功率: ${(levelData.chance * 100).toFixed(0)}%`)) {
+      
+      // 計算並顯示強化成功率
+      const failureCount = cardFailureCounts[cardId] || 0;
+      const baseSuccessRate = levelData.chance;
+      const enhancedSuccessRate = calculateEnhancedSuccessRate(baseSuccessRate, failureCount);
+      const enhancedPercentage = (enhancedSuccessRate * 100).toFixed(0);
+      
+      let confirmMessage = `確定要${currentLevel === 0 ? '製作' : '升級'} ${card.name} 嗎？\n`;
+      
+      if (enhancedSuccessRate >= 1.0) {
+        confirmMessage += `✨ 必定成功！(100%)`;
+      } else {
+        confirmMessage += `成功率: ${enhancedPercentage}%`;
+        if (failureCount > 0) {
+          confirmMessage += `\n(基礎 ${(baseSuccessRate * 100).toFixed(0)}% + 失敗加成 ${failureCount * 5}%)`;
+        }
+      }
+      
+      if (!confirm(confirmMessage)) {
         return;
       }
       
@@ -503,25 +570,46 @@
         
         if (response.ok) {
           if (result.success) {
-            alert(`✅ ${currentLevel === 0 ? '製作' : '升級'}成功！`);
+            // 成功處理
+            let successMsg = result.message;
+            if (result.failure_count_reset && result.previous_failure_count > 0) {
+              successMsg += `\n🎉 失敗次數已重置！(之前累積 ${result.previous_failure_count} 次失敗)`;
+            }
+            alert(`✅ ${successMsg}`);
+            
             const newLevel = currentLevel + 1;
             userCards[cardId] = newLevel;
             
-            // 🚀 立即更新本地裝備資料
+            // 重置本地失敗次數記錄
+            if (cardFailureCounts[cardId]) {
+              delete cardFailureCounts[cardId];
+            }
+            
+            // 立即更新本地裝備資料
             updateLocalEquipmentLevels(cardId, newLevel);
             
-            // 🔧 同步裝備等級到伺服器
+            // 同步裝備等級到伺服器
             try {
               await syncEquippedCardLevels(cardId, newLevel);
             } catch (syncError) {
               console.error("同步裝備等級時發生錯誤:", syncError);
             }
             
-            // 🧹 強制清除所有相關快取
+            // 強制清除所有相關快取
             await forceRefreshAllData();
             
           } else {
-            alert(`❌ ${result.message || '製作失敗，材料已消耗'}`);
+            // 失敗處理
+            let failMsg = result.message;
+            if (result.failure_count && result.next_success_rate) {
+              const nextRate = (result.next_success_rate * 100).toFixed(0);
+              failMsg += `\n 失敗次數: ${result.failure_count}`;
+              failMsg += `\n 下次成功率: ${nextRate}% (+${result.bonus_rate}% 加成)`;
+              
+              // 更新本地失敗次數記錄
+              cardFailureCounts[cardId] = result.failure_count;
+            }
+            alert(`❌ ${failMsg}`);
             
             // 製作失敗也要清除快取並重新載入，因為材料已經被消耗
             await forceRefreshAllData();
@@ -541,31 +629,26 @@
     }
 
     async function forceRefreshAllData() {
-      console.log("🧹 強制刷新所有相關資料...");
       
       try {
-        // 1. 清除前端所有快取
+        // 清除前端所有快取
         SecureAPI.clearCache();
-        console.log("✅ 前端快取已清除");
         
-        // 2. 發送後端快取清除請求（可選，針對嚴重快取問題）
+        // 發送後端快取清除請求（可選，針對嚴重快取問題）
         try {
           await fetch(`${API_BASE}/clear_cache`, { method: 'POST' });
-          console.log("✅ 後端快取清除請求已發送");
         } catch (cacheError) {
           console.warn("後端快取清除失敗:", cacheError);
         }
         
-        // 3. 等待一小段時間確保快取清除完成
+        // 等待一小段時間確保快取清除完成
         await new Promise(resolve => setTimeout(resolve, 200));
         
-        // 4. 強制重新載入所有使用者資料
+        // 強制重新載入所有使用者資料
         await loadUserData();
-        console.log("✅ 使用者資料已強制重新載入");
         
-        // 5. 重新渲染所有顯示
+        // 重新渲染所有顯示
         renderPage();
-        console.log("✅ 頁面已重新渲染");
         
       } catch (error) {
         console.error("強制刷新資料時發生錯誤:", error);
@@ -806,21 +889,22 @@
     window.craftCard = craftCard;
     window.saveEquipment = saveEquipment;
 
-    // 🚀 主要初始化函數
+    // 主要初始化函數
     async function runMain() {
       showLoading(true);
       
       try {
         PerformanceMonitor.startTiming('totalLoad');
         
-        // 🎯 並行載入遊戲資料和使用者資料
+        // 並行載入遊戲資料和使用者資料
         await Promise.all([
           loadGameData(),
-          loadUserData()
+          loadUserData(),
+          loadCardFailureCounts() 
         ]);
         
         PerformanceMonitor.endTiming('totalLoad');
-        console.log('🎉 背包頁面初始化完成');
+        console.log('🎉 背包頁面初始化完成（包含失敗次數系統）');
         
       } catch (error) {
         console.error("初始化錯誤:", error);
