@@ -80,6 +80,10 @@
     let userData = {}; 
     let currentFilter = 'all';
 
+    // 跨日檢測和自動刷新系統
+    let lastCheckDate = null;
+    let dailyRefreshTimer = null;
+
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
       const spinner = document.getElementById("loadingSpinner");
@@ -92,6 +96,138 @@
     return item.type === 'free' || 
            (item.cost && Object.keys(item.cost).length === 0);
   }
+
+  // 檢查是否跨日
+function checkForDayChange() {
+  const now = new Date();
+  const taipei = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+  const currentDate = taipei.toDateString(); // 例如: "Wed Jun 05 2025"
+  
+  if (lastCheckDate === null) {
+    lastCheckDate = currentDate;
+    return false;
+  }
+  
+  if (lastCheckDate !== currentDate) {
+    console.log(`🗓️ 檢測到跨日：${lastCheckDate} → ${currentDate}`);
+    lastCheckDate = currentDate;
+    return true;
+  }
+  
+  return false;
+}
+
+    // 強制刷新商店資料
+async function forceRefreshShopData() {
+  console.log("🔄 強制刷新商店資料（跨日重置）");
+  
+  try {
+    showLoading(true);
+    
+    // 清除快取
+    SecureAPI.clearCache();
+    
+    // 重新載入所有資料
+    await loadShopData();
+    
+    // 重新渲染界面
+    updateUserInfoDisplay();
+    updateUserCurrencyDisplay();
+    renderShopItems();
+    updateResetTimerDisplay();
+    
+    console.log("✅ 跨日刷新完成");
+    
+    // 顯示通知
+    if (confirm("🌅 偵測到新的一天！商店資料已自動更新。\n\n每日限購商品已重置，點擊確定查看最新狀態。")) {
+      // 使用者確認後不需要額外動作
+    }
+    
+  } catch (error) {
+    console.error("❌ 跨日刷新失敗:", error);
+    
+    // 刷新失敗時給予選項
+    if (confirm("⚠️ 自動刷新失敗，是否要重新整理頁面？")) {
+      window.location.reload();
+    }
+  } finally {
+    showLoading(false);
+  }
+}
+
+// 設定精確的跨日監控
+function setupDailyRefreshMonitor() {
+  // 🕛 每30秒檢查一次是否跨日
+  const checkInterval = setInterval(() => {
+    if (checkForDayChange()) {
+      // 延遲2分鐘執行刷新，確保後端重置完成
+      console.log("檢測到跨日，將在2分鐘後刷新資料...");
+      
+      setTimeout(() => {
+        forceRefreshShopData();
+      }, 2 * 60 * 1000); // 2分鐘後執行
+      
+      // 清除檢查計時器，避免重複執行
+      clearInterval(checkInterval);
+      
+      // 5分鐘後重新啟動監控（給刷新一些時間）
+      setTimeout(() => {
+        setupDailyRefreshMonitor();
+      }, 5 * 60 * 1000);
+    }
+  }, 30000); // 每30秒檢查
+  
+  console.log("跨日監控已啟動，每30秒檢查一次");
+}
+
+// 精確的零點刷新（作為備用方案）
+function setupMidnightRefresh() {
+  const now = new Date();
+  const taipei = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+  
+  // 計算到下一個 00:02 的時間（給後端重置1分鐘時間）
+  const nextMidnight = new Date(taipei);
+  nextMidnight.setDate(nextMidnight.getDate() + 1);
+  nextMidnight.setHours(0, 2, 0, 0); // 00:02
+  
+  const timeUntilMidnight = nextMidnight - taipei;
+  
+  if (timeUntilMidnight > 0) {
+    console.log(`⏰ 將在 ${Math.round(timeUntilMidnight / 1000 / 60)} 分鐘後（00:02）自動刷新商店`);
+    
+    dailyRefreshTimer = setTimeout(() => {
+      console.log("零點自動刷新觸發");
+      forceRefreshShopData();
+      
+      // 🔄 重新設定明天的零點刷新
+      setupMidnightRefresh();
+    }, timeUntilMidnight);
+  }
+}
+
+// 頁面可見性 API：頁面重新可見時檢查跨日
+function setupVisibilityChangeDetection() {
+  let lastVisibilityChange = Date.now();
+  
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      const timeSinceHidden = Date.now() - lastVisibilityChange;
+      
+      // 如果頁面隱藏超過10分鐘，檢查是否跨日
+      if (timeSinceHidden > 10 * 60 * 1000) {
+        console.log("頁面重新可見且超過10分鐘，檢查是否跨日");
+        
+        if (checkForDayChange()) {
+          console.log("頁面可見性檢查：發現跨日，執行刷新");
+          forceRefreshShopData();
+        }
+      }
+    } else {
+      lastVisibilityChange = Date.now();
+    }
+  });
+}
+
 
     // 載入商店資料
     async function loadShopData() {
@@ -787,6 +923,11 @@
         
         // 每分鐘更新一次重置時間
         setInterval(updateResetTimerDisplay, 60000);
+
+        // 🆕 啟動跨日監控系統
+        setupDailyRefreshMonitor();
+        setupMidnightRefresh();
+        setupVisibilityChangeDetection();
         
         console.log('商店頁面初始化完成');
         
@@ -797,6 +938,13 @@
         showLoading(false);
       }
     }
+
+    // 頁面卸載時清理計時器
+    window.addEventListener('beforeunload', () => {
+      if (dailyRefreshTimer) {
+        clearTimeout(dailyRefreshTimer);
+      }
+    });
 
     // 🛒 商店頁面音樂控制
     document.addEventListener('DOMContentLoaded', function() {
