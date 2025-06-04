@@ -37,7 +37,7 @@
   },
   {
     "id": "starter_bundle",
-    "name": "【Lv.10】新手禮包",
+    "name": "【Lv.5】新手禮包",
     "description": "贈送給新手的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，可透過 30 等解鎖世界王低機率取得。",
     "type": "bundle",  
     "items": [     
@@ -69,7 +69,7 @@
     "limit_per_reset": 1,
     "required_level": 5,
     "sort": 201,
-    "available": true,
+    "available": false,
     "special": 1,
     "category": "level_pack"
   },
