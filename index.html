@@ -73,34 +73,35 @@
 
     // 🎵 音樂切換函數
     function switchMusic(musicType) {
-      if (currentBgm === musicType) return;  
-        currentBgm = musicType;
-        bgm.pause();
-        
-        if (musicSources[musicType]) {
-          bgm.src = musicSources[musicType];
-        } else {
-          console.warn(`⚠️ 找不到音樂類型：${musicType}，使用主音樂`);
-          bgm.src = musicSources.main;
-          currentBgm = "main";
-        }
-        
-        bgm.load();
-        
-        // 🎵 根據音樂類型調整音量
-        let targetVolume = volumeSlider.value;
-        // if (musicType === "story") {
-        //   targetVolume = volumeSlider.value * 0.7; // 故事模式音量降低30%，營造安靜閱讀氛圍
-        // }else if (musicType === "shop") {
-            targetVolume = volumeSlider.value * 0.8; // 商店模式音量降低20%
-          }
-        
-        bgm.volume = targetVolume;
-        bgm.muted = muted;
-        bgm.play().catch(error => {
-          console.warn("音樂播放失敗:", error);
-        });
+      if (currentBgm === musicType) return;
+      
+      currentBgm = musicType;
+      bgm.pause();
+    
+      if (musicSources[musicType]) {
+        bgm.src = musicSources[musicType];
+      } else {
+        console.warn(`⚠️ 找不到音樂類型：${musicType}，使用主音樂`);
+        bgm.src = musicSources.main;
+        currentBgm = "main";
       }
+    
+      bgm.load();
+    
+      // 🎵 根據音樂類型調整音量
+      let targetVolume = volumeSlider.value;
+      if (musicType === "story") {
+        targetVolume = volumeSlider.value * 0.7; // 故事模式音量降低30%
+      } else if (musicType === "shop") {
+        targetVolume = volumeSlider.value * 0.8; // 商店模式音量降低20%
+      }
+    
+      bgm.volume = targetVolume;
+      bgm.muted = muted;
+      bgm.play().catch(error => {
+        console.warn("音樂播放失敗:", error);
+      });
+    }
 
     // 🎵 音樂控制訊息監聽
     window.addEventListener("message", (event) => {
