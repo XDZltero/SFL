@@ -2977,7 +2977,7 @@ def shop_user_purchases():
         return jsonify({"error": f"取得購買記錄失敗: {str(e)}"}), 500
 
 @app.route("/shop_purchase", methods=["POST"])
-@verify_firebase_token
+@require_auth
 def shop_purchase(user_id=None):
     data = request.get_json()
     item_id = data.get("item_id")
