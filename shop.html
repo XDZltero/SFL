@@ -657,9 +657,6 @@ function getCurrentPeriod(resetType) {
     
       const isUnlimited = (item.unlimited || item.limit_per_account === -1) && 
                          (item.limit_per_reset === -1 || item.reset_type === 'none');
-        
-        const isUnlimited = (item.unlimited || item.limit_per_account === -1) && 
-                           (item.limit_per_reset === -1 || item.reset_type === 'none');
     
         let limitDisplay = '';
         
