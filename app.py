@@ -391,7 +391,8 @@ def register():
             "other_bonus": 0,
             "accuracy": 1.0,
             "luck": 10,
-            "atk_speed": 100
+            "atk_speed": 100,
+            "penetrate": 0
         },
         "equipment": {
             "1": None,
@@ -783,8 +784,10 @@ def levelup():
             return jsonify({"error": f"無效屬性：{stat}"}), 400
         if stat == "hp":
             user["base_stats"][stat] += value * 5
-        else:
+        elif stat in ["attack", "luck", "atk_speed"]:
             user["base_stats"][stat] += value
+        else:
+            return jsonify({"error": f"請勿竄改成 {stat} 屬性。"}), 400
 
     user["stat_points"] -= total_points
     ref.set(user)
@@ -1097,7 +1100,8 @@ def reset_stats():
             "other_bonus": 0,
             "accuracy": 1.0,
             "luck": 10,
-            "atk_speed": 100
+            "atk_speed": 100,
+            "penetrate": 0
         }
         
         # 7. 更新使用者資料
