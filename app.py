@@ -3083,7 +3083,8 @@ class ShopResetManager:
         # 設定重置時間
         schedule.every().day.at("00:01").do(self.daily_reset)
         schedule.every().monday.at("00:01").do(self.weekly_reset)
-        schedule.every().month.do(self.monthly_reset)  # 每月1號
+        # 🔧 修正：每日檢查是否需要月度重置
+        schedule.every().day.at("00:01").do(self.check_monthly_reset)
         
         # 啟動背景執行緒
         self.reset_thread = threading.Thread(target=self._run_scheduler, daemon=True)
@@ -3096,10 +3097,10 @@ class ShopResetManager:
         while self.running:
             try:
                 schedule.run_pending()
-                time_module.sleep(60)  # 每分鐘檢查一次
+                time.sleep(60)  # 🔧 修正：改為 time.sleep 而不是 time_module.sleep
             except Exception as e:
                 print(f"排程器錯誤: {e}")
-                time_module.sleep(300)  # 錯誤時等待5分鐘再重試
+                time.sleep(300)  # 🔧 修正：錯誤時等待5分鐘再重試
     
     def daily_reset(self):
         """每日重置"""
@@ -3145,7 +3146,7 @@ class ShopResetManager:
             
         except Exception as e:
             print(f"❌ 每日重置失敗: {e}")
-    
+        
     def weekly_reset(self):
         """每週重置"""
         try:
@@ -3189,7 +3190,7 @@ class ShopResetManager:
             
         except Exception as e:
             print(f"❌ 每週重置失敗: {e}")
-    
+        
     def monthly_reset(self):
         """每月重置"""
         try:
@@ -3232,18 +3233,25 @@ class ShopResetManager:
             
         except Exception as e:
             print(f"❌ 每月重置失敗: {e}")
+
+    def check_monthly_reset(self):
+        """檢查是否需要執行月度重置"""
+        try:
+            taipei_tz = pytz.timezone('Asia/Taipei')
+            now_taipei = datetime.now(taipei_tz)
+            
+            # 只在每月1號執行月度重置
+            if now_taipei.day == 1:
+                print(f"🗓️ 檢測到月初，執行月度重置：{now_taipei.strftime('%Y-%m-%d')}")
+                self.monthly_reset()
+            
+        except Exception as e:
+            print(f"❌ 檢查月度重置失敗: {e}")
     
-    def stop_scheduler(self):
-        """停止排程器"""
-        self.running = False
-        if self.reset_thread:
-            self.reset_thread.join(timeout=5)
-        print("🛑 商店重置排程器已停止")
-
-shop_reset_manager = ShopResetManager(db)
-
-if __name__ == "__main__":
-    shop_reset_manager.start_scheduler()
-    import os
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    shop_reset_manager = ShopResetManager(db)
+    
+    if __name__ == "__main__":
+        shop_reset_manager.start_scheduler()
+        import os
+        port = int(os.environ.get("PORT", 10000))
+        app.run(host="0.0.0.0", port=port)
