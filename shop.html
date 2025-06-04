@@ -261,6 +261,7 @@ function setupVisibilityChangeDetection() {
         throw error;
       }
     }
+    
 
     async function manualRefreshShop() {
       const btn = document.getElementById("manualRefreshBtn");
@@ -271,10 +272,33 @@ function setupVisibilityChangeDetection() {
       
       try {
         btn.disabled = true;
-        btn.textContent = "🔄 刷新中...";
+        btn.textContent = "🔄 重置商品中...";
         btn.style.opacity = "0.6";
         
         showLoading(true);
+        
+        // 🆕 先調用重置API檢查過期商品
+        try {
+          const resetResponse = await SecureAPI.post(`${API_BASE}/shop_refresh_resets`, {});
+          const resetResult = await resetResponse.json();
+          
+          if (resetResult.success && resetResult.reset_count > 0) {
+            console.log(`🔄 商店重置完成：重置了 ${resetResult.reset_count} 個商品`);
+            
+            // 顯示重置結果在按鈕上
+            btn.textContent = `✨ 重置了 ${resetResult.reset_count} 個商品`;
+            
+            // 短暫延遲讓用戶看到重置結果
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } else {
+            console.log("ℹ️ 沒有商品需要重置");
+          }
+        } catch (resetError) {
+          console.error("❌ 重置檢查發生錯誤:", resetError);
+        }
+        
+        // 更新按鈕狀態
+        btn.textContent = "🔄 刷新資料中...";
         
         // 清除快取
         SecureAPI.clearCache();
@@ -311,7 +335,7 @@ function setupVisibilityChangeDetection() {
           btn.style.background = "";
         }, 2000);
         
-        console.log("✅ 手動刷新商店完成");
+        console.log("✅ 手動刷新商店完成（包含重置檢查）");
         
       } catch (error) {
         console.error("❌ 手動刷新失敗:", error);
