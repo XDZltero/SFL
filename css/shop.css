@@ -639,16 +639,81 @@
   display: flex;
   justify-content: space-between;
   gap: 20px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
 .user-section-row .half {
-  flex: 1 1 50%;
+  flex: 1 1 calc(50% - 10px); /* 50% 寬度減去間距 */
+  min-width: 280px; /* 最小寬度確保內容可讀 */
 }
 
+/* 確保兩個卡片高度一致 */
+.user-section-row .user-currency {
+  height: auto;
+  min-height: 120px; /* 設定最小高度 */
+  display: flex;
+  flex-direction: column;
+}
+
+.user-section-row .user-currency .fancy-subtitle {
+  margin-top: 0;
+  margin-bottom: 15px;
+  flex-shrink: 0; /* 標題不縮小 */
+}
+
+.user-section-row .user-currency > div:last-child {
+  flex: 1; /* 內容區域占用剩餘空間 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 響應式設計 - 手機版改為垂直排列 */
 @media (max-width: 768px) {
+  .user-section-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
   .user-section-row .half {
     flex: 1 1 100%;
+    min-width: auto;
+  }
+  
+  .user-section-row .user-currency {
+    min-height: auto;
   }
 }
 
+/* 中等螢幕優化 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .user-section-row {
+    gap: 15px;
+  }
+  
+  .user-section-row .half {
+    min-width: 250px;
+  }
+}
+
+/* 確保內容對齊 */
+.user-section-row .currency-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-section-row .currency-item:last-child {
+  border-bottom: none;
+}
+
+/* 如果內容較少，垂直居中對齊 */
+.user-info-minimal {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 80px;
+}
