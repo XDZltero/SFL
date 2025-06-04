@@ -2785,7 +2785,13 @@ def validate_shop_purchase(user_id, item_id, user_items, user_purchases, user_le
             return False, f"等級不足！需要達到 {required_level} 等才能購買此商品（目前等級：{user_level}）"
         
         # 檢查是否為無限購買道具
-        is_unlimited = shop_item.get("unlimited", False) or shop_item.get("limit_per_account", 0) == -1
+        is_unlimited = (
+            shop_item.get("unlimited", False)
+            or (
+                shop_item.get("limit_per_account", -1) == -1
+                and (shop_item.get("limit_per_reset", -1) == -1 or shop_item.get("reset_type", "none") == "none")
+            )
+        )
         
         if not is_unlimited:
             # 限購檢查（保持原有邏輯）
