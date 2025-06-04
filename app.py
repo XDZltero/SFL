@@ -2767,101 +2767,159 @@ def get_current_reset_periods():
         'daily': daily_period
     }
 
-def validate_shop_purchase(user_id, item_id, user_items, user_purchases, user_level):
-    shop_items = get_shop_items()
-    item = next((x for x in shop_items if x["id"] == item_id), None)
-    if not item:
-        return False, "找不到商品"
-
-    required_level = item.get("required_level", 1)
-    if user_level < required_level:
-        return False, f"等級不足，需 Lv.{required_level}，目前 Lv.{user_level}"
-
-    item_cost = item.get("cost", {})
-    item_type = item.get("type", "")
-    is_free = item_type == "free" or (isinstance(item_cost, dict) and len(item_cost) == 0)
-
-    purchases = user_purchases.get("purchases", {})
-    purchase_record = purchases.get(item_id, {})
-
-    limit_per_account = item.get("limit_per_account", -1)
-    limit_per_reset = item.get("limit_per_reset", -1)
-    reset_type = item.get("reset_type", "none")
-
-    if limit_per_account != -1 and purchase_record.get("total_purchased", 0) >= limit_per_account:
-        return False, "已達帳號限購次數"
-
-    if limit_per_reset != -1 and reset_type != "none":
-        if reset_type == "daily":
-            reset_key = "daily_purchased"
-        elif reset_type == "weekly":
-            reset_key = "weekly_purchased"
-        elif reset_type == "monthly":
-            reset_key = "monthly_purchased"
-        else:
-            reset_key = None
-
-        if reset_key and purchase_record.get(reset_key, 0) >= limit_per_reset:
-            return False, f"{reset_type} 限購已達上限"
-
-    # 如果不是免費，才需要檢查 cost
-    if not is_free:
-        for cost_item, cost_amount in item_cost.items():
-            if user_items.get(cost_item, 0) < cost_amount:
-                return False, f"{cost_item} 數量不足"
-
-    return True, ""
+def validate_shop_purchase(user_id, item_id, user_items, user_purchases, user_level=None):
+    """驗證商店購買請求 - 支援禮包驗證和等級限制"""
+    try:
+        shop_items = get_shop_items()
+        shop_item = next((item for item in shop_items if item["id"] == item_id), None)
+        
+        if not shop_item:
+            return False, "商品不存在"
+        
+        if not shop_item.get("available", True):
+            return False, "商品暫時不可購買"
+        
+        # 🆕 等級限制檢查
+        required_level = shop_item.get("required_level", 1)
+        if user_level and user_level < required_level:
+            return False, f"等級不足！需要達到 {required_level} 等才能購買此商品（目前等級：{user_level}）"
+        
+        # 檢查是否為無限購買道具
+        is_unlimited = shop_item.get("unlimited", False) or shop_item.get("limit_per_account", 0) == -1
+        
+        if not is_unlimited:
+            # 限購檢查（保持原有邏輯）
+            purchases = user_purchases.get("purchases", {})
+            item_purchases = purchases.get(item_id, {})
+            
+            if shop_item["limit_per_account"] > 0:
+                total_purchased = item_purchases.get("total_purchased", 0)
+                if total_purchased >= shop_item["limit_per_account"]:
+                    return False, "已達帳號總限購數量"
+            
+            # 重置週期限購檢查...（保持原有邏輯）
+            current_periods = get_current_reset_periods()
+            reset_type = shop_item["reset_type"]
+            
+            if reset_type != "none" and shop_item["limit_per_reset"] > 0:
+                period_key = f"{reset_type}_period"
+                purchased_key = f"{reset_type}_purchased"
+                last_period_key = f"last_{reset_type}_period"
+                
+                current_period = current_periods.get(reset_type)
+                last_period = item_purchases.get(last_period_key, "")
+                
+                if current_period != last_period:
+                    reset_purchased = 0
+                else:
+                    reset_purchased = item_purchases.get(purchased_key, 0)
+                
+                if reset_purchased >= shop_item["limit_per_reset"]:
+                    reset_names = {"daily": "每日", "weekly": "每週", "monthly": "每月"}
+                    return False, f"已達{reset_names.get(reset_type, reset_type)}限購數量"
+        
+        # 檢查消耗道具是否足夠
+        if shop_item["type"] == "trade" or shop_item["type"] == "bundle":
+            for cost_item, cost_amount in shop_item["cost"].items():
+                owned_amount = user_items.get(cost_item, 0)
+                if owned_amount < cost_amount:
+                    return False, f"道具 {cost_item} 數量不足 (需要:{cost_amount}, 擁有:{owned_amount})"
+        
+        # 🆕 檢查禮包道具999限制
+        is_valid_limit, limit_error = validate_bundle_limits(shop_item, user_items)
+        if not is_valid_limit:
+            return False, limit_error
+        
+        return True, ""
+        
+    except Exception as e:
+        print(f"驗證購買失敗: {e}")
+        return False, f"驗證過程發生錯誤: {str(e)}"
         
 def process_shop_purchase(user_id, item_id, user_items, user_purchases):
-    shop_items = get_shop_items()
-    item = next((x for x in shop_items if x["id"] == item_id), None)
-    if not item:
-        raise Exception("商品不存在")
-
-    item_cost = item.get("cost", {})
-    item_type = item.get("type", "")
-    is_free = item_type == "free" or (isinstance(item_cost, dict) and len(item_cost) == 0)
-
-    reward_item_id = item.get("item_id")
-    reward_quantity = item.get("quantity", 1)
-
-    # ✅ 扣除 cost（若非免費）
-    if not is_free:
-        for cost_item, cost_amount in item_cost.items():
-            user_items[cost_item] = user_items.get(cost_item, 0) - cost_amount
-
-    # ✅ 發送道具
-    user_items[reward_item_id] = user_items.get(reward_item_id, 0) + reward_quantity
-
-    # ✅ 更新購買紀錄
-    purchases = user_purchases.get("purchases", {})
-    purchase_record = purchases.get(item_id, {})
-    purchase_record["total_purchased"] = purchase_record.get("total_purchased", 0) + 1
-
-    reset_type = item.get("reset_type", "none")
-    now = datetime.now(pytz.timezone("Asia/Taipei"))
-
-    if reset_type == "daily":
-        current_period = now.strftime("%Y-%m-%d")
-        purchase_record["daily_purchased"] = purchase_record.get("daily_purchased", 0) + 1
-        purchase_record["last_daily_period"] = current_period
-
-    elif reset_type == "weekly":
-        year, week, _ = now.isocalendar()
-        current_period = f"{year}-W{week:02d}"
-        purchase_record["weekly_purchased"] = purchase_record.get("weekly_purchased", 0) + 1
-        purchase_record["last_weekly_period"] = current_period
-
-    elif reset_type == "monthly":
-        current_period = now.strftime("%Y-%m")
-        purchase_record["monthly_purchased"] = purchase_record.get("monthly_purchased", 0) + 1
-        purchase_record["last_monthly_period"] = current_period
-
-    purchases[item_id] = purchase_record
-    user_purchases["purchases"] = purchases
-    user_purchases["last_update_time"] = time.time()
-
-    return user_items, user_purchases
+    """處理商店購買邏輯 - 支援多道具禮包"""
+    try:
+        shop_items = get_shop_items()
+        shop_item = next((item for item in shop_items if item["id"] == item_id), None)
+        
+        if not shop_item:
+            raise ValueError("商品不存在")
+        
+        # 更新用戶道具
+        updated_items = user_items.copy()
+        
+        # 消耗道具 (只有非免費道具才需要消耗)
+        if shop_item["type"] == "trade" or shop_item["type"] == "bundle":
+            for cost_item, cost_amount in shop_item["cost"].items():
+                updated_items[cost_item] = updated_items.get(cost_item, 0) - cost_amount
+                if updated_items[cost_item] <= 0:
+                    del updated_items[cost_item]
+        
+        # 🆕 處理多道具禮包
+        if shop_item["type"] == "bundle" and "items" in shop_item:
+            # 禮包：添加多個道具
+            for item_data in shop_item["items"]:
+                target_item = item_data["item_id"]
+                item_quantity = item_data["quantity"]
+                updated_items[target_item] = updated_items.get(target_item, 0) + item_quantity
+        else:
+            # 單一道具：使用原有邏輯
+            target_item = shop_item["item_id"]
+            updated_items[target_item] = updated_items.get(target_item, 0) + shop_item["quantity"]
+        
+        # 更新購買記錄（邏輯保持不變）
+        updated_purchases = user_purchases.copy()
+        purchases = updated_purchases.get("purchases", {})
+        item_purchases = purchases.get(item_id, {
+            "total_purchased": 0,
+            "daily_purchased": 0,
+            "weekly_purchased": 0,
+            "monthly_purchased": 0,
+            "last_daily_period": "",
+            "last_weekly_period": "",
+            "last_monthly_period": "",
+            "first_purchase_time": 0,
+            "last_purchase_time": 0
+        })
+        
+        # 取得當前週期
+        current_periods = get_current_reset_periods()
+        reset_type = shop_item["reset_type"]
+        current_time = time.time()
+        
+        # 更新購買計數
+        item_purchases["total_purchased"] += 1
+        item_purchases["last_purchase_time"] = current_time
+        
+        if item_purchases["first_purchase_time"] == 0:
+            item_purchases["first_purchase_time"] = current_time
+        
+        # 處理重置週期計數
+        if reset_type != "none":
+            period_key = f"{reset_type}_period"
+            purchased_key = f"{reset_type}_purchased"
+            last_period_key = f"last_{reset_type}_period"
+            
+            current_period = current_periods.get(reset_type)
+            last_period = item_purchases.get(last_period_key, "")
+            
+            if current_period != last_period:
+                # 新週期，重置計數
+                item_purchases[purchased_key] = 1
+                item_purchases[last_period_key] = current_period
+            else:
+                item_purchases[purchased_key] = item_purchases.get(purchased_key, 0) + 1
+        
+        # 更新購買記錄
+        purchases[item_id] = item_purchases
+        updated_purchases["purchases"] = purchases
+        updated_purchases["last_update_time"] = current_time
+        
+        return updated_items, updated_purchases
+        
+    except Exception as e:
+        print(f"處理購買失敗: {e}")
+        raise e
 
 # 🏪 商店系統API端點
 # 驗證禮包是否會超過999限制
