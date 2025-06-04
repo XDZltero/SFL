@@ -44,9 +44,9 @@
   <!-- 分類篩選 -->
   <div class="shop-filters">
     <button class="filter-btn active" data-category="all">全部商品 <span class="category-count" id="count-all">0</span></button>
-    <button class="filter-btn" data-category="reset_free">定期免費 <span class="category-count" id="count-daily_free">0</span></button>
-    <button class="filter-btn" data-category="level_pack">等級禮包 <span class="category-count" id="count-materials">0</span></button>
-    <button class="filter-btn" data-category="world_boss">世界王 <span class="category-count" id="count-consumables">0</span></button>
+    <button class="filter-btn" data-category="reset_free">定期免費 <span class="category-count" id="count-reset_free">0</span></button>
+    <button class="filter-btn" data-category="level_pack">等級禮包 <span class="category-count" id="count-level_pack">0</span></button>
+    <button class="filter-btn" data-category="world_boss">世界王 <span class="category-count" id="count-world_boss">0</span></button>
   </div>
   
   <!-- 商品展示區 -->
@@ -420,7 +420,7 @@
 
     // 更新分類計數
     function updateCategoryCounts() {
-      const categories = ['all', 'daily_free', 'materials', 'consumables'];
+      const categories = ['all', 'reset_free', 'level_pack', 'world_boss'];
       
       categories.forEach(category => {
         const count = category === 'all' 
