@@ -1,44 +1,44 @@
 [
   {
     "id": "daily_bundle",
-    "name": "每日登入獎勵",
-    "description": "每天可以在商店領取一份登入禮物。",
+    "name": "每日登入禮包",
+    "description": "每日可以在商店領取登入獎勵。",
     "type": "bundle",  
     "items": [     
       { "item_id": "daily_coin", "quantity": 1 },
-      { "item_id": "chaos_breath", "quantity": 2 }
+      { "item_id": "chaos_breath", "quantity": 1 }
     ],
     "cost": {},
     "reset_type": "daily",
     "limit_per_account": -1,
     "limit_per_reset": 1,
     "required_level": 5,
-    "sort": 10,
-    "available": true,
-    "special": 1,
-    "category": "materials"
-  },
-  {
-    "id": "daily_chaos_breath",
-    "name": "混沌氣息",
-    "description": "每天免費領取一個混沌氣息。",
-    "item_id": "slime_core",
-    "quantity": 1,
-    "cost": {},
-    "type": "free",
-    "reset_type": "daily",
-    "limit_per_account": -1,
-    "limit_per_reset": 1,
-    "required_level": 1,
-    "sort": 1,
+    "sort": 100,
     "available": true,
     "special": 0,
-    "category": "daily_free"
+    "category": "reset_free"
+  },
+  {
+    "id": "weekly_chaos_breath",
+    "name": "混沌氣息",
+    "description": "每週可以免費領取 7 個混沌氣息。",
+    "item_id": "chaos_breath",
+    "quantity": 7,
+    "cost": {},
+    "type": "free",
+    "reset_type": "weekly",
+    "limit_per_account": -1,
+    "limit_per_reset": 1,
+    "required_level": 5,
+    "sort": 101,
+    "available": true,
+    "special": 0,
+    "category": "reset_free"
   },
   {
     "id": "starter_bundle",
-    "name": "新手禮包",
-    "description": "贈送給新手的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，可透過 30 等解鎖世界王低機率取得。",
+    "name": "【Lv.10】新手禮包",
+    "description": "贈送給新手的道具免費組合包。\n　　※ 請注意能力值重置券前期取得不易，可透過 30 等解鎖世界王低機率取得。",
     "type": "bundle",  
     "items": [     
       { "item_id": "reset_stats_ticket", "quantity": 5 },
@@ -49,157 +49,29 @@
     "limit_per_account": 1,
     "limit_per_reset": 1,
     "required_level": 5,
-    "sort": 10,
+    "sort": 200,
     "available": true,
     "special": 1,
-    "category": "materials"
+    "category": "level_pack"
   },
   {
-    "id": "intermediate_materials",
-    "name": "中級材料包",
-    "description": "包含中級副本的製作材料，適合中等級玩家。",
-    "type": "bundle",
-    "items": [
-      {
-        "item_id": "sky_beaf",
-        "quantity": 8
-      },
-      {
-        "item_id": "sky_stone",
-        "quantity": 5
-      },
-      {
-        "item_id": "griffin_claw",
-        "quantity": 3
-      }
+    "id": "lv10_bundle",
+    "name": "【Lv.10】啟程禮包",
+    "description": "贈送給剛出發冒險者的道具免費組合包。\n　　※ 請注意能力值重置券前期取得不易，可透過 30 等解鎖世界王低機率取得。",
+    "type": "bundle",  
+    "items": [     
+      { "item_id": "reset_stats_ticket", "quantity": 5 },
+      { "item_id": "chaos_breath", "quantity": 5 }
     ],
-    "cost": {
-      "world_boss_token": 15
-    },
-    "reset_type": "weekly",
-    "limit_per_account": 8,
-    "limit_per_reset": 2,
-    "required_level": 15,
-    "sort": 40,
-    "available": true,
-    "special": 1,
-    "category": "materials"
-  },
-  {
-    "id": "premium_bundle",
-    "name": "高級製作禮包",
-    "description": "高級製作材料禮包，包含稀有材料和混沌氣息。",
-    "type": "bundle",
-    "items": [
-      {
-        "item_id": "chaos_breath",
-        "quantity": 2
-      },
-      {
-        "item_id": "swamp_core",
-        "quantity": 3
-      },
-      {
-        "item_id": "sky_ragments", 
-        "quantity": 2
-      },
-      {
-        "item_id": "magic_fragment",
-        "quantity": 1
-      }
-    ],
-    "cost": {
-      "world_boss_token": 30
-    },
-    "reset_type": "monthly",
-    "limit_per_account": 5,
-    "limit_per_reset": 1,
-    "required_level": 25,
-    "sort": 10,
-    "available": true,
-    "special": 2,
-    "category": "materials"
-  },
-  {
-    "id": "expert_materials",
-    "name": "專家級材料包",
-    "description": "包含高級副本稀有材料，僅限高等級玩家購買。",
-    "type": "bundle",
-    "items": [
-      {
-        "item_id": "divine_fragment",
-        "quantity": 2
-      },
-      {
-        "item_id": "dimension_fragment",
-        "quantity": 2
-      },
-      {
-        "item_id": "nightmare_fragment",
-        "quantity": 3
-      }
-    ],
-    "cost": {
-      "world_boss_token": 50
-    },
-    "reset_type": "monthly",
-    "limit_per_account": 3,
-    "limit_per_reset": 1,
-    "required_level": 40,
-    "sort": 5,
-    "available": true,
-    "special": 2,
-    "category": "materials"
-  },
-  {
-    "id": "legendary_bundle",
-    "name": "傳說級禮包",
-    "description": "包含最頂級的製作材料，只有最高等級的玩家才能購買。",
-    "type": "bundle",
-    "items": [
-      {
-        "item_id": "chaos_breath",
-        "quantity": 5
-      },
-      {
-        "item_id": "reset_stats_ticket",
-        "quantity": 1
-      },
-      {
-        "item_id": "divine_fragment",
-        "quantity": 3
-      }
-    ],
-    "cost": {
-      "world_boss_token": 100
-    },
-    "reset_type": "monthly",
+    "cost": {},
+    "reset_type": "none",
     "limit_per_account": 1,
     "limit_per_reset": 1,
-    "required_level": 60,
-    "sort": 1,
-    "available": true,
-    "special": 3,
-    "category": "materials"
-  },
-  {
-    "id": "shop_chaos_breath",
-    "name": "混沌氣息",
-    "description": "狩獵怪物有很低的機率掉落的混沌氣息。製作高級卡片的重要材料。",
-    "item_id": "chaos_breath",
-    "quantity": 1,
-    "cost": {
-      "world_boss_token": 3
-    },
-    "type": "trade",
-    "reset_type": "weekly",
-    "limit_per_account": 20,
-    "limit_per_reset": 3,
-    "required_level": 30,
-    "sort": 100,
+    "required_level": 5,
+    "sort": 201,
     "available": true,
     "special": 1,
-    "category": "materials"
+    "category": "level_pack"
   },
   {
     "id": "shop_reset_ticket",
@@ -215,28 +87,28 @@
     "limit_per_account": -1,
     "limit_per_reset": -1,
     "required_level": 30,
-    "sort": 90,
+    "sort": 300,
     "available": true,
     "special": 3,
-    "category": "consumables"
+    "category": "world_boss"
   },
   {
-    "id": "basic_bones",
-    "name": "基礎骨頭材料",
-    "description": "新手專用的基礎製作材料，價格便宜。",
-    "item_id": "bone",
+    "id": "shop_chaos_breath",
+    "name": "混沌氣息禮包",
+    "description": "狩獵怪物有很低的機率掉落的混沌氣息。製作高級卡片的重要材料。",
+    "item_id": "chaos_breath",
     "quantity": 5,
     "cost": {
-      "world_boss_token": 2
+      "world_boss_token": 15
     },
     "type": "trade",
-    "reset_type": "daily",
+    "reset_type": "weekly",
     "limit_per_account": -1,
     "limit_per_reset": 5,
-    "required_level": 1,
-    "sort": 200,
+    "required_level": 30,
+    "sort": 301,
     "available": true,
-    "special": 0,
-    "category": "materials"
+    "special": 1,
+    "category": "world_boss"
   }
 ]
