@@ -705,125 +705,133 @@ function percent(val) {
 	}
 
     function formatStats(data) {
-      const b = data.base_stats;
-      const e = calculateEquipmentBonus(data.equipment || {}, equipData);
-      const levelMaxExp = levelExp[data.level] || 1;
-      const progress = percent(data.exp / levelMaxExp);
-
-      const getValue = (key) => (b[key] || 0) + (e[key] || 0);
-      const getFormatted = (key) => {
-        const isPercent = ["evade", "accuracy", "other_bonus"].includes(key);
-        const total = getValue(key);
-        const base = b[key] || 0;
-        const bonus = e[key] || 0;
-        
-        if (isPercent) {
-          return {
-            total: `${percent(total)}`,
-            detail: `${percent(base)} + ${percent(bonus)}`
-          };
-        } else {
-          return {
-            total: total.toString(),
-            detail: `${base} + ${bonus}`
-          };
-        }
-      };
-
-      const statsList = [
-        { key: "level", label: "等級", value: data.level },
-        { key: "exp", label: "經驗值", value: `${data.exp} (${progress})` },
-        { key: "hp", label: "生命值" },
-        { key: "attack", label: "攻擊力" },
-        { key: "shield", label: "護盾值" },
-        { key: "luck", label: "幸運值" },
-        { key: "accuracy", label: "命中率" },
-        { key: "evade", label: "迴避率" },
-        { key: "atk_speed", label: "攻擊速度" },
-        { key: "other_bonus", label: "額外傷害加成" },
-        { key: "stat_points", label: "剩餘能力值點數", value: data.stat_points },
-        { key: "skill_points", label: "剩餘技能點", value: data.skill_points }
-      ];
-
-      let html = `
-        <div class="player-info-container">
-          <h3 class="player-name">👤 ${data.nickname}</h3>
-          <div class="stats-container">
-      `;
-      
-      statsList.forEach(({ key, label, value }) => {
-        if (value !== undefined) {
-          html += `<div class="stat-item"><span>${label}:</span><span>${value}</span></div>`;
-        } else if (["hp", "attack", "shield", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
-          const formatted = getFormatted(key);
-          html += `<div class="stat-item"><span>${label}:</span><span>${formatted.total} (${formatted.detail})</span></div>`;
-        }
-      });
-      
-      html += '</div></div>';
-      return html;
-    }
+	  const b = data.base_stats;
+	  const e = calculateEquipmentBonus(data.equipment || {}, equipData);
+	  const levelMaxExp = levelExp[data.level] || 1;
+	  const progress = percent(data.exp / levelMaxExp);
+	
+	  const getValue = (key) => (b[key] || 0) + (e[key] || 0);
+	  const getFormatted = (key) => {
+	    const isPercent = ["evade", "accuracy", "other_bonus"].includes(key);
+	    const total = getValue(key);
+	    const base = b[key] || 0;
+	    const bonus = e[key] || 0;
+	    
+	    if (isPercent) {
+	      return {
+	        total: `${percent(total)}`,
+	        detail: `${percent(base)} + ${percent(bonus)}`
+	      };
+	    } else {
+	      return {
+	        total: total.toString(),
+	        detail: `${base} + ${bonus}`
+	      };
+	    }
+	  };
+	
+	  const statsList = [
+	    { key: "level", label: "等級", value: data.level },
+	    { key: "exp", label: "經驗值", value: `${data.exp} (${progress})` },
+	    { key: "hp", label: "生命值" },
+	    { key: "attack", label: "攻擊力" },
+	    { key: "shield", label: "護盾值" },
+	    { key: "luck", label: "幸運值" },
+	    { key: "accuracy", label: "命中率" },
+	    { key: "evade", label: "迴避率" },
+	    { key: "atk_speed", label: "攻擊速度" },
+	    { key: "other_bonus", label: "額外傷害加成" },
+	    { key: "penetrate", label: "護盾穿透" },
+	    { key: "stat_points", label: "剩餘能力值點數", value: data.stat_points },
+	    { key: "skill_points", label: "剩餘技能點", value: data.skill_points }
+	  ];
+	
+	  let html = `
+	    <div class="player-info-container">
+	      <h3 class="player-name">👤 ${data.nickname}</h3>
+	      <div class="stats-container">
+	  `;
+	  
+	  statsList.forEach(({ key, label, value }) => {
+	    if (value !== undefined) {
+	      html += `<div class="stat-item"><span>${label}:</span><span>${value}</span></div>`;
+	    } else if (["hp", "attack", "shield", "penetrate", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
+	      const formatted = getFormatted(key);
+	      html += `<div class="stat-item"><span>${label}:</span><span>${formatted.total} (${formatted.detail})</span></div>`;
+	    }
+	  });
+	  
+	  html += '</div></div>';
+	  return html;
+	}
 
     function formatMonsterInfo(mon, isLastLayer) {
-      const description = (mon.info || '').replace(/\/n/g, '\n');
-      
-      const elementText = Array.isArray(mon.element) 
-        ? mon.element.map(e => elementMap[e] || e).join("、") 
-        : (elementMap[mon.element] || mon.element);
-
-      let containerClass = "monster-info-container";
-      let bossTitle = "";
-      
-      if (isLastLayer) {
-        containerClass += " boss";
-        bossTitle = '<div class="boss-title-decoration">BOSS</div>';
-      }
-
-      const html = `
-        <div class="${containerClass}">
-          ${bossTitle}
-          <h2 class="monster-name">${mon.name}</h2>
-          <img src="${mon.image_url}" class="monster-image" width="200">
-          <div class="monster-description">${description}</div>
-          <div class="monster-stats">
-            <div class="monster-stat-item">
-              <span>等級：</span>
-              <span>${mon.level}</span>
-            </div>
-            <div class="monster-stat-item">
-              <span>屬性：</span>
-              <span>${elementText}</span>
-            </div>
-            <div class="monster-stat-item">
-              <span>生命值：</span>
-              <span>${mon.stats.hp}</span>
-            </div>
-            <div class="monster-stat-item">
-              <span>攻擊力：</span>
-              <span>${mon.stats.attack}</span>
-            </div>
-            <div class="monster-stat-item">
-              <span>護盾值：</span>
-              <span>${mon.stats.shield}</span>
-            </div>
-            <div class="monster-stat-item">
-              <span>命中率：</span>
-              <span>${Math.round(mon.stats.accuracy * 100)}%</span>
-            </div>
-            <div class="monster-stat-item">
-              <span>迴避率：</span>
-              <span>${Math.round(mon.stats.evade * 100)}%</span>
-            </div>
-            <div class="monster-stat-item">
-              <span>攻擊速度：</span>
-              <span>${mon.stats.atk_speed}</span>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      return html;
-    }
+	  const description = (mon.info || '').replace(/\/n/g, '\n');
+	  
+	  const elementText = Array.isArray(mon.element) 
+	    ? mon.element.map(e => elementMap[e] || e).join("、") 
+	    : (elementMap[mon.element] || mon.element);
+	
+	  let containerClass = "monster-info-container";
+	  let bossTitle = "";
+	  
+	  if (isLastLayer) {
+	    containerClass += " boss";
+	    bossTitle = '<div class="boss-title-decoration">BOSS</div>';
+	  }
+	
+	  // 取得怪物護盾穿透值，如果沒有則預設為0
+	  const monsterPenetrate = mon.stats.penetrate || 0;
+	
+	  const html = `
+	    <div class="${containerClass}">
+	      ${bossTitle}
+	      <h2 class="monster-name">${mon.name}</h2>
+	      <img src="${mon.image_url}" class="monster-image" width="200">
+	      <div class="monster-description">${description}</div>
+	      <div class="monster-stats">
+	        <div class="monster-stat-item">
+	          <span>等級：</span>
+	          <span>${mon.level}</span>
+	        </div>
+	        <div class="monster-stat-item">
+	          <span>屬性：</span>
+	          <span>${elementText}</span>
+	        </div>
+	        <div class="monster-stat-item">
+	          <span>生命值：</span>
+	          <span>${mon.stats.hp}</span>
+	        </div>
+	        <div class="monster-stat-item">
+	          <span>攻擊力：</span>
+	          <span>${mon.stats.attack}</span>
+	        </div>
+	        <div class="monster-stat-item">
+	          <span>護盾值：</span>
+	          <span>${mon.stats.shield}</span>
+	        </div>
+	        <div class="monster-stat-item">
+	          <span>命中率：</span>
+	          <span>${Math.round(mon.stats.accuracy * 100)}%</span>
+	        </div>
+	        <div class="monster-stat-item">
+	          <span>迴避率：</span>
+	          <span>${Math.round(mon.stats.evade * 100)}%</span>
+	        </div>
+	        <div class="monster-stat-item">
+	          <span>攻擊速度：</span>
+	          <span>${mon.stats.atk_speed}</span>
+	        </div>
+	 	<div class="monster-stat-item">
+	          <span>護盾穿透：</span>
+	          <span>${monsterPenetrate}</span>
+	        </div>
+	      </div>
+	    </div>
+	  `;
+	  
+	  return html;
+	}
 
     async function loadLayer() {
 	  PerformanceMonitor.startTiming('loadLayer');
