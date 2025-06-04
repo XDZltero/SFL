@@ -37,11 +37,11 @@
   },
   {
     "id": "starter_bundle",
-    "name": "【Lv.5】新手禮包",
+    "name": "【Lv.5】新手啟程禮包",
     "description": "贈送給新手的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，請謹慎使用。可透過 30 等解鎖世界王低機率取得。",
     "type": "bundle",  
     "items": [     
-      { "item_id": "reset_stats_ticket", "quantity": 5 },
+      { "item_id": "reset_stats_ticket", "quantity": 1 },
       { "item_id": "chaos_breath", "quantity": 5 }
     ],
     "cost": {},
@@ -57,18 +57,159 @@
   {
     "id": "lv10_bundle",
     "name": "【Lv.10】啟程禮包",
-    "description": "贈送給剛出發冒險者的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，請謹慎使用。可透過 30 等解鎖世界王低機率取得。",
+    "description": "贈送給剛出發冒險者的道具免費組合包。",
     "type": "bundle",  
     "items": [     
-      { "item_id": "reset_stats_ticket", "quantity": 5 },
+      { "item_id": "reset_stats_ticket", "quantity": 2 },
+      { "item_id": "magic_book", "quantity": 3 },
       { "item_id": "chaos_breath", "quantity": 5 }
     ],
     "cost": {},
     "reset_type": "none",
     "limit_per_account": 1,
     "limit_per_reset": 1,
-    "required_level": 5,
+    "required_level": 10,
     "sort": 201,
+    "available": true,
+    "special": 1,
+    "category": "level_pack"
+  },
+  {
+    "id": "lv20_bundle",
+    "name": "【Lv.20】天空禮包",
+    "description": "贈送給勇闖天空之城冒險者的道具免費組合包。",
+    "type": "bundle",  
+    "items": [     
+      { "item_id": "reset_stats_ticket", "quantity": 2 },
+      { "item_id": "god_book", "quantity": 2 },
+      { "item_id": "chaos_breath", "quantity": 7 }
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 20,
+    "sort": 202,
+    "available": true,
+    "special": 1,
+    "category": "level_pack"
+  },
+  {
+    "id": "lv30_bundle",
+    "name": "【Lv.30】鋼鐵禮包",
+    "description": "贈送給勇闖鋼鐵都市冒險者的道具免費組合包。",
+    "type": "bundle",  
+    "items": [     
+      { "item_id": "reset_stats_ticket", "quantity": 2 },
+      { "item_id": "core_fragment_destroyer", "quantity": 2 },
+      { "item_id": "chaos_breath", "quantity": 9 }
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 30,
+    "sort": 203,
+    "available": true,
+    "special": 1,
+    "category": "level_pack"
+  },
+  {
+    "id": "lv40_bundle",
+    "name": "【Lv.40】紫魔禮包",
+    "description": "贈送給勇闖紫魔之城冒險者的道具免費組合包。",
+    "type": "bundle",  
+    "items": [     
+      { "item_id": "reset_stats_ticket", "quantity": 2 },
+      { "item_id": "evitina_staff_fragment", "quantity": 2 },
+      { "item_id": "chaos_breath", "quantity": 10 }
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 40,
+    "sort": 204,
+    "available": true,
+    "special": 1,
+    "category": "level_pack"
+  },
+  {
+    "id": "lv50_bundle",
+    "name": "【Lv.50】夢魘禮包",
+    "description": "贈送給勇闖潘朵拉：夢魘幻境冒險者的道具免費組合包。",
+    "type": "bundle",  
+    "items": [     
+      { "item_id": "reset_stats_ticket", "quantity": 2 },
+      { "item_id": "defile_letter", "quantity": 2 },
+      { "item_id": "chaos_breath", "quantity": 12 }
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 50,
+    "sort": 205,
+    "available": true,
+    "special": 1,
+    "category": "level_pack"
+  },
+  {
+    "id": "lv60_bundle_2",
+    "name": "【Lv.60】夢魘禮包II",
+    "description": "贈送給勇闖潘朵拉：夢魘幻境冒險者的道具免費組合包。",
+    "type": "bundle",  
+    "items": [     
+      { "item_id": "reset_stats_ticket", "quantity": 2 },
+      { "item_id": "defile_letter", "quantity": 2 },
+      { "item_id": "chaos_breath", "quantity": 15 }
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 60,
+    "sort": 206,
+    "available": true,
+    "special": 1,
+    "category": "level_pack"
+  },
+  {
+    "id": "lv70_bundle",
+    "name": "【Lv.70】聖天禮包",
+    "description": "贈送給勇闖潘朵拉：聖天教會冒險者的道具免費組合包。",
+    "type": "bundle",  
+    "items": [     
+      { "item_id": "reset_stats_ticket", "quantity": 2 },
+      { "item_id": "gospel_divine_core", "quantity": 2 },
+      { "item_id": "chaos_breath", "quantity": 15 }
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 70,
+    "sort": 207,
+    "available": true,
+    "special": 1,
+    "category": "level_pack"
+  },
+  {
+    "id": "lv70_bundle",
+    "name": "【Lv.80】方尖塔禮包",
+    "description": "贈送給勇闖次元界：方尖塔冒險者的道具免費組合包。",
+    "type": "bundle",  
+    "items": [     
+      { "item_id": "reset_stats_ticket", "quantity": 2 },
+      { "item_id": "arctos_core", "quantity": 2 },
+      { "item_id": "chaos_breath", "quantity": 15 }
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 80,
+    "sort": 208,
     "available": true,
     "special": 1,
     "category": "level_pack"
