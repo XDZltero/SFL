@@ -78,6 +78,12 @@
       if (spinner) spinner.style.display = show ? "block" : "none";
     }
 
+    function isFreeItem(item) {
+    // 檢查類型是否為 free，或者 cost 是空物件
+    return item.type === 'free' || 
+           (item.cost && Object.keys(item.cost).length === 0);
+  }
+
     // 載入商店資料
     async function loadShopData() {
       try {
@@ -350,7 +356,8 @@
         
         // 生成消費道具列表
         let costHtml = '';
-        if (item.type === 'free') {
+        const itemIsFree = isFreeItem(item);
+        if (itemIsFree) {
           costHtml = '<div class="cost-item"><span style="color: #4CAF50;">💰 免費領取</span></div>';
         } else {
           Object.entries(item.cost).forEach(([costItem, costAmount]) => {
@@ -369,6 +376,7 @@
             `;
           });
         }
+
         
         // 限購資訊
         const totalPurchased = itemPurchases.total_purchased || 0;
@@ -409,7 +417,7 @@
             ${!canPurchase ? 
               `<div style="color: #ff6b6b; font-weight: bold; text-align: center; margin: 10px 0;">❌ ${reason}</div>` :
               `<button class="square-btn" onclick="openPurchaseDialog('${item.id}')" style="width: 100%; margin-top: 10px;">
-                ${isFreeItem ? '🎁 免費領取' : item.type === 'bundle' ? '📦 購買禮包' : '💰 購買'}
+                ${itemIsFree ? '🎁 免費領取' : item.type === 'bundle' ? '📦 購買禮包' : '💰 購買'}
               </button>`
             }
           </div>
@@ -502,7 +510,9 @@
       }
       
       let costSummary = '';
-      if (item.type === 'free') {
+      const itemIsFree = isFreeItem(item);
+      
+      if (itemIsFree) {
         costSummary = '<div style="color: #4CAF50; text-align: center; font-weight: bold;">🎁 此為免費道具</div>';
       } else {
         Object.entries(item.cost).forEach(([costItem, costAmount]) => {
@@ -535,7 +545,7 @@
           
           <div class="btn-group">
             <button class="square-btn" onclick="confirmPurchase('${itemId}')" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);">
-              ✅ 確認${item.type === 'free' ? '領取' : item.type === 'bundle' ? '購買禮包' : '購買'}
+              ✅ 確認${itemIsFree ? '領取' : item.type === 'bundle' ? '購買禮包' : '購買'}
             </button>
             <button class="square-btn" onclick="closeDialog()">❌ 取消</button>
           </div>
