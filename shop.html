@@ -737,11 +737,7 @@ function getCurrentPeriod(resetType) {
       const currentPeriod = getCurrentPeriod(resetType);
       
       // 🚀 如果週期已經改變，返回 0（表示重置）
-      if (lastPeriod !== currentPeriod && lastPeriod !== "") {
-        console.log(`🔄 週期變化檢測: ${item.id}: ${lastPeriod} → ${currentPeriod}`);
-        return 0;
-      }
-      
+      if (lastPeriod === "") return 0;
       return currentPurchased;
     }
 
