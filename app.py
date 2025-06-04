@@ -3247,11 +3247,12 @@ class ShopResetManager:
             
         except Exception as e:
             print(f"❌ 檢查月度重置失敗: {e}")
-    
-    shop_reset_manager = ShopResetManager(db)
-    
-    if __name__ == "__main__":
-        shop_reset_manager.start_scheduler()
-        import os
-        port = int(os.environ.get("PORT", 10000))
-        app.run(host="0.0.0.0", port=port)
+
+# ✅ 修正：將初始化代碼移到類定義外部
+shop_reset_manager = ShopResetManager(db)
+
+if __name__ == "__main__":
+    shop_reset_manager.start_scheduler()
+    import os
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
