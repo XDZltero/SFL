@@ -1821,8 +1821,8 @@ def world_boss_status():
             if days_until_monday == 0 and now_taipei.hour >= 1:  # 如果是週一且已過01:00
                 days_until_monday = 7
             
-            next_reset = now_taipei.replace(hour=0, minute=31, second=0, microsecond=0) + datetime.timedelta(days=days_until_monday)
-            
+            next_reset = now_taipei.replace(hour=0, minute=31, second=0, microsecond=0) + timedelta(days=days_until_monday)
+    
             result["next_reset_time"] = next_reset.isoformat()
             result["next_reset_timestamp"] = next_reset.timestamp()
             
