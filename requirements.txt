@@ -3,5 +3,4 @@ firebase-admin # 與 Firestore 溝通並驗證ID Token
 flask-cors     # 處理跨網域請求（讓前端能連線）
 flask-compress # 戰鬥log處理用
 pytz           # 時區處理
-schedule       # 🆕 定時任務排程器（用於商店自動重置）
-threading      # 🆕 多執行緒支援（內建模組，但明確列出）
+schedule       # 定時任務排程器（用於商店自動重置）
