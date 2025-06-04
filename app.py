@@ -1346,14 +1346,14 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         player_level = user_data.get("level", 1)
         boss_level = world_boss_config["level"]
         
-        # 🚀 修改重點：取得當前階段並應用玩家傷害增益
+        # 取得當前階段並應用玩家傷害增益
         current_phase = get_current_world_boss_phase()
         phase_config = world_boss_config["phases"][str(current_phase)]
         
-        # 🚀 新增：玩家傷害增益（這是關鍵改動！）
+        # 玩家傷害增益
         player_damage_multiplier = phase_config.get("player_damage_multiplier", 1.0)
         
-        # 🚀 修改：世界王防禦調整（改為使用新的鍵名）
+        # 世界王防禦調整
         boss_defense_multiplier = phase_config.get("boss_defense_multiplier", 1.0)
         effective_boss_shield = boss_stats["shield"] * boss_defense_multiplier
         
@@ -1367,13 +1367,13 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         if not hit_success:
             return 0, "攻擊未命中"
         
-        # 🚀 攻擊速度影響計算
+        # 攻擊速度影響計算
         player_speed = player_stats.get("atk_speed", 100)
         boss_speed = boss_stats.get("atk_speed", 100)
         speed_ratio = player_speed / boss_speed if boss_speed > 0 else 1.0
         speed_multiplier = max(0.1, min(3.0, speed_ratio))
         
-        # 🚀 幸運暴擊計算
+        # 幸運暴擊計算
         crit_chance = min(player_luck * 0.0015, 0.50)
         
         import random
@@ -1383,6 +1383,9 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         # 計算基礎傷害
         player_attack = player_stats.get("attack", 20)
         other_bonus = player_stats.get("other_bonus", 0)
+
+        # 加入護盾穿透
+        player_penetrate = player_stats.get("penetrate", 0)
         
         # 屬性克制（玩家技能屬性 vs 世界王屬性）
         player_elements = ["none"]  # 預設為無屬性
@@ -1392,10 +1395,10 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         # 等級差距修正
         level_multiplier = level_damage_modifier(player_level, boss_level)
         
-        # 🚀 重點修改：計算最終傷害時加入階段增益
-        base_damage = calculate_damage(player_attack, 1.0, other_bonus, effective_boss_shield)
+        # 計算最終傷害時加入階段增益
+        base_damage = calculate_damage(player_attack, 1.0, other_bonus, effective_boss_shield, player_penetrate)
         
-        # 🚀 應用所有倍率：等級差距 × 屬性克制 × 攻擊速度 × 暴擊 × 階段增益
+        # 應用所有倍率：等級差距 × 屬性克制 × 攻擊速度 × 暴擊 × 階段增益
         final_damage = int(base_damage * 
                           level_multiplier * 
                           element_multiplier * 
@@ -1406,15 +1409,23 @@ def calculate_world_boss_damage(user_data, world_boss_config):
         # 確保最小傷害
         final_damage = max(final_damage, 1)
         
-        # 🚀 生成詳細的戰鬥訊息（包含階段增益資訊）
+        # 生成詳細的戰鬥訊息（包含階段增益資訊）
         hit_message = "成功命中"
         damage_details = []
+
+        # 護盾穿透說明
+        if player_penetrate > 0:
+            actual_shield_reduction = max(0, effective_boss_shield - player_penetrate)
+            penetrate_reduction = effective_boss_shield - actual_shield_reduction
+            if penetrate_reduction > 0:
+                damage_details.append(f"【護盾穿透】減少護盾 {penetrate_reduction:.1f}")
         
-        # 🚀 新增：階段增益說明
+        # 階段增益說明
         if player_damage_multiplier > 1.0:
             stage_name = f"第{current_phase}階段"
             bonus_percent = int((player_damage_multiplier - 1.0) * 100)
             damage_details.append(f"【{stage_name}增益】傷害提升 +{bonus_percent}%")
+        
         
         # 速度影響說明
         if speed_multiplier > 1.2:
