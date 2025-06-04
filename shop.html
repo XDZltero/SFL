@@ -44,9 +44,9 @@
   <!-- 分類篩選 -->
   <div class="shop-filters">
     <button class="filter-btn active" data-category="all">全部商品 <span class="category-count" id="count-all">0</span></button>
-    <button class="filter-btn" data-category="daily_free">每日免費 <span class="category-count" id="count-daily_free">0</span></button>
-    <button class="filter-btn" data-category="materials">製作材料 <span class="category-count" id="count-materials">0</span></button>
-    <button class="filter-btn" data-category="consumables">消耗品 <span class="category-count" id="count-consumables">0</span></button>
+    <button class="filter-btn" data-category="reset_free">定期免費 <span class="category-count" id="count-daily_free">0</span></button>
+    <button class="filter-btn" data-category="level_pack">等級禮包 <span class="category-count" id="count-materials">0</span></button>
+    <button class="filter-btn" data-category="world_boss">世界王 <span class="category-count" id="count-consumables">0</span></button>
   </div>
   
   <!-- 商品展示區 -->
@@ -68,7 +68,7 @@
     let userItems = {};
     let userPurchases = {};
     let itemMeta = {};
-    let userData = {}; // 🆕 用戶數據，包含等級信息
+    let userData = {}; 
     let currentFilter = 'all';
 
     function showLoading(show) {
@@ -86,7 +86,7 @@
           SecureAPI.getStaticData('items_table'),
           SecureAPI.get(`${API_BASE}/user_items`, true),
           SecureAPI.get(`${API_BASE}/shop_user_purchases`, true),
-          SecureAPI.getStatus(true) // 🆕 獲取用戶狀態包含等級
+          SecureAPI.getStatus(true)
         ]);
 
         shopItems = await shopRes.json();
@@ -343,7 +343,7 @@
           const levelIcon = userLevel >= requiredLevel ? '✅' : '❌';
           levelRequirementHtml = `
             <div class="level-requirement ${levelStatusClass}">
-              ${levelIcon} 需要等級：Lv.${requiredLevel} (目前：Lv.${userLevel})
+              ${levelIcon} 等級需求：Lv.${requiredLevel}<br>(目前：Lv.${userLevel})
             </div>
           `;
         }
@@ -357,12 +357,12 @@
             const costMeta = itemMeta[costItem];
             const owned = userItems[costItem] || 0;
             const sufficient = owned >= costAmount;
-            
+        
             costHtml += `
               <div class="cost-item">
                 <span class="cost-name">${costMeta?.name || costItem}:</span>
                 <div>
-                  <span class="cost-amount">${costAmount}</span>
+                  <span class="cost-amount">${costAmount}</span><br>
                   <span class="cost-owned ${sufficient ? '' : 'cost-insufficient'}">(擁有: ${owned})</span>
                 </div>
               </div>
@@ -374,7 +374,7 @@
         const totalPurchased = itemPurchases.total_purchased || 0;
         const resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
         
-        // 🆕 無限購買標記
+        // 無限購買標記
         const isUnlimited = item.unlimited || item.limit_per_account === -1;
         let limitDisplay = '';
         
@@ -409,8 +409,7 @@
             ${!canPurchase ? 
               `<div style="color: #ff6b6b; font-weight: bold; text-align: center; margin: 10px 0;">❌ ${reason}</div>` :
               `<button class="square-btn" onclick="openPurchaseDialog('${item.id}')" style="width: 100%; margin-top: 10px;">
-                ${item.type === 'free' ? '🎁 免費領取' : 
-                  item.type === 'bundle' ? '📦 購買禮包' : '💰 購買'}
+                ${isFreeItem ? '🎁 免費領取' : item.type === 'bundle' ? '📦 購買禮包' : '💰 購買'}
               </button>`
             }
           </div>
@@ -439,7 +438,7 @@
       });
     }
 
-    // 🆕 購買對話框（包含等級信息）
+    // 購買對話框（包含等級信息）
     async function openPurchaseDialog(itemId) {
       const item = shopItems.find(i => i.id === itemId);
       if (!item) return;
