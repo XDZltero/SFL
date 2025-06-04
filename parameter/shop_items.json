@@ -38,7 +38,7 @@
   {
     "id": "starter_bundle",
     "name": "【Lv.5】新手禮包",
-    "description": "贈送給新手的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，可透過 30 等解鎖世界王低機率取得。",
+    "description": "贈送給新手的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，請謹慎使用。可透過 30 等解鎖世界王低機率取得。",
     "type": "bundle",  
     "items": [     
       { "item_id": "reset_stats_ticket", "quantity": 5 },
@@ -57,7 +57,7 @@
   {
     "id": "lv10_bundle",
     "name": "【Lv.10】啟程禮包",
-    "description": "贈送給剛出發冒險者的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，可透過 30 等解鎖世界王低機率取得。",
+    "description": "贈送給剛出發冒險者的道具免費組合包。\n※ 請注意能力值重置券前期取得不易，，請謹慎使用。可透過 30 等解鎖世界王低機率取得。",
     "type": "bundle",  
     "items": [     
       { "item_id": "reset_stats_ticket", "quantity": 5 },
