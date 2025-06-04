@@ -3423,6 +3423,122 @@ class ShopResetManager:
         except Exception as e:
             print(f"❌ 檢查月度重置失敗: {e}")
 
+def check_and_reset_expired_purchases(user_id):
+    """檢查並重置用戶過期的購買記錄（提取自 process_shop_purchase）"""
+    try:
+        # 取得用戶購買記錄
+        purchase_ref = db.collection("shop_purchases").document(user_id)
+        purchase_doc = purchase_ref.get()
+        
+        if not purchase_doc.exists:
+            return {
+                "reset_count": 0,
+                "message": "無購買記錄需要重置",
+                "reset_items": []
+            }
+        
+        user_purchases = purchase_doc.to_dict()
+        purchases = user_purchases.get("purchases", {})
+        
+        # 📅 取得當前時間週期
+        current_periods = get_current_reset_periods()
+        
+        reset_count = 0
+        reset_items = []
+        
+        # 🔄 檢查所有購買記錄是否需要重置
+        for check_item_id, item_purchases in purchases.items():
+            reset_info = []
+            
+            # 檢查每日重置
+            current_daily = current_periods.get('daily')
+            last_daily = item_purchases.get('last_daily_period', '')
+            if current_daily != last_daily:
+                print(f"🌅 手動重置每日計數: {check_item_id} ({last_daily} → {current_daily})")
+                item_purchases['daily_purchased'] = 0
+                item_purchases['last_daily_period'] = current_daily
+                reset_info.append("每日")
+                reset_count += 1
+            
+            # 檢查每週重置
+            current_weekly = current_periods.get('weekly')
+            last_weekly = item_purchases.get('last_weekly_period', '')
+            if current_weekly != last_weekly:
+                print(f"📅 手動重置每週計數: {check_item_id} ({last_weekly} → {current_weekly})")
+                item_purchases['weekly_purchased'] = 0
+                item_purchases['last_weekly_period'] = current_weekly
+                reset_info.append("每週")
+                reset_count += 1
+            
+            # 檢查每月重置
+            current_monthly = current_periods.get('monthly')
+            last_monthly = item_purchases.get('last_monthly_period', '')
+            if current_monthly != last_monthly:
+                print(f"🗓️ 手動重置每月計數: {check_item_id} ({last_monthly} → {current_monthly})")
+                item_purchases['monthly_purchased'] = 0
+                item_purchases['last_monthly_period'] = current_monthly
+                reset_info.append("每月")
+                reset_count += 1
+            
+            if reset_info:
+                # 取得商品中文名稱
+                shop_items = get_shop_items()
+                shop_item = next((item for item in shop_items if item["id"] == check_item_id), None)
+                item_name = shop_item.get("name", check_item_id) if shop_item else check_item_id
+                
+                reset_items.append({
+                    "item_id": check_item_id,
+                    "item_name": item_name,
+                    "reset_types": reset_info
+                })
+        
+        # 如果有重置，更新到資料庫
+        if reset_count > 0:
+            user_purchases["purchases"] = purchases
+            user_purchases["last_manual_refresh"] = time.time()
+            purchase_ref.set(user_purchases)
+            
+            print(f"🔄 手動刷新：使用者 {user_id} 重置了 {reset_count} 個商品的購買記錄")
+        
+        return {
+            "reset_count": reset_count,
+            "message": f"已重置 {reset_count} 個商品的購買記錄" if reset_count > 0 else "目前沒有需要重置的商品",
+            "reset_items": reset_items,
+            "periods": current_periods
+        }
+        
+    except Exception as e:
+        print(f"檢查重置失敗: {e}")
+        raise e
+
+@app.route("/shop_refresh_resets", methods=["POST"])
+@require_auth
+def shop_refresh_resets():
+    """手動刷新商店 - 重置過期的購買記錄"""
+    try:
+        user_id = request.user_id
+        
+        # 執行重置檢查
+        reset_result = check_and_reset_expired_purchases(user_id)
+        
+        # 清除用戶相關快取
+        invalidate_user_cache(user_id)
+        
+        return jsonify({
+            "success": True,
+            "message": reset_result["message"],
+            "reset_count": reset_result["reset_count"],
+            "reset_items": reset_result["reset_items"],
+            "refresh_time": time.time(),
+            "current_periods": reset_result["periods"]
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False, 
+            "error": f"刷新商店失敗: {str(e)}"
+        }), 500
+
 shop_reset_manager = ShopResetManager(db)
 
 if __name__ == "__main__":
