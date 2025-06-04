@@ -199,7 +199,7 @@
 
     function renderStats() {
       const baseStats = userData.base_stats || {};
-      const equipBonus = calculateEquipmentBonus();
+      const equipBonus = calculateEquipmentBonus(userData.equipment || {}, equipData);
       const statsEl = document.getElementById("statsDisplay");
       
       const statsList = [
@@ -210,7 +210,8 @@
         { key: "accuracy", label: "命中率", isPercent: true },
         { key: "other_bonus", label: "額外傷害加成", isPercent: true },
         { key: "luck", label: "幸運值", isPercent: false },
-        { key: "atk_speed", label: "攻擊速度", isPercent: false }
+        { key: "atk_speed", label: "攻擊速度", isPercent: false },
+        { key: "penetrate", label: "護盾穿透", isPercent: false }
       ];
       
       let html = "";
