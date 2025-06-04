@@ -69,7 +69,7 @@
     "limit_per_reset": 1,
     "required_level": 5,
     "sort": 201,
-    "available": false,
+    "available": true,
     "special": 1,
     "category": "level_pack"
   },
