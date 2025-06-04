@@ -21,15 +21,15 @@
       });
   </script>
 
-  <h1 class="fancy-title">🏪 創世精髓商店</h1>
+  <h1 class="fancy-title">次元商店</h1>
   
-  <!-- 🆕 用戶信息顯示 -->
+  <!-- 使用者訊息顯示 -->
   <div class="user-currency">
-    <h2 class="fancy-subtitle">👤 玩家信息</h2>
+    <h2 class="fancy-subtitle">👤 玩家訊息</h2>
     <div id="userInfoDisplay">載入中...</div>
   </div>
   
-  <!-- 用戶貨幣顯示 -->
+  <!-- 使用者貨幣顯示 -->
   <div class="user-currency">
     <h2 class="fancy-subtitle">💰 持有貨幣</h2>
     <div id="userCurrencyDisplay">載入中...</div>
@@ -102,10 +102,7 @@
 
         userItems = userItemsRes.ok ? await userItemsRes.json() : {};
         userPurchases = purchasesRes.ok ? await purchasesRes.json() : {};
-        userData = await userRes.json(); // 🆕 保存用戶數據
-
-        console.log('✅ 商店資料載入完成');
-        console.log(`👤 用戶等級：${userData.level || 1}`);
+        userData = await userRes.json();
         
       } catch (error) {
         console.error("載入商店資料失敗:", error);
@@ -114,7 +111,6 @@
       }
     }
 
-    // 🆕 更新用戶信息顯示
     function updateUserInfoDisplay() {
       const userLevel = userData.level || 1;
       const userNickname = userData.nickname || "未知玩家";
