@@ -687,7 +687,7 @@
         // 每分鐘更新一次重置時間
         setInterval(updateResetTimerDisplay, 60000);
         
-        console.log('🏪 商店頁面初始化完成');
+        console.log('商店頁面初始化完成');
         
       } catch (error) {
         console.error("初始化錯誤:", error);
@@ -696,6 +696,15 @@
         showLoading(false);
       }
     }
+
+    // 🛒 商店頁面音樂控制
+    document.addEventListener('DOMContentLoaded', function() {
+      // 頁面載入完成時切換到商店音樂
+      if (window.parent && window.parent.postMessage) {
+        console.log("🎵 商店頁面：請求切換到商店音樂");
+        window.parent.postMessage({ command: "switchToShopMusic" }, "*");
+      }
+    });
 
     // 監聽登入狀態
     onAuthStateChanged(auth, (user) => {
