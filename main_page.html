@@ -116,39 +116,40 @@
 
     // 🚀 立即實施：快速格式化狀態資料
     async function formatStats(data) {
+    try {
+      const b = data.base_stats;
+      
+      // 🚀 並行載入裝備資料
+      let e = {};
       try {
-        const b = data.base_stats;
-        
-        // 🚀 並行載入裝備資料
-        let e = {};
-        try {
-          const equipRes = await SecureAPI.getStaticData('equips_table');
-          e = calculateEquipmentBonus(data.equipment || {}, equipRes);
-        } catch (equipError) {
-          console.warn('載入裝備資料失敗，使用預設值:', equipError);
-        }
-        
-        const levelMaxExp = levelExp[data.level] || 1;
-        const progress = percent(data.exp / levelMaxExp);
-
-        return `玩家名稱: ${data.nickname}
-等級: ${data.level}
-經驗值: ${data.exp} (${progress})
-生命值: ${calcTotal(b.hp, e.hp)} (${b.hp} + ${e.hp || 0})
-攻擊力: ${calcTotal(b.attack, e.attack)} (${b.attack} + ${e.attack || 0})
-護盾值: ${calcTotal(b.shield, e.shield)} (${b.shield} + ${e.shield || 0})
-幸運值: ${calcTotal(b.luck, e.luck)} (${b.luck} + ${e.luck || 0})
-命中率: ${percent(calcTotal(b.accuracy, e.accuracy))} (${percent(b.accuracy)} + ${percent(e.accuracy || 0)})
-迴避率: ${percent(calcTotal(b.evade, e.evade))} (${percent(b.evade)} + ${percent(e.evade || 0)})
-攻擊速度: ${b.atk_speed}
-額外傷害加成: ${calcTotal(b.other_bonus || 0, e.other_bonus || 0)}
-剩餘能力值點數: ${data.stat_points}
-剩餘技能點: ${data.skill_points}`;
-      } catch (error) {
-        console.error('格式化狀態資料失敗:', error);
-        return `格式化資料時發生錯誤: ${error.message}`;
+        const equipRes = await SecureAPI.getStaticData('equips_table');
+        e = calculateEquipmentBonus(data.equipment || {}, equipRes);
+      } catch (equipError) {
+        console.warn('載入裝備資料失敗，使用預設值:', equipError);
       }
+      
+      const levelMaxExp = levelExp[data.level] || 1;
+      const progress = percent(data.exp / levelMaxExp);
+  
+      return `玩家名稱: ${data.nickname}
+  等級: ${data.level}
+  經驗值: ${data.exp} (${progress})
+  生命值: ${calcTotal(b.hp, e.hp)} (${b.hp} + ${e.hp || 0})
+  攻擊力: ${calcTotal(b.attack, e.attack)} (${b.attack} + ${e.attack || 0})
+  護盾值: ${calcTotal(b.shield, e.shield)} (${b.shield} + ${e.shield || 0})
+  幸運值: ${calcTotal(b.luck, e.luck)} (${b.luck} + ${e.luck || 0})
+  命中率: ${percent(calcTotal(b.accuracy, e.accuracy))} (${percent(b.accuracy)} + ${percent(e.accuracy || 0)})
+  迴避率: ${percent(calcTotal(b.evade, e.evade))} (${percent(b.evade)} + ${percent(e.evade || 0)})
+  攻擊速度: ${b.atk_speed}
+  額外傷害加成: ${calcTotal(b.other_bonus || 0, e.other_bonus || 0)}
+  護盾穿透: ${calcTotal(b.penetrate || 0, e.penetrate)} (${b.penetrate || 0} + ${e.penetrate || 0})
+  剩餘能力值點數: ${data.stat_points}
+  剩餘技能點: ${data.skill_points}`;
+    } catch (error) {
+      console.error('格式化狀態資料失敗:', error);
+      return `格式化資料時發生錯誤: ${error.message}`;
     }
+  }
 
     // 🚀 立即實施：優化的載入狀態資料
     async function loadStatus(forceRefresh = false) {
