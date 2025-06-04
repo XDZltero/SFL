@@ -473,34 +473,21 @@ function setupVisibilityChangeDetection() {
       
       // 檢查重置週期限購
       const resetKey = `${item.reset_type}_purchased`;
-      if (itemPurchases[resetKey] >= item.limit_per_reset) {
-        return { canPurchase: false, reason: `已達${getResetTypeName(item.reset_type)}限購數量` };
-      }
-
-      // 檢查重置週期限購時要考慮跨日重置
-      const resetType = item.reset_type;
-      if (resetType !== "none" && item.limit_per_reset > 0) {
-        const resetKey = `${resetType}_purchased`;
-        const lastPeriodKey = `last_${resetType}_period`;
+          if (itemPurchases[resetKey] >= item.limit_per_reset) {
+            return { canPurchase: false, reason: `已達${getResetTypeName(item.reset_type)}限購數量` };
+          }
+    
+          if (item.reset_type !== "none" && item.limit_per_reset > 0) {
+        const actualPurchased = getActualPurchaseCount(item, itemPurchases);
         
-        let currentPurchased = itemPurchases[resetKey] || 0;
-        const lastPeriod = itemPurchases[lastPeriodKey] || "";
-        const currentPeriod = getCurrentPeriod(resetType);
-        
-        //  如果週期已經改變，重置計數
-        if (lastPeriod !== currentPeriod && lastPeriod !== "") {
-          console.log(`🔄 前端檢測到週期變化 ${item.id}: ${lastPeriod} → ${currentPeriod}`);
-          currentPurchased = 0; // 重置為0
-        }
-        
-        // 使用重置後的計數進行檢查
-        if (currentPurchased >= item.limit_per_reset) {
+        if (actualPurchased >= item.limit_per_reset) {
           return { 
             canPurchase: false, 
-            reason: `已達${getResetTypeName(resetType)}限購數量` 
+            reason: `已達${getResetTypeName(item.reset_type)}限購數量` 
           };
         }
       }
+      
       
       
       // 檢查道具是否足夠
@@ -662,19 +649,14 @@ function getCurrentPeriod(resetType) {
           });
         }
     
-        // 🔥 修復：智能限購資訊顯示
+        // 使用統一的購買計數邏輯
         const totalPurchased = itemPurchases.total_purchased || 0;
         
         // 🔥 關鍵：計算當前週期的實際購買次數
-        let resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
-        if (item.reset_type !== 'none') {
-          const lastPeriod = itemPurchases[`last_${item.reset_type}_period`] || "";
-          const currentPeriod = getCurrentPeriod(item.reset_type);
-          
-          if (lastPeriod !== currentPeriod && lastPeriod !== "") {
-            resetPurchased = 0; // 跨週期重置顯示
-          }
-        }
+        const resetPurchased = getActualPurchaseCount(item, itemPurchases);
+    
+      const isUnlimited = (item.unlimited || item.limit_per_account === -1) && 
+                         (item.limit_per_reset === -1 || item.reset_type === 'none');
         
         const isUnlimited = (item.unlimited || item.limit_per_account === -1) && 
                            (item.limit_per_reset === -1 || item.reset_type === 'none');
@@ -742,6 +724,58 @@ function getCurrentPeriod(resetType) {
       // 更新分類計數
       updateCategoryCounts();
     }
+    // 新增統一的購買數據計算函數
+    function getActualPurchaseCount(item, itemPurchases) {
+      const resetType = item.reset_type;
+      
+      if (resetType === 'none') {
+        return itemPurchases.total_purchased || 0;
+      }
+      
+      const resetKey = `${resetType}_purchased`;
+      const lastPeriodKey = `last_${resetType}_period`;
+      
+      let currentPurchased = itemPurchases[resetKey] || 0;
+      const lastPeriod = itemPurchases[lastPeriodKey] || "";
+      const currentPeriod = getCurrentPeriod(resetType);
+      
+      // 🚀 如果週期已經改變，返回 0（表示重置）
+      if (lastPeriod !== currentPeriod && lastPeriod !== "") {
+        console.log(`🔄 週期變化檢測: ${item.id}: ${lastPeriod} → ${currentPeriod}`);
+        return 0;
+      }
+      
+      return currentPurchased;
+    }
+
+    async function checkAndUpdateExpiredPurchases() {
+  try {
+    console.log("🔄 檢查並更新過期購買記錄...");
+    
+    const response = await SecureAPI.post(`${API_BASE}/shop_refresh_resets`, {});
+    const result = await response.json();
+    
+    if (result.success && result.reset_count > 0) {
+      console.log(`✅ 檢測到 ${result.reset_count} 個商品需要重置`);
+      
+      // 重新載入購買記錄
+      const purchasesRes = await SecureAPI.get(`${API_BASE}/shop_user_purchases`, true);
+      if (purchasesRes.ok) {
+        userPurchases = await purchasesRes.json();
+        
+        // 重新渲染
+        renderShopItems();
+        
+        console.log("🔄 購買記錄已同步更新");
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("❌ 檢查更新購買記錄失敗:", error);
+    throw error;
+  }
+}
 
     // 更新分類計數
     function updateCategoryCounts() {
@@ -1004,7 +1038,10 @@ function getCurrentPeriod(resetType) {
       
       try {
         await loadShopData();
-        updateUserInfoDisplay(); // 🆕 更新用戶信息顯示
+
+        await checkAndUpdateExpiredPurchases();
+        
+        updateUserInfoDisplay();
         updateUserCurrencyDisplay();
         renderShopItems();
         updateResetTimerDisplay();
