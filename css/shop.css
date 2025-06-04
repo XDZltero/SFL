@@ -634,3 +634,21 @@
   text-align: center;
   margin-top: 5px;
 }
+
+.user-section-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.user-section-row .half {
+  flex: 1 1 50%;
+}
+
+@media (max-width: 768px) {
+  .user-section-row .half {
+    flex: 1 1 100%;
+  }
+}
+
