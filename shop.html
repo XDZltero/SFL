@@ -227,7 +227,7 @@
       }
       
       // 檢查總限購
-      if (itemPurchases.total_purchased >= item.limit_per_account) {
+      if (item.limit_per_account > -1 && itemPurchases.total_purchased >= item.limit_per_account) {
         return { canPurchase: false, reason: "已達帳號總限購數量" };
       }
       
