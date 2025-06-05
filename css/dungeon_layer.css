@@ -408,6 +408,17 @@ body.boss-mode #logArea {
   #logArea::-webkit-scrollbar {
     width: 8px;
   }
+  .info-toggle-group {
+    position: static;
+    margin: 10px auto;
+    align-items: center;
+    width: fit-content;
+  }
+  
+  .info-toggle {
+    font-size: 0.7em;
+    padding: 5px 8px;
+  }
 }
 
 /* 冷卻按鈕樣式 */
