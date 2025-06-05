@@ -823,53 +823,65 @@ function percent(val) {
 	  
 	  // 🆕 根據怪物屬性生成屬性克制說明
 	  const generateElementDescription = (elements) => {
-	    if (!Array.isArray(elements)) {
-	      elements = [elements];
-	    }
-	    
-	    let descriptions = [];
-	    
-	    elements.forEach(element => {
-	      switch(element) {
-	        case "pyro":
-	        case "火":
-	          descriptions.push("🔥 火屬性：被水屬性克制(受到125%傷害)，克制自然屬性(造成125%傷害)");
-	          break;
-	        case "hydro":
-	        case "水":
-	          descriptions.push("💧 水屬性：被雷屬性克制(受到125%傷害)，克制火屬性(造成125%傷害)");
-	          break;
-	        case "electro":
-	        case "雷":
-	          descriptions.push("⚡ 雷屬性：被自然屬性克制(受到125%傷害)，克制水屬性(造成125%傷害)");
-	          break;
-	        case "nature":
-	        case "自然":
-	          descriptions.push("🌿 自然屬性：被火屬性克制(受到125%傷害)，克制雷屬性(造成125%傷害)");
-	          break;
-	        case "light":
-	        case "光":
-	          descriptions.push("✨ 光屬性：與暗屬性互相克制(互相造成125%傷害)");
-	          break;
-	        case "dark":
-	        case "暗":
-	          descriptions.push("🌑 暗屬性：與光屬性互相克制(互相造成125%傷害)");
-	          break;
-	        case "all":
-	        case "全":
-	          descriptions.push("🌟 全屬性：克制所有其他屬性(造成125%傷害)，被全屬性攻擊受到75%傷害");
-	          break;
-	        case "none":
-	        case "無":
-	          descriptions.push("⚪ 無屬性：不克制也不被克制任何屬性，對全屬性攻擊受到75%傷害");
-	          break;
-	        default:
-	          descriptions.push(`${elementMap[element] || element}屬性`);
-	      }
-	    });
-	    
-	    return descriptions.join("\n");
-	  };
+		  if (!Array.isArray(elements)) {
+		    elements = [elements];
+		  }
+		  
+		  let descriptions = [];
+		  
+		  elements.forEach(element => {
+		    switch(element) {
+		      case "pyro":
+		      case "火":
+		        descriptions.push("🔥 火屬性：被水屬性克制(受到125%傷害)，克制自然屬性(造成125%傷害)");
+		        break;
+		      case "hydro":
+		      case "水":
+		        descriptions.push("💧 水屬性：被雷屬性克制(受到125%傷害)，克制火屬性(造成125%傷害)");
+		        break;
+		      case "electro":
+		      case "雷":
+		        descriptions.push("⚡ 雷屬性：被自然屬性克制(受到125%傷害)，克制水屬性(造成125%傷害)");
+		        break;
+		      case "nature":
+		      case "自然":
+		        descriptions.push("🌿 自然屬性：被火屬性克制(受到125%傷害)，克制雷屬性(造成125%傷害)");
+		        break;
+		      case "light":
+		      case "光":
+		        descriptions.push("✨ 光屬性：與暗屬性互相克制(互相造成125%傷害)");
+		        break;
+		      case "dark":
+		      case "暗":
+		        descriptions.push("🌑 暗屬性：與光屬性互相克制(互相造成125%傷害)");
+		        break;
+		      case "all":
+		      case "全":
+		        descriptions.push("🌟 全屬性：克制所有其他屬性(造成125%傷害)，被全屬性攻擊受到75%傷害");
+		        break;
+		      case "none":
+		      case "無":
+		        descriptions.push("⚪ 無屬性：不克制也不被克制任何屬性，對全屬性攻擊受到75%傷害");
+		        break;
+		      default:
+		        descriptions.push(`${elementMap[element] || element}屬性`);
+		    }
+		  });
+		  
+		  // 🆕 雙屬性或多屬性說明
+		  if (elements.length > 1) {
+		    descriptions.push("");
+		    descriptions.push("⚖️ 複數屬性機制：");
+		    descriptions.push("• 當怪物擁有多個屬性時，傷害計算會將所有屬性克制關係取平均值");
+		    descriptions.push("• 例如：火水雙屬性怪物被雷屬性攻擊時");
+		    descriptions.push("  - 雷→火：100%傷害(無克制)");
+		    descriptions.push("  - 雷→水：125%傷害(克制)");
+		    descriptions.push("  - 最終傷害：(100% + 125%) ÷ 2 = 112.5%");
+		    descriptions.push("• 這讓雙屬性怪物在克制關係上更加平衡，既有優勢也有劣勢");
+		  }
+		  
+		  return descriptions.join("\n");
+		};
 	  
 	  const elementDescription = generateElementDescription(mon.element);
 	
