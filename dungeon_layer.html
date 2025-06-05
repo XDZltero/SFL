@@ -799,156 +799,140 @@ function percent(val) {
 	  return html;
 	}
 
-    // 🔧 修正後的怪物資訊格式化函數 - 只為屬性添加 tooltip
-    function formatMonsterInfo(mon, isLastLayer) {
-	  const description = (mon.info || '').replace(/\/n/g, '\n');
-	  
-	  const elementText = Array.isArray(mon.element) 
-	    ? mon.element.map(e => elementMap[e] || e).join("、") 
-	    : (elementMap[mon.element] || mon.element);
-	
-	  let containerClass = "monster-info-container";
-	  let bossTitle = "";
-	  
-	  if (isLastLayer) {
-	    containerClass += " boss";
-	    bossTitle = '<div class="boss-title-decoration">BOSS</div>';
-	  }
-	
-	  // 取得怪物護盾穿透值，如果沒有則預設為0
-	  const monsterPenetrate = mon.stats.penetrate || 0;
-	  
-	  // 根據怪物屬性生成屬性克制說明
-	  const generateElementDescription = (elements) => {
-		  if (!Array.isArray(elements)) {
-		    elements = [elements];
-		  }
-		  
-		  let descriptions = [];
-		  
-		  elements.forEach(element => {
-		    switch(element) {
-		      case "pyro":
-		      case "火":
-		        descriptions.push("🔥 火屬性：水屬性克制(造成125%傷害)，自然屬性逆克制(造成75%傷害)");
-		        break;
-		      case "hydro":
-		      case "水":
-		        descriptions.push("💧 水屬性：雷屬性克制(造成125%傷害)，火屬性逆克制(造成75%傷害)");
-		        break;
-		      case "electro":
-		      case "雷":
-		        descriptions.push("⚡ 雷屬性：自然屬性克制(造成125%傷害)，水屬性逆克制(造成75%傷害)");
-		        break;
-		      case "nature":
-		      case "自然":
-		        descriptions.push("🌿 自然屬性：火屬性克制(造成125%傷害)，雷屬性逆克制(造成75%傷害)");
-		        break;
-		      case "light":
-		      case "光":
-		        descriptions.push("✨ 光屬性：與暗屬性互相克制(互相造成125%傷害)");
-		        break;
-		      case "dark":
-		      case "暗":
-		        descriptions.push("🌑 暗屬性：與光屬性互相克制(互相造成125%傷害)");
-		        break;
-		      case "all":
-		      case "全":
-		        descriptions.push("🌟 全屬性：克制所有其他屬性，攻擊必定命中，目標傷害提升25%，減傷25%");
-		        break;
-		      case "none":
-		      case "無":
-		        descriptions.push("⚪ 無屬性：不克制也不被克制任何屬性，除了被全屬性克制(造成125%傷害)");
-		        break;
-		      default:
-		        descriptions.push(`${elementMap[element] || element}屬性`);
-		    }
-		  });
-		  
-		  // 雙屬性或多屬性說明
-		  if (elements.length > 1) {
-		    descriptions.push("");
-		    descriptions.push("⚖️ 複數屬性機制：");
-		    descriptions.push("• 當怪物擁有多個屬性時，傷害計算會將所有屬性克制關係取平均值");
-		    descriptions.push("• 例如：火水雙屬性怪物被雷屬性攻擊時");
-		    descriptions.push("  - 雷→火：100%傷害(無克制)");
-		    descriptions.push("  - 雷→水：125%傷害(克制)");
-		    descriptions.push("  - 最終傷害：(100% + 125%) ÷ 2 = 112.5%");
-		  }
-		  
-		  return descriptions.join("\n");
-		};
-	  
-	  const elementDescription = generateElementDescription(mon.element);
-	
-	  const html = `
-	    <div class="${containerClass}">
-	      ${bossTitle}
-	      <h2 class="monster-name">${mon.name}</h2>
-	      <img src="${mon.image_url}" class="monster-image" width="200">
-	      <div class="monster-description">${description}</div>
-	      <div class="monster-stats">
-	        <div class="monster-stat-item">
-	          <div class="stat-main">
-	            <span>等級：</span>
-	            <span>${mon.level}</span>
-	          </div>
-	        </div>
-	        <div class="monster-stat-item">
-	          <div class="stat-main">
-	            <span>屬性：</span>
-	            <span>${elementText}</span>
-	          </div>
-	          <div class="stat-description">${elementDescription}\n\n💡 使用克制屬性的技能攻擊可造成125%傷害，被克制時受到125%傷害。掌握屬性相剋是戰鬥勝利的關鍵！</div>
-	        </div>
-	        <div class="monster-stat-item">
-	          <div class="stat-main">
-	            <span>生命值：</span>
-	            <span>${mon.stats.hp}</span>
-	          </div>
-	        </div>
-	        <div class="monster-stat-item">
-	          <div class="stat-main">
-	            <span>攻擊力：</span>
-	            <span>${mon.stats.attack}</span>
-	          </div>
-	        </div>
-	        <div class="monster-stat-item">
-	          <div class="stat-main">
-	            <span>護盾值：</span>
-	            <span>${mon.stats.shield}</span>
-	          </div>
-	        </div>
-	        <div class="monster-stat-item">
-	          <div class="stat-main">
-	            <span>命中率：</span>
-	            <span>${Math.round(mon.stats.accuracy * 100)}%</span>
-	          </div>
-	        </div>
-	        <div class="monster-stat-item">
-	          <div class="stat-main">
-	            <span>迴避率：</span>
-	            <span>${Math.round(mon.stats.evade * 100)}%</span>
-	          </div>
-	        </div>
-	        <div class="monster-stat-item">
-	          <div class="stat-main">
-	            <span>攻擊速度：</span>
-	            <span>${mon.stats.atk_speed}</span>
-	          </div>
-	        </div>
-	 	<div class="monster-stat-item">
-	          <div class="stat-main">
-	            <span>護盾穿透：</span>
-	            <span>${monsterPenetrate}</span>
-	          </div>
-	        </div>
-	      </div>
-	    </div>
-	  `;
-	  
-	  return html;
-	}
+    // 怪物資訊格式化函數
+function formatMonsterInfo(mon, isLastLayer) {
+  const description = (mon.info || '').replace(/\/n/g, '\n');
+  
+  const elementText = Array.isArray(mon.element) 
+    ? mon.element.map(e => elementMap[e] || e).join("、") 
+    : (elementMap[mon.element] || mon.element);
+
+  let containerClass = "monster-info-container";
+  let bossTitle = "";
+  
+  if (isLastLayer) {
+    containerClass += " boss";
+    bossTitle = '<div class="boss-title-decoration">BOSS</div>';
+  }
+
+  // 取得怪物護盾穿透值，如果沒有則預設為0
+  const monsterPenetrate = mon.stats.penetrate || 0;
+  
+  // 根據怪物屬性生成屬性克制說明
+  const generateElementDescription = (elements) => {
+    if (!Array.isArray(elements)) {
+      elements = [elements];
+    }
+    
+    let descriptions = [];
+    
+    elements.forEach(element => {
+      switch(element) {
+        case "pyro":
+        case "火":
+          descriptions.push("🔥 火屬性：水屬性克制(造成125%傷害)，自然屬性逆克制(造成75%傷害)");
+          break;
+        case "hydro":
+        case "水":
+          descriptions.push("💧 水屬性：雷屬性克制(造成125%傷害)，火屬性逆克制(造成75%傷害)");
+          break;
+        case "electro":
+        case "雷":
+          descriptions.push("⚡ 雷屬性：自然屬性克制(造成125%傷害)，水屬性逆克制(造成75%傷害)");
+          break;
+        case "nature":
+        case "自然":
+          descriptions.push("🌿 自然屬性：火屬性克制(造成125%傷害)，雷屬性逆克制(造成75%傷害)");
+          break;
+        case "light":
+        case "光":
+          descriptions.push("✨ 光屬性：與暗屬性互相克制(互相造成125%傷害)");
+          break;
+        case "dark":
+        case "暗":
+          descriptions.push("🌑 暗屬性：與光屬性互相克制(互相造成125%傷害)");
+          break;
+        case "all":
+        case "全":
+          descriptions.push("🌟 全屬性：克制所有其他屬性，攻擊必定命中，目標傷害提升25%，減傷25%");
+          break;
+        case "none":
+        case "無":
+          descriptions.push("⚪ 無屬性：不克制也不被克制任何屬性，除了被全屬性克制(造成125%傷害)");
+          break;
+        default:
+          descriptions.push(`${elementMap[element] || element}屬性`);
+      }
+    });
+    
+    // 雙屬性或多屬性說明
+    if (elements.length > 1) {
+      descriptions.push("");
+      descriptions.push("⚖️ 複數屬性機制：");
+      descriptions.push("• 當怪物擁有多個屬性時，傷害計算會將所有屬性克制關係取平均值");
+      descriptions.push("• 例如：火水雙屬性怪物被雷屬性攻擊時");
+      descriptions.push("  - 雷→火：100%傷害(無克制)");
+      descriptions.push("  - 雷→水：125%傷害(克制)");
+      descriptions.push("  - 最終傷害：(100% + 125%) ÷ 2 = 112.5%");
+    }
+    
+    return descriptions.join("\n");
+  };
+  
+  const elementDescription = generateElementDescription(mon.element);
+
+  const html = `
+    <div class="${containerClass}">
+      ${bossTitle}
+      <h2 class="monster-name">${mon.name}</h2>
+      <img src="${mon.image_url}" class="monster-image" width="200">
+      <div class="monster-description">${description}</div>
+      <div class="monster-stats">
+        <div class="monster-stat-item">
+          <span>等級：</span>
+          <span>${mon.level}</span>
+        </div>
+        <div class="monster-stat-item">
+          <div class="stat-main">
+            <span>屬性：</span>
+            <span>${elementText}</span>
+          </div>
+          <div class="stat-description">${elementDescription}</div>
+        </div>
+        <div class="monster-stat-item">
+          <span>生命值：</span>
+          <span>${mon.stats.hp}</span>
+        </div>
+        <div class="monster-stat-item">
+          <span>攻擊力：</span>
+          <span>${mon.stats.attack}</span>
+        </div>
+        <div class="monster-stat-item">
+          <span>護盾值：</span>
+          <span>${mon.stats.shield}</span>
+        </div>
+        <div class="monster-stat-item">
+          <span>命中率：</span>
+          <span>${Math.round(mon.stats.accuracy * 100)}%</span>
+        </div>
+        <div class="monster-stat-item">
+          <span>迴避率：</span>
+          <span>${Math.round(mon.stats.evade * 100)}%</span>
+        </div>
+        <div class="monster-stat-item">
+          <span>攻擊速度：</span>
+          <span>${mon.stats.atk_speed}</span>
+        </div>
+        <div class="monster-stat-item">
+          <span>護盾穿透：</span>
+          <span>${monsterPenetrate}</span>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
 
     async function loadLayer() {
 	  PerformanceMonitor.startTiming('loadLayer');
