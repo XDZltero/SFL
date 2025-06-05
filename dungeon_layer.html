@@ -1618,16 +1618,36 @@ function togglePlayerTooltips() {
   const toggleBtn = document.getElementById('playerToggleBtn');
   const mons_container = document.querySelector('.monster-info-container .monster-stats');
 
+  // 檢查必要元素是否存在
+  if (!container || !toggleBtn) {
+    console.warn('⚠️ 必要的 DOM 元素未找到，無法切換 tooltip');
+    console.log('container:', container);
+    console.log('toggleBtn:', toggleBtn);
+    console.log('mons_container:', mons_container);
+    return; // 早期返回，避免錯誤
+  }
+
   playerTooltipsEnabled = !playerTooltipsEnabled;
   
   if (playerTooltipsEnabled) {
+    // 安全地操作 classList
     container.classList.add('tooltips-enabled');
-    mons_container.classList.add('tooltips-enabled');
+    
+    // 怪物容器可能不存在（載入失敗或還未載入）
+    if (mons_container) {
+      mons_container.classList.add('tooltips-enabled');
+    }
+    
     toggleBtn.classList.add('active');
     toggleBtn.innerHTML = '📖 隱藏說明';
   } else {
     container.classList.remove('tooltips-enabled');
-    mons_container.classList.remove('tooltips-enabled');
+    
+    // 安全地移除怪物容器的 class
+    if (mons_container) {
+      mons_container.classList.remove('tooltips-enabled');
+    }
+    
     toggleBtn.classList.remove('active');
     toggleBtn.innerHTML = '📖 詳細說明';
   }
