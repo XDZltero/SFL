@@ -730,6 +730,23 @@ function percent(val) {
 	    }
 	  };
 	
+	  // 🆕 完整的 Tooltip 說明
+	  const tooltips = {
+	    level: "角色的當前等級。每升級獲得5點能力值點數與3點技能點，並解鎖新的技能與副本。等級差距會影響戰鬥傷害：最多7等差距時傷害變為1.5倍或0.5倍。",
+	    exp: "角色的經驗值與升級進度。透過戰鬥獲得經驗值，累積足夠經驗值後會自動升級。不同怪物給予的經驗值不同，高等級怪物給予更多經驗值。",
+	    hp: "玩家的總生命值，決定角色的生存能力。當生命值降至0時戰鬥失敗。每升級可分配點數提升基礎生命值，裝備可提供額外加成。每點能力值增加5點生命值。",
+	    attack: "決定對敵人造成傷害的基礎數值。攻擊力越高，傷害越大。會受到屬性克制、技能倍率、等級差距和暴擊等因素影響。每點能力值增加1點攻擊力。",
+	    shield: "減少受到傷害的防護值。每點護盾值減少0.1%傷害，最多99%。可透過護盾穿透降低效果，提供穩定的傷害減免。只能透過裝備獲得。",
+	    luck: "影響暴擊率、物品掉落率和命中率的幸運值。每點幸運提供0.15%暴擊率和0.2%命中率加成，同時提升物品掉落機率。每點能力值增加1點幸運值。",
+	    accuracy: "攻擊命中敵人的機率，會與敵人迴避率相抗。命中率不足會導致攻擊落空，建議保持在90%以上以確保穩定輸出。只能透過裝備獲得。",
+	    evade: "閃避敵人攻擊的機率，數值越高越容易完全無視敵人的攻擊，最高95%。迴避成功時完全無視該次攻擊，是重要的生存手段。只能透過裝備獲得。",
+	    atk_speed: "決定戰鬥中的出手順序與頻率。攻擊速度高的一方會優先行動，並可能在一回合內進行多次攻擊。速度差距越大，優勢方的行動次數越多。",
+	    other_bonus: "額外傷害加成，按百分比增加最終傷害。這是一個倍率加成，會在所有其他計算完成後套用。只能透過裝備獲得。",
+	    penetrate: "無視敵人護盾值的能力。穿透值會直接扣除敵人的有效護盾值，是突破高防禦敵人的關鍵屬性。每點穿透可無視1點敵人護盾。",
+	    stat_points: "可用於提升基礎能力值的點數。每升級獲得5點。可分配到生命值(+5HP/點)、攻擊力(+1ATK/點)或幸運值(+1LUCK/點)。合理分配能力值是強化角色的關鍵。",
+	    skill_points: "可用於升級技能的點數。每升級獲得3點。技能等級越高威力越強，但消耗的技能點也更多。建議優先升級常用的攻擊技能。"
+	  };
+	
 	  const statsList = [
 	    { key: "level", label: "等級", value: data.level },
 	    { key: "exp", label: "經驗值", value: `${data.exp} (${progress})` },
@@ -757,30 +774,28 @@ function percent(val) {
 	  
 	  statsList.forEach(({ key, label, value }) => {
 	    if (value !== undefined) {
-	      html += `<div class="stat-item"><span>${label}:</span><span>${value}</span></div>`;
+	      const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現。";
+	      html += `
+	        <div class="stat-item">
+	          <div class="stat-main">
+	            <span>${label}:</span>
+	            <span>${value}</span>
+	          </div>
+	          <div class="stat-description">${tooltip}</div>
+	        </div>`;
 	    } else if (["hp", "attack", "shield", "penetrate", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
 	      const formatted = getFormatted(key);
-	      const tooltips = {
-		  hp: "玩家的總生命值，決定角色的生存能力。當生命值降至0時戰鬥失敗。每升級可分配點數提升基礎生命值，裝備可提供額外加成。",
-		  attack: "決定對敵人造成傷害的基礎數值。攻擊力越高，傷害越大。會受到屬性克制、技能倍率和暴擊等因素影響。",
-		  evade: "閃避敵人攻擊的機率，數值越高越容易完全無視敵人的攻擊，最高95%。迴避成功時完全無視該次攻擊，是重要的生存手段。",
-		  shield: "減少受到傷害的防護值。每點護盾值減少0.1%傷害，最多99%。可透過護盾穿透降低效果，提供穩定的傷害減免。",
-		  accuracy: "攻擊命中敵人的機率，會與敵人迴避率相抗。命中率不足會導致攻擊落空，建議保持在90%以上以確保穩定輸出。",
-		  penetrate: "無視敵人護盾值的能力。穿透值會直接扣除敵人的有效護盾值，是突破高防禦敵人的關鍵屬性。",
-		  luck: "影響暴擊率、物品掉落率和命中率的幸運值。每點幸運提供0.1%暴擊率和0.2%命中率，對戰鬥和探索都有幫助。"
-		};
-		
-		const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現，數值越高效果越好。";
-		
-		html += `
-		  <div class="stat-item">
-		    <div class="stat-main">
-		      <span>${label}:</span>
-		      <span>${formatted.total} (${formatted.detail})</span>
-		    </div>
-		    <div class="stat-description">${tooltip}</div>
-		  </div>
-		`;
+	      const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現，數值越高效果越好。";
+	      
+	      html += `
+	        <div class="stat-item">
+	          <div class="stat-main">
+	            <span>${label}:</span>
+	            <span>${formatted.total} (${formatted.detail})</span>
+	          </div>
+	          <div class="stat-description">${tooltip}</div>
+	        </div>
+	      `;
 	    }
 	  });
 	  
@@ -805,49 +820,131 @@ function percent(val) {
 	
 	  // 取得怪物護盾穿透值，如果沒有則預設為0
 	  const monsterPenetrate = mon.stats.penetrate || 0;
+	  
+	  // 🆕 根據怪物屬性生成屬性克制說明
+	  const generateElementDescription = (elements) => {
+	    if (!Array.isArray(elements)) {
+	      elements = [elements];
+	    }
+	    
+	    let descriptions = [];
+	    
+	    elements.forEach(element => {
+	      switch(element) {
+	        case "pyro":
+	        case "火":
+	          descriptions.push("🔥 火屬性：被水屬性克制(受到125%傷害)，克制自然屬性(造成125%傷害)");
+	          break;
+	        case "hydro":
+	        case "水":
+	          descriptions.push("💧 水屬性：被雷屬性克制(受到125%傷害)，克制火屬性(造成125%傷害)");
+	          break;
+	        case "electro":
+	        case "雷":
+	          descriptions.push("⚡ 雷屬性：被自然屬性克制(受到125%傷害)，克制水屬性(造成125%傷害)");
+	          break;
+	        case "nature":
+	        case "自然":
+	          descriptions.push("🌿 自然屬性：被火屬性克制(受到125%傷害)，克制雷屬性(造成125%傷害)");
+	          break;
+	        case "light":
+	        case "光":
+	          descriptions.push("✨ 光屬性：與暗屬性互相克制(互相造成125%傷害)");
+	          break;
+	        case "dark":
+	        case "暗":
+	          descriptions.push("🌑 暗屬性：與光屬性互相克制(互相造成125%傷害)");
+	          break;
+	        case "all":
+	        case "全":
+	          descriptions.push("🌟 全屬性：克制所有其他屬性(造成125%傷害)，被全屬性攻擊受到75%傷害");
+	          break;
+	        case "none":
+	        case "無":
+	          descriptions.push("⚪ 無屬性：不克制也不被克制任何屬性，對全屬性攻擊受到75%傷害");
+	          break;
+	        default:
+	          descriptions.push(`${elementMap[element] || element}屬性`);
+	      }
+	    });
+	    
+	    return descriptions.join("\n");
+	  };
+	  
+	  const elementDescription = generateElementDescription(mon.element);
 	
 	  const html = `
 	    <div class="${containerClass}">
 	      ${bossTitle}
 	      <h2 class="monster-name">${mon.name}</h2>
+	      <button class="info-toggle" onclick="toggleMonsterTooltips()" id="monsterToggleBtn">
+	        📖 詳細說明
+	      </button>
 	      <img src="${mon.image_url}" class="monster-image" width="200">
 	      <div class="monster-description">${description}</div>
 	      <div class="monster-stats">
 	        <div class="monster-stat-item">
-	          <span>等級：</span>
-	          <span>${mon.level}</span>
+	          <div class="stat-main">
+	            <span>等級：</span>
+	            <span>${mon.level}</span>
+	          </div>
+	          <div class="stat-description">怪物等級影響與玩家的等級差距傷害修正。等級差距最多影響7等，差距越大傷害修正越明顯。</div>
 	        </div>
 	        <div class="monster-stat-item">
-	          <span>屬性：</span>
-	          <span>${elementText}</span>
+	          <div class="stat-main">
+	            <span>屬性：</span>
+	            <span>${elementText}</span>
+	          </div>
+	          <div class="stat-description">${elementDescription}\n\n💡 使用克制屬性的技能攻擊可造成125%傷害，被克制時受到125%傷害。掌握屬性相剋是戰鬥勝利的關鍵！</div>
 	        </div>
 	        <div class="monster-stat-item">
-	          <span>生命值：</span>
-	          <span>${mon.stats.hp}</span>
+	          <div class="stat-main">
+	            <span>生命值：</span>
+	            <span>${mon.stats.hp}</span>
+	          </div>
+	          <div class="stat-description">怪物的總生命值。當怪物生命值降至0時戰鬥勝利。BOSS通常擁有更高的生命值和特殊能力。</div>
 	        </div>
 	        <div class="monster-stat-item">
-	          <span>攻擊力：</span>
-	          <span>${mon.stats.attack}</span>
+	          <div class="stat-main">
+	            <span>攻擊力：</span>
+	            <span>${mon.stats.attack}</span>
+	          </div>
+	          <div class="stat-description">怪物的基礎攻擊力，決定對玩家造成的傷害。實際傷害還會受到玩家護盾值、屬性克制和等級差距影響。</div>
 	        </div>
 	        <div class="monster-stat-item">
-	          <span>護盾值：</span>
-	          <span>${mon.stats.shield}</span>
+	          <div class="stat-main">
+	            <span>護盾值：</span>
+	            <span>${mon.stats.shield}</span>
+	          </div>
+	          <div class="stat-description">怪物的防護能力，每點護盾值減少0.1%受到傷害。可被玩家的護盾穿透屬性減弱。高護盾怪物需要穿透屬性來有效對付。</div>
 	        </div>
 	        <div class="monster-stat-item">
-	          <span>命中率：</span>
-	          <span>${Math.round(mon.stats.accuracy * 100)}%</span>
+	          <div class="stat-main">
+	            <span>命中率：</span>
+	            <span>${Math.round(mon.stats.accuracy * 100)}%</span>
+	          </div>
+	          <div class="stat-description">怪物攻擊命中玩家的機率。會與玩家的迴避率相抗衡。命中率高的怪物較難閃避，需要提升迴避率或護盾值來應對。</div>
 	        </div>
 	        <div class="monster-stat-item">
-	          <span>迴避率：</span>
-	          <span>${Math.round(mon.stats.evade * 100)}%</span>
+	          <div class="stat-main">
+	            <span>迴避率：</span>
+	            <span>${Math.round(mon.stats.evade * 100)}%</span>
+	          </div>
+	          <div class="stat-description">怪物閃避玩家攻擊的機率。迴避率高的怪物較難命中，需要提升命中率或使用必中技能來應對。</div>
 	        </div>
 	        <div class="monster-stat-item">
-	          <span>攻擊速度：</span>
-	          <span>${mon.stats.atk_speed}</span>
+	          <div class="stat-main">
+	            <span>攻擊速度：</span>
+	            <span>${mon.stats.atk_speed}</span>
+	          </div>
+	          <div class="stat-description">決定戰鬥中的出手順序。速度高的一方會優先行動，並可能在一回合內進行多次攻擊。速度劣勢時要小心應對。</div>
 	        </div>
 	 	<div class="monster-stat-item">
-	          <span>護盾穿透：</span>
-	          <span>${monsterPenetrate}</span>
+	          <div class="stat-main">
+	            <span>護盾穿透：</span>
+	            <span>${monsterPenetrate}</span>
+	          </div>
+	          <div class="stat-description">怪物無視玩家護盾的能力。穿透值會直接減少玩家的有效護盾值。高穿透怪物會大幅降低護盾效果，需要更高的護盾值來抵抗。</div>
 	        </div>
 	      </div>
 	    </div>
@@ -1522,19 +1619,19 @@ let monsterTooltipsEnabled = false;
 function togglePlayerTooltips() {
   const container = document.querySelector('.player-info-container .stats-container');
   const toggleBtn = document.getElementById('playerToggleBtn');
-  const mons_container = document.querySelector('.monster-info-container .stats-container');
+  const mons_container = document.querySelector('.monster-info-container .monster-stats');
   
   playerTooltipsEnabled = !playerTooltipsEnabled;
   monsterTooltipsEnabled = !monsterTooltipsEnabled;
   
   if (playerTooltipsEnabled) {
     container.classList.add('tooltips-enabled');
-    mons_container.classList.add('tooltips-enabled');
+    if (mons_container) mons_container.classList.add('tooltips-enabled');
     toggleBtn.classList.add('active');
     toggleBtn.innerHTML = '📖 隱藏說明';
   } else {
     container.classList.remove('tooltips-enabled');
-    mons_container.classList.remove('tooltips-enabled');
+    if (mons_container) mons_container.classList.remove('tooltips-enabled');
     toggleBtn.classList.remove('active');
     toggleBtn.innerHTML = '📖 詳細說明';
   }
@@ -1547,7 +1644,7 @@ function togglePlayerTooltips() {
 }
 
 function toggleMonsterTooltips() {
-  const container = document.querySelector('.monster-info-container .stats-container');
+  const container = document.querySelector('.monster-info-container .monster-stats');
   const toggleBtn = document.getElementById('monsterToggleBtn');
   
   monsterTooltipsEnabled = !monsterTooltipsEnabled;
@@ -1568,6 +1665,10 @@ function toggleMonsterTooltips() {
     toggleBtn.style.transform = '';
   }, 150);
 }
+
+// 全域函數註冊
+window.togglePlayerTooltips = togglePlayerTooltips;
+window.toggleMonsterTooltips = toggleMonsterTooltips;
 
 // 鍵盤快捷鍵支持
 document.addEventListener('keydown', function(e) {
