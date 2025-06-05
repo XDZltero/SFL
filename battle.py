@@ -398,6 +398,7 @@ def simulate_battle(user, monster, user_skill_dict):
     mon_hp = monster["stats"]["hp"]
     player_skill_cd = {k: 0 for k in user.get("skills", {})}
     monster_skill_cd = {s["id"]: 0 for s in monster.get("skills", [])}
+    bondage_round = 0
     user_buffs = []
     mon_buffs = []
     
@@ -463,6 +464,7 @@ def simulate_battle(user, monster, user_skill_dict):
                 # 發動大招
                 ultimate = user_damage_shield["ultimate"]
                 round_log.append(f"你使用 {ultimate['name']} 對 {monster['name']} 造成 {ultimate['damage']} 傷害（對方 HP：{max(mon_hp - ultimate['damage'], 0)}/{monster['stats']['hp']}）")
+                log.append({"round": current_round, "actions": round_log})
                 mon_hp = max(mon_hp - ultimate["damage"], 0)
                 user_damage_shield = None
                 if mon_hp <= 0:
@@ -474,6 +476,7 @@ def simulate_battle(user, monster, user_skill_dict):
                 # 發動大招
                 ultimate = mon_damage_shield["ultimate"]
                 round_log.append(f"{monster['name']} 使用 {ultimate['name']} 對你造成 {ultimate['damage']} 傷害（目前 HP：{max(user_hp - ultimate['damage'], 0)}/{user_battle_stats['hp']}）")
+                log.append({"round": current_round, "actions": round_log})
                 user_hp = max(user_hp - ultimate["damage"], 0)
                 mon_damage_shield = None
                 if user_hp <= 0:
@@ -513,6 +516,11 @@ def simulate_battle(user, monster, user_skill_dict):
                 continue
 
             if actor == "user":
+                if bondage_round > 0:
+                    round_log.append(f"你處於無法行動狀態，剩下 {bondage_round} 回合）")
+                    bondage_round -= 1
+                    continue
+                
                 for sid in player_skill_cd:
                     if player_skill_cd[sid] > 0:
                         player_skill_cd[sid] -= 1
@@ -747,12 +755,59 @@ def simulate_battle(user, monster, user_skill_dict):
 
                 skill_type = skill.get("type", "atk")
 
+                
+                
                 if skill_type == "heal":
                     heal = int(monster["stats"]["hp"] * 0.1 * skill["multiplier"])
                     old_hp = mon_hp
                     mon_hp = min(mon_hp + heal, monster["stats"]["hp"])
                     round_log.append(f"{monster['name']} 使用 {skill['description']} 回復了 {mon_hp - old_hp} 點生命值（目前 HP：{mon_hp}/{monster['stats']['hp']}）")
-                    
+
+                elif skill_type == "bondage":
+                    if calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                                     user_battle_stats["evade"] * user_stats_mod["evade"],
+                                     monster["stats"]["luck"]):
+                        bondage_round += skill.get("round", 1)
+                        round_log.append(f"{monster['name']} 對你施放了 {skill['description']} ， {bondage_round} 回合內無法行動")
+                    else:
+                        skill_name = skill.get("buffInfo", {}).get("buffName", "未知技能")
+                        round_log.append(f"{monster['name']} 對你施放 {skill['description']} 但未命中")
+
+                elif skill_type == "combo_atk":
+                    combo_rounds = skill.get("combo", 1)  # 幾連打
+                    for i in range(combo_rounds):
+                        target_invincible = user_invincible > 0
+                        # 檢查是否必定命中（全屬性攻擊）
+                        is_guaranteed_hit = skill.get("element", []) == ["all"]
+                        
+                        if is_guaranteed_hit or calculate_hit(monster["stats"]["accuracy"] * mon_stats_mod["accuracy"],
+                                         user_battle_stats["evade"] * user_stats_mod["evade"],
+                                         monster["stats"]["luck"]):
+                            ele_mod = get_element_multiplier(skill.get("element", []), ["none"])
+                            atk = monster["stats"]["attack"] * mon_stats_mod["attack"]
+                            shield = user_battle_stats["shield"] * user_stats_mod["shield"]
+                            mon_penetrate = monster["stats"].get("penetrate", 0)
+                            dmg = calculate_damage(atk, skill["multiplier"], monster["stats"].get("other_bonus", 0), shield, mon_penetrate)
+                            dmg = round(dmg * mon_level_mod * ele_mod * mon_stats_mod["all_damage"])
+                            
+                            if target_invincible:
+                                dmg = 0
+                            else:
+                                # 處理傷害累積盾
+                                if user_damage_shield:
+                                    user_damage_shield["accumulated_damage"] += dmg
+                                    if user_damage_shield["accumulated_damage"] >= user_damage_shield["threshold"]:
+                                        round_log.append(f"{monster['name']} 的攻擊阻止了你的大招發動")
+                                        user_damage_shield = None
+                                        
+                            user_hp = max(user_hp - dmg, 0)
+                            hit_message = f"{monster['name']} 使用 {skill['description']} 對你造成 {dmg} 傷害（目前 HP：{user_hp}/{user_battle_stats['hp']}）"
+                            if is_guaranteed_hit:
+                                hit_message += " 【必定命中】"
+                            round_log.append(hit_message)
+                        else:
+                            round_log.append(f"{monster['name']} 攻擊未命中")
+                
                 elif skill_type == "buff":
                     buff = {
                         "name": skill.get("buffInfo", {}).get("buffName", "未知"),
