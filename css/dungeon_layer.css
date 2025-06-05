@@ -506,9 +506,7 @@ body.boss-mode .monster-hp {
 
 /* 切換按鈕樣式 */
 .info-toggle {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+  position: static; /* 改為 static，由容器控制位置 */
   background: rgba(0, 255, 255, 0.1);
   border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 6px;
@@ -519,7 +517,8 @@ body.boss-mode .monster-hp {
   transition: all 0.3s ease;
   font-family: 'Orbitron', sans-serif;
   font-weight: 600;
-  z-index: 10;
+  white-space: nowrap;
+  margin: 0; /* 移除任何 margin */
 }
 
 .info-toggle:hover {
@@ -617,4 +616,15 @@ body.boss-mode .stat-description {
     justify-content: space-between;
     width: 100%;
   }
+}
+
+/* 按鈕組容器 */
+.info-toggle-group {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
 }
