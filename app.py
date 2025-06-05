@@ -2163,8 +2163,13 @@ def world_boss_challenge():
                 # 🚀 如果擊殺了世界王，掉落率提升
                 if boss_defeated_this_attack:
                     drop_rate = min(1.0, drop_rate * 2.0)  # 擊殺掉落率翻倍，但不超過100%
+                should_drop = False
+                if drop_rate >= 1.0:
+                    should_drop = True  # 必掉道具
+                else:
+                    should_drop = random.random() < drop_rate
                 
-                if random.random() <= drop_rate:
+                if should_drop:
                     item_id = drop["id"]
                     item_value = drop["value"]
                     
