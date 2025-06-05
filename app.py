@@ -13,7 +13,8 @@ from datetime import datetime, timedelta, timezone
 import pytz
 import threading
 import schedule
-
+import functools
+import hashlib
 from urllib.parse import urlencode
 
 app = Flask(__name__)
@@ -3714,6 +3715,127 @@ def execute_purchase_transaction(user_id, item_id, item_config, user_purchases):
     except Exception as e:
         print(f"❌ 交易執行失敗: {str(e)}")
         return False, str(e)
+# 🛡️ 防作弊：購買頻率限制
+purchase_rate_limits = {}
+
+def check_purchase_rate_limit(user_id):
+    """檢查購買頻率限制，防止機器人快速購買"""
+    current_time = time.time()
+    
+    if user_id not in purchase_rate_limits:
+        purchase_rate_limits[user_id] = []
+    
+    # 移除1分鐘前的記錄
+    purchase_rate_limits[user_id] = [
+        timestamp for timestamp in purchase_rate_limits[user_id] 
+        if current_time - timestamp < 60
+    ]
+    
+    # 檢查1分鐘內購買次數
+    if len(purchase_rate_limits[user_id]) >= 10:  # 1分鐘最多10次購買
+        return False, "購買過於頻繁，請稍後再試"
+    
+    # 記錄本次購買時間
+    purchase_rate_limits[user_id].append(current_time)
+    
+    return True, "通過頻率檢查"
+
+# 🔒 加強版權限驗證
+def verify_token():
+    """
+    驗證 Firebase ID Token
+    這個函數需要根據你現有的驗證邏輯調整
+    """
+    try:
+        # 從請求標頭取得 token
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return None
+        
+        token = auth_header.split('Bearer ')[1]
+        
+        # 使用 Firebase Admin SDK 驗證 token
+        from firebase_admin import auth
+        decoded_token = auth.verify_id_token(token)
+        
+        return {
+            'uid': decoded_token['uid'],
+            'email': decoded_token['email']
+        }
+        
+    except Exception as e:
+        print(f"❌ Token驗證失敗: {e}")
+        return None
+
+ 📊 商店統計和監控
+@app.route('/shop_admin_stats', methods=['GET'])
+def get_shop_admin_stats():
+    """
+    管理員專用：商店統計資訊
+    用於監控異常購買行為
+    """
+    try:
+        # 🔐 檢查管理員權限（需要根據你的權限系統調整）
+        user_info = verify_token()
+        if not user_info or not is_admin(user_info['email']):
+            return jsonify({"error": "權限不足"}), 403
+        
+        db = firestore.client()
+        
+        # 統計最近24小時的購買
+        current_time = get_current_taipei_time()
+        yesterday = current_time - timedelta(days=1)
+        yesterday_timestamp = yesterday.timestamp() * 1000
+        
+        purchases_collection = db.collection("shop_purchases")
+        recent_purchases = []
+        
+        for doc in purchases_collection.stream():
+            data = doc.to_dict()
+            last_update = data.get('last_update_time', 0)
+            
+            if last_update > yesterday_timestamp:
+                # 計算使用者的購買統計
+                user_stats = {
+                    'user_id': doc.id,
+                    'last_update': datetime.fromtimestamp(last_update / 1000).strftime('%Y-%m-%d %H:%M:%S'),
+                    'total_items_purchased': 0,
+                    'purchases_by_item': {}
+                }
+                
+                for item_id, item_data in data.get('purchases', {}).items():
+                    total = item_data.get('total_purchased', 0)
+                    user_stats['total_items_purchased'] += total
+                    user_stats['purchases_by_item'][item_id] = total
+                
+                if user_stats['total_items_purchased'] > 0:
+                    recent_purchases.append(user_stats)
+        
+        # 排序：購買最多的使用者在前
+        recent_purchases.sort(key=lambda x: x['total_items_purchased'], reverse=True)
+        
+        return jsonify({
+            "success": True,
+            "period": "最近24小時",
+            "total_active_users": len(recent_purchases),
+            "recent_purchases": recent_purchases[:20]  # 只返回前20名
+        })
+        
+    except Exception as e:
+        print(f"❌ 取得商店統計失敗: {e}")
+        return jsonify({"error": str(e)}), 500
+
+def is_admin(email):
+    """
+    檢查是否為管理員
+    需要根據你的管理員系統調整
+    """
+    admin_emails = [
+        # 在這裡添加管理員 email
+        "xdzltero@gmail.com",
+        # 你的管理員 email
+    ]
+    return email in admin_emails
 
 def apply_backend_reset_logic(user_purchases, reset_info, current_time):
     """
@@ -3722,6 +3844,131 @@ def apply_backend_reset_logic(user_purchases, reset_info, current_time):
     """
     needs_reset = reset_info['needs_reset']
     periods = reset_info['periods']
+
+@app.route('/shop_cleanup', methods=['POST'])
+def shop_cleanup():
+    """
+    清理過期的購買記錄和速率限制記錄
+    建議設定 cron job 定期執行
+    """
+    try:
+        # 🔐 檢查管理員權限
+        user_info = verify_token()
+        if not user_info or not is_admin(user_info['email']):
+            return jsonify({"error": "權限不足"}), 403
+        
+        current_time = time.time()
+        
+        # 清理購買頻率限制記錄
+        global purchase_rate_limits
+        for user_id in list(purchase_rate_limits.keys()):
+            purchase_rate_limits[user_id] = [
+                timestamp for timestamp in purchase_rate_limits[user_id]
+                if current_time - timestamp < 3600  # 保留1小時內的記錄
+            ]
+            
+            # 移除空的記錄
+            if not purchase_rate_limits[user_id]:
+                del purchase_rate_limits[user_id]
+        
+        return jsonify({
+            "success": True,
+            "message": "清理完成",
+            "remaining_rate_limits": len(purchase_rate_limits)
+        })
+        
+    except Exception as e:
+        print(f"❌ 清理失敗: {e}")
+        return jsonify({"error": str(e)}), 500
+
+def detect_suspicious_activity(user_id, item_id, user_purchases):
+    """
+    檢測可疑的購買行為
+    """
+    warnings = []
+    
+    # 檢查短時間內大量購買
+    current_time = get_current_taipei_time()
+    recent_updates = []
+    
+    for item, data in user_purchases.get('purchases', {}).items():
+        last_update = data.get('last_update_time', 0)
+        if last_update > 0:
+            update_time = datetime.fromtimestamp(last_update / 1000, tz=current_time.tzinfo)
+            time_diff = (current_time - update_time).total_seconds() / 60  # 轉換為分鐘
+            
+            if time_diff < 10:  # 10分鐘內
+                recent_updates.append((item, data.get('total_purchased', 0)))
+    
+    if len(recent_updates) > 5:
+        warnings.append(f"10分鐘內購買了 {len(recent_updates)} 種商品")
+    
+    # 檢查購買數量異常
+    item_data = user_purchases.get('purchases', {}).get(item_id, {})
+    total_purchased = item_data.get('total_purchased', 0)
+    
+    if total_purchased > 50:  # 單一商品購買超過50次
+        warnings.append(f"商品 {item_id} 總購買次數異常: {total_purchased}")
+    
+    # 記錄警告
+    if warnings:
+        print(f"🚨 可疑活動檢測 - 使用者: {user_id}, 警告: {warnings}")
+        
+        # 可以選擇將警告寫入日誌文件或資料庫
+        # log_suspicious_activity(user_id, item_id, warnings)
+    
+    return warnings
+
+def log_purchase_activity(user_id, item_id, action, details=None):
+    """
+    記錄購買活動日誌
+    """
+    log_entry = {
+        'timestamp': get_current_taipei_time().isoformat(),
+        'user_id': user_id,
+        'item_id': item_id,
+        'action': action,
+        'details': details or {}
+    }
+    
+    # 這裡可以寫入日誌文件或資料庫
+    print(f"📝 購買日誌: {json.dumps(log_entry, ensure_ascii=False)}")
+
+def reload_shop_config():
+    """
+    重新載入商店配置（熱更新）
+    """
+    global SHOP_CONFIG
+    try:
+        new_config = load_shop_config()
+        if new_config:
+            SHOP_CONFIG = new_config
+            print("✅ 商店配置已重新載入")
+            return True
+    except Exception as e:
+        print(f"❌ 重新載入商店配置失敗: {e}")
+    return False
+
+@app.route('/shop_reload_config', methods=['POST'])
+def shop_reload_config():
+    """
+    管理員專用：重新載入商店配置
+    """
+    try:
+        user_info = verify_token()
+        if not user_info or not is_admin(user_info['email']):
+            return jsonify({"error": "權限不足"}), 403
+        
+        success = reload_shop_config()
+        
+        return jsonify({
+            "success": success,
+            "message": "配置重新載入完成" if success else "配置重新載入失敗",
+            "total_items": len(SHOP_CONFIG)
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     import os
