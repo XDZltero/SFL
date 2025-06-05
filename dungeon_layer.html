@@ -1610,27 +1610,36 @@ window.emergencyResetCooldown = function() {
   }
 };
 
+
 let playerTooltipsEnabled = false;
 let monsterTooltipsEnabled = false;
 
 function togglePlayerTooltips() {
+  console.log('🔧 togglePlayerTooltips 被調用');
+  
   const container = document.querySelector('.player-info-container .stats-container');
   const toggleBtn = document.getElementById('playerToggleBtn');
   const mons_container = document.querySelector('.monster-info-container .monster-stats');
+
+  console.log('Elements found:', {
+    container: !!container,
+    toggleBtn: !!toggleBtn,
+    mons_container: !!mons_container
+  });
 
   // 檢查必要元素是否存在
   if (!container || !toggleBtn) {
     console.warn('⚠️ 必要的 DOM 元素未找到，無法切換 tooltip');
     console.log('container:', container);
     console.log('toggleBtn:', toggleBtn);
-    console.log('mons_container:', mons_container);
-    return; // 早期返回，避免錯誤
+    return;
   }
 
   playerTooltipsEnabled = !playerTooltipsEnabled;
+  console.log('🔄 Tooltip 狀態切換為:', playerTooltipsEnabled);
   
   if (playerTooltipsEnabled) {
-    // 安全地操作 classList
+    // 啟用 tooltip
     container.classList.add('tooltips-enabled');
     
     // 怪物容器可能不存在（載入失敗或還未載入）
@@ -1641,6 +1650,7 @@ function togglePlayerTooltips() {
     toggleBtn.classList.add('active');
     toggleBtn.innerHTML = '📖 隱藏說明';
   } else {
+    // 隱藏 tooltip
     container.classList.remove('tooltips-enabled');
     
     // 安全地移除怪物容器的 class
@@ -1658,6 +1668,51 @@ function togglePlayerTooltips() {
     toggleBtn.style.transform = '';
   }, 150);
 }
+
+// 🚀 立即註冊全域函數，確保在 HTML 生成前就可用
+window.togglePlayerTooltips = togglePlayerTooltips;
+
+// 🚀 替代方案：使用事件委託來處理按鈕點擊
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'playerToggleBtn') {
+    console.log('🎯 通過事件委託檢測到按鈕點擊');
+    togglePlayerTooltips();
+  }
+});
+
+// 🚀 鍵盤快捷鍵支持（保持原有功能）
+document.addEventListener('keydown', function(e) {
+  if (e.key.toLowerCase() === 'h' && !e.ctrlKey && !e.altKey) {
+    togglePlayerTooltips();
+  }
+});
+
+// 🚀 調試：監聽按鈕是否被正確創建
+const observer = new MutationObserver(function(mutations) {
+  mutations.forEach(function(mutation) {
+    if (mutation.type === 'childList') {
+      const toggleBtn = document.getElementById('playerToggleBtn');
+      if (toggleBtn && !toggleBtn.dataset.listenerAdded) {
+        console.log('✅ Toggle 按鈕已檢測到，確保事件綁定');
+        toggleBtn.dataset.listenerAdded = 'true';
+        
+        // 確保按鈕可以正常工作
+        toggleBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('🎯 直接事件監聽器檢測到點擊');
+          togglePlayerTooltips();
+        });
+      }
+    }
+  });
+});
+
+// 開始觀察
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
+});
 
 
 // 全域函數註冊
