@@ -41,7 +41,9 @@
 }
 
 .stat-item {
-  display: block;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin: 8px 0;
   padding: 8px 12px;
   background: rgba(0, 255, 255, 0.05);
@@ -51,8 +53,6 @@
   font-weight: 600;
   font-size: 0.9em;
   transition: all 0.3s ease;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .stat-item:hover {
@@ -61,29 +61,30 @@
   transform: translateX(3px);
 }
 
-/* 玩家統計項目的主要內容 */
-.stat-item .stat-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.stat-item .stat-main span:first-child {
+.stat-item span:first-child {
   color: #ffd93d;
   text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
-  flex-shrink: 0;
+  flex: 1;
 }
 
-.stat-item .stat-main span:last-child {
+.stat-item span:last-child {
   color: #00ffff;
   text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
   font-weight: 700;
   text-align: right;
-  flex-shrink: 0;
 }
 
 /* 怪物資訊優化樣式 */
+.monster-info-container {
+  background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 15px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
 
 .monster-info-container::before {
   content: '';
@@ -317,6 +318,18 @@
   position: relative;
   z-index: 1;
   width: 100%;
+}
+
+/* 確保怪物資訊容器有足夠的右側空間給按鈕 */
+.monster-info-container {
+  background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 15px;
+  padding: 20px 100px 20px 20px; /* 右側預留空間給按鈕 */
+  position: relative;
+  overflow: hidden;
+  text-align: center;
 }
 
 /* BOSS 模式下的容器樣式 */
@@ -626,18 +639,10 @@ body.boss-mode .monster-hp {
   margin-top: 8px;
   line-height: 1.8;
   font-family: 'Courier New', monospace;
-  font-size: 0.85em;
-  display: none !important;
+  /* 🚀 新增：預設隱藏 */
+  display: none;
   opacity: 0;
   transition: opacity 0.3s ease;
-  width: 100%;
-  box-sizing: border-box;
-  border-top: 2px solid rgba(0, 255, 255, 0.2);
-}
-
-.stat-item .stat-description {
-  color: #b8e6ff;
-  border-top-color: rgba(0, 255, 255, 0.2);
 }
 
 /* 啟用詳細說明模式時才顯示 */
@@ -726,39 +731,28 @@ body.boss-mode .stat-description {
   z-index: 10;
 }
 
-/* === 響應式設計 === */
+/* 手機響應式調整 */
 @media (max-width: 768px) {
-  .player-info-container,
   .monster-info-container {
     padding: 15px 15px 60px 15px; /* 手機上下方預留空間 */
   }
   
-  .monster-info-container.boss {
-    padding: 15px 15px 60px 15px;
-  }
-  
-  .info-toggle-group {
-    position: static;
-    margin: 10px auto 0 auto;
-    width: fit-content;
-    flex-direction: row;
-    justify-content: center;
-  }
-  
-  .info-toggle {
-    font-size: 0.65em;
-    padding: 5px 8px;
-    width: auto;
-  }
-  
-  .stat-item,
   .monster-stat-item {
     font-size: 0.8em;
     padding: 6px 8px;
   }
   
-  .stat-description {
-    font-size: 0.75em;
-    padding: 8px;
+  .monster-stat-item .stat-main {
+    justify-content: space-between;
+  }
+  
+  /* 確保手機上的按鈕不影響內容 */
+  .info-toggle-group {
+    position: static;
+    margin: 10px auto 0 auto;
+    width: fit-content;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
   }
 }
