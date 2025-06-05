@@ -1596,11 +1596,8 @@ window.emergencyResetCooldown = function() {
 
 
 let playerTooltipsEnabled = false;
-let monsterTooltipsEnabled = false;
 
 function togglePlayerTooltips() {
-  console.log('🔧 togglePlayerTooltips 被調用');
-  
   const container = document.querySelector('.player-info-container .stats-container');
   const toggleBtn = document.getElementById('playerToggleBtn');
   const mons_container = document.querySelector('.monster-info-container .monster-stats');
@@ -1614,8 +1611,6 @@ function togglePlayerTooltips() {
   // 檢查必要元素是否存在
   if (!container || !toggleBtn) {
     console.warn('⚠️ 必要的 DOM 元素未找到，無法切換 tooltip');
-    console.log('container:', container);
-    console.log('toggleBtn:', toggleBtn);
     return;
   }
 
@@ -1653,54 +1648,9 @@ function togglePlayerTooltips() {
   }, 150);
 }
 
-// 🚀 立即註冊全域函數，確保在 HTML 生成前就可用
-window.togglePlayerTooltips = togglePlayerTooltips;
-
-// 🚀 替代方案：使用事件委託來處理按鈕點擊
-document.addEventListener('click', function(e) {
-  if (e.target && e.target.id === 'playerToggleBtn') {
-    console.log('🎯 通過事件委託檢測到按鈕點擊');
-    togglePlayerTooltips();
-  }
-});
-
-// 🚀 鍵盤快捷鍵支持（保持原有功能）
-document.addEventListener('keydown', function(e) {
-  if (e.key.toLowerCase() === 'h' && !e.ctrlKey && !e.altKey) {
-    togglePlayerTooltips();
-  }
-});
-
-// 🚀 調試：監聽按鈕是否被正確創建
-const observer = new MutationObserver(function(mutations) {
-  mutations.forEach(function(mutation) {
-    if (mutation.type === 'childList') {
-      const toggleBtn = document.getElementById('playerToggleBtn');
-      if (toggleBtn && !toggleBtn.dataset.listenerAdded) {
-        console.log('✅ Toggle 按鈕已檢測到，確保事件綁定');
-        toggleBtn.dataset.listenerAdded = 'true';
-        
-        // 確保按鈕可以正常工作
-        toggleBtn.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('🎯 直接事件監聽器檢測到點擊');
-          togglePlayerTooltips();
-        });
-      }
-    }
-  });
-});
-
-// 開始觀察
-observer.observe(document.body, {
-  childList: true,
-  subtree: true
-});
+window.togglePlayerTooltips = togglePlayerTooltips;	
 
 
-// 全域函數註冊
-window.togglePlayerTooltips = togglePlayerTooltips;
 
 // 鍵盤快捷鍵支持
 document.addEventListener('keydown', function(e) {
@@ -1730,6 +1680,8 @@ if (window.location.hostname === 'localhost' || window.location.search.includes(
   
   console.log('🔧 開發模式已啟用，使用 emergencyResetCooldown() 來緊急重置冷卻');
 }
+
+
   </script>
 </body>
 </html>
