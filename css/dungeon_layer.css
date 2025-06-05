@@ -748,28 +748,39 @@ body.boss-mode .stat-description {
   z-index: 10;
 }
 
-/* 手機響應式調整 */
+/* === 響應式設計 === */
 @media (max-width: 768px) {
+  .player-info-container,
   .monster-info-container {
     padding: 15px 15px 60px 15px; /* 手機上下方預留空間 */
   }
   
+  .monster-info-container.boss {
+    padding: 15px 15px 60px 15px;
+  }
+  
+  .info-toggle-group {
+    position: static;
+    margin: 10px auto 0 auto;
+    width: fit-content;
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .info-toggle {
+    font-size: 0.65em;
+    padding: 5px 8px;
+    width: auto;
+  }
+  
+  .stat-item,
   .monster-stat-item {
     font-size: 0.8em;
     padding: 6px 8px;
   }
   
-  .monster-stat-item .stat-main {
-    justify-content: space-between;
-  }
-  
-  /* 確保手機上的按鈕不影響內容 */
-  .info-toggle-group {
-    position: static;
-    margin: 10px auto 0 auto;
-    width: fit-content;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
+  .stat-description {
+    font-size: 0.75em;
+    padding: 8px;
   }
 }
