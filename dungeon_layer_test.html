@@ -13,62 +13,36 @@
   background: none !important;
 }
 
-/* 詳細說明按鈕樣式 */
-.detail-toggle-btn {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  padding: 6px 12px;
-  border-radius: 15px;
-  color: white;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 600;
-  font-size: 0.8em;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-  z-index: 10;
-}
-
-.detail-toggle-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-}
-
-.detail-toggle-btn.active {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
-}
-
-.detail-toggle-btn.active:hover {
-  background: linear-gradient(135deg, #ff5252 0%, #d84315 100%);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.5);
-}
-
 /* 詳細說明容器 */
 .stat-detail {
   max-height: 0;
+  opacity: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease-out;
-  background: none; /* 原本背景會佔空間 */
-  border-radius: 0;
   margin-top: 0;
   padding: 0;
-  opacity: 0;
-  visibility: hidden;
   height: 0;
-}
-
-.stat-detail {
-  display: none;
+  visibility: hidden;
+  transition: all 0.3s ease;
 }
 
 .stat-detail.expanded {
-  display: block;
-  animation: expandFadeIn 0.3s ease-in-out;
+  max-height: 500px; /* 足夠的展開高度 */
+  opacity: 1;
+  padding: 8px 12px;
+  margin-top: 6px;
+  height: auto;
+  visibility: visible;
+}
+
+.stat-detail-content {
+  font-size: 0.75em;
+  color: #b8e6ff;
+  line-height: 1.4;
+  border-left: 3px solid rgba(0, 255, 255, 0.3);
+  margin-left: 8px;
+  text-shadow: 0 0 3px rgba(184, 230, 255, 0.6);
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.08), rgba(0, 255, 255, 0.02));
+  border-radius: 6px;
 }
 	
 @keyframes expandFadeIn {
@@ -131,9 +105,38 @@ body.boss-mode .monster-element-detail-content {
   text-shadow: 0 0 5px rgba(255, 184, 77, 0.4);
 }
 
+.detail-toggle-btn {
+  position: static; /* 改為 static，由容器控制位置 */
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.75em;
+  color: #00ffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+  margin: 0; /* 移除任何 margin */
+}
+
+.detail-toggle-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  transform: scale(1.05);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.detail-toggle-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+  border-color: rgba(0, 255, 255, 0.5);
+}
+
+
 /* 響應式設計 */
 @media (max-width: 768px) {
-  .detail-toggle-btn {
+  .-toggle-btn {
     padding: 4px 8px;
     font-size: 0.7em;
     top: 10px;
