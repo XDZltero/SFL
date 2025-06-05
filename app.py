@@ -3539,10 +3539,101 @@ def shop_refresh_resets():
             "error": f"刷新商店失敗: {str(e)}"
         }), 500
 
-shop_reset_manager = ShopResetManager(db)
+@app.route("/shop_update_visit_time", methods=["POST"])
+@require_auth
+def shop_update_visit_time():
+    """更新使用者進入商店的時間"""
+    try:
+        data = request.json
+        user_id = request.user_id
+        visit_time = data.get("visit_time")
+        
+        if not visit_time:
+            return jsonify({"error": "缺少進入時間參數"}), 400
+        
+        # 取得或創建購買記錄
+        purchase_ref = db.collection("shop_purchases").document(user_id)
+        purchase_doc = purchase_ref.get()
+        
+        if purchase_doc.exists:
+            purchase_data = purchase_doc.to_dict()
+        else:
+            purchase_data = {
+                "user_id": user_id,
+                "purchases": {},
+                "last_update_time": 0
+            }
+        
+        # 更新進入時間
+        purchase_data["last_shop_visit_time"] = visit_time
+        purchase_data["last_update_time"] = visit_time
+        
+        # 保存到資料庫
+        purchase_ref.set(purchase_data)
+        
+        print(f"🏪 更新使用者 {user_id} 進入商店時間：{visit_time}")
+        
+        return jsonify({
+            "success": True,
+            "message": "進入時間已更新",
+            "visit_time": visit_time
+        })
+        
+    except Exception as e:
+        print(f"❌ 更新進入時間失敗: {e}")
+        return jsonify({"error": f"更新進入時間失敗: {str(e)}"}), 500
+
+@app.route("/shop_save_reset_purchases", methods=["POST"])
+@require_auth
+def shop_save_reset_purchases():
+    """保存重置後的購買記錄"""
+    try:
+        data = request.json
+        user_id = request.user_id
+        purchases_data = data.get("purchases")
+        
+        if not purchases_data:
+            return jsonify({"error": "缺少購買記錄資料"}), 400
+        
+        # 驗證資料結構
+        if not isinstance(purchases_data, dict):
+            return jsonify({"error": "購買記錄格式錯誤"}), 400
+        
+        # 確保包含必要欄位
+        if "user_id" not in purchases_data:
+            purchases_data["user_id"] = user_id
+        
+        if "purchases" not in purchases_data:
+            purchases_data["purchases"] = {}
+        
+        # 更新時間戳
+        current_time = time.time()
+        purchases_data["last_update_time"] = current_time
+        
+        if "last_shop_visit_time" not in purchases_data:
+            purchases_data["last_shop_visit_time"] = current_time
+        
+        # 保存到資料庫
+        purchase_ref = db.collection("shop_purchases").document(user_id)
+        purchase_ref.set(purchases_data)
+        
+        # 清除相關快取
+        invalidate_user_cache(user_id)
+        
+        print(f"🔄 保存使用者 {user_id} 的重置購買記錄")
+        
+        return jsonify({
+            "success": True,
+            "message": "重置購買記錄已保存",
+            "purchases": purchases_data,
+            "save_time": current_time
+        })
+        
+    except Exception as e:
+        print(f"❌ 保存重置購買記錄失敗: {e}")
+        return jsonify({"error": f"保存重置購買記錄失敗: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    shop_reset_manager.start_scheduler()
     import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
