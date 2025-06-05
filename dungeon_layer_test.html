@@ -53,18 +53,27 @@
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease-out;
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.05) 0%, rgba(0, 255, 255, 0.02) 100%);
-  border-radius: 6px;
+  background: none; /* 原本背景會佔空間 */
+  border-radius: 0;
   margin-top: 0;
+  padding: 0;
+  opacity: 0;
+  visibility: hidden;
+  height: 0;
 }
 
 .stat-detail.expanded {
   max-height: 200px;
-  transition: max-height 0.5s ease-in;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.05) 0%, rgba(0, 255, 255, 0.02) 100%);
+  border-radius: 6px;
+  opacity: 1;
+  visibility: visible;
+  height: auto;
+  margin-top: 5px;
 }
 
 .stat-detail-content {
-  padding: 8px 12px;
   font-size: 0.75em;
   color: #b8e6ff;
   line-height: 1.4;
