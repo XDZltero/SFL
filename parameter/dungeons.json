@@ -94,7 +94,7 @@
     "bossId": "Creator_defile",
     "min_level": 10,
     "image": "https://i.postimg.cc/hG07jRbw/dungeon-skycity.png",
-    "monsters": ["silver_emissary"],
+    "monsters": ["actor_test"],
     "Pre-Task": "dungeon_moss",
     "Pre-Task-ReqTime" : 1
   }
