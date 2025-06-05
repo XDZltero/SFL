@@ -724,7 +724,6 @@ function percent(val) {
 	    }
 	  };
 	
-	  // 🆕 完整的 Tooltip 說明
 	  const tooltips = {
 	    level: "角色的當前等級。等級差距會影響戰鬥傷害：最多7等差距時傷害變為1.5倍或0.5倍。",
 	    exp: "角色的經驗值與升級進度。透過戰鬥獲得經驗值，累積足夠經驗值後會自動升級。不同怪物給予的經驗值不同，高等級怪物給予更多經驗值。",
@@ -741,6 +740,7 @@ function percent(val) {
 	    skill_points: "可用於升級技能的點數。每升級獲得3點。"
 	  };
 	
+	  // 🔧 統一所有項目的結構，確保tooltip可以正常展開
 	  const statsList = [
 	    { key: "level", label: "等級", value: data.level },
 	    { key: "exp", label: "經驗值", value: `${data.exp} (${progress})` },
@@ -760,17 +760,19 @@ function percent(val) {
 	  let html = `
 	    <div class="player-info-container">
 	      <h3 class="player-name">👤 ${data.nickname}</h3>
-       	      <div class="info-toggle-group">
-		  <button class="info-toggle" onclick="togglePlayerTooltips()" id="playerToggleBtn">
-		    📖 詳細說明
-		  </button>
-		</div>
+	      <div class="info-toggle-group">
+	        <button class="info-toggle" onclick="toggleTooltips()" id="tooltipToggleBtn">
+	          📖 詳細說明
+	        </button>
+	      </div>
 	      <div class="stats-container">
 	  `;
 	  
 	  statsList.forEach(({ key, label, value }) => {
+	    const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現。";
+	    
 	    if (value !== undefined) {
-	      const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現。";
+	      // 有固定值的項目（等級、經驗、點數等）
 	      html += `
 	        <div class="stat-item">
 	          <div class="stat-main">
@@ -780,8 +782,8 @@ function percent(val) {
 	          <div class="stat-description">${tooltip}</div>
 	        </div>`;
 	    } else if (["hp", "attack", "shield", "penetrate", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
+	      // 需要計算基礎值+裝備值的項目
 	      const formatted = getFormatted(key);
-	      const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現，數值越高效果越好。";
 	      
 	      html += `
 	        <div class="stat-item">
