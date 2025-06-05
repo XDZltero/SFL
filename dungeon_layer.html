@@ -724,6 +724,7 @@ function percent(val) {
 	    }
 	  };
 	
+	  // 🆕 完整的 Tooltip 說明
 	  const tooltips = {
 	    level: "角色的當前等級。等級差距會影響戰鬥傷害：最多7等差距時傷害變為1.5倍或0.5倍。",
 	    exp: "角色的經驗值與升級進度。透過戰鬥獲得經驗值，累積足夠經驗值後會自動升級。不同怪物給予的經驗值不同，高等級怪物給予更多經驗值。",
@@ -740,7 +741,6 @@ function percent(val) {
 	    skill_points: "可用於升級技能的點數。每升級獲得3點。"
 	  };
 	
-	  // 🔧 統一所有項目的結構，確保tooltip可以正常展開
 	  const statsList = [
 	    { key: "level", label: "等級", value: data.level },
 	    { key: "exp", label: "經驗值", value: `${data.exp} (${progress})` },
@@ -760,19 +760,17 @@ function percent(val) {
 	  let html = `
 	    <div class="player-info-container">
 	      <h3 class="player-name">👤 ${data.nickname}</h3>
-	      <div class="info-toggle-group">
-	        <button class="info-toggle" onclick="toggleTooltips()" id="tooltipToggleBtn">
-	          📖 詳細說明
-	        </button>
-	      </div>
+       	      <div class="info-toggle-group">
+		  <button class="info-toggle" onclick="togglePlayerTooltips()" id="playerToggleBtn">
+		    📖 詳細說明
+		  </button>
+		</div>
 	      <div class="stats-container">
 	  `;
 	  
 	  statsList.forEach(({ key, label, value }) => {
-	    const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現。";
-	    
 	    if (value !== undefined) {
-	      // 有固定值的項目（等級、經驗、點數等）
+	      const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現。";
 	      html += `
 	        <div class="stat-item">
 	          <div class="stat-main">
@@ -782,8 +780,8 @@ function percent(val) {
 	          <div class="stat-description">${tooltip}</div>
 	        </div>`;
 	    } else if (["hp", "attack", "shield", "penetrate", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
-	      // 需要計算基礎值+裝備值的項目
 	      const formatted = getFormatted(key);
+	      const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現，數值越高效果越好。";
 	      
 	      html += `
 	        <div class="stat-item">
@@ -833,46 +831,46 @@ function formatMonsterInfo(mon, isLastLayer) {
         case "pyro":
         case "火":
           descriptions.push("🔥 火屬性");
-          descriptions.push("優勢：水屬性、全屬性 (+25% 傷害)");
-          descriptions.push("劣勢：自然屬性 (-25% 傷害)");
+	  descriptions.push("優勢：水屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("劣勢：自然屬性 (-25% 傷害)");
           break;
         case "hydro":
         case "水":
           descriptions.push("💧 水屬性");
-          descriptions.push("優勢： 雷屬性、全屬性 (+25% 傷害)");
-          descriptions.push("劣勢： 火屬性 (-25% 傷害)");
+	  descriptions.push("優勢： 雷屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("劣勢： 火屬性 (-25% 傷害)");
           break;
         case "electro":
         case "雷":
           descriptions.push("⚡ 雷屬性");
-          descriptions.push("優勢：自然屬性、全屬性 (+25% 傷害)");
-          descriptions.push("劣勢：水屬性 (-25% 傷害)");
+	  descriptions.push("優勢：自然屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("劣勢：水屬性 (-25% 傷害)");
           break;
         case "nature":
         case "自然":
           descriptions.push("🌿 自然屬性");
-          descriptions.push("優勢：火屬性、全屬性 (+25% 傷害)");
-          descriptions.push("劣勢：雷屬性 (-25% 傷害)");
+	  descriptions.push("優勢：火屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("劣勢：雷屬性 (-25% 傷害)");
           break;
         case "light":
         case "光":
           descriptions.push("✨ 光屬性");
-          descriptions.push("優勢：暗屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("優勢：暗屬性、全屬性 (+25% 傷害)");
           break;
         case "dark":
         case "暗":
           descriptions.push("🌑 暗屬性");
-          descriptions.push("優勢：光屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("優勢：光屬性、全屬性 (+25% 傷害)");
           break;
         case "all":
         case "全":
           descriptions.push("🌟 全屬性");
-          descriptions.push("  └ 劣勢：其他屬性 (-25% 傷害)");
+	  descriptions.push("  └ 劣勢：其他屬性 (-25% 傷害)");
           break;
         case "none":
         case "無":
           descriptions.push("⚪ 無屬性");
-          descriptions.push("優勢：全屬性 (+25% 傷害)");
+	  descriptions.push("優勢：全屬性 (+25% 傷害)");
           break;
         default:
           descriptions.push(`${elementMap[element] || element}屬性`);
@@ -895,7 +893,6 @@ function formatMonsterInfo(mon, isLastLayer) {
   
   const elementDescription = generateElementDescription(mon.element);
 
-  // 🔧 修正：統一所有統計項目的結構，確保對齊一致
   const html = `
     <div class="${containerClass}">
       ${bossTitle}
@@ -904,10 +901,8 @@ function formatMonsterInfo(mon, isLastLayer) {
       <div class="monster-description">${description}</div>
       <div class="monster-stats">
         <div class="monster-stat-item">
-          <div class="stat-main">
-            <span>等級：</span>
-            <span>${mon.level}</span>
-          </div>
+          <span>等級：</span>
+          <span>${mon.level}</span>
         </div>
         <div class="monster-stat-item">
           <div class="stat-main">
@@ -917,46 +912,32 @@ function formatMonsterInfo(mon, isLastLayer) {
           <div class="stat-description">${elementDescription}</div>
         </div>
         <div class="monster-stat-item">
-          <div class="stat-main">
-            <span>生命值：</span>
-            <span>${mon.stats.hp}</span>
-          </div>
+          <span>生命值：</span>
+          <span>${mon.stats.hp}</span>
         </div>
         <div class="monster-stat-item">
-          <div class="stat-main">
-            <span>攻擊力：</span>
-            <span>${mon.stats.attack}</span>
-          </div>
+          <span>攻擊力：</span>
+          <span>${mon.stats.attack}</span>
         </div>
         <div class="monster-stat-item">
-          <div class="stat-main">
-            <span>護盾值：</span>
-            <span>${mon.stats.shield}</span>
-          </div>
+          <span>護盾值：</span>
+          <span>${mon.stats.shield}</span>
         </div>
         <div class="monster-stat-item">
-          <div class="stat-main">
-            <span>命中率：</span>
-            <span>${Math.round(mon.stats.accuracy * 100)}%</span>
-          </div>
+          <span>命中率：</span>
+          <span>${Math.round(mon.stats.accuracy * 100)}%</span>
         </div>
         <div class="monster-stat-item">
-          <div class="stat-main">
-            <span>迴避率：</span>
-            <span>${Math.round(mon.stats.evade * 100)}%</span>
-          </div>
+          <span>迴避率：</span>
+          <span>${Math.round(mon.stats.evade * 100)}%</span>
         </div>
         <div class="monster-stat-item">
-          <div class="stat-main">
-            <span>攻擊速度：</span>
-            <span>${mon.stats.atk_speed}</span>
-          </div>
+          <span>攻擊速度：</span>
+          <span>${mon.stats.atk_speed}</span>
         </div>
         <div class="monster-stat-item">
-          <div class="stat-main">
-            <span>護盾穿透：</span>
-            <span>${monsterPenetrate}</span>
-          </div>
+          <span>護盾穿透：</span>
+          <span>${monsterPenetrate}</span>
         </div>
       </div>
     </div>
