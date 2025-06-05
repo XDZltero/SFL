@@ -84,16 +84,6 @@
 }
 
 /* 怪物資訊優化樣式 */
-.monster-info-container {
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 107, 107, 0.3);
-  border-radius: 15px;
-  padding: 20px;
-  position: relative;
-  overflow: hidden;
-  text-align: center;
-}
 
 .monster-info-container::before {
   content: '';
@@ -327,18 +317,6 @@
   position: relative;
   z-index: 1;
   width: 100%;
-}
-
-/* 確保怪物資訊容器有足夠的右側空間給按鈕 */
-.monster-info-container {
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 107, 107, 0.3);
-  border-radius: 15px;
-  padding: 20px 100px 20px 20px; /* 右側預留空間給按鈕 */
-  position: relative;
-  overflow: hidden;
-  text-align: center;
 }
 
 /* BOSS 模式下的容器樣式 */
