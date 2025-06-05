@@ -7,12 +7,6 @@
 <link href="css/style.css" rel="stylesheet"/>
 <link href="css/dungeon_layer_winning.css" rel="stylesheet"/>
 <link href="css/dungeon_layer.css" rel="stylesheet"/>
-<style>
-.section::before {
-  animation: none !important;
-  background: none !important;
-}
-</style>
 </head>
 <body>
 <!-- 勝利特效遮罩 -->
@@ -803,6 +797,7 @@ function percent(val) {
 	  return html;
 	}
 
+    // 🔧 修正後的怪物資訊格式化函數 - 只為屬性添加 tooltip
     function formatMonsterInfo(mon, isLastLayer) {
 	  const description = (mon.info || '').replace(/\/n/g, '\n');
 	  
@@ -890,7 +885,7 @@ function percent(val) {
 	      ${bossTitle}
 	      <h2 class="monster-name">${mon.name}</h2>
 	      <button class="info-toggle" onclick="toggleMonsterTooltips()" id="monsterToggleBtn">
-	        📖 詳細說明
+	        📖 屬性說明
 	      </button>
 	      <img src="${mon.image_url}" class="monster-image" width="200">
 	      <div class="monster-description">${description}</div>
@@ -900,7 +895,6 @@ function percent(val) {
 	            <span>等級：</span>
 	            <span>${mon.level}</span>
 	          </div>
-	          <div class="stat-description">怪物等級影響與玩家的等級差距傷害修正。等級差距最多影響7等，差距越大傷害修正越明顯。</div>
 	        </div>
 	        <div class="monster-stat-item">
 	          <div class="stat-main">
@@ -914,49 +908,42 @@ function percent(val) {
 	            <span>生命值：</span>
 	            <span>${mon.stats.hp}</span>
 	          </div>
-	          <div class="stat-description">怪物的總生命值。當怪物生命值降至0時戰鬥勝利。BOSS通常擁有更高的生命值和特殊能力。</div>
 	        </div>
 	        <div class="monster-stat-item">
 	          <div class="stat-main">
 	            <span>攻擊力：</span>
 	            <span>${mon.stats.attack}</span>
 	          </div>
-	          <div class="stat-description">怪物的基礎攻擊力，決定對玩家造成的傷害。實際傷害還會受到玩家護盾值、屬性克制和等級差距影響。</div>
 	        </div>
 	        <div class="monster-stat-item">
 	          <div class="stat-main">
 	            <span>護盾值：</span>
 	            <span>${mon.stats.shield}</span>
 	          </div>
-	          <div class="stat-description">怪物的防護能力，每點護盾值減少0.1%受到傷害。可被玩家的護盾穿透屬性減弱。高護盾怪物需要穿透屬性來有效對付。</div>
 	        </div>
 	        <div class="monster-stat-item">
 	          <div class="stat-main">
 	            <span>命中率：</span>
 	            <span>${Math.round(mon.stats.accuracy * 100)}%</span>
 	          </div>
-	          <div class="stat-description">怪物攻擊命中玩家的機率。會與玩家的迴避率相抗衡。命中率高的怪物較難閃避，需要提升迴避率或護盾值來應對。</div>
 	        </div>
 	        <div class="monster-stat-item">
 	          <div class="stat-main">
 	            <span>迴避率：</span>
 	            <span>${Math.round(mon.stats.evade * 100)}%</span>
 	          </div>
-	          <div class="stat-description">怪物閃避玩家攻擊的機率。迴避率高的怪物較難命中，需要提升命中率或使用必中技能來應對。</div>
 	        </div>
 	        <div class="monster-stat-item">
 	          <div class="stat-main">
 	            <span>攻擊速度：</span>
 	            <span>${mon.stats.atk_speed}</span>
 	          </div>
-	          <div class="stat-description">決定戰鬥中的出手順序。速度高的一方會優先行動，並可能在一回合內進行多次攻擊。速度劣勢時要小心應對。</div>
 	        </div>
 	 	<div class="monster-stat-item">
 	          <div class="stat-main">
 	            <span>護盾穿透：</span>
 	            <span>${monsterPenetrate}</span>
 	          </div>
-	          <div class="stat-description">怪物無視玩家護盾的能力。穿透值會直接減少玩家的有效護盾值。高穿透怪物會大幅降低護盾效果，需要更高的護盾值來抵抗。</div>
 	        </div>
 	      </div>
 	    </div>
@@ -1631,19 +1618,15 @@ let monsterTooltipsEnabled = false;
 function togglePlayerTooltips() {
   const container = document.querySelector('.player-info-container .stats-container');
   const toggleBtn = document.getElementById('playerToggleBtn');
-  const mons_container = document.querySelector('.monster-info-container .monster-stats');
   
   playerTooltipsEnabled = !playerTooltipsEnabled;
-  monsterTooltipsEnabled = !monsterTooltipsEnabled;
   
   if (playerTooltipsEnabled) {
     container.classList.add('tooltips-enabled');
-    if (mons_container) mons_container.classList.add('tooltips-enabled');
     toggleBtn.classList.add('active');
     toggleBtn.innerHTML = '📖 隱藏說明';
   } else {
     container.classList.remove('tooltips-enabled');
-    if (mons_container) mons_container.classList.remove('tooltips-enabled');
     toggleBtn.classList.remove('active');
     toggleBtn.innerHTML = '📖 詳細說明';
   }
@@ -1655,6 +1638,7 @@ function togglePlayerTooltips() {
   }, 150);
 }
 
+// 🔧 修正後的怪物 tooltip 切換函數 - 只切換屬性說明
 function toggleMonsterTooltips() {
   const container = document.querySelector('.monster-info-container .monster-stats');
   const toggleBtn = document.getElementById('monsterToggleBtn');
@@ -1668,7 +1652,7 @@ function toggleMonsterTooltips() {
   } else {
     container.classList.remove('tooltips-enabled');
     toggleBtn.classList.remove('active');
-    toggleBtn.innerHTML = '📖 詳細說明';
+    toggleBtn.innerHTML = '📖 屬性說明';
   }
   
   // 按鈕點擊效果
