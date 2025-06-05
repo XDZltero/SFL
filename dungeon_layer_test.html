@@ -15,37 +15,15 @@
 
 /* 詳細說明容器 */
 .stat-detail {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  margin-top: 0;
-  padding: 0;
-  height: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
+  display: none;
 }
 
 .stat-detail.expanded {
-  max-height: 500px; /* 足夠的展開高度 */
-  opacity: 1;
-  padding: 8px 12px;
-  margin-top: 6px;
-  height: auto;
-  visibility: visible;
+  display: block;
+  animation: fadeSlideIn 0.3s ease-in-out;
 }
 
-.stat-detail-content {
-  font-size: 0.75em;
-  color: #b8e6ff;
-  line-height: 1.4;
-  border-left: 3px solid rgba(0, 255, 255, 0.3);
-  margin-left: 8px;
-  text-shadow: 0 0 3px rgba(184, 230, 255, 0.6);
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.08), rgba(0, 255, 255, 0.02));
-  border-radius: 6px;
-}
-	
-@keyframes expandFadeIn {
+@keyframes fadeSlideIn {
   from {
     opacity: 0;
     transform: translateY(-5px);
@@ -55,7 +33,7 @@
     transform: translateY(0);
   }
 }
-	
+
 .stat-detail-content {
   padding: 8px 12px;
   font-size: 0.75em;
@@ -73,14 +51,15 @@
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease-out;
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(255, 107, 107, 0.02) 100%);
+  background: none;
   border-radius: 8px;
-  margin-top: 10px;
+  margin-top: 0; /* 👈 這邊設定為 0 */
 }
 
 .monster-element-detail.expanded {
   max-height: 300px;
-  transition: max-height 0.5s ease-in;
+  margin-top: 10px; /* 👈 只有展開時才有 */
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(255, 107, 107, 0.02) 100%);
 }
 
 .monster-element-detail-content {
@@ -156,6 +135,20 @@ body.boss-mode .monster-element-detail-content {
   .monster-element-detail.expanded {
     max-height: 250px;
   }
+}
+
+.player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.player-name {
+  margin: 0;
+  font-size: 1.2em;
+  color: #00ffff;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.4);
 }
 </style>
 </head>
@@ -1006,10 +999,12 @@ function percent(val) {
 	  ];
 	
 	  let html = `
-	    <div class="player-info-container">
-	      <button class="detail-toggle-btn" onclick="toggleDetails()">${detailsExpanded ? '收起說明' : '詳細說明'}</button>
-	      <h3 class="player-name">👤 ${data.nickname}</h3>
-	      <div class="stats-container">
+	    	<div class="player-header">
+		  <h3 class="player-name">👤 ${data.nickname}</h3>
+		  <button class="detail-toggle-btn" onclick="toggleDetails()">
+		    ${detailsExpanded ? '收起說明' : '詳細說明'}
+		  </button>
+		</div>
 	  `;
 	  
 	  statsList.forEach(({ key, label, value }) => {
