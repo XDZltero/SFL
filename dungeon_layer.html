@@ -764,9 +764,6 @@ function percent(val) {
 		  <button class="info-toggle" onclick="togglePlayerTooltips()" id="playerToggleBtn">
 		    📖 詳細說明
 		  </button>
-		  <button class="info-toggle" onclick="toggleMonsterTooltips()" id="monsterToggleBtn">
-		    📖 屬性說明
-		  </button>
 		</div>
 	      <div class="stats-container">
 	  `;
@@ -1617,6 +1614,7 @@ let playerTooltipsEnabled = false;
 let monsterTooltipsEnabled = false;
 
 function togglePlayerTooltips() {
+  toggleMonsterTooltips();
   const container = document.querySelector('.player-info-container .stats-container');
   const toggleBtn = document.getElementById('playerToggleBtn');
   
