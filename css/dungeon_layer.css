@@ -535,6 +535,11 @@ body.boss-mode .monster-hp {
 }
 
 /* Tooltip 說明樣式 */
+.section::before {
+  animation: none !important;
+  background: none !important;
+}
+
 /* 🔧 修正 tooltip 樣式 - 完全隱藏而不佔用空間 */
 .stat-description {
   font-size: 0.7em;
