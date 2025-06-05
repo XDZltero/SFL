@@ -1,15 +1,3 @@
-# =============================================================================
-# 📦 新增的導入語句 (放在檔案頂部的導入區域)
-# =============================================================================
-
-from shop_backend import shop_bp
-from auth_middleware import get_user_from_token, require_auth, get_current_user
-from user_utils import (
-    get_user_status, get_user_items, update_user_items, 
-    add_user_item, remove_user_item, get_user_item_count,
-    validate_user_currency, create_transaction_log,
-    batch_update_user_items, get_cached_item_metadata
-)
 import os
 import json
 import time
@@ -25,19 +13,12 @@ from datetime import datetime, timedelta
 import pytz
 import threading
 import schedule
+
 from urllib.parse import urlencode
 
 app = Flask(__name__)
 Compress(app)
 CORS(app, origins=["https://xdzltero.github.io"])
-
-# =============================================================================
-# 📋 註冊新的商店藍圖 (放在app創建之後)
-# =============================================================================
-
-# 註冊商店系統藍圖
-app.register_blueprint(shop_bp)
-print("✅ 商店系統藍圖已註冊")
 
 # 🚀 新增：簡單記憶體快取系統
 class CacheManager:
@@ -430,24 +411,29 @@ def register():
     return jsonify({"message": f"使用者 {trimmed_nickname} 建立完成！"})
 
 # 🚀 優化的使用者狀態端點（短期快取）
-@app.route('/status', methods=['GET'])
-@require_auth  
-def get_status_api():
-    """獲取用戶狀態 (支援新認證系統)"""
-    try:
-        user_info = get_current_user()
-        user_id = user_info['user_id']
-        
-        user_status = get_user_status(user_id)
-        
-        if user_status:
-            return jsonify(user_status)
-        else:
-            return jsonify({"error": "用戶不存在"}), 404
-            
-    except Exception as e:
-        print(f"❌ 獲取用戶狀態失敗: {e}")
-        return jsonify({"error": str(e)}), 500
+@app.route("/status", methods=["GET"])
+@require_auth
+def status():
+    user_id = request.user_id
+    
+    # 🚀 強制從數據庫獲取最新數據，避免緩存問題
+    doc = db.collection("users").document(user_id).get()
+    if not doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+
+    user_data = doc.to_dict()
+    
+    # 🚀 確保 last_battle 字段存在
+    if "last_battle" not in user_data:
+        user_data["last_battle"] = 0
+        db.collection("users").document(user_id).set({"last_battle": 0}, merge=True)
+    
+    # 🚀 重新計算冷卻狀態
+    is_ready, remaining_seconds = check_battle_cooldown(user_data)
+    user_data["battle_cooldown_remaining"] = remaining_seconds
+    user_data["battle_ready"] = is_ready
+    
+    return jsonify(user_data)
 
 @app.route("/monster", methods=["GET"])
 def get_monster():
@@ -883,25 +869,19 @@ def save_skill_distribution():
     user_ref.set(user)
     return jsonify({"message": "技能升級完成", "status": user})
 
-@app.route('/user_items', methods=['GET'])
+@app.route("/user_items", methods=["GET"])
 @require_auth
-def get_user_items_api():
-    """獲取用戶物品 (支援新認證系統)"""
-    try:
-        user_info = get_current_user()
-        user_id = user_info['user_id']
-        
-        items_data = get_user_items(user_id)
-        
-        return jsonify({
-            "success": True,
-            "id": user_id,
-            "items": items_data.get("items", {})
-        })
-        
-    except Exception as e:
-        print(f"❌ 獲取用戶物品失敗: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
+@cached_response(ttl=60)  # 🚀 新增：1分鐘快取
+def user_items():
+    user_id = request.user_id
+    
+    doc = db.collection("user_items").document(user_id).get()
+    if not doc.exists:
+        return jsonify({"error": "找不到使用者"}), 404
+    
+    user_data = doc.to_dict()
+    items = user_data.get("items", {})
+    return items  # 直接返回資料，讓快取裝飾器處理 jsonify
 
 @app.route("/user_cards", methods=["GET"])
 @require_auth
@@ -3472,38 +3452,6 @@ def shop_save_reset_purchases():
     except Exception as e:
         print(f"❌ 保存重置購買記錄失敗: {e}")
         return jsonify({"error": f"保存重置購買記錄失敗: {str(e)}"}), 500
-
-@app.route('/shop_items_meta', methods=['GET'])
-def get_shop_items_meta():
-    """獲取商店物品元數據"""
-    try:
-        # 載入商店物品配置
-        import json
-        with open("parameter/shop_items.json", "r", encoding="utf-8") as f:
-            shop_items = json.load(f)
-        
-        # 載入物品元數據
-        items_meta = get_cached_item_metadata()
-        
-        return jsonify({
-            "success": True,
-            "shop_items": shop_items,
-            "items_meta": items_meta
-        })
-        
-    except Exception as e:
-        print(f"❌ 獲取商店元數據失敗: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route('/items_table', methods=['GET'])
-def get_items_table():
-    """獲取物品表 (相容現有系統)"""
-    try:
-        items_meta = get_cached_item_metadata()
-        return jsonify(items_meta)
-    except Exception as e:
-        print(f"❌ 獲取物品表失敗: {e}")
-        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     import os
