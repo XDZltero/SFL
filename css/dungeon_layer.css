@@ -41,9 +41,7 @@
 }
 
 .stat-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: block;
   margin: 8px 0;
   padding: 8px 12px;
   background: rgba(0, 255, 255, 0.05);
@@ -53,6 +51,8 @@
   font-weight: 600;
   font-size: 0.9em;
   transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .stat-item:hover {
@@ -61,17 +61,26 @@
   transform: translateX(3px);
 }
 
-.stat-item span:first-child {
-  color: #ffd93d;
-  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
-  flex: 1;
+/* 玩家統計項目的主要內容 */
+.stat-item .stat-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
-.stat-item span:last-child {
+.stat-item .stat-main span:first-child {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+  flex-shrink: 0;
+}
+
+.stat-item .stat-main span:last-child {
   color: #00ffff;
   text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
   font-weight: 700;
   text-align: right;
+  flex-shrink: 0;
 }
 
 /* 怪物資訊優化樣式 */
@@ -639,10 +648,18 @@ body.boss-mode .monster-hp {
   margin-top: 8px;
   line-height: 1.8;
   font-family: 'Courier New', monospace;
-  /* 🚀 新增：預設隱藏 */
-  display: none;
+  font-size: 0.85em;
+  display: none !important;
   opacity: 0;
   transition: opacity 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+  border-top: 2px solid rgba(0, 255, 255, 0.2);
+}
+
+.stat-item .stat-description {
+  color: #b8e6ff;
+  border-top-color: rgba(0, 255, 255, 0.2);
 }
 
 /* 啟用詳細說明模式時才顯示 */
