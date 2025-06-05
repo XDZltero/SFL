@@ -761,7 +761,7 @@ function percent(val) {
 	    <div class="player-info-container">
 	      <h3 class="player-name">👤 ${data.nickname}</h3>
 	      <div class="info-toggle-group">
-	        <button class="info-toggle" onclick="togglePlayerTooltips()" id="tooltipToggleBtn">
+	        <button class="info-toggle" onclick="safeTogglePlayerTooltips()" id="tooltipToggleBtn">
 	          📖 詳細說明
 	        </button>
 	      </div>
@@ -1629,9 +1629,9 @@ window.emergencyResetCooldown = function() {
 let playerTooltipsEnabled = false;
 
 function togglePlayerTooltips() {
+  // 🔧 修復：使用正確的按鈕 ID
   const container = document.querySelector('.player-info-container .stats-container');
-  const toggleBtn = document.getElementById('playerToggleBtn');
-  // 🔧 修正：選擇 .monster-info-container 而不是 .monster-stats
+  const toggleBtn = document.getElementById('tooltipToggleBtn'); // 修正：使用正確的 ID
   const mons_container = document.querySelector('.monster-info-container');
 
   console.log('Elements found:', {
@@ -1640,9 +1640,14 @@ function togglePlayerTooltips() {
     mons_container: !!mons_container
   });
 
-  // 檢查必要元素是否存在
-  if (!container || !toggleBtn) {
-    console.warn('⚠️ 必要的 DOM 元素未找到，無法切換 tooltip');
+  // 🔧 修復：更寬松的元素檢查，只要按鈕存在就可以執行
+  if (!toggleBtn) {
+    console.warn('⚠️ 切換按鈕未找到，按鈕 ID 應為 tooltipToggleBtn');
+    return;
+  }
+
+  if (!container) {
+    console.warn('⚠️ 玩家信息容器未找到，請等待頁面完全加載');
     return;
   }
 
@@ -1653,9 +1658,12 @@ function togglePlayerTooltips() {
     // 啟用 tooltip
     container.classList.add('tooltips-enabled');
     
-    // 🔧 修正：在 .monster-info-container 上添加類
+    // 🔧 修復：安全地添加怪物容器的 tooltip 類
     if (mons_container) {
       mons_container.classList.add('tooltips-enabled');
+      console.log('✅ 怪物信息 tooltip 已啟用');
+    } else {
+      console.log('ℹ️ 怪物信息容器尚未加載，僅啟用玩家 tooltip');
     }
     
     toggleBtn.classList.add('active');
@@ -1664,9 +1672,10 @@ function togglePlayerTooltips() {
     // 隱藏 tooltip
     container.classList.remove('tooltips-enabled');
     
-    // 🔧 修正：從 .monster-info-container 移除類
+    // 🔧 修復：安全地移除怪物容器的 tooltip 類
     if (mons_container) {
       mons_container.classList.remove('tooltips-enabled');
+      console.log('✅ 怪物信息 tooltip 已禁用');
     }
     
     toggleBtn.classList.remove('active');
@@ -1680,8 +1689,25 @@ function togglePlayerTooltips() {
   }, 150);
 }
 
-window.togglePlayerTooltips = togglePlayerTooltips;
+// 🆕 新增：延遲執行的安全切換函數
+function safeTogglePlayerTooltips() {
+  // 等待 DOM 完全加載
+  setTimeout(() => {
+    const container = document.querySelector('.player-info-container .stats-container');
+    const toggleBtn = document.getElementById('tooltipToggleBtn');
+    const mons_container = document.querySelector('.monster-info-container');
+    
+    if (container && toggleBtn) {
+      togglePlayerTooltips();
+    } else {
+      console.log('⏳ DOM 元素尚未準備好，再等待 500ms');
+      setTimeout(togglePlayerTooltips, 500);
+    }
+  }, 100);
+}
 
+window.togglePlayerTooltips = togglePlayerTooltips;
+window.safeTogglePlayerTooltips = safeTogglePlayerTooltips;
 
 
 // 鍵盤快捷鍵支持
