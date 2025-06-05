@@ -552,14 +552,13 @@ body.boss-mode .monster-hp {
 
 /* 🔧 修正 tooltip 樣式 - 完全隱藏而不佔用空間 */
 .stat-description {
-  font-size: 0.7em;
-  color: #b8e6ff;
-  line-height: 1.4;
-  display: none; /* 完全隱藏，不佔用任何空間 */
+  white-space: pre-line; /* 保留換行 */
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
   margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(0, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  line-height: 1.8; /* 增加行距 */
+  font-family: 'Courier New', monospace; /* 等寬字體讓對齊更整齊 */
 }
 
 /* 啟用詳細說明模式時才顯示 */
