@@ -1,0 +1,242 @@
+[
+  {
+    "id": "daily_login_gift",
+    "name": "每日登入禮包",
+    "description": "每天可以免費領取一次的登入獎勵禮包。",
+    "type": "bundle",
+    "items": [
+      {"item_id": "daily_coin", "quantity": 1},
+      {"item_id": "chaos_breath", "quantity": 1}
+    ],
+    "cost": {},
+    "reset_type": "daily",
+    "limit_per_account": -1,
+    "limit_per_reset": 1,
+    "required_level": 1,
+    "special": 0,
+    "sort": 100,
+    "available": true,
+    "category": "free"
+  },
+  {
+    "id": "weekly_chaos_pack",
+    "name": "每週混沌禮包",
+    "description": "每週可以免費領取的混沌氣息禮包。",
+    "type": "single",
+    "item_id": "chaos_breath",
+    "quantity": 5,
+    "cost": {},
+    "reset_type": "weekly",
+    "limit_per_account": -1,
+    "limit_per_reset": 1,
+    "required_level": 5,
+    "special": 1,
+    "sort": 101,
+    "available": true,
+    "category": "free"
+  },
+  {
+    "id": "starter_pack_lv5",
+    "name": "【Lv.5】新手大禮包",
+    "description": "給新手玩家的一次性免費禮包，包含珍貴的重置券。\n※ 重置券非常珍貴，請謹慎使用！",
+    "type": "bundle",
+    "items": [
+      {"item_id": "reset_stats_ticket", "quantity": 2},
+      {"item_id": "chaos_breath", "quantity": 10},
+      {"item_id": "magic_book", "quantity": 5}
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 5,
+    "special": 2,
+    "sort": 200,
+    "available": true,
+    "category": "free"
+  },
+  {
+    "id": "lv10_adventure_pack",
+    "name": "【Lv.10】冒險者禮包",
+    "description": "為踏上冒險旅程的勇者準備的禮包。",
+    "type": "bundle",
+    "items": [
+      {"item_id": "reset_stats_ticket", "quantity": 1},
+      {"item_id": "god_book", "quantity": 3},
+      {"item_id": "chaos_breath", "quantity": 8}
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 10,
+    "special": 1,
+    "sort": 201,
+    "available": true,
+    "category": "free"
+  },
+  {
+    "id": "lv30_warrior_pack",
+    "name": "【Lv.30】戰士禮包",
+    "description": "為達到中級實力的戰士準備的禮包。",
+    "type": "bundle",
+    "items": [
+      {"item_id": "reset_stats_ticket", "quantity": 2},
+      {"item_id": "core_fragment_destroyer", "quantity": 3},
+      {"item_id": "chaos_breath", "quantity": 15}
+    ],
+    "cost": {},
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 30,
+    "special": 2,
+    "sort": 202,
+    "available": true,
+    "category": "free"
+  },
+  {
+    "id": "world_boss_reset_ticket",
+    "name": "能力值重置券",
+    "description": "珍貴的能力值重置券，可以完全重置角色的能力點分配。\n高等級玩家的必需品！",
+    "type": "single",
+    "item_id": "reset_stats_ticket",
+    "quantity": 1,
+    "cost": {
+      "world_boss_token": 10
+    },
+    "reset_type": "none",
+    "limit_per_account": -1,
+    "limit_per_reset": -1,
+    "required_level": 30,
+    "special": 3,
+    "sort": 300,
+    "available": true,
+    "category": "unlimited"
+  },
+  {
+    "id": "chaos_breath_pack_small",
+    "name": "混沌氣息禮包 (小)",
+    "description": "製作高級裝備必需的混沌氣息。每週限購3次。",
+    "type": "single",
+    "item_id": "chaos_breath",
+    "quantity": 3,
+    "cost": {
+      "world_boss_token": 8
+    },
+    "reset_type": "weekly",
+    "limit_per_account": -1,
+    "limit_per_reset": 3,
+    "required_level": 20,
+    "special": 1,
+    "sort": 301,
+    "available": true,
+    "category": "limited"
+  },
+  {
+    "id": "chaos_breath_pack_large",
+    "name": "混沌氣息禮包 (大)",
+    "description": "大量的混沌氣息，適合大量製作需求。每月限購2次。",
+    "type": "single",
+    "item_id": "chaos_breath",
+    "quantity": 10,
+    "cost": {
+      "world_boss_token": 25
+    },
+    "reset_type": "monthly",
+    "limit_per_account": -1,
+    "limit_per_reset": 2,
+    "required_level": 40,
+    "special": 2,
+    "sort": 302,
+    "available": true,
+    "category": "limited"
+  },
+  {
+    "id": "daily_coin_exchange",
+    "name": "活躍硬幣兌換",
+    "description": "使用世界王代幣兌換活躍硬幣。無限購買！",
+    "type": "single",
+    "item_id": "daily_coin",
+    "quantity": 5,
+    "cost": {
+      "world_boss_token": 3
+    },
+    "reset_type": "none",
+    "limit_per_account": -1,
+    "limit_per_reset": -1,
+    "required_level": 15,
+    "special": 0,
+    "sort": 303,
+    "available": true,
+    "category": "unlimited"
+  },
+  {
+    "id": "premium_starter_pack",
+    "name": "【特級】豪華新手包",
+    "description": "終極新手禮包，包含大量珍稀道具。僅此一次機會！",
+    "type": "bundle",
+    "items": [
+      {"item_id": "reset_stats_ticket", "quantity": 5},
+      {"item_id": "chaos_breath", "quantity": 50},
+      {"item_id": "world_boss_token", "quantity": 10},
+      {"item_id": "god_book", "quantity": 10}
+    ],
+    "cost": {
+      "daily_coin": 100
+    },
+    "reset_type": "none",
+    "limit_per_account": 1,
+    "limit_per_reset": 1,
+    "required_level": 1,
+    "special": 3,
+    "sort": 400,
+    "available": true,
+    "category": "special"
+  },
+  {
+    "id": "weekend_special",
+    "name": "週末特惠包",
+    "description": "週末限定的特惠禮包，價格優惠且內容豐富！",
+    "type": "bundle",
+    "items": [
+      {"item_id": "chaos_breath", "quantity": 15},
+      {"item_id": "magic_book", "quantity": 8},
+      {"item_id": "god_book", "quantity": 3}
+    ],
+    "cost": {
+      "world_boss_token": 20,
+      "daily_coin": 10
+    },
+    "reset_type": "weekly",
+    "limit_per_account": -1,
+    "limit_per_reset": 2,
+    "required_level": 25,
+    "special": 2,
+    "sort": 401,
+    "available": true,
+    "category": "limited"
+  },
+  {
+    "id": "daily_material_box",
+    "name": "每日素材寶箱",
+    "description": "包含隨機素材的寶箱，每日可購買一次。",
+    "type": "bundle",
+    "items": [
+      {"item_id": "slime_core", "quantity": 10},
+      {"item_id": "bone", "quantity": 8},
+      {"item_id": "moss_branches", "quantity": 5}
+    ],
+    "cost": {
+      "daily_coin": 2
+    },
+    "reset_type": "daily",
+    "limit_per_account": -1,
+    "limit_per_reset": 1,
+    "required_level": 5,
+    "special": 0,
+    "sort": 500,
+    "available": true,
+    "category": "limited"
+  }
+]
