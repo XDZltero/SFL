@@ -39,13 +39,6 @@
   <div class="reset-timer">
     <h3>⏰ 商店重置時間</h3>
     <div id="resetTimerDisplay">載入中...</div>
-    <div style="margin-top: 15px; text-align: center;">
-      <button class="square-btn" onclick="manualRefreshShop()" id="manualRefreshBtn" 
-              style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); min-width: 150px;">
-        🔄 重新載入商店
-      </button>
-      <div id="lastRefreshTime" style="margin-top: 5px; font-size: 0.8em; color: #888;"></div>
-    </div>
   </div>
   
   <!-- 分類篩選 -->
@@ -351,74 +344,6 @@
       }
     }
 
-    // 🔄 手動重新載入商店（保留功能但簡化）
-    async function manualRefreshShop() {
-      const btn = document.getElementById("manualRefreshBtn");
-      const lastRefreshEl = document.getElementById("lastRefreshTime");
-      
-      if (btn.disabled) return;
-      
-      try {
-        btn.disabled = true;
-        btn.textContent = "🔄 重新載入中...";
-        btn.style.opacity = "0.6";
-        
-        showLoading(true);
-        
-        // 清除快取
-        SecureAPI.clearCache();
-        
-        // 重新載入資料（包含重置檢查）
-        await loadShopData();
-        
-        // 重新渲染
-        updateUserInfoDisplay();
-        updateUserCurrencyDisplay();
-        renderShopItems();
-        updateResetTimerDisplay();
-        
-        // 更新最後刷新時間
-        const now = getTaipeiTime();
-        const taipeiTimeString = now.toLocaleString("zh-TW", {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        });
-        
-        lastRefreshEl.textContent = `最後重新載入：${taipeiTimeString}`;
-        
-        btn.textContent = "✅ 重新載入完成";
-        btn.style.background = "linear-gradient(135deg, #4CAF50 0%, #45a049 100%)";
-        
-        setTimeout(() => {
-          btn.textContent = "🔄 重新載入商店";
-          btn.style.background = "";
-        }, 2000);
-        
-        console.log("✅ 手動重新載入商店完成");
-        
-      } catch (error) {
-        console.error("❌ 手動重新載入失敗:", error);
-        
-        btn.textContent = "❌ 重新載入失敗";
-        btn.style.background = "linear-gradient(135deg, #f44336 0%, #d32f2f 100%)";
-        
-        setTimeout(() => {
-          btn.textContent = "🔄 重新載入商店";
-          btn.style.background = "";
-        }, 3000);
-        
-        alert("重新載入失敗，請稍後再試");
-        
-      } finally {
-        showLoading(false);
-        btn.disabled = false;
-        btn.style.opacity = "1";
-      }
-    }
 
     function updateUserInfoDisplay() {
       const userLevel = userData.level || 1;
@@ -958,14 +883,6 @@
       renderShopItems();
     }
 
-    // 綁定篩選按鈕事件
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          switchFilter(btn.dataset.category);
-        });
-      });
-    });
 
     // 全域函數
     window.openPurchaseDialog = openPurchaseDialog;
