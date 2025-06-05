@@ -639,3 +639,31 @@ body.boss-mode .stat-description {
   gap: 6px;
   z-index: 10;
 }
+
+.monster-stat-item .stat-description {
+  white-space: pre-line;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  margin-top: 8px;
+  line-height: 1.8;
+  font-family: 'Courier New', monospace;
+  color: #ffb8b8;
+  display: none; /* 預設隱藏 */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 只有在啟用 tooltip 模式時才顯示 */
+.monster-info-container.tooltips-enabled .stat-description {
+  display: block;
+  opacity: 1;
+}
+
+/* BOSS 模式下的 tooltip 樣式 */
+.monster-info-container.boss .stat-description {
+  border-color: rgba(255, 50, 50, 0.2);
+  color: #ffb8b8;
+}
