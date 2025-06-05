@@ -15,12 +15,34 @@
 
 /* 詳細說明容器 */
 .stat-detail {
-  display: none;
+  height: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  padding: 0;
+  margin: 0;
+  transition: all 0.3s ease;
 }
 
 .stat-detail.expanded {
-  display: block;
-  animation: fadeSlideIn 0.3s ease-in-out;
+  height: auto;
+  max-height: 300px;
+  opacity: 1;
+  visibility: visible;
+  margin-top: 6px;
+  padding: 8px 12px;
+}
+
+.stat-detail-content {
+  font-size: 0.75em;
+  color: #b8e6ff;
+  line-height: 1.4;
+  border-left: 3px solid rgba(0, 255, 255, 0.3);
+  margin-left: 8px;
+  text-shadow: 0 0 3px rgba(184, 230, 255, 0.6);
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.03));
+  border-radius: 6px;
 }
 
 @keyframes fadeSlideIn {
@@ -32,18 +54,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.stat-detail-content {
-  padding: 8px 12px;
-  font-size: 0.75em;
-  color: #b8e6ff;
-  line-height: 1.4;
-  border-left: 3px solid rgba(0, 255, 255, 0.3);
-  margin-left: 8px;
-  text-shadow: 0 0 3px rgba(184, 230, 255, 0.6);
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.03));
-  border-radius: 6px;
 }
 
 /* 怪物屬性詳細說明樣式 */
