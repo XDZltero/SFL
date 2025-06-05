@@ -764,6 +764,9 @@ function percent(val) {
 		  <button class="info-toggle" onclick="togglePlayerTooltips()" id="playerToggleBtn">
 		    📖 詳細說明
 		  </button>
+		  <button class="info-toggle" onclick="toggleMonsterTooltips()" id="monsterToggleBtn">
+		    📖 屬性說明
+		  </button>
 		</div>
 	      <div class="stats-container">
 	  `;
@@ -818,7 +821,7 @@ function percent(val) {
 	  // 取得怪物護盾穿透值，如果沒有則預設為0
 	  const monsterPenetrate = mon.stats.penetrate || 0;
 	  
-	  // 🆕 根據怪物屬性生成屬性克制說明
+	  // 根據怪物屬性生成屬性克制說明
 	  const generateElementDescription = (elements) => {
 		  if (!Array.isArray(elements)) {
 		    elements = [elements];
@@ -865,7 +868,7 @@ function percent(val) {
 		    }
 		  });
 		  
-		  // 🆕 雙屬性或多屬性說明
+		  // 雙屬性或多屬性說明
 		  if (elements.length > 1) {
 		    descriptions.push("");
 		    descriptions.push("⚖️ 複數屬性機制：");
@@ -885,11 +888,6 @@ function percent(val) {
 	    <div class="${containerClass}">
 	      ${bossTitle}
 	      <h2 class="monster-name">${mon.name}</h2>
-	      <div class="info-toggle-group">
-		  <button class="info-toggle" onclick="toggleMonsterTooltips()" id="monsterToggleBtn">
-		    📖 屬性說明
-		  </button>
-		</div>
 	      <img src="${mon.image_url}" class="monster-image" width="200">
 	      <div class="monster-description">${description}</div>
 	      <div class="monster-stats">
