@@ -4,4 +4,3 @@ flask-cors     # 處理跨網域請求（讓前端能連線）
 flask-compress # 戰鬥log處理用
 pytz           # 時區處理
 schedule       # 定時任務排程器（用於商店自動重置）
-python-dotenv
