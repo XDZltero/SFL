@@ -40,6 +40,18 @@
   
   <div class="items-section">
     <h2 class="fancy-subtitle">📦 持有道具</h2>
+    
+    <!-- 🆕 道具分類按鈕 -->
+    <div class="item-category-buttons">
+      <button class="category-btn active" data-category="all" onclick="filterItems('all')">全部</button>
+      <button class="category-btn" data-category="1" onclick="filterItems(1)">稀有</button>
+      <button class="category-btn" data-category="2" onclick="filterItems(2)">超稀有</button>
+      <button class="category-btn" data-category="3" onclick="filterItems(3)">罕見</button>
+    </div>
+    
+    <!-- 🆕 分類統計顯示 -->
+    <div class="category-stats" id="categoryStats">載入中...</div>
+    
     <div class="item-grid" id="itemGrid"></div>
   </div>
   
@@ -58,6 +70,9 @@
     let cardData = [];
     let userCards = {};
     let cardFailureCounts = {};
+    
+    // 🆕 道具分類狀態
+    let currentCategory = 'all';
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
@@ -97,8 +112,6 @@
           console.warn('載入卡片資料失敗，使用空陣列:', error);
           cardData = [];
         }
-        
-        console.log('✅ 遊戲資料載入完成');
         
       } catch (error) {
         console.error("載入遊戲資料失敗:", error);
@@ -151,7 +164,6 @@
       return html;
     }
 
-
     async function loadUserData(forceRefresh = true) {
       PerformanceMonitor.startTiming('loadUserData');
       
@@ -169,33 +181,26 @@
         
         // 處理使用者狀態
         userData = await statusRes.json();
-        console.log("✅ 使用者狀態已載入");
         
         // 處理使用者道具
         if (itemsRes && itemsRes.ok) {
           userItems = await itemsRes.json();
-          console.log("✅ 使用者道具已載入");
         } else {
           userItems = userData.items || {};
-          console.log("⚠️ 使用備用道具資料");
         }
         
         // 處理使用者卡片
         if (cardsRes && cardsRes.ok) {
           userCards = await cardsRes.json();
-          console.log("✅ 使用者卡片已載入");
         } else {
           userCards = userData.cards_owned || {};
-          console.log("⚠️ 使用備用卡片資料");
         }
         
-        // 🔧 驗證並修復裝備等級不一致問題
+        // 驗證裝備等級不一致問題
         await validateAndFixEquipmentLevels();
         
         renderPage();
-        
-        console.log('✅ 使用者資料載入完成');
-        
+
       } catch (error) {
         console.error("載入使用者資料失敗:", error);
         
@@ -332,12 +337,84 @@
       equipEl.innerHTML = html;
     }
 
+    // 道具分類過濾函數
+    function filterItems(category) {
+      currentCategory = category;
+      
+      // 更新按鈕狀態
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.querySelector(`[data-category="${category}"]`).classList.add('active');
+      
+      // 重新渲染道具列表
+      renderItems();
+    }
+
+    // 計算各分類的道具數量
+    function calculateCategoryStats() {
+      const stats = {
+        all: 0,
+        1: 0,   // 稀有
+        2: 0,   // 超稀有
+        3: 0,   // 罕見
+        0: 0    // 普通
+      };
+      
+      Object.entries(userItems).forEach(([id, count]) => {
+        if (count > 0) {
+          const meta = itemMeta.find(m => m.id === id) || { special: 0 };
+          const special = meta.special || 0;
+          
+          stats.all++;
+          stats[special]++;
+        }
+      });
+      
+      return stats;
+    }
+
+    // 更新分類統計顯示
+    function updateCategoryStats() {
+      const statsEl = document.getElementById("categoryStats");
+      const stats = calculateCategoryStats();
+      
+      let displayText = "";
+      if (currentCategory === 'all') {
+        const total = stats.all;
+        const rare = stats[1] || 0;
+        const superRare = stats[2] || 0;
+        const mythical = stats[3] || 0;
+        const normal = stats[0] || 0;
+        
+        displayText = `共 ${total} 種道具 (普通: ${normal}, 稀有: ${rare}, 超稀有: ${superRare}, 罕見: ${mythical})`;
+      } else {
+        const categoryNames = {
+          1: "稀有",
+          2: "超稀有", 
+          3: "罕見"
+        };
+        const categoryName = categoryNames[currentCategory];
+        const count = stats[currentCategory] || 0;
+        displayText = `${categoryName}道具: ${count} 種`;
+      }
+      
+      statsEl.textContent = displayText;
+    }
+
+    // 🔧 修改 renderItems 函數以支援分類過濾
     function renderItems() {
       const itemEl = document.getElementById("itemGrid");
       let html = "";
+      let displayedCount = 0;
     
       Object.entries(userItems).forEach(([id, count]) => {
         const meta = itemMeta.find(m => m.id === id) || { name: id, description: "", special: 0 };
+        
+        // 分類過濾邏輯
+        if (currentCategory !== 'all' && meta.special !== currentCategory) {
+          return; // 跳過不符合分類的道具
+        }
 
         let cardClass = "item-card";
         let rarityLabel = "";
@@ -354,7 +431,7 @@
         } else if (meta.special === 3) {
           cardClass += " mythical";
           rarityLabel = "【罕見】";
-          nameColor = "##FFD306";
+          nameColor = "#FFD306";
         }
     
         html += `
@@ -364,9 +441,25 @@
             <div class="item-count">持有數量: <span class="count-highlight">${count}</span></div>
           </div>
         `;
+        
+        displayedCount++;
       });
     
-      itemEl.innerHTML = html || '<div class="item-card">暫無道具</div>';
+      // 更新統計顯示
+      updateCategoryStats();
+      
+      if (displayedCount === 0) {
+        const categoryNames = {
+          'all': '道具',
+          1: '稀有道具',
+          2: '超稀有道具', 
+          3: '罕見道具'
+        };
+        const categoryName = categoryNames[currentCategory] || '道具';
+        html = `<div class="item-card">暫無${categoryName}</div>`;
+      }
+      
+      itemEl.innerHTML = html;
     }
 
     function renderPage() {
@@ -395,7 +488,6 @@
       
       if (needsUpdate) {
         try {
-          console.log("🔄 正在同步裝備等級到伺服器...");
           
           const response = await SecureAPI.post(`${API_BASE}/save_equipment`, {
             equipment: newEquipment
@@ -405,9 +497,8 @@
           
           if (response.ok && result.success) {
             userData.equipment = newEquipment;
-            console.log("✅ 已同步更新裝備卡片等級到伺服器");
             
-            // 🔄 立即重新渲染一次確保顯示正確
+            // 立即重新渲染一次確保顯示正確
             renderEquipment();
             renderStats();
             
@@ -415,14 +506,14 @@
             console.error("❌ 同步裝備等級失敗:", result.error || result.message);
             
             // 如果同步失敗，回滾本地資料
-            console.log("🔄 同步失敗，重新載入伺服器資料...");
+            console.log("同步失敗，重新載入伺服器資料...");
             await loadUserData();
           }
         } catch (error) {
           console.error("❌ 同步裝備等級時發生錯誤:", error);
           
           // 如果同步失敗，重新載入伺服器資料
-          console.log("🔄 同步錯誤，重新載入伺服器資料...");
+          console.log("同步錯誤，重新載入伺服器資料...");
           await loadUserData();
         }
       }
@@ -660,7 +751,7 @@
     }
 
     
-    // 🔧 驗證裝備等級一致性
+    // 驗證裝備等級一致性
     async function validateAndFixEquipmentLevels() {
       const equipment = userData.equipment || {};
       let needsUpdate = false;
@@ -691,7 +782,6 @@
           
           if (response.ok && result.success) {
             userData.equipment = newEquipment;
-            console.log("✅ 已自動修復裝備等級不一致問題");
             renderPage();
           }
         } catch (error) {
@@ -774,7 +864,6 @@
     }
 
     function updateLocalEquipmentLevels(cardId, newLevel) {
-      console.log(`🔄 立即更新本地裝備資料：${cardId} -> Lv.${newLevel}`);
       
       const equipment = userData.equipment || {};
       let updated = false;
@@ -787,7 +876,6 @@
             // 立即更新本地資料
             userData.equipment[slot] = { [cardId]: newLevel };
             updated = true;
-            console.log(`✅ 已更新插槽 ${slot} 的 ${cardId} 等級至 ${newLevel}`);
           }
         }
       }
@@ -796,7 +884,6 @@
         // 立即重新渲染頁面
         renderEquipment();
         renderStats();
-        console.log("🔄 已立即更新顯示");
       }
     }
 
@@ -828,7 +915,7 @@
       });
     }
 
-    // 🚀 優化的儲存裝備功能
+    // 儲存裝備功能
     async function saveEquipment() {
       const newEquipment = {};
       const usedCardIds = new Set();
@@ -888,6 +975,7 @@
     window.closeDialog = closeDialog;
     window.craftCard = craftCard;
     window.saveEquipment = saveEquipment;
+    window.filterItems = filterItems;
 
     // 主要初始化函數
     async function runMain() {
@@ -904,7 +992,6 @@
         ]);
         
         PerformanceMonitor.endTiming('totalLoad');
-        console.log('🎉 背包頁面初始化完成（包含失敗次數系統）');
         
       } catch (error) {
         console.error("初始化錯誤:", error);
@@ -925,7 +1012,6 @@
 
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden) {
-        console.log("🔄 頁面重新可見，檢查資料一致性...");
         
         // 頁面重新可見時，輕量級檢查資料是否需要更新
         setTimeout(async () => {
@@ -939,7 +1025,6 @@
             const latestEquipment = JSON.stringify(latestUserData.equipment);
             
             if (currentEquipment !== latestEquipment) {
-              console.log("⚠️ 檢測到裝備資料變化，更新顯示...");
               userData = latestUserData;
               renderEquipment();
               renderStats();
@@ -983,6 +1068,12 @@
           for (const [cardId, level] of Object.entries(userCards)) {
             await syncEquippedCardLevels(cardId, level);
           }
+        },
+        
+        // 測試分類功能
+        testCategory: (category) => {
+          console.log(`🧪 測試分類功能: ${category}`);
+          filterItems(category);
         }
       };
       
