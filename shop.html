@@ -92,11 +92,39 @@
     }
 
     function formatWeekString(date) {
+      // 使用 ISO 週數標準
       const year = date.getFullYear();
-      const startOfYear = new Date(year, 0, 1);
-      const startOfWeek = startOfYear.getDay() || 7; // 週一為1，週日為7
-      const dayOfYear = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000)) + 1;
-      const weekNum = Math.ceil((dayOfYear - startOfWeek + 1) / 7);
+      const month = date.getMonth();
+      const day = date.getDate();
+      
+      // 創建該年1月4日的日期（ISO週數標準基準）
+      const jan4 = new Date(year, 0, 4);
+      
+      // 計算該年第一週的週一
+      const firstMonday = new Date(jan4);
+      firstMonday.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+      
+      // 計算目標日期是第幾週
+      const targetDate = new Date(year, month, day);
+      const diffTime = targetDate.getTime() - firstMonday.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const weekNum = Math.floor(diffDays / 7) + 1;
+      
+      // 處理跨年情況
+      if (weekNum < 1) {
+        // 屬於前一年的最後一週
+        return formatWeekString(new Date(year - 1, 11, 31));
+      } else if (weekNum > 52) {
+        // 檢查是否屬於下一年的第一週
+        const nextYearJan4 = new Date(year + 1, 0, 4);
+        const nextYearFirstMonday = new Date(nextYearJan4);
+        nextYearFirstMonday.setDate(nextYearJan4.getDate() - ((nextYearJan4.getDay() + 6) % 7));
+        
+        if (targetDate.getTime() >= nextYearFirstMonday.getTime()) {
+          return `${year + 1}-W01`;
+        }
+      }
+      
       return `${year}-W${String(weekNum).padStart(2, '0')}`;
     }
 
@@ -106,10 +134,23 @@
       return `${year}-${month}`;
     }
 
-    // 🔥 核心重置邏輯 - 比較進入時間差異
+    // 比較進入時間差異
     function checkTimeBasedResets(lastShopVisitTime) {
       const currentTime = getTaipeiTime();
       const lastTime = new Date(lastShopVisitTime);
+      
+      // 確保時間有效
+      if (isNaN(lastTime.getTime()) || lastTime.getTime() <= 0) {
+        console.warn("⚠️ 無效的上次進入時間，視為首次進入");
+        return {
+          needsReset: { daily: false, weekly: false, monthly: false },
+          periods: {
+            currentDate: formatDateString(currentTime),
+            currentWeek: formatWeekString(currentTime), 
+            currentMonth: formatMonthString(currentTime)
+          }
+        };
+      }
       
       console.log(`🕐 檢查重置：上次進入 ${lastTime.toLocaleString('zh-TW')} → 本次進入 ${currentTime.toLocaleString('zh-TW')}`);
       
@@ -205,7 +246,18 @@
     }
 
     // 🚀 進入商店時的主要重置檢查流程
+    let lastResetCheckTime = 0;
+    const RESET_CHECK_COOLDOWN = 5 * 60 * 1000; // 5分鐘冷卻
+    
     async function performShopEntryResetCheck() {
+      const now = Date.now();
+      
+      // 防止短時間內重複檢查
+      if (now - lastResetCheckTime < RESET_CHECK_COOLDOWN) {
+        console.log('⏳ 重置檢查冷卻中，跳過本次檢查');
+        return { resetCount: 0, resetItems: [] };
+      }
+      
       try {
         console.log("🏪 進入商店，開始檢查重置...");
         
@@ -226,12 +278,12 @@
           currentUserPurchases.last_shop_visit_time = getTaipeiTime().getTime();
           currentUserPurchases.last_update_time = getTaipeiTime().getTime();
           
-          // 保存初始時間到後端
           await SecureAPI.post(`${API_BASE}/shop_update_visit_time`, {
             visit_time: currentUserPurchases.last_shop_visit_time
           });
           
           userPurchases = currentUserPurchases;
+          lastResetCheckTime = now;
           return { resetCount: 0, resetItems: [] };
         }
         
@@ -249,6 +301,7 @@
           });
           
           userPurchases = currentUserPurchases;
+          lastResetCheckTime = now;
           return { resetCount: 0, resetItems: [] };
         }
         
@@ -266,13 +319,14 @@
           if (saveResponse.ok) {
             console.log("✅ 重置結果已保存到後端");
             userPurchases = resetResult.updatedPurchases;
+            lastResetCheckTime = now; // 成功後才更新時間
           } else {
             console.error("❌ 保存重置結果失敗");
-            userPurchases = currentUserPurchases; // 保持原狀態
+            userPurchases = currentUserPurchases;
           }
         } catch (saveError) {
           console.error("❌ 保存重置結果時發生錯誤:", saveError);
-          userPurchases = currentUserPurchases; // 保持原狀態
+          userPurchases = currentUserPurchases;
         }
         
         return {
@@ -888,7 +942,6 @@
     window.openPurchaseDialog = openPurchaseDialog;
     window.confirmPurchase = confirmPurchase;
     window.closeDialog = closeDialog;
-    window.manualRefreshShop = manualRefreshShop;
 
     // 主要初始化函數
     async function runMain() {
