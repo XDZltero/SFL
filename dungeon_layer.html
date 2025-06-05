@@ -760,9 +760,11 @@ function percent(val) {
 	  let html = `
 	    <div class="player-info-container">
 	      <h3 class="player-name">👤 ${data.nickname}</h3>
-       	      <button class="info-toggle" onclick="togglePlayerTooltips()" id="playerToggleBtn">
-		  📖 詳細說明
-		</button>
+       	      <div class="info-toggle-group">
+		  <button class="info-toggle" onclick="togglePlayerTooltips()" id="playerToggleBtn">
+		    📖 詳細說明
+		  </button>
+		</div>
 	      <div class="stats-container">
 	  `;
 	  
@@ -883,9 +885,11 @@ function percent(val) {
 	    <div class="${containerClass}">
 	      ${bossTitle}
 	      <h2 class="monster-name">${mon.name}</h2>
-	      <button class="info-toggle" onclick="toggleMonsterTooltips()" id="monsterToggleBtn">
-	        📖 屬性說明
-	      </button>
+	      <div class="info-toggle-group">
+		  <button class="info-toggle" onclick="toggleMonsterTooltips()" id="monsterToggleBtn">
+		    📖 屬性說明
+		  </button>
+		</div>
 	      <img src="${mon.image_url}" class="monster-image" width="200">
 	      <div class="monster-description">${description}</div>
 	      <div class="monster-stats">
