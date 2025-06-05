@@ -517,7 +517,7 @@ def simulate_battle(user, monster, user_skill_dict):
 
             if actor == "user":
                 if bondage_round > 0:
-                    round_log.append(f"你處於無法行動狀態，剩下 {bondage_round} 回合）")
+                    round_log.append(f"你處於無法行動狀態，剩下 {bondage_round} 回合")
                     bondage_round -= 1
                     continue
                 
