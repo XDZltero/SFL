@@ -552,13 +552,17 @@ body.boss-mode .monster-hp {
 
 /* 🔧 修正 tooltip 樣式 - 完全隱藏而不佔用空間 */
 .stat-description {
-  white-space: pre-line; /* 保留換行 */
+  white-space: pre-line;
   padding: 12px;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
   margin-top: 8px;
-  line-height: 1.8; /* 增加行距 */
-  font-family: 'Courier New', monospace; /* 等寬字體讓對齊更整齊 */
+  line-height: 1.8;
+  font-family: 'Courier New', monospace;
+  /* 🚀 新增：預設隱藏 */
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 /* 啟用詳細說明模式時才顯示 */
@@ -571,6 +575,14 @@ body.boss-mode .monster-hp {
 .monster-info-container .stat-description {
   border-top-color: rgba(255, 100, 100, 0.2);
   color: #ffb8b8;
+  /* 🚀 同樣預設隱藏 */
+  display: none;
+  opacity: 0;
+}
+
+.monster-info-container.tooltips-enabled .stat-description {
+  display: block;
+  opacity: 1;
 }
 
 /* BOSS 模式下的樣式調整 */
