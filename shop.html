@@ -39,6 +39,13 @@
   <div class="reset-timer">
     <h3>⏰ 商店重置時間</h3>
     <div id="resetTimerDisplay">載入中...</div>
+    <div style="margin-top: 15px; text-align: center;">
+      <button class="square-btn" onclick="manualRefreshShop()" id="manualRefreshBtn" 
+              style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); min-width: 150px;">
+        🔄 重新載入商店
+      </button>
+      <div id="lastRefreshTime" style="margin-top: 5px; font-size: 0.8em; color: #888;"></div>
+    </div>
   </div>
   
   <!-- 分類篩選 -->
@@ -64,22 +71,13 @@
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const API_BASE = "https://sfl-9cb8.onrender.com";
-    
-    // 🎯 簡化的全域狀態
-    let gameData = {
-      shopItems: [],
-      userItems: {},
-      userPurchases: {},
-      itemMeta: {},
-      userData: {}
-    };
-    
-    let uiState = {
-      currentFilter: 'all',
-      isPurchasing: false // 防止狂點
-    };
+    let shopItems = [];
+    let userItems = {};
+    let userPurchases = {};
+    let itemMeta = {};
+    let userData = {}; 
+    let currentFilter = 'all';
 
-    // 🛡️ 顯示/隱藏載入畫面
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
       const spinner = document.getElementById("loadingSpinner");
@@ -87,64 +85,344 @@
       if (spinner) spinner.style.display = show ? "block" : "none";
     }
 
-    // 🕐 簡化的時間處理
+    // 🚀 新的時間處理函數 - 參考 world_boss.html 的精確台北時間
     function getTaipeiTime() {
-      return new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
+      const now = new Date();
+      return new Date(now.toLocaleString("en-US", {timeZone: "Asia/Taipei"}));
     }
 
-    // 📊 載入所有必要數據
-    async function loadAllData() {
-      try {
-        console.log("🔄 開始載入商店數據...");
+    function formatDateString(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatWeekString(date) {
+      const year = date.getFullYear();
+      const startOfYear = new Date(year, 0, 1);
+      const startOfWeek = startOfYear.getDay() || 7; // 週一為1，週日為7
+      const dayOfYear = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000)) + 1;
+      const weekNum = Math.ceil((dayOfYear - startOfWeek + 1) / 7);
+      return `${year}-W${String(weekNum).padStart(2, '0')}`;
+    }
+
+    function formatMonthString(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      return `${year}-${month}`;
+    }
+
+    // 🔥 核心重置邏輯 - 比較進入時間差異
+    function checkTimeBasedResets(lastShopVisitTime) {
+      const currentTime = getTaipeiTime();
+      const lastTime = new Date(lastShopVisitTime);
+      
+      console.log(`🕐 檢查重置：上次進入 ${lastTime.toLocaleString('zh-TW')} → 本次進入 ${currentTime.toLocaleString('zh-TW')}`);
+      
+      // 計算各種時間週期
+      const currentDate = formatDateString(currentTime);
+      const lastDate = formatDateString(lastTime);
+      
+      const currentWeek = formatWeekString(currentTime);
+      const lastWeek = formatWeekString(lastTime);
+      
+      const currentMonth = formatMonthString(currentTime);
+      const lastMonth = formatMonthString(lastTime);
+      
+      // 判斷是否需要重置
+      const needsReset = {
+        daily: currentDate !== lastDate,
+        weekly: currentWeek !== lastWeek,
+        monthly: currentMonth !== lastMonth
+      };
+      
+      console.log(`📊 重置檢查結果:`, {
+        daily: needsReset.daily ? `${lastDate} → ${currentDate}` : '無需重置',
+        weekly: needsReset.weekly ? `${lastWeek} → ${currentWeek}` : '無需重置',
+        monthly: needsReset.monthly ? `${lastMonth} → ${currentMonth}` : '無需重置'
+      });
+      
+      return {
+        needsReset,
+        periods: {
+          currentDate,
+          currentWeek, 
+          currentMonth
+        }
+      };
+    }
+
+    // 🔥 應用重置到購買記錄
+    function applyResetsToUserPurchases(userPurchases, resetInfo) {
+      const { needsReset, periods } = resetInfo;
+      const purchases = userPurchases.purchases || {};
+      let resetCount = 0;
+      let resetItems = [];
+      
+      for (const [itemId, itemPurchases] of Object.entries(purchases)) {
+        let itemResetTypes = [];
         
-        const [shopRes, itemsRes, userItemsRes, userRes, purchasesRes] = await Promise.all([
+        // 檢查每日重置
+        if (needsReset.daily) {
+          itemPurchases.daily_purchased = 0;
+          itemPurchases.last_daily_period = periods.currentDate;
+          itemResetTypes.push("每日");
+          resetCount++;
+        }
+        
+        // 檢查每週重置
+        if (needsReset.weekly) {
+          itemPurchases.weekly_purchased = 0;
+          itemPurchases.last_weekly_period = periods.currentWeek;
+          itemResetTypes.push("每週");
+          resetCount++;
+        }
+        
+        // 檢查每月重置
+        if (needsReset.monthly) {
+          itemPurchases.monthly_purchased = 0;
+          itemPurchases.last_monthly_period = periods.currentMonth;
+          itemResetTypes.push("每月");
+          resetCount++;
+        }
+        
+        if (itemResetTypes.length > 0) {
+          // 取得商品中文名稱
+          const shop_item = shopItems.find(item => item.id === itemId);
+          const itemName = shop_item?.name || itemId;
+          
+          resetItems.push({
+            item_id: itemId,
+            item_name: itemName,
+            reset_types: itemResetTypes
+          });
+        }
+      }
+      
+      // 更新最後進入時間
+      userPurchases.last_shop_visit_time = getTaipeiTime().getTime();
+      userPurchases.last_update_time = getTaipeiTime().getTime();
+      
+      return {
+        resetCount,
+        resetItems,
+        updatedPurchases: userPurchases
+      };
+    }
+
+    // 🚀 進入商店時的主要重置檢查流程
+    async function performShopEntryResetCheck() {
+      try {
+        console.log("🏪 進入商店，開始檢查重置...");
+        
+        // 取得使用者購買記錄
+        const purchasesRes = await SecureAPI.get(`${API_BASE}/shop_user_purchases`, true);
+        let currentUserPurchases = purchasesRes.ok ? await purchasesRes.json() : {
+          user_id: auth.currentUser?.email,
+          purchases: {},
+          last_shop_visit_time: 0,
+          last_update_time: 0
+        };
+        
+        const lastShopVisitTime = currentUserPurchases.last_shop_visit_time || 0;
+        
+        // 如果是第一次進入商店
+        if (lastShopVisitTime === 0) {
+          console.log("🎉 首次進入商店，初始化時間記錄");
+          currentUserPurchases.last_shop_visit_time = getTaipeiTime().getTime();
+          currentUserPurchases.last_update_time = getTaipeiTime().getTime();
+          
+          // 保存初始時間到後端
+          await SecureAPI.post(`${API_BASE}/shop_update_visit_time`, {
+            visit_time: currentUserPurchases.last_shop_visit_time
+          });
+          
+          userPurchases = currentUserPurchases;
+          return { resetCount: 0, resetItems: [] };
+        }
+        
+        // 檢查是否需要重置
+        const resetInfo = checkTimeBasedResets(lastShopVisitTime);
+        
+        if (!resetInfo.needsReset.daily && !resetInfo.needsReset.weekly && !resetInfo.needsReset.monthly) {
+          console.log("✅ 無需重置，更新進入時間");
+          
+          // 只更新進入時間
+          currentUserPurchases.last_shop_visit_time = getTaipeiTime().getTime();
+          
+          await SecureAPI.post(`${API_BASE}/shop_update_visit_time`, {
+            visit_time: currentUserPurchases.last_shop_visit_time
+          });
+          
+          userPurchases = currentUserPurchases;
+          return { resetCount: 0, resetItems: [] };
+        }
+        
+        // 🔥 需要重置：應用重置邏輯
+        const resetResult = applyResetsToUserPurchases(currentUserPurchases, resetInfo);
+        
+        console.log(`🔄 應用重置：影響 ${resetResult.resetCount} 個商品項目`);
+        
+        // 🚀 保存重置後的購買記錄到後端
+        try {
+          const saveResponse = await SecureAPI.post(`${API_BASE}/shop_save_reset_purchases`, {
+            purchases: resetResult.updatedPurchases
+          });
+          
+          if (saveResponse.ok) {
+            console.log("✅ 重置結果已保存到後端");
+            userPurchases = resetResult.updatedPurchases;
+          } else {
+            console.error("❌ 保存重置結果失敗");
+            userPurchases = currentUserPurchases; // 保持原狀態
+          }
+        } catch (saveError) {
+          console.error("❌ 保存重置結果時發生錯誤:", saveError);
+          userPurchases = currentUserPurchases; // 保持原狀態
+        }
+        
+        return {
+          resetCount: resetResult.resetCount,
+          resetItems: resetResult.resetItems
+        };
+        
+      } catch (error) {
+        console.error("❌ 進入商店重置檢查失敗:", error);
+        return { resetCount: 0, resetItems: [], error: error.message };
+      }
+    }
+
+    function isFreeItem(item) {
+      return item.type === 'free' || 
+             (item.cost && Object.keys(item.cost).length === 0);
+    }
+
+    // 載入商店資料
+    async function loadShopData() {
+      try {
+        const [shopRes, itemsRes, userItemsRes, userRes] = await Promise.all([
           fetch("parameter/shop_items.json"),
           SecureAPI.getStaticData('items_table'),
-          SecureAPI.get(`${API_BASE}/user_items`, false),
-          SecureAPI.getStatus(false),
-          SecureAPI.get(`${API_BASE}/shop_user_purchases`, false)
+          SecureAPI.get(`${API_BASE}/user_items`, true),
+          SecureAPI.getStatus(true)
         ]);
 
-        // 處理商店物品
-        gameData.shopItems = await shopRes.json();
+        shopItems = await shopRes.json();
         
-        // 處理物品元數據
         if (Array.isArray(itemsRes)) {
-          gameData.itemMeta = itemsRes.reduce((acc, item) => {
+          itemMeta = itemsRes.reduce((acc, item) => {
             acc[item.id] = item;
             return acc;
           }, {});
         } else {
-          gameData.itemMeta = itemsRes;
+          itemMeta = itemsRes;
         }
 
-        // 處理用戶數據
-        gameData.userItems = userItemsRes.ok ? (await userItemsRes.json()).items || {} : {};
-        gameData.userData = await userRes.json();
+        userItems = userItemsRes.ok ? await userItemsRes.json() : {};
+        userData = await userRes.json();
         
-        // 處理購買記錄
-        if (purchasesRes.ok) {
-          gameData.userPurchases = await purchasesRes.json();
-        } else {
-          gameData.userPurchases = {
-            user_id: auth.currentUser?.email,
-            purchases: {}
-          };
+        // 🔥 重要：載入完商店資料後，立即執行進入商店的重置檢查
+        const resetResult = await performShopEntryResetCheck();
+        
+        // 如果有重置，顯示通知
+        if (resetResult.resetCount > 0) {
+          const resetMessages = resetResult.resetItems.map(item => 
+            `📦 ${item.item_name}：${item.reset_types.join('、')}`
+          ).join('\n');
+          
+          const notification = `🔄 商店重置完成！\n\n以下商品已重置：\n${resetMessages}`;
+          
+          // 使用非阻塞方式顯示通知
+          setTimeout(() => {
+            if (confirm(`${notification}\n\n點擊確定查看最新商品狀態`)) {
+              // 用戶確認後重新渲染
+              renderShopItems();
+            }
+          }, 1000);
+        } else if (resetResult.error) {
+          console.error("❌ 重置檢查發生錯誤:", resetResult.error);
         }
         
-        console.log("✅ 所有數據載入完成");
-        return true;
-        
       } catch (error) {
-        console.error("❌ 載入數據失敗:", error);
+        console.error("載入商店資料失敗:", error);
+        alert("載入商店資料失敗，請重新整理頁面");
         throw error;
       }
     }
 
-    // 👤 更新用戶信息顯示
+    // 🔄 手動重新載入商店（保留功能但簡化）
+    async function manualRefreshShop() {
+      const btn = document.getElementById("manualRefreshBtn");
+      const lastRefreshEl = document.getElementById("lastRefreshTime");
+      
+      if (btn.disabled) return;
+      
+      try {
+        btn.disabled = true;
+        btn.textContent = "🔄 重新載入中...";
+        btn.style.opacity = "0.6";
+        
+        showLoading(true);
+        
+        // 清除快取
+        SecureAPI.clearCache();
+        
+        // 重新載入資料（包含重置檢查）
+        await loadShopData();
+        
+        // 重新渲染
+        updateUserInfoDisplay();
+        updateUserCurrencyDisplay();
+        renderShopItems();
+        updateResetTimerDisplay();
+        
+        // 更新最後刷新時間
+        const now = getTaipeiTime();
+        const taipeiTimeString = now.toLocaleString("zh-TW", {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        
+        lastRefreshEl.textContent = `最後重新載入：${taipeiTimeString}`;
+        
+        btn.textContent = "✅ 重新載入完成";
+        btn.style.background = "linear-gradient(135deg, #4CAF50 0%, #45a049 100%)";
+        
+        setTimeout(() => {
+          btn.textContent = "🔄 重新載入商店";
+          btn.style.background = "";
+        }, 2000);
+        
+        console.log("✅ 手動重新載入商店完成");
+        
+      } catch (error) {
+        console.error("❌ 手動重新載入失敗:", error);
+        
+        btn.textContent = "❌ 重新載入失敗";
+        btn.style.background = "linear-gradient(135deg, #f44336 0%, #d32f2f 100%)";
+        
+        setTimeout(() => {
+          btn.textContent = "🔄 重新載入商店";
+          btn.style.background = "";
+        }, 3000);
+        
+        alert("重新載入失敗，請稍後再試");
+        
+      } finally {
+        showLoading(false);
+        btn.disabled = false;
+        btn.style.opacity = "1";
+      }
+    }
+
     function updateUserInfoDisplay() {
-      const userLevel = gameData.userData.level || 1;
-      const userNickname = gameData.userData.nickname || "未知玩家";
+      const userLevel = userData.level || 1;
+      const userNickname = userData.nickname || "未知玩家";
       
       document.getElementById("userInfoDisplay").innerHTML = `
         <div class="currency-item">
@@ -158,14 +436,63 @@
       `;
     }
 
-    // 💰 更新貨幣顯示
+    // 計算重置時間顯示
+    function updateResetTimerDisplay() {
+      const now = getTaipeiTime();
+      
+      // 計算下次週重置 (週一 00:00)
+      const nextMonday = new Date(now);
+      const daysUntilMonday = (1 + 7 - nextMonday.getDay()) % 7;
+      if (daysUntilMonday === 0 && nextMonday.getHours() >= 0) {
+        nextMonday.setDate(nextMonday.getDate() + 7);
+      } else {
+        nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
+      }
+      nextMonday.setHours(0, 0, 0, 0);
+      
+      // 計算下次月重置 (1號 00:00)
+      const nextMonth = new Date(now);
+      if (now.getDate() === 1 && now.getHours() >= 0) {
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+      } else if (now.getDate() > 1) {
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+      }
+      nextMonth.setDate(1);
+      nextMonth.setHours(0, 0, 0, 0);
+      
+      // 計算下次日重置 (明天 00:00)
+      const nextDay = new Date(now);
+      nextDay.setDate(nextDay.getDate() + 1);
+      nextDay.setHours(0, 0, 0, 0);
+      
+      const formatTimeRemaining = (targetDate) => {
+        const diff = targetDate - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (days > 0) return `${days}天 ${hours}小時`;
+        if (hours > 0) return `${hours}小時 ${minutes}分`;
+        return `${minutes}分鐘`;
+      };
+      
+      document.getElementById("resetTimerDisplay").innerHTML = `
+        <div class="timer-item">🗓️ 週重置 (週一 00:00): ${formatTimeRemaining(nextMonday)}</div>
+        <div class="timer-item">📅 月重置 (1號 00:00): ${formatTimeRemaining(nextMonth)}</div>
+        <div class="timer-item">🌅 日重置 (明天 00:00): ${formatTimeRemaining(nextDay)}</div>
+        <div style="margin-top: 10px; font-size: 0.9em; color: #888;">
+          ℹ️ 商品限購會在你下次進入商店時自動重置
+        </div>
+      `;
+    }
+
     function updateUserCurrencyDisplay() {
       const currencies = ['world_boss_token', 'daily_coin'];
       let html = '';
       
       currencies.forEach(currency => {
-        const meta = gameData.itemMeta[currency];
-        const amount = gameData.userItems[currency] || 0;
+        const meta = itemMeta[currency];
+        const amount = userItems[currency] || 0;
         const name = meta ? meta.name : currency;
         
         html += `
@@ -179,294 +506,370 @@
       document.getElementById("userCurrencyDisplay").innerHTML = html;
     }
 
-    // ⏰ 更新重置時間顯示
-    function updateResetTimerDisplay() {
-      const now = getTaipeiTime();
-      
-      // 計算各種重置時間
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      
-      const nextMonday = new Date(now);
-      const daysToMonday = (1 + 7 - now.getDay()) % 7 || 7;
-      nextMonday.setDate(now.getDate() + daysToMonday);
-      nextMonday.setHours(0, 0, 0, 0);
-      
-      const nextMonth = new Date(now);
-      nextMonth.setMonth(now.getMonth() + 1, 1);
-      nextMonth.setHours(0, 0, 0, 0);
-      
-      const formatTime = (date) => {
-        const diff = date - now;
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        
-        if (hours >= 24) {
-          const days = Math.floor(hours / 24);
-          return `${days}天 ${hours % 24}小時`;
-        }
-        return `${hours}小時 ${minutes}分`;
-      };
-      
-      document.getElementById("resetTimerDisplay").innerHTML = `
-        <div class="timer-item">🌅 每日重置: ${formatTime(tomorrow)}</div>
-        <div class="timer-item">🗓️ 每週重置: ${formatTime(nextMonday)}</div>
-        <div class="timer-item">📅 每月重置: ${formatTime(nextMonth)}</div>
-        <div style="margin-top: 10px; font-size: 0.9em; color: #888;">
-          ℹ️ 重置將在下次進入商店時生效
-        </div>
-      `;
-    }
-
-    // 🛒 檢查商品是否可購買
+    // 檢查商品是否可購買（包含等級限制）
     function canPurchaseItem(item) {
-      const purchases = gameData.userPurchases.purchases || {};
-      const itemPurchases = purchases[item.id] || {
-        total_purchased: 0,
-        daily_purchased: 0,
-        weekly_purchased: 0,
-        monthly_purchased: 0
-      };
-      
-      const userLevel = gameData.userData.level || 1;
+      const purchases = userPurchases.purchases || {};
+      const itemPurchases = purchases[item.id] || {};
+      const userLevel = userData.level || 1;
       
       // 檢查等級限制
-      if (userLevel < (item.required_level || 1)) {
+      const requiredLevel = item.required_level || 1;
+      if (userLevel < requiredLevel) {
         return { 
           canPurchase: false, 
-          reason: `等級不足 (需要Lv.${item.required_level}，目前Lv.${userLevel})`
+          reason: `等級不足 (需要Lv.${requiredLevel}，目前Lv.${userLevel})`,
+          levelRestricted: true
         };
       }
       
       // 檢查總限購
-      if (item.limit_per_account > 0 && itemPurchases.total_purchased >= item.limit_per_account) {
-        return { canPurchase: false, reason: "已達購買上限" };
+      if (item.limit_per_account > -1 && itemPurchases.total_purchased >= item.limit_per_account) {
+        return { canPurchase: false, reason: "已達帳號總限購數量" };
       }
       
-      // 檢查週期限購
+      // 檢查重置週期限購
       if (item.reset_type !== "none" && item.limit_per_reset > 0) {
         const resetKey = `${item.reset_type}_purchased`;
-        if (itemPurchases[resetKey] >= item.limit_per_reset) {
-          const typeName = { daily: '每日', weekly: '每週', monthly: '每月' }[item.reset_type];
-          return { canPurchase: false, reason: `已達${typeName}購買上限` };
+        const resetPurchased = itemPurchases[resetKey] || 0;
+        
+        if (resetPurchased >= item.limit_per_reset) {
+          return { 
+            canPurchase: false, 
+            reason: `已達${getResetTypeName(item.reset_type)}限購數量` 
+          };
         }
       }
       
-      // 檢查資源是否足夠
-      if (item.cost) {
-        for (const [costItem, costAmount] of Object.entries(item.cost)) {
-          const owned = gameData.userItems[costItem] || 0;
-          if (owned < costAmount) {
-            const itemName = gameData.itemMeta[costItem]?.name || costItem;
-            return { canPurchase: false, reason: `${itemName} 不足` };
-          }
+      // 檢查道具是否足夠
+      for (const [costItem, costAmount] of Object.entries(item.cost)) {
+        const owned = userItems[costItem] || 0;
+        if (owned < costAmount) {
+          const itemName = itemMeta[costItem]?.name || costItem;
+          return { canPurchase: false, reason: `${itemName} 數量不足` };
         }
       }
       
-      return { canPurchase: true };
+      // 檢查目標道具是否會超過999
+      if (item.type !== "bundle") {
+        const currentAmount = userItems[item.item_id] || 0;
+        if (currentAmount + item.quantity > 999) {
+          return { canPurchase: false, reason: "購買後會超過999個上限" };
+        }
+      }
+      
+      return { canPurchase: true, reason: "" };
     }
 
-    // 🏷️ 獲取物品中文名稱
-    function getItemName(itemId) {
-      return gameData.itemMeta[itemId]?.name || itemId;
+    // 獲取重置類型名稱
+    function getResetTypeName(resetType) {
+      const names = {
+        'daily': '每日',
+        'weekly': '每週',
+        'monthly': '每月',
+        'none': '永久'
+      };
+      return names[resetType] || resetType;
     }
 
-    // 🎨 渲染商品列表
+    // 渲染商品卡片
     function renderShopItems() {
-      const filteredItems = uiState.currentFilter === 'all' 
-        ? gameData.shopItems 
-        : gameData.shopItems.filter(item => item.category === uiState.currentFilter);
-
+      const filteredItems = currentFilter === 'all' 
+        ? shopItems 
+        : shopItems.filter(item => item.category === currentFilter);
+    
       const sortedItems = filteredItems.sort((a, b) => {
-        // 可購買的排前面
         const aCanPurchase = canPurchaseItem(a).canPurchase;
         const bCanPurchase = canPurchaseItem(b).canPurchase;
-        if (aCanPurchase !== bCanPurchase) return bCanPurchase ? 1 : -1;
         
-        return (a.sort || 999) - (b.sort || 999);
+        if (aCanPurchase !== bCanPurchase) {
+          return bCanPurchase ? 1 : -1;
+        }
+        
+        return a.sort - b.sort;
       });
-
+    
       let html = '';
       
       sortedItems.forEach(item => {
-        const { canPurchase, reason } = canPurchaseItem(item);
-        const purchases = gameData.userPurchases.purchases || {};
+        const { canPurchase, reason, levelRestricted } = canPurchaseItem(item);
+        const purchases = userPurchases.purchases || {};
         const itemPurchases = purchases[item.id] || {};
+        const userLevel = userData.level || 1;
+        const requiredLevel = item.required_level || 1;
         
-        // 卡片樣式
         let cardClass = 'shop-item-card';
         if (!canPurchase) cardClass += ' sold-out';
-        if (!item.cost || Object.keys(item.cost).length === 0) cardClass += ' free';
+        if (item.type === 'free') cardClass += ' free';
         if (item.type === 'bundle') cardClass += ' bundle';
+        if (levelRestricted) cardClass += ' level-restricted';
         
-        // 特殊標記
-        let specialLabel = '';
-        if (item.special === 1) specialLabel = '【稀有】';
-        else if (item.special === 2) specialLabel = '【超稀有】';
-        else if (item.special === 3) specialLabel = '【罕見】';
-        
-        // 獲得物品顯示
-        let rewardHtml = '';
-        if (item.type === 'bundle' && item.items) {
-          const itemList = item.items.map(i => `${getItemName(i.item_id)} x${i.quantity}`).join('、');
-          rewardHtml = `<div class="shop-item-desc">📦 獲得：${itemList}</div>`;
-        } else if (item.item_id) {
-          rewardHtml = `<div class="shop-item-desc">📦 獲得：${getItemName(item.item_id)} x${item.quantity}</div>`;
+        // 特殊性標記
+        let rarityClass = '';
+        let rarityLabel = '';
+        if (item.special === 1) {
+          rarityClass = 'rare';
+          rarityLabel = '【稀有】';
+        } else if (item.special === 2) {
+          rarityClass = 'super-rare';
+          rarityLabel = '【超稀有】';
+        } else if (item.special === 3) {
+          rarityClass = 'mythical';
+          rarityLabel = '【罕見】';
         }
         
-        // 消費顯示
+        if (item.type === 'bundle') {
+          rarityLabel = '【禮包】' + rarityLabel;
+        }
+        
+        // 獲得物品列表
+        let receivedItemsHtml = '';
+        if (item.type === 'bundle' && item.items) {
+          const chineseItemsList = item.items.map(itemData => {
+            const chineseName = getItemChineseName(itemData.item_id);
+            return `${chineseName} x${itemData.quantity}`;
+          }).join('、');
+          
+          receivedItemsHtml = `<div class="shop-item-desc">📦 禮包內容：${chineseItemsList}</div>`;
+        } else if (item.item_id) {
+          const chineseName = getItemChineseName(item.item_id);
+          receivedItemsHtml = `<div class="shop-item-desc">📦 獲得：${chineseName} x${item.quantity}</div>`;
+        }
+        
+        // 等級要求顯示
+        let levelRequirementHtml = '';
+        if (requiredLevel > 1) {
+          const levelStatusClass = userLevel >= requiredLevel ? 'level-met' : 'level-not-met';
+          const levelIcon = userLevel >= requiredLevel ? '✅' : '❌';
+          levelRequirementHtml = `
+            <div class="level-requirement ${levelStatusClass}">
+              ${levelIcon} 等級需求：Lv.${requiredLevel}<br>(目前：Lv.${userLevel})
+            </div>
+          `;
+        }
+        
+        // 消費道具列表
         let costHtml = '';
-        if (!item.cost || Object.keys(item.cost).length === 0) {
-          costHtml = '<div style="color: #4CAF50; text-align: center;">💰 免費</div>';
+        const itemIsFree = isFreeItem(item);
+        if (itemIsFree) {
+          costHtml = '<div class="cost-item"><span style="color: #4CAF50;">💰 免費領取</span></div>';
         } else {
-          costHtml = '<div class="shop-item-cost">';
-          Object.entries(item.cost).forEach(([costItem, amount]) => {
-            const owned = gameData.userItems[costItem] || 0;
-            const sufficient = owned >= amount;
+          Object.entries(item.cost).forEach(([costItem, costAmount]) => {
+            const chineseName = getItemChineseName(costItem);
+            const owned = userItems[costItem] || 0;
+            const sufficient = owned >= costAmount;
+        
             costHtml += `
               <div class="cost-item">
-                <span class="cost-name">${getItemName(costItem)}:</span>
+                <span class="cost-name">${chineseName}:</span>
                 <div>
-                  <span class="cost-amount">${amount}</span>
-                  <span class="cost-owned ${sufficient ? '' : 'cost-insufficient'}">(有: ${owned})</span>
+                  <span class="cost-amount">${costAmount}</span><br>
+                  <span class="cost-owned ${sufficient ? '' : 'cost-insufficient'}">(擁有: ${owned})</span>
                 </div>
               </div>
             `;
           });
-          costHtml += '</div>';
         }
-        
+    
         // 購買限制顯示
         const totalPurchased = itemPurchases.total_purchased || 0;
-        let limitHtml = '';
+        const resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
         
-        if (item.limit_per_account > 0) {
-          limitHtml += `總購買: ${totalPurchased}/${item.limit_per_account}`;
-        }
+        const isUnlimited = (item.unlimited || item.limit_per_account === -1) && 
+                           (item.limit_per_reset === -1 || item.reset_type === 'none');
+    
+        let limitDisplay = '';
         
-        if (item.reset_type !== 'none' && item.limit_per_reset > 0) {
-          const resetPurchased = itemPurchases[`${item.reset_type}_purchased`] || 0;
-          const typeName = { daily: '每日', weekly: '每週', monthly: '每月' }[item.reset_type];
-          if (limitHtml) limitHtml += ' | ';
-          limitHtml += `${typeName}: ${resetPurchased}/${item.limit_per_reset}`;
+        if (isUnlimited) {
+          limitDisplay = `
+            <div class="shop-item-limit unlimited">
+              ♾️ 無限購買 | 已購買：${totalPurchased} 次
+            </div>
+          `;
+        } else {
+          let limitInfo = [];
+          
+          // 帳號總限制
+          if (item.limit_per_account !== -1) {
+            limitInfo.push(`總購買：${totalPurchased}/${item.limit_per_account}`);
+          }
+          
+          // 重置週期限制
+          if (item.reset_type !== 'none' && item.limit_per_reset !== -1) {
+            const resetTypeName = getResetTypeName(item.reset_type);
+            limitInfo.push(`${resetTypeName}：${resetPurchased}/${item.limit_per_reset}`);
+          }
+          
+          // 特殊情況處理
+          if (item.limit_per_account === -1 && item.reset_type !== 'none' && item.limit_per_reset !== -1) {
+            const resetTypeName = getResetTypeName(item.reset_type);
+            limitInfo = [`${resetTypeName}限購：${resetPurchased}/${item.limit_per_reset}`];
+          }
+          
+          limitDisplay = `
+            <div class="shop-item-limit ${item.reset_type}">
+              📦 ${limitInfo.join(' | ')}
+            </div>
+          `;
         }
         
         html += `
-          <div class="${cardClass}">
-            <div class="shop-item-name">${specialLabel}${item.name}</div>
+          <div class="${cardClass} ${rarityClass}">
+            <div class="shop-item-name">${rarityLabel}${item.name}</div>
             <div class="shop-item-desc">${item.description}</div>
-            ${rewardHtml}
+            ${receivedItemsHtml}
+            ${levelRequirementHtml}
             
-            ${limitHtml ? `<div class="shop-item-limit">${limitHtml}</div>` : ''}
+            ${limitDisplay}
             
-            ${costHtml}
+            <div class="shop-item-cost">
+              ${costHtml}
+            </div>
             
             ${!canPurchase ? 
-              `<div style="color: #ff6b6b; text-align: center; margin: 10px 0;">❌ ${reason}</div>` :
-              `<button class="square-btn purchase-btn" data-item-id="${item.id}" style="width: 100%; margin-top: 10px;">
-                ${(!item.cost || Object.keys(item.cost).length === 0) ? '🎁 領取' : '💰 購買'}
+              `<div style="color: #ff6b6b; font-weight: bold; text-align: center; margin: 10px 0;">❌ ${reason}</div>` :
+              `<button class="square-btn" onclick="openPurchaseDialog('${item.id}')" style="width: 100%; margin-top: 10px;">
+                ${itemIsFree ? '🎁 免費領取' : item.type === 'bundle' ? '📦 購買禮包' : '💰 購買'}
               </button>`
             }
           </div>
         `;
       });
-      
+    
       document.getElementById("shopItemGrid").innerHTML = html || '<div class="shop-item-card">此分類暫無商品</div>';
       
-      // 🎯 重新綁定購買按鈕事件
-      document.querySelectorAll('.purchase-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (!uiState.isPurchasing) {
-            openPurchaseDialog(btn.dataset.itemId);
-          }
-        });
-      });
-      
+      // 更新分類計數
       updateCategoryCounts();
     }
 
-    // 📊 更新分類計數
+    // 更新分類計數
     function updateCategoryCounts() {
       const categories = ['all', 'reset_free', 'level_pack', 'world_boss'];
+      
       categories.forEach(category => {
         const count = category === 'all' 
-          ? gameData.shopItems.length 
-          : gameData.shopItems.filter(item => item.category === category).length;
+          ? shopItems.length 
+          : shopItems.filter(item => item.category === category).length;
         
         const countEl = document.getElementById(`count-${category}`);
-        if (countEl) countEl.textContent = count;
+        if (countEl) {
+          countEl.textContent = count;
+        }
       });
     }
 
-    // 🛒 打開購買對話框
-    function openPurchaseDialog(itemId) {
-      const item = gameData.shopItems.find(i => i.id === itemId);
+    // 購買對話框
+    async function openPurchaseDialog(itemId) {
+      const item = shopItems.find(i => i.id === itemId);
       if (!item) return;
       
       const { canPurchase, reason } = canPurchaseItem(item);
+      
       if (!canPurchase) {
         alert(`無法購買：${reason}`);
         return;
       }
       
       const dialog = document.getElementById("dialogContainer");
-      const isFree = !item.cost || Object.keys(item.cost).length === 0;
+      const userLevel = userData.level || 1;
+      const requiredLevel = item.required_level || 1;
       
-      let rewardHtml = '';
+      // 生成獲得物品摘要
+      let receivedItemsSummary = '';
       if (item.type === 'bundle' && item.items) {
-        rewardHtml = '<h4>📦 禮包內容</h4>';
-        item.items.forEach(i => {
-          rewardHtml += `<div>${getItemName(i.item_id)} x${i.quantity}</div>`;
+        receivedItemsSummary = '<h4>📦 禮包內容</h4>';
+        item.items.forEach(itemData => {
+          const chineseName = getItemChineseName(itemData.item_id);
+          const currentAmount = userItems[itemData.item_id] || 0;
+          
+          receivedItemsSummary += `
+            <div class="cost-item">
+              <span>${chineseName}:</span>
+              <span>+${itemData.quantity} (總計: ${currentAmount + itemData.quantity})</span>
+            </div>
+          `;
         });
       } else if (item.item_id) {
-        rewardHtml = `<h4>📦 獲得物品</h4><div>${getItemName(item.item_id)} x${item.quantity}</div>`;
+        const chineseName = getItemChineseName(item.item_id);
+        const currentAmount = userItems[item.item_id] || 0;
+        
+        receivedItemsSummary = `
+          <h4>📦 購買物品</h4>
+          <div><strong>${item.name}</strong></div>
+          <div>數量：${item.quantity}</div>
+          <div>購買後總計：${currentAmount} + ${item.quantity} = ${currentAmount + item.quantity}</div>
+        `;
       }
       
-      let costHtml = '';
-      if (isFree) {
-        costHtml = '<div style="color: #4CAF50;">🎁 免費領取</div>';
+      // 等級信息顯示
+      let levelInfoHtml = '';
+      if (requiredLevel > 1) {
+        levelInfoHtml = `
+          <div class="purchase-summary">
+            <h4>👤 等級要求</h4>
+            <div class="cost-item">
+              <span>需要等級：</span>
+              <span style="color: #4CAF50;">Lv.${requiredLevel} ✅</span>
+            </div>
+            <div class="cost-item">
+              <span>目前等級：</span>
+              <span style="color: #00ffff;">Lv.${userLevel}</span>
+            </div>
+          </div>
+        `;
+      }
+      
+      // 消費道具摘要
+      let costSummary = '';
+      const itemIsFree = isFreeItem(item);
+      
+      if (itemIsFree) {
+        costSummary = '<div style="color: #4CAF50; text-align: center; font-weight: bold;">🎁 此為免費道具</div>';
       } else {
-        costHtml = '<h4>💸 消耗道具</h4>';
-        Object.entries(item.cost).forEach(([costItem, amount]) => {
-          const owned = gameData.userItems[costItem] || 0;
-          costHtml += `<div>${getItemName(costItem)}: ${amount} (剩餘: ${owned - amount})</div>`;
+        Object.entries(item.cost).forEach(([costItem, costAmount]) => {
+          const chineseName = getItemChineseName(costItem);
+          const owned = userItems[costItem] || 0;
+          
+          costSummary += `
+            <div class="cost-item">
+              <span>消耗 ${chineseName}:</span>
+              <span>${costAmount} (剩餘: ${owned - costAmount})</span>
+            </div>
+          `;
         });
       }
       
-      dialog.innerHTML = `
+      let html = `
         <div class='purchase-dialog'>
-          <h3>💰 購買確認</h3>
+          <h3>💰 ${item.type === 'bundle' ? '禮包購買' : '購買'}確認</h3>
+          
+          ${levelInfoHtml}
+          
           <div class="purchase-summary">
-            ${rewardHtml}
+            ${receivedItemsSummary}
           </div>
+          
           <div class="purchase-summary">
-            ${costHtml}
+            <h4>💸 消耗道具</h4>
+            ${costSummary}
           </div>
+          
           <div class="btn-group">
-            <button class="square-btn" id="confirmPurchaseBtn" style="background: #4CAF50;">
-              ✅ 確認${isFree ? '領取' : '購買'}
+            <button class="square-btn" onclick="confirmPurchase('${itemId}')" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);">
+              ✅ 確認${itemIsFree ? '領取' : item.type === 'bundle' ? '購買禮包' : '購買'}
             </button>
             <button class="square-btn" onclick="closeDialog()">❌ 取消</button>
           </div>
         </div>
       `;
       
-      // 綁定確認購買事件
-      document.getElementById('confirmPurchaseBtn').addEventListener('click', () => {
-        confirmPurchase(itemId);
-      });
-      
+      dialog.innerHTML = html;
       dialog.style.display = "flex";
       document.body.style.overflow = "hidden";
+      document.body.classList.add("dialog-open");
     }
 
-    // ✅ 確認購買
+    // 確認購買
     async function confirmPurchase(itemId) {
-      if (uiState.isPurchasing) return; // 防止重複購買
-      
-      uiState.isPurchasing = true;
       showLoading(true);
       
       try {
@@ -477,28 +880,42 @@
         const result = await response.json();
         
         if (response.ok && result.success) {
-          // 更新本地數據
-          if (result.user_items) {
-            gameData.userItems = result.user_items.items || result.user_items;
-          }
-          if (result.purchases) {
-            gameData.userPurchases = result.purchases;
-          }
+          // 構建中文化的成功訊息
+          let successMessage = '';
           
-          // 構建成功消息
-          const item = gameData.shopItems.find(i => i.id === itemId);
-          let message = `✅ 購買成功！\n\n📦 ${item.name}`;
+          const purchaseInfo = result.purchase_info || {};
+          const itemName = purchaseInfo.item_name || '未知商品';
+          const purchaseType = purchaseInfo.purchase_type || '購買';
+          const successfulPurchases = purchaseInfo.successful_purchases || 1;
           
-          if (result.purchase_info?.total_items_received) {
-            const items = Object.entries(result.purchase_info.total_items_received)
-              .map(([id, qty]) => `${getItemName(id)} x${qty}`)
-              .join('\n');
-            message += `\n\n獲得：\n${items}`;
+          successMessage = `✅ 成功${purchaseType} ${itemName}`;
+          
+          if (successfulPurchases > 1) {
+            successMessage += ` x${successfulPurchases}`;
           }
           
-          alert(message);
+          // 處理獲得的道具
+          const totalItemsReceived = purchaseInfo.total_items_received || {};
+          if (Object.keys(totalItemsReceived).length > 0) {
+            const chineseItemsList = [];
+            
+            for (const [itemId, quantity] of Object.entries(totalItemsReceived)) {
+              const chineseName = getItemChineseName(itemId);
+              chineseItemsList.push(`${chineseName} x${quantity}`);
+            }
+            
+            if (chineseItemsList.length > 0) {
+              successMessage += `\n\n📦 獲得道具：\n${chineseItemsList.join('\n')}`;
+            }
+          }
           
-          // 更新顯示
+          alert(successMessage);
+          
+          // 更新本地資料
+          userItems = result.user_items || userItems;
+          userPurchases = result.purchases || userPurchases;
+          
+          // 重新渲染
           updateUserCurrencyDisplay();
           renderShopItems();
           closeDialog();
@@ -511,21 +928,28 @@
         console.error("購買錯誤:", error);
         alert("❌ 購買過程發生錯誤");
       } finally {
-        uiState.isPurchasing = false;
         showLoading(false);
       }
     }
 
-    // ❌ 關閉對話框
+    // 將道具ID轉換為中文名稱
+    function getItemChineseName(itemId) {
+      const meta = itemMeta[itemId];
+      return meta ? meta.name : itemId;
+    }
+
+    // 關閉對話框
     function closeDialog() {
       document.body.style.overflow = "";
+      document.body.classList.remove("dialog-open");
       document.getElementById("dialogContainer").style.display = "none";
     }
 
-    // 🔄 分類篩選
+    // 篩選切換
     function switchFilter(category) {
-      uiState.currentFilter = category;
+      currentFilter = category;
       
+      // 更新按鈕狀態
       document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
       });
@@ -534,52 +958,58 @@
       renderShopItems();
     }
 
-    // 🚀 主初始化函數
-    async function initialize() {
+    // 綁定篩選按鈕事件
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchFilter(btn.dataset.category);
+        });
+      });
+    });
+
+    // 全域函數
+    window.openPurchaseDialog = openPurchaseDialog;
+    window.confirmPurchase = confirmPurchase;
+    window.closeDialog = closeDialog;
+    window.manualRefreshShop = manualRefreshShop;
+
+    // 主要初始化函數
+    async function runMain() {
       showLoading(true);
       
       try {
-        await loadAllData();
+        await loadShopData(); // 包含重置檢查
         
         updateUserInfoDisplay();
         updateUserCurrencyDisplay();
         renderShopItems();
         updateResetTimerDisplay();
         
-        // 每分鐘更新時間顯示
+        // 每分鐘更新一次重置時間顯示
         setInterval(updateResetTimerDisplay, 60000);
         
-        // 綁定篩選按鈕事件
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            switchFilter(btn.dataset.category);
-          });
-        });
-        
-        console.log('🏪 商店初始化完成');
+        console.log('🏪 商店頁面初始化完成（含時間差重置檢查）');
         
       } catch (error) {
-        console.error("❌ 初始化失敗:", error);
-        alert("頁面載入失敗，請重新整理");
+        console.error("初始化錯誤:", error);
+        alert("頁面初始化失敗，請重新整理");
       } finally {
         showLoading(false);
       }
     }
 
-    // 🎵 音樂控制
+    // 商店頁面音樂控制
     document.addEventListener('DOMContentLoaded', function() {
       if (window.parent && window.parent.postMessage) {
+        console.log("🎵 商店頁面：請求切換到商店音樂");
         window.parent.postMessage({ command: "switchToShopMusic" }, "*");
       }
     });
 
-    // 全域函數
-    window.closeDialog = closeDialog;
-
-    // 🔐 登入狀態監聽
+    // 監聽登入狀態
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        initialize();
+        runMain();
       } else {
         window.parent.location.href = "/SFL/login.html";
       }
