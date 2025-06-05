@@ -2,6 +2,7 @@
   { "id": "bilgase_core", "name": "比爾加賽的艦船核心", "special": 0, "description": "比爾加賽戰艦的核心動力源，蘊含著強大的次元能量和艦船的榮耀。" }, 
   { "id": "obsidian_fragment", "name": "黑曜石碎片", "special": 0, "description": "黑曜艦長盔甲的碎片，散發著冷酷的金屬光澤與指揮官的威嚴。" }, 
   { "id": "elite_bronze_core", "name": "青銅核心", "special": 0, "description": "青銅使者的強化核心，融合了大量科技武裝的精華能量。" }, 
+  { "id": "daimond_crash", "name": "鑽石殘骸", "special": 0, "description": "鑽石使者寶貴鑽石的殘骸。" }, 
   { "id": "optical_module", "name": "光學追蹤模組", "special": 0, "description": "光學軌跡追蹤砲的核心瞄準系統，能夠進行精密的目標鎖定。" }, 
   { "id": "golden_fragment", "name": "黃金碎片", "special": 1, "description": "黃金使者的護甲碎片，即使破損仍散發著反魔法能量的光輝。" }, 
   { "id": "repair_kit", "name": "機甲修理工具組", "special": 0, "description": "機甲精銳修理兵使用的高級修理工具，包含各種精密的維修設備。" }, 
