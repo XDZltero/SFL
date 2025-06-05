@@ -3767,64 +3767,6 @@ def verify_token():
         print(f"❌ Token驗證失敗: {e}")
         return None
 
- 📊 商店統計和監控
-@app.route('/shop_admin_stats', methods=['GET'])
-def get_shop_admin_stats():
-    """
-    管理員專用：商店統計資訊
-    用於監控異常購買行為
-    """
-    try:
-        # 🔐 檢查管理員權限（需要根據你的權限系統調整）
-        user_info = verify_token()
-        if not user_info or not is_admin(user_info['email']):
-            return jsonify({"error": "權限不足"}), 403
-        
-        db = firestore.client()
-        
-        # 統計最近24小時的購買
-        current_time = get_current_taipei_time()
-        yesterday = current_time - timedelta(days=1)
-        yesterday_timestamp = yesterday.timestamp() * 1000
-        
-        purchases_collection = db.collection("shop_purchases")
-        recent_purchases = []
-        
-        for doc in purchases_collection.stream():
-            data = doc.to_dict()
-            last_update = data.get('last_update_time', 0)
-            
-            if last_update > yesterday_timestamp:
-                # 計算使用者的購買統計
-                user_stats = {
-                    'user_id': doc.id,
-                    'last_update': datetime.fromtimestamp(last_update / 1000).strftime('%Y-%m-%d %H:%M:%S'),
-                    'total_items_purchased': 0,
-                    'purchases_by_item': {}
-                }
-                
-                for item_id, item_data in data.get('purchases', {}).items():
-                    total = item_data.get('total_purchased', 0)
-                    user_stats['total_items_purchased'] += total
-                    user_stats['purchases_by_item'][item_id] = total
-                
-                if user_stats['total_items_purchased'] > 0:
-                    recent_purchases.append(user_stats)
-        
-        # 排序：購買最多的使用者在前
-        recent_purchases.sort(key=lambda x: x['total_items_purchased'], reverse=True)
-        
-        return jsonify({
-            "success": True,
-            "period": "最近24小時",
-            "total_active_users": len(recent_purchases),
-            "recent_purchases": recent_purchases[:20]  # 只返回前20名
-        })
-        
-    except Exception as e:
-        print(f"❌ 取得商店統計失敗: {e}")
-        return jsonify({"error": str(e)}), 500
-
 def is_admin(email):
     """
     檢查是否為管理員
