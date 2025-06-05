@@ -1614,18 +1614,20 @@ let playerTooltipsEnabled = false;
 let monsterTooltipsEnabled = false;
 
 function togglePlayerTooltips() {
-  toggleMonsterTooltips();
   const container = document.querySelector('.player-info-container .stats-container');
   const toggleBtn = document.getElementById('playerToggleBtn');
-  
+  const mons_container = document.querySelector('.monster-info-container .monster-stats');
+
   playerTooltipsEnabled = !playerTooltipsEnabled;
   
   if (playerTooltipsEnabled) {
     container.classList.add('tooltips-enabled');
+    mons_container.classList.add('tooltips-enabled');
     toggleBtn.classList.add('active');
     toggleBtn.innerHTML = '📖 隱藏說明';
   } else {
     container.classList.remove('tooltips-enabled');
+    mons_container.classList.remove('tooltips-enabled');
     toggleBtn.classList.remove('active');
     toggleBtn.innerHTML = '📖 詳細說明';
   }
@@ -1637,33 +1639,9 @@ function togglePlayerTooltips() {
   }, 150);
 }
 
-// 🔧 修正後的怪物 tooltip 切換函數 - 只切換屬性說明
-function toggleMonsterTooltips() {
-  const container = document.querySelector('.monster-info-container .monster-stats');
-  const toggleBtn = document.getElementById('monsterToggleBtn');
-  
-  monsterTooltipsEnabled = !monsterTooltipsEnabled;
-  
-  if (monsterTooltipsEnabled) {
-    container.classList.add('tooltips-enabled');
-    toggleBtn.classList.add('active');
-    toggleBtn.innerHTML = '📖 隱藏說明';
-  } else {
-    container.classList.remove('tooltips-enabled');
-    toggleBtn.classList.remove('active');
-    toggleBtn.innerHTML = '📖 屬性說明';
-  }
-  
-  // 按鈕點擊效果
-  toggleBtn.style.transform = 'scale(0.95)';
-  setTimeout(() => {
-    toggleBtn.style.transform = '';
-  }, 150);
-}
 
 // 全域函數註冊
 window.togglePlayerTooltips = togglePlayerTooltips;
-window.toggleMonsterTooltips = toggleMonsterTooltips;
 
 // 鍵盤快捷鍵支持
 document.addEventListener('keydown', function(e) {
