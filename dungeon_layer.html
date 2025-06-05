@@ -831,36 +831,36 @@ function formatMonsterInfo(mon, isLastLayer) {
         case "pyro":
         case "火":
           descriptions.push("🔥 火屬性");
-	  descriptions.push("  ├ 優勢：水屬性、全屬性 (+25% 傷害)");
-	  descriptions.push("  └ 劣勢：自然屬性 (-25% 傷害)");
+	  descriptions.push("優勢：水屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("劣勢：自然屬性 (-25% 傷害)");
           break;
         case "hydro":
         case "水":
           descriptions.push("💧 水屬性");
-	  descriptions.push("  ├ 優勢： 雷屬性、全屬性 (+25% 傷害)");
-	  descriptions.push("  └ 劣勢： 火屬性 (-25% 傷害)");
+	  descriptions.push("優勢： 雷屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("劣勢： 火屬性 (-25% 傷害)");
           break;
         case "electro":
         case "雷":
           descriptions.push("⚡ 雷屬性");
-	  descriptions.push("  ├ 優勢：自然屬性、全屬性 (+25% 傷害)");
-	  descriptions.push("  └ 劣勢：水屬性 (-25% 傷害)");
+	  descriptions.push("優勢：自然屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("劣勢：水屬性 (-25% 傷害)");
           break;
         case "nature":
         case "自然":
           descriptions.push("🌿 自然屬性");
-	  descriptions.push("  ├ 優勢：火屬性、全屬性 (+25% 傷害)");
-	  descriptions.push("  └ 劣勢：雷屬性 (-25% 傷害)");
+	  descriptions.push("優勢：火屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("劣勢：雷屬性 (-25% 傷害)");
           break;
         case "light":
         case "光":
           descriptions.push("✨ 光屬性");
-	  descriptions.push("  └ 優勢：暗屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("優勢：暗屬性、全屬性 (+25% 傷害)");
           break;
         case "dark":
         case "暗":
           descriptions.push("🌑 暗屬性");
-	  descriptions.push("  └ 優勢：光屬性、全屬性 (+25% 傷害)");
+	  descriptions.push("優勢：光屬性、全屬性 (+25% 傷害)");
           break;
         case "all":
         case "全":
@@ -870,7 +870,7 @@ function formatMonsterInfo(mon, isLastLayer) {
         case "none":
         case "無":
           descriptions.push("⚪ 無屬性");
-	  descriptions.push("  └ 優勢：全屬性 (+25% 傷害)");
+	  descriptions.push("優勢：全屬性 (+25% 傷害)");
           break;
         default:
           descriptions.push(`${elementMap[element] || element}屬性`);
@@ -880,7 +880,7 @@ function formatMonsterInfo(mon, isLastLayer) {
     // 雙屬性或多屬性說明
     if (elements.length > 1) {
       descriptions.push("");
-      descriptions.push("⚖️ 複數屬性機制：");
+      descriptions.push("【複數屬性機制】");
       descriptions.push("• 當怪物擁有多個屬性時，傷害計算會將所有屬性克制關係取平均值");
       descriptions.push("• 例如：火水雙屬性怪物被雷屬性攻擊時");
       descriptions.push("  - 雷→火：100%傷害(無克制)");
