@@ -749,6 +749,9 @@ function percent(val) {
 	  let html = `
 	    <div class="player-info-container">
 	      <h3 class="player-name">👤 ${data.nickname}</h3>
+       	      <button class="info-toggle" onclick="togglePlayerTooltips()" id="playerToggleBtn">
+		  📖 詳細說明
+		</button>
 	      <div class="stats-container">
 	  `;
 	  
@@ -757,7 +760,27 @@ function percent(val) {
 	      html += `<div class="stat-item"><span>${label}:</span><span>${value}</span></div>`;
 	    } else if (["hp", "attack", "shield", "penetrate", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
 	      const formatted = getFormatted(key);
-	      html += `<div class="stat-item"><span>${label}:</span><span>${formatted.total} (${formatted.detail})</span></div>`;
+	      const tooltips = {
+		  hp: "玩家的總生命值，決定角色的生存能力。當生命值降至0時戰鬥失敗。每升級可分配點數提升基礎生命值，裝備可提供額外加成。",
+		  attack: "決定對敵人造成傷害的基礎數值。攻擊力越高，傷害越大。會受到屬性克制、技能倍率和暴擊等因素影響。",
+		  evade: "閃避敵人攻擊的機率，數值越高越容易完全無視敵人的攻擊，最高95%。迴避成功時完全無視該次攻擊，是重要的生存手段。",
+		  shield: "減少受到傷害的防護值。每點護盾值減少0.1%傷害，最多99%。可透過護盾穿透降低效果，提供穩定的傷害減免。",
+		  accuracy: "攻擊命中敵人的機率，會與敵人迴避率相抗。命中率不足會導致攻擊落空，建議保持在90%以上以確保穩定輸出。",
+		  penetrate: "無視敵人護盾值的能力。穿透值會直接扣除敵人的有效護盾值，是突破高防禦敵人的關鍵屬性。",
+		  luck: "影響暴擊率、物品掉落率和命中率的幸運值。每點幸運提供0.1%暴擊率和0.2%命中率，對戰鬥和探索都有幫助。"
+		};
+		
+		const tooltip = tooltips[key] || "此屬性影響角色的戰鬥表現，數值越高效果越好。";
+		
+		html += `
+		  <div class="stat-item">
+		    <div class="stat-main">
+		      <span>${label}:</span>
+		      <span>${formatted.total} (${formatted.detail})</span>
+		    </div>
+		    <div class="stat-description">${tooltip}</div>
+		  </div>
+		`;
 	    }
 	  });
 	  
@@ -1492,6 +1515,66 @@ window.emergencyResetCooldown = function() {
     console.log('緊急重置完成');
   }
 };
+
+let playerTooltipsEnabled = false;
+let monsterTooltipsEnabled = false;
+
+function togglePlayerTooltips() {
+  const container = document.querySelector('.player-info-container .stats-container');
+  const toggleBtn = document.getElementById('playerToggleBtn');
+  const mons_container = document.querySelector('.monster-info-container .stats-container');
+  
+  playerTooltipsEnabled = !playerTooltipsEnabled;
+  monsterTooltipsEnabled = !monsterTooltipsEnabled;
+  
+  if (playerTooltipsEnabled) {
+    container.classList.add('tooltips-enabled');
+    mons_container.classList.add('tooltips-enabled');
+    toggleBtn.classList.add('active');
+    toggleBtn.innerHTML = '📖 隱藏說明';
+  } else {
+    container.classList.remove('tooltips-enabled');
+    mons_container.classList.remove('tooltips-enabled');
+    toggleBtn.classList.remove('active');
+    toggleBtn.innerHTML = '📖 詳細說明';
+  }
+  
+  // 按鈕點擊效果
+  toggleBtn.style.transform = 'scale(0.95)';
+  setTimeout(() => {
+    toggleBtn.style.transform = '';
+  }, 150);
+}
+
+function toggleMonsterTooltips() {
+  const container = document.querySelector('.monster-info-container .stats-container');
+  const toggleBtn = document.getElementById('monsterToggleBtn');
+  
+  monsterTooltipsEnabled = !monsterTooltipsEnabled;
+  
+  if (monsterTooltipsEnabled) {
+    container.classList.add('tooltips-enabled');
+    toggleBtn.classList.add('active');
+    toggleBtn.innerHTML = '📖 隱藏說明';
+  } else {
+    container.classList.remove('tooltips-enabled');
+    toggleBtn.classList.remove('active');
+    toggleBtn.innerHTML = '📖 詳細說明';
+  }
+  
+  // 按鈕點擊效果
+  toggleBtn.style.transform = 'scale(0.95)';
+  setTimeout(() => {
+    toggleBtn.style.transform = '';
+  }, 150);
+}
+
+// 鍵盤快捷鍵支持
+document.addEventListener('keydown', function(e) {
+  if (e.key.toLowerCase() === 'h' && !e.ctrlKey && !e.altKey) {
+    togglePlayerTooltips();
+  }
+});
 
 if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
   setInterval(async () => {
