@@ -1600,7 +1600,8 @@ let playerTooltipsEnabled = false;
 function togglePlayerTooltips() {
   const container = document.querySelector('.player-info-container .stats-container');
   const toggleBtn = document.getElementById('playerToggleBtn');
-  const mons_container = document.querySelector('.monster-info-container .monster-stats');
+  // 🔧 修正：選擇 .monster-info-container 而不是 .monster-stats
+  const mons_container = document.querySelector('.monster-info-container');
 
   console.log('Elements found:', {
     container: !!container,
@@ -1621,7 +1622,7 @@ function togglePlayerTooltips() {
     // 啟用 tooltip
     container.classList.add('tooltips-enabled');
     
-    // 怪物容器可能不存在（載入失敗或還未載入）
+    // 🔧 修正：在 .monster-info-container 上添加類
     if (mons_container) {
       mons_container.classList.add('tooltips-enabled');
     }
@@ -1632,7 +1633,7 @@ function togglePlayerTooltips() {
     // 隱藏 tooltip
     container.classList.remove('tooltips-enabled');
     
-    // 安全地移除怪物容器的 class
+    // 🔧 修正：從 .monster-info-container 移除類
     if (mons_container) {
       mons_container.classList.remove('tooltips-enabled');
     }
@@ -1648,7 +1649,7 @@ function togglePlayerTooltips() {
   }, 150);
 }
 
-window.togglePlayerTooltips = togglePlayerTooltips;	
+window.togglePlayerTooltips = togglePlayerTooltips;
 
 
 
