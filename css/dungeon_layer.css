@@ -216,7 +216,9 @@
 }
 
 .monster-stat-item {
-  display: block;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 6px 10px;
   background: rgba(255, 107, 107, 0.1);
   border: 1px solid rgba(255, 107, 107, 0.2);
@@ -225,50 +227,13 @@
   font-weight: 600;
   font-size: 0.85em;
   transition: all 0.3s ease;
-  width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 4px;
 }
 
-/* BOSS 模式下的怪物統計項目 */
 .monster-info-container.boss .monster-stat-item {
   background: rgba(255, 69, 0, 0.15);
   border-color: rgba(255, 69, 0, 0.3);
 }
 
-/* 統計項目的主要內容 - 使用 flex 確保完美對齊 */
-.monster-stat-item .stat-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-/* 統計項目內的標籤樣式 */
-.monster-stat-item .stat-main span:first-child {
-  color: #ffd93d;
-  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
-  flex-shrink: 0; /* 防止標籤被壓縮 */
-  min-width: fit-content; /* 確保標籤完整顯示 */
-}
-
-/* 統計項目內的數值樣式 */
-.monster-stat-item .stat-main span:last-child {
-  color: #fff8b0;
-  text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
-  font-weight: 700;
-  text-align: right;
-  flex-shrink: 0; /* 防止數值被壓縮 */
-}
-
-/* BOSS 模式下的數值顏色 */
-.monster-info-container.boss .monster-stat-item .stat-main span:last-child {
-  color: #ffd700; /* 金黃色 */
-  text-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
-  font-weight: 700;
-}
-
-/* Hover 效果 */
 .monster-stat-item:hover {
   background: rgba(255, 107, 107, 0.2);
   border-color: rgba(255, 107, 107, 0.4);
@@ -280,67 +245,22 @@
   border-color: rgba(255, 69, 0, 0.5);
 }
 
-/* Tooltip 樣式 - 確保不影響主要布局 */
-.monster-stat-item .stat-description {
-  white-space: pre-line;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  margin-top: 8px;
-  line-height: 1.8;
-  font-family: 'Courier New', monospace;
-  color: #ffb8b8;
-  display: none; /* 預設隱藏 */
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  width: 100%;
-  box-sizing: border-box;
+.monster-stat-item span:first-child {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
 }
 
-/* 只有在啟用 tooltip 模式時才顯示 */
-.monster-info-container.tooltips-enabled .stat-description {
-  display: block;
-  opacity: 1;
+.monster-stat-item span:last-child {
+  color: #fff8b0;
+  text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+  font-weight: 700;
 }
 
-/* BOSS 模式下的 tooltip 樣式 */
-.monster-info-container.boss .stat-description {
-  border-color: rgba(255, 50, 50, 0.2);
-  color: #ffb8b8;
+.monster-info-container.boss .monster-stat-item span:last-child {
+  color: #ffd700; /* 金黃色 */
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+  font-weight: 700;
 }
-
-/* 怪物統計容器 */
-.monster-stats {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 4px;
-  margin-top: 15px;
-  position: relative;
-  z-index: 1;
-  width: 100%;
-}
-
-/* 確保怪物資訊容器有足夠的右側空間給按鈕 */
-.monster-info-container {
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 107, 107, 0.3);
-  border-radius: 15px;
-  padding: 20px 100px 20px 20px; /* 右側預留空間給按鈕 */
-  position: relative;
-  overflow: hidden;
-  text-align: center;
-}
-
-/* BOSS 模式下的容器樣式 */
-.monster-info-container.boss {
-  background: linear-gradient(135deg, rgba(139, 0, 0, 0.9) 0%, rgba(255, 69, 0, 0.7) 100%);
-  border: 2px solid rgba(255, 69, 0, 0.6);
-  box-shadow: 0 0 30px rgba(255, 69, 0, 0.4);
-  animation: bossPulse 2s ease-in-out infinite;
-  padding: 20px 100px 20px 20px; /* 保持一致的 padding */
-}
-
 
 /* 戰鬥紀錄滾軸樣式優化 */
 #logArea {
@@ -632,17 +552,14 @@ body.boss-mode .monster-hp {
 
 /* 🔧 修正 tooltip 樣式 - 完全隱藏而不佔用空間 */
 .stat-description {
-  white-space: pre-line;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
+  font-size: 0.7em;
+  color: #b8e6ff;
+  line-height: 1.4;
+  display: none; /* 完全隱藏，不佔用任何空間 */
   margin-top: 8px;
-  line-height: 1.8;
-  font-family: 'Courier New', monospace;
-  /* 🚀 新增：預設隱藏 */
-  display: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 255, 255, 0.2);
+  transition: all 0.3s ease;
 }
 
 /* 啟用詳細說明模式時才顯示 */
@@ -655,14 +572,6 @@ body.boss-mode .monster-hp {
 .monster-info-container .stat-description {
   border-top-color: rgba(255, 100, 100, 0.2);
   color: #ffb8b8;
-  /* 🚀 同樣預設隱藏 */
-  display: none;
-  opacity: 0;
-}
-
-.monster-info-container.tooltips-enabled .stat-description {
-  display: block;
-  opacity: 1;
 }
 
 /* BOSS 模式下的樣式調整 */
@@ -729,30 +638,4 @@ body.boss-mode .stat-description {
   flex-direction: column;
   gap: 6px;
   z-index: 10;
-}
-
-/* 手機響應式調整 */
-@media (max-width: 768px) {
-  .monster-info-container {
-    padding: 15px 15px 60px 15px; /* 手機上下方預留空間 */
-  }
-  
-  .monster-stat-item {
-    font-size: 0.8em;
-    padding: 6px 8px;
-  }
-  
-  .monster-stat-item .stat-main {
-    justify-content: space-between;
-  }
-  
-  /* 確保手機上的按鈕不影響內容 */
-  .info-toggle-group {
-    position: static;
-    margin: 10px auto 0 auto;
-    width: fit-content;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-  }
 }
