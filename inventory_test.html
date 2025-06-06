@@ -8,21 +8,17 @@
   <style>
     /* 下拉選單增強樣式 */
     .dungeon-dropdown {
-      position: absolute;
-      top: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(25, 25, 55, 0.95) 100%);
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(0, 255, 255, 0.3);
+      position: fixed; /* 改為 fixed 定位確保最頂層 */
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(25, 25, 55, 0.98) 100%);
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(0, 255, 255, 0.4);
       border-radius: 15px;
       padding: 15px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      z-index: 9999;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+      z-index: 99999; /* 提高到最高層級 */
       display: none;
       flex-direction: column;
       gap: 8px;
-      margin-top: 10px;
       min-width: 200px;
       max-width: 300px;
       opacity: 0;
@@ -35,17 +31,13 @@
 
     /* 向上展開的樣式 */
     .dungeon-dropdown.dropdown-up {
-      top: auto;
-      bottom: 100%;
-      margin-top: 0;
-      margin-bottom: 10px;
-      transform: translateX(-50%);
+      /* fixed 定位下的向上展開樣式將在 JS 中動態設置 */
     }
 
     .dungeon-dropdown.show {
       display: flex !important;
       opacity: 1 !important;
-      z-index: 9999 !important;
+      z-index: 99999 !important;
     }
 
     /* 自定義滾動條樣式 */
@@ -104,24 +96,32 @@
     /* 響應式設計 */
     @media (max-width: 768px) {
       .dungeon-dropdown {
-        left: 10px;
-        right: 10px;
-        transform: none;
-        width: auto;
-        min-width: auto;
-        max-width: none;
+        min-width: 180px;
+        max-width: 280px;
         max-height: 250px;
-      }
-      
-      .dungeon-dropdown.dropdown-up {
-        transform: none;
       }
     }
 
-    /* 提高下拉選單的層級 */
+    /* 確保按鈕容器的層級 */
     .item-category-buttons {
       position: relative;
       z-index: 1000;
+    }
+
+    /* 添加遮罩背景防止誤點 */
+    .dropdown-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 50000;
+      background: transparent;
+      display: none;
+    }
+
+    .dropdown-backdrop.show {
+      display: block;
     }
   </style>
 </head>
@@ -234,10 +234,11 @@
       if (spinner) spinner.style.display = show ? "block" : "none";
     }
 
-    // 修正：添加缺少的 hideDungeonDropdown 函數
+    // 修正：添加缺少的 hideDungeonDropdown 函數，支持遮罩背景
     function hideDungeonDropdown() {
       const dropdown = document.getElementById("dungeonDropdown");
       const dropdownBtn = document.getElementById("dungeonDropdownBtn");
+      const backdrop = document.getElementById("dropdownBackdrop");
       
       if (dropdown && dropdownBtn) {
         dropdown.classList.remove("show");
@@ -245,14 +246,25 @@
         dropdown.style.display = "none";
         dropdown.style.top = '';
         dropdown.style.bottom = '';
-        dropdown.style.marginTop = '';
-        dropdown.style.marginBottom = '';
+        dropdown.style.left = '';
+        dropdown.style.right = '';
         dropdownBtn.classList.remove("expanded");
         isDungeonDropdownOpen = false;
       }
+      
+      // 移除遮罩背景
+      if (backdrop) {
+        backdrop.classList.remove("show");
+        // 延遲移除元素以允許動畫完成
+        setTimeout(() => {
+          if (backdrop.parentNode) {
+            backdrop.parentNode.removeChild(backdrop);
+          }
+        }, 300);
+      }
     }
 
-    // 修正：改善 toggleDungeonDropdown 函數，支持智能定位
+    // 修正：改善 toggleDungeonDropdown 函數，支持智能定位和遮罩背景
     function toggleDungeonDropdown() {
       const dropdown = document.getElementById("dungeonDropdown");
       const dropdownBtn = document.getElementById("dungeonDropdownBtn");
@@ -265,39 +277,59 @@
       isDungeonDropdownOpen = !isDungeonDropdownOpen;
       
       if (isDungeonDropdownOpen) {
-        // 重置位置樣式
-        dropdown.style.top = '';
-        dropdown.style.bottom = '';
-        dropdown.classList.remove('dropdown-up');
+        // 添加遮罩背景
+        let backdrop = document.getElementById("dropdownBackdrop");
+        if (!backdrop) {
+          backdrop = document.createElement("div");
+          backdrop.id = "dropdownBackdrop";
+          backdrop.className = "dropdown-backdrop";
+          backdrop.onclick = hideDungeonDropdown;
+          document.body.appendChild(backdrop);
+        }
+        backdrop.classList.add("show");
         
         dropdown.classList.add("show");
         dropdown.style.display = "flex";
         dropdownBtn.classList.add("expanded");
         
-        // 計算是否需要向上展開
+        // 使用 fixed 定位精確計算位置
         setTimeout(() => {
           const btnRect = dropdownBtn.getBoundingClientRect();
           const dropdownRect = dropdown.getBoundingClientRect();
           const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
           
-          // 檢查下拉選單是否會超出視窗底部
-          const wouldOverflow = btnRect.bottom + dropdownRect.height > viewportHeight - 20;
+          // 計算水平位置（置中對齊按鈕）
+          let leftPos = btnRect.left + (btnRect.width / 2) - (dropdown.offsetWidth / 2);
           
-          if (wouldOverflow) {
+          // 確保不會超出左右邊界
+          if (leftPos < 10) leftPos = 10;
+          if (leftPos + dropdown.offsetWidth > viewportWidth - 10) {
+            leftPos = viewportWidth - dropdown.offsetWidth - 10;
+          }
+          
+          dropdown.style.left = leftPos + 'px';
+          
+          // 計算垂直位置
+          const spaceBelow = viewportHeight - btnRect.bottom - 20;
+          const spaceAbove = btnRect.top - 20;
+          const dropdownHeight = dropdown.offsetHeight;
+          
+          if (spaceBelow >= dropdownHeight || spaceBelow > spaceAbove) {
+            // 向下展開
+            dropdown.style.top = (btnRect.bottom + 10) + 'px';
+            dropdown.style.bottom = 'auto';
+            dropdown.classList.remove('dropdown-up');
+          } else {
             // 向上展開
-            dropdown.classList.add('dropdown-up');
+            dropdown.style.bottom = (viewportHeight - btnRect.top + 10) + 'px';
             dropdown.style.top = 'auto';
-            dropdown.style.bottom = '100%';
-            dropdown.style.marginTop = '0';
-            dropdown.style.marginBottom = '10px';
+            dropdown.classList.add('dropdown-up');
           }
         }, 10);
         
       } else {
-        dropdown.classList.remove("show");
-        dropdown.style.display = "none";
-        dropdownBtn.classList.remove("expanded");
-        dropdown.classList.remove('dropdown-up');
+        hideDungeonDropdown();
       }
     }
 
@@ -547,7 +579,7 @@
       equipEl.innerHTML = html;
     }
 
-    // 修正：改善 filterItems 函數，修正選擇器問題
+    // 修正：改善 filterItems 函數，修正選擇器問題和遮罩背景處理
     function filterItems(category) {
       currentCategory = category;
       
@@ -1282,11 +1314,19 @@
       }
     });
 
-    // 修正：改善事件監聽器
+    // 修正：改善事件監聽器，處理遮罩背景
     document.addEventListener('click', function(event) {
       const dropdown = document.getElementById("dungeonDropdown");
       const dropdownBtn = document.getElementById("dungeonDropdownBtn");
+      const backdrop = document.getElementById("dropdownBackdrop");
       
+      // 如果點擊的是遮罩背景，關閉下拉選單
+      if (event.target === backdrop) {
+        hideDungeonDropdown();
+        return;
+      }
+      
+      // 原有的點擊外部關閉邏輯（作為備用）
       if (isDungeonDropdownOpen && dropdown && dropdownBtn &&
           !dropdown.contains(event.target) && 
           !dropdownBtn.contains(event.target)) {
@@ -1316,16 +1356,66 @@
       }
     });
 
-    // 修正：添加鍵盤事件支援（ESC 關閉對話框）
+    // 修正：添加鍵盤事件支援（ESC 關閉對話框），處理遮罩背景
     document.addEventListener('keydown', function(event) {
       if (event.key === 'Escape') {
         const dialogContainer = document.getElementById("dialogContainer");
         if (dialogContainer && dialogContainer.style.display === "flex") {
           closeDialog();
+          return;
         }
         if (isDungeonDropdownOpen) {
           hideDungeonDropdown();
+          return;
         }
+      }
+    });
+
+    // 添加窗口大小變化處理
+    window.addEventListener('resize', function() {
+      if (isDungeonDropdownOpen) {
+        // 窗口大小變化時重新計算下拉選單位置
+        setTimeout(() => {
+          const dropdown = document.getElementById("dungeonDropdown");
+          const dropdownBtn = document.getElementById("dungeonDropdownBtn");
+          
+          if (dropdown && dropdownBtn && dropdown.classList.contains('show')) {
+            const btnRect = dropdownBtn.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            
+            // 重新計算水平位置
+            let leftPos = btnRect.left + (btnRect.width / 2) - (dropdown.offsetWidth / 2);
+            if (leftPos < 10) leftPos = 10;
+            if (leftPos + dropdown.offsetWidth > viewportWidth - 10) {
+              leftPos = viewportWidth - dropdown.offsetWidth - 10;
+            }
+            dropdown.style.left = leftPos + 'px';
+            
+            // 重新計算垂直位置
+            const spaceBelow = viewportHeight - btnRect.bottom - 20;
+            const spaceAbove = btnRect.top - 20;
+            const dropdownHeight = dropdown.offsetHeight;
+            
+            if (spaceBelow >= dropdownHeight || spaceBelow > spaceAbove) {
+              dropdown.style.top = (btnRect.bottom + 10) + 'px';
+              dropdown.style.bottom = 'auto';
+              dropdown.classList.remove('dropdown-up');
+            } else {
+              dropdown.style.bottom = (viewportHeight - btnRect.top + 10) + 'px';
+              dropdown.style.top = 'auto';
+              dropdown.classList.add('dropdown-up');
+            }
+          }
+        }, 100);
+      }
+    });
+
+    // 添加滾動事件處理
+    window.addEventListener('scroll', function() {
+      if (isDungeonDropdownOpen) {
+        // 頁面滾動時關閉下拉選單，避免位置錯亂
+        hideDungeonDropdown();
       }
     });
   </script>
