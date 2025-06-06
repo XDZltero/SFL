@@ -5,6 +5,90 @@
   <title>背包與裝備管理</title>
   <link rel="icon" href="favicon.ico" />
   <link href="css/inventory.css" rel="stylesheet"/>
+  
+  <!-- 🆕 副本下拉選單內聯樣式 -->
+  <style>
+    /* 確保分類按鈕容器支援絕對定位 */
+    .item-category-buttons {
+      position: relative !important;
+    }
+    
+    /* 副本分類下拉選單 */
+    .dropdown-btn #dropdown-arrow {
+      margin-left: 5px;
+      transition: transform 0.3s ease;
+    }
+
+    .dropdown-btn.expanded #dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .dungeon-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(25, 25, 55, 0.95) 100%);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      min-width: 200px;
+      visibility: hidden;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .dungeon-dropdown.show {
+      visibility: visible !important;
+      opacity: 1 !important;
+      display: flex !important;
+    }
+
+    .dungeon-btn {
+      background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.05) 100%);
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.85em;
+      text-align: left;
+    }
+
+    .dungeon-btn:hover {
+      background: linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(255, 119, 198, 0.1) 100%);
+      border-color: rgba(0, 255, 255, 0.4);
+      transform: translateX(3px);
+    }
+
+    .dungeon-btn.active {
+      background: linear-gradient(135deg, #00ffff 0%, #00bfff 100%);
+      color: #000;
+      border-color: #00ffff;
+      font-weight: 700;
+    }
+
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+      .dungeon-dropdown {
+        left: 10px;
+        right: 10px;
+        transform: none;
+        width: auto;
+        min-width: auto;
+      }
+    }
+  </style>
 </head>
 <body>
   <div id="initialOverlay">載入中...</div>
@@ -59,6 +143,7 @@
       <button class="dungeon-btn" data-belong="3" onclick="filterItems('dungeon_3')">鋼鐵都市</button>
       <button class="dungeon-btn" data-belong="4" onclick="filterItems('dungeon_4')">紫魔之城</button>
       <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_5')">夢魘幻境</button>
+      <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_6')">聖天教會</button>
       <button class="dungeon-btn" data-belong="7" onclick="filterItems('dungeon_7')">第一要塞</button>
       <button class="dungeon-btn" data-belong="8" onclick="filterItems('dungeon_8')">第二要塞</button>
     </div>
@@ -378,20 +463,30 @@
       equipEl.innerHTML = html;
     }
 
-    // 🆕 切換副本分類下拉選單
+    // 🆕 切換副本分類下拉選單（改進版）
     function toggleDungeonDropdown() {
       const dropdown = document.getElementById("dungeonDropdown");
-      const arrow = document.getElementById("dropdown-arrow");
       const dropdownBtn = document.querySelector('[data-category="dungeon"]');
+      
+      console.log('🔧 副本分類按鈕被點擊'); // 調試用
+      console.log('下拉選單元素:', dropdown); // 調試用
+      console.log('當前狀態:', isDungeonDropdownOpen); // 調試用
+      
+      if (!dropdown) {
+        console.error('❌ 找不到 dungeonDropdown 元素');
+        return;
+      }
       
       isDungeonDropdownOpen = !isDungeonDropdownOpen;
       
       if (isDungeonDropdownOpen) {
-        dropdown.style.display = "flex";
+        dropdown.classList.add("show");
         dropdownBtn.classList.add("expanded");
+        console.log('✅ 下拉選單已展開');
       } else {
-        dropdown.style.display = "none";
+        dropdown.classList.remove("show");
         dropdownBtn.classList.remove("expanded");
+        console.log('✅ 下拉選單已收起');
       }
     }
 
@@ -422,7 +517,11 @@
       } else {
         // 非副本分類，關閉下拉選單
         if (isDungeonDropdownOpen) {
-          toggleDungeonDropdown();
+          const dropdown = document.getElementById("dungeonDropdown");
+          const dropdownBtn = document.querySelector('[data-category="dungeon"]');
+          dropdown.classList.remove("show");
+          dropdownBtn.classList.remove("expanded");
+          isDungeonDropdownOpen = false;
         }
         
         // 清除副本按鈕狀態
@@ -1120,6 +1219,18 @@
       }
     }
 
+    // 🔧 測試函數
+    function testDropdown() {
+      console.log('🧪 測試下拉選單功能');
+      console.log('isDungeonDropdownOpen:', isDungeonDropdownOpen);
+      const dropdown = document.getElementById("dungeonDropdown");
+      console.log('dropdown 元素:', dropdown);
+      console.log('dropdown 當前 classes:', dropdown.classList.toString());
+      
+      // 強制切換下拉選單
+      toggleDungeonDropdown();
+    }
+
     function closeDialog() {
       document.body.style.overflow = "";
       document.body.classList.remove("dialog-open");
@@ -1176,7 +1287,10 @@
       if (isDungeonDropdownOpen && 
           !dropdown.contains(event.target) && 
           !dropdownBtn.contains(event.target)) {
-        toggleDungeonDropdown();
+        dropdown.classList.remove("show");
+        dropdownBtn.classList.remove("expanded");
+        isDungeonDropdownOpen = false;
+        console.log('✅ 點擊外部，下拉選單已關閉');
       }
     });
 
@@ -1257,7 +1371,10 @@
           const stats = calculateCategoryStats();
           console.log('📊 分類統計:', stats);
           console.table(stats.dungeons);
-        }
+        },
+        
+        // 🔧 測試下拉選單
+        testDropdown: testDropdown
       };
       
       console.log("🔧 背包偵錯工具已啟用，使用 inventoryDebug 存取");
