@@ -95,8 +95,9 @@
       4: "紫魔之城",
       5: "夢魘幻境",
       6: "聖天教會",
-      7: "第一要塞",
-      8: "第二要塞"
+      7: "方尖塔",
+      8: "比爾加賽",
+      9: "大要塞"
     };
 
     function showLoading(show) {
@@ -675,7 +676,7 @@
           categoryName = dungeonNames[belongValue] + '道具';
           emptyReason = `
             <div style="margin-top: 15px; color: #ffd93d;">
-              💡 嘗試挑戰 ${dungeonNames[belongValue]} 副本來獲得道具！<br>
+              挑戰 ${dungeonNames[belongValue]} 副本來獲得道具！<br>
             </div>
           `;
         } else {
@@ -692,7 +693,7 @@
           <div class="item-card">
             <div style="text-align: center;">
               <div style="font-size: 2em; margin-bottom: 10px;">📦</div>
-              <div>暫無${categoryName}</div>
+              <div>暫無 ${categoryName} </div>
               ${emptyReason}
             </div>
           </div>
