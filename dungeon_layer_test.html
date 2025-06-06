@@ -980,14 +980,7 @@ async function startBattle() {
 function handleBattleResult(result) {
   const logArea = document.getElementById("logArea");
   if (logArea && result.battle_log) {
-    // 修復：正確處理戰鬥紀錄，避免 [object object] 顯示
-    if (Array.isArray(result.battle_log)) {
-      logArea.textContent = result.battle_log.join('\n');
-    } else if (typeof result.battle_log === 'string') {
-      logArea.textContent = result.battle_log;
-    } else {
-      logArea.textContent = JSON.stringify(result.battle_log, null, 2);
-    }
+    logArea.textContent = result.battle_log.join('\n');
   }
 
   const battleBtn = document.getElementById("battleBtn");
@@ -996,10 +989,8 @@ function handleBattleResult(result) {
   const leaveBtn = document.getElementById("leaveBtn");
 
   if (result.success) {
-    // 修復：只有BOSS關卡勝利才顯示勝利特效
-    if (result.is_last_layer) {
-      showVictoryEffect();
-    }
+    // 戰鬥勝利
+    showVictoryEffect();
     
     if (battleBtn) battleBtn.style.display = "none";
     if (retryBtn) retryBtn.style.display = "none";
