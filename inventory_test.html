@@ -9,17 +9,26 @@
 <body>
   <div id="initialOverlay">載入中...</div>
   <div id="loading-placeholder"></div>
-  <script src="js/loading.js">
-window.hideDungeonDropdown = hideDungeonDropdown;
-</script>
+  
+  <!-- 修正：分離 script 標籤 -->
+  <script src="js/loading.js"></script>
   <script>
-    fetch("loadingOverlay.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("loading-placeholder").innerHTML = html;
-        document.getElementById("initialOverlay")?.remove();
-        if (typeof startPageLoadingProgress === "function") startPageLoadingProgress();
-      });
+    // 確保 loading.js 載入後的初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch("loadingOverlay.html")
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById("loading-placeholder").innerHTML = html;
+          document.getElementById("initialOverlay")?.remove();
+          if (typeof startPageLoadingProgress === "function") {
+            startPageLoadingProgress();
+          }
+        })
+        .catch(error => {
+          console.error('載入 loadingOverlay.html 失敗:', error);
+          document.getElementById("initialOverlay")?.remove();
+        });
+    });
   </script>
 
   <h1 class="fancy-title">🌌 卡片矩陣系統</h1>
@@ -43,24 +52,24 @@ window.hideDungeonDropdown = hideDungeonDropdown;
   <div class="items-section">
     <h2 class="fancy-subtitle">📦 持有道具</h2>
     
-    
     <div class="item-category-buttons" style="position:relative;">
       <button class="category-btn active" data-category="all" onclick="filterItems('all')">全部</button>
       <button class="category-btn" data-category="1" onclick="filterItems(1)">稀有</button>
       <button class="category-btn" data-category="2" onclick="filterItems(2)">超稀有</button>
       <button class="category-btn" data-category="3" onclick="filterItems(3)">罕見</button>
-      <button class="category-btn dropdown-btn" id="dungeonDropdownBtn" type="button">
+      <!-- 修正：添加正確的 data-category 屬性和 onclick 事件 -->
+      <button class="category-btn dropdown-btn" id="dungeonDropdownBtn" data-category="dungeon" onclick="toggleDungeonDropdown()">
         副本分類 <span id="dropdown-arrow">▼</span>
       </button>
       <div class="dungeon-dropdown" id="dungeonDropdown" style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); z-index:9999;">
-        <button class="dungeon-btn" data-belong="1" onclick="filterItems('dungeon_1');hideDungeonDropdown();">腐爛沼澤地</button>
-        <button class="dungeon-btn" data-belong="2" onclick="filterItems('dungeon_2');hideDungeonDropdown();">天空之城</button>
-        <button class="dungeon-btn" data-belong="3" onclick="filterItems('dungeon_3');hideDungeonDropdown();">鋼鐵都市</button>
-        <button class="dungeon-btn" data-belong="4" onclick="filterItems('dungeon_4');hideDungeonDropdown();">紫魔之城</button>
-        <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_5');hideDungeonDropdown();">夢魘幻境</button>
-        <button class="dungeon-btn" data-belong="6" onclick="filterItems('dungeon_6');hideDungeonDropdown();">聖天教會</button>
-        <button class="dungeon-btn" data-belong="7" onclick="filterItems('dungeon_7');hideDungeonDropdown();">第一要塞</button>
-        <button class="dungeon-btn" data-belong="8" onclick="filterItems('dungeon_8');hideDungeonDropdown();">第二要塞</button>
+        <button class="dungeon-btn" data-belong="1" onclick="filterItems('dungeon_1'); hideDungeonDropdown();">腐爛沼澤地</button>
+        <button class="dungeon-btn" data-belong="2" onclick="filterItems('dungeon_2'); hideDungeonDropdown();">天空之城</button>
+        <button class="dungeon-btn" data-belong="3" onclick="filterItems('dungeon_3'); hideDungeonDropdown();">鋼鐵都市</button>
+        <button class="dungeon-btn" data-belong="4" onclick="filterItems('dungeon_4'); hideDungeonDropdown();">紫魔之城</button>
+        <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_5'); hideDungeonDropdown();">夢魘幻境</button>
+        <button class="dungeon-btn" data-belong="6" onclick="filterItems('dungeon_6'); hideDungeonDropdown();">聖天教會</button>
+        <button class="dungeon-btn" data-belong="7" onclick="filterItems('dungeon_7'); hideDungeonDropdown();">第一要塞</button>
+        <button class="dungeon-btn" data-belong="8" onclick="filterItems('dungeon_8'); hideDungeonDropdown();">第二要塞</button>
       </div>
     </div>
 
@@ -104,6 +113,41 @@ window.hideDungeonDropdown = hideDungeonDropdown;
       const spinner = document.getElementById("loadingSpinner");
       if (loading) loading.style.display = show ? "flex" : "none";
       if (spinner) spinner.style.display = show ? "block" : "none";
+    }
+
+    // 修正：添加缺少的 hideDungeonDropdown 函數
+    function hideDungeonDropdown() {
+      const dropdown = document.getElementById("dungeonDropdown");
+      const dropdownBtn = document.getElementById("dungeonDropdownBtn");
+      
+      if (dropdown && dropdownBtn) {
+        dropdown.classList.remove("show");
+        dropdownBtn.classList.remove("expanded");
+        isDungeonDropdownOpen = false;
+      }
+    }
+
+    // 修正：改善 toggleDungeonDropdown 函數
+    function toggleDungeonDropdown() {
+      const dropdown = document.getElementById("dungeonDropdown");
+      const dropdownBtn = document.getElementById("dungeonDropdownBtn");
+      
+      if (!dropdown || !dropdownBtn) {
+        console.error('下拉選單元素未找到');
+        return;
+      }
+      
+      isDungeonDropdownOpen = !isDungeonDropdownOpen;
+      
+      if (isDungeonDropdownOpen) {
+        dropdown.classList.add("show");
+        dropdown.style.display = "flex";
+        dropdownBtn.classList.add("expanded");
+      } else {
+        dropdown.classList.remove("show");
+        dropdown.style.display = "none";
+        dropdownBtn.classList.remove("expanded");
+      }
     }
 
     async function loadGameData() {
@@ -352,23 +396,7 @@ window.hideDungeonDropdown = hideDungeonDropdown;
       equipEl.innerHTML = html;
     }
 
-    function toggleDungeonDropdown() {
-      const dropdown = document.getElementById("dungeonDropdown");
-      const dropdownBtn = document.querySelector('[data-category="dungeon"]');
-      
-      if (!dropdown) return;
-      
-      isDungeonDropdownOpen = !isDungeonDropdownOpen;
-      
-      if (isDungeonDropdownOpen) {
-        dropdown.classList.add("show");
-        dropdownBtn?.classList.add("expanded");
-      } else {
-        dropdown.classList.remove("show");
-        dropdownBtn?.classList.remove("expanded");
-      }
-    }
-
+    // 修正：改善 filterItems 函數，修正選擇器問題
     function filterItems(category) {
       currentCategory = category;
       
@@ -377,33 +405,45 @@ window.hideDungeonDropdown = hideDungeonDropdown;
       if (categoryStr.startsWith('dungeon_')) {
         const belongValue = parseInt(categoryStr.split('_')[1]);
         
+        // 清除所有副本按鈕的 active 狀態
         document.querySelectorAll('.dungeon-btn').forEach(btn => {
           btn.classList.remove('active');
         });
-        document.querySelector(`[data-belong="${belongValue}"]`).classList.add('active');
-        
-        document.querySelectorAll('.category-btn').forEach(btn => {
-          btn.classList.remove('active');
-        });
-        document.querySelector('[data-category="dungeon"]').classList.add('active');
-        
-      } else {
-        if (isDungeonDropdownOpen) {
-          const dropdown = document.getElementById("dungeonDropdown");
-          const dropdownBtn = document.querySelector('[data-category="dungeon"]');
-          dropdown?.classList.remove("show");
-          dropdownBtn?.classList.remove("expanded");
-          isDungeonDropdownOpen = false;
+        // 設置選中的副本按鈕為 active
+        const selectedDungeonBtn = document.querySelector(`[data-belong="${belongValue}"]`);
+        if (selectedDungeonBtn) {
+          selectedDungeonBtn.classList.add('active');
         }
         
+        // 清除所有分類按鈕的 active 狀態
+        document.querySelectorAll('.category-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        // 設置副本分類按鈕為 active
+        const dungeonCategoryBtn = document.getElementById("dungeonDropdownBtn");
+        if (dungeonCategoryBtn) {
+          dungeonCategoryBtn.classList.add('active');
+        }
+        
+      } else {
+        // 如果下拉選單是開啟的，關閉它
+        if (isDungeonDropdownOpen) {
+          hideDungeonDropdown();
+        }
+        
+        // 清除所有副本按鈕的 active 狀態
         document.querySelectorAll('.dungeon-btn').forEach(btn => {
           btn.classList.remove('active');
         });
         
+        // 清除所有分類按鈕的 active 狀態，然後設置選中的為 active
         document.querySelectorAll('.category-btn').forEach(btn => {
           btn.classList.remove('active');
         });
-        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+        const selectedCategoryBtn = document.querySelector(`[data-category="${category}"]`);
+        if (selectedCategoryBtn) {
+          selectedCategoryBtn.classList.add('active');
+        }
       }
       
       renderItems();
@@ -931,9 +971,11 @@ window.hideDungeonDropdown = hideDungeonDropdown;
     
       selectIds.forEach(id => {
         const select = document.getElementById(id);
-        select.addEventListener("change", () => {
-          updateEquipDropdowns(selectIds);
-        });
+        if (select) {
+          select.addEventListener("change", () => {
+            updateEquipDropdowns(selectIds);
+          });
+        }
       });
     
       updateEquipDropdowns(selectIds);
@@ -962,10 +1004,15 @@ window.hideDungeonDropdown = hideDungeonDropdown;
     }
 
     function updateEquipDropdowns(selectIds) {
-      const selectedValues = selectIds.map(id => document.getElementById(id).value);
+      const selectedValues = selectIds.map(id => {
+        const element = document.getElementById(id);
+        return element ? element.value : '';
+      });
     
       selectIds.forEach((id, idx) => {
         const select = document.getElementById(id);
+        if (!select) return;
+        
         const currentValue = select.value;
         const slot = select.dataset.slot;
         
@@ -995,6 +1042,8 @@ window.hideDungeonDropdown = hideDungeonDropdown;
     
       for (let slot = 1; slot <= 5; slot++) {
         const selectEl = document.getElementById(`equip_slot_${slot}`);
+        if (!selectEl) continue;
+        
         const cardId = selectEl.value;
     
         if (cardId) {
@@ -1036,9 +1085,13 @@ window.hideDungeonDropdown = hideDungeonDropdown;
     function closeDialog() {
       document.body.style.overflow = "";
       document.body.classList.remove("dialog-open");
-      document.getElementById("dialogContainer").style.display = "none";
+      const dialogContainer = document.getElementById("dialogContainer");
+      if (dialogContainer) {
+        dialogContainer.style.display = "none";
+      }
     }
 
+    // 修正：確保所有函數都正確註冊到 window 物件
     window.openCraftUI = openCraftUI;
     window.openEquipUI = openEquipUI;
     window.closeDialog = closeDialog;
@@ -1046,8 +1099,7 @@ window.hideDungeonDropdown = hideDungeonDropdown;
     window.saveEquipment = saveEquipment;
     window.filterItems = filterItems;
     window.toggleDungeonDropdown = toggleDungeonDropdown;
-	window.hideDungeonDropdown = hideDungeonDropdown;
-
+    window.hideDungeonDropdown = hideDungeonDropdown;
 
     async function runMain() {
       showLoading(true);
@@ -1079,16 +1131,15 @@ window.hideDungeonDropdown = hideDungeonDropdown;
       }
     });
 
+    // 修正：改善事件監聽器
     document.addEventListener('click', function(event) {
       const dropdown = document.getElementById("dungeonDropdown");
-      const dropdownBtn = document.querySelector('[data-category="dungeon"]');
+      const dropdownBtn = document.getElementById("dungeonDropdownBtn");
       
-      if (isDungeonDropdownOpen && 
+      if (isDungeonDropdownOpen && dropdown && dropdownBtn &&
           !dropdown.contains(event.target) && 
           !dropdownBtn.contains(event.target)) {
-        dropdown.classList.remove("show");
-        dropdownBtn.classList.remove("expanded");
-        isDungeonDropdownOpen = false;
+        hideDungeonDropdown();
       }
     });
 
@@ -1111,6 +1162,19 @@ window.hideDungeonDropdown = hideDungeonDropdown;
             console.warn("頁面可見性檢查失敗:", error);
           }
         }, 1000);
+      }
+    });
+
+    // 修正：添加鍵盤事件支援（ESC 關閉對話框）
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        const dialogContainer = document.getElementById("dialogContainer");
+        if (dialogContainer && dialogContainer.style.display === "flex") {
+          closeDialog();
+        }
+        if (isDungeonDropdownOpen) {
+          hideDungeonDropdown();
+        }
       }
     });
   </script>
