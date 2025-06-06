@@ -60,7 +60,7 @@
   <div id="loadingSpinner" class="loading-spinner">處理中...</div>
 
   <script type="module">
-    import { auth, SecureAPI } from "./js/firebase-init.js";
+    import { auth, SecureAPI, TokenManager } from "./js/firebase-init.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const API_BASE = "https://sfl-9cb8.onrender.com";
@@ -80,36 +80,36 @@
 
     // 🚀 修復：強制重新載入購買記錄的函數
     async function forceReloadPurchases() {
-      try {
-        console.log('🔄 強制重新載入購買記錄...');
-        
-        // 清除相關快取
-        SecureAPI.clearUserCache();
-        
-        // 強制從伺服器獲取最新購買記錄（不使用快取）
-        const userPurchasesRes = await fetch(`${API_BASE}/shop_user_purchases`, {
-          headers: await SecureAPI.getAuthHeaders(),
-          cache: 'no-cache'  // 禁用瀏覽器快取
-        });
-        
-        if (userPurchasesRes.ok) {
-          userPurchases = await userPurchasesRes.json();
-          console.log('✅ 購買記錄已強制更新:', userPurchases);
-        } else {
-          console.warn('⚠️ 重新載入購買記錄失敗，使用預設值');
-          userPurchases = {
-            user_id: auth.currentUser?.email,
-            purchases: {}
-          };
-        }
-        
-        return userPurchases;
-        
-      } catch (error) {
-        console.error('❌ 強制重新載入購買記錄失敗:', error);
-        return userPurchases;
-      }
-    }
+	  try {
+	    console.log('🔄 強制重新載入購買記錄...');
+	    
+	    // 清除相關快取
+	    SecureAPI.clearUserCache();
+	    
+	    // 🚀 修復：使用 TokenManager.getAuthHeaders() 而不是 SecureAPI.getAuthHeaders()
+	    const userPurchasesRes = await fetch(`${API_BASE}/shop_user_purchases`, {
+	      headers: await TokenManager.getAuthHeaders(),
+	      cache: 'no-cache'  // 禁用瀏覽器快取
+	    });
+	    
+	    if (userPurchasesRes.ok) {
+	      userPurchases = await userPurchasesRes.json();
+	      console.log('✅ 購買記錄已強制更新:', userPurchases);
+	    } else {
+	      console.warn('⚠️ 重新載入購買記錄失敗，使用預設值');
+	      userPurchases = {
+	        user_id: auth.currentUser?.email,
+	        purchases: {}
+	      };
+	    }
+	    
+	    return userPurchases;
+	    
+	  } catch (error) {
+	    console.error('❌ 強制重新載入購買記錄失敗:', error);
+	    return userPurchases;
+	  }
+	}
 
     // 優化的載入商店資料函數
     async function loadShopData(forceRefreshPurchases = false) {
