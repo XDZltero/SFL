@@ -417,5 +417,68 @@
     ],
     "description": "包含托瑞瓦納技術含量的卡片。鑲嵌提升攻擊力、護盾值、攻擊速度、護甲穿透。",
     "require_level": 75
+  },
+  {
+    "id": "card_bigship",
+    "name": "[副本卡片]次元界：第二要塞",
+    "quality": "超稀有",
+    "levels": [
+      {
+        "level": 1,
+        "materials": {
+          "patrol_core": 30,
+          "bronze_fragment": 30,
+          "electromagnetic_core": 10,
+          "ship_fragment": 15,
+          "chaos_breath": 15
+        },
+        "chance": 0.7
+      },
+      {
+        "level": 2,
+        "materials": {
+          "electromagnetic_core": 20,
+          "repair_kit": 30,
+          "golden_fragment": 10,
+          "ship_fragment": 25,
+          "chaos_breath": 17
+        },
+        "chance": 0.6
+      },
+      {
+        "level": 3,
+        "materials": {
+          "golden_fragment": 20,
+          "optical_module": 30,
+          "daimond_crash": 10,
+          "ship_fragment": 30,
+          "chaos_breath": 20
+        },
+        "chance": 0.5
+      },
+      {
+        "level": 4,
+        "materials": {
+          "daimond_crash": 20,
+          "elite_bronze_core": 30,
+          "obsidian_fragment": 5,
+          "ship_fragment": 35,
+          "chaos_breath": 25
+        },
+        "chance": 0.2
+      },
+      {
+        "level": 5,
+        "materials": {
+          "obsidian_fragment": 10,
+          "bilgase_core": 2,
+          "ship_fragment": 35,
+          "chaos_breath": 30
+        },
+        "chance": 0.2
+      }
+    ],
+    "description": "包含比爾加賽技術含量的卡片。鑲嵌提升生命值、護盾值、護甲穿透。",
+    "require_level": 85
   }
 ]
