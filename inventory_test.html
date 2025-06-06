@@ -1044,39 +1044,7 @@
     window.saveEquipment = saveEquipment;
     window.filterItems = filterItems;
     window.toggleDungeonDropdown = toggleDungeonDropdown;
-
-    // ===================== 副本分類下拉選單控制 =========================
-    // 全新修正版，無論點哪裡都能正常開關
-    const dropdownBtn = document.getElementById("dungeonDropdownBtn");
-    const dropdownMenu = document.getElementById("dungeonDropdown");
-    const dropdownArrow = document.getElementById("dropdown-arrow");
-
-    function showDungeonDropdown() {
-      dropdownMenu.style.display = "flex";
-      dropdownArrow.style.transform = "rotate(180deg)";
-      isDungeonDropdownOpen = true;
-      setTimeout(() => { document.addEventListener('mousedown', outsideClickListener); }, 10);
-    }
-    function hideDungeonDropdown() {
-      dropdownMenu.style.display = "none";
-      dropdownArrow.style.transform = "rotate(0deg)";
-      isDungeonDropdownOpen = false;
-      document.removeEventListener('mousedown', outsideClickListener);
-    }
-    function toggleDungeonDropdown() {
-      if (dropdownMenu.style.display === "none" || dropdownMenu.style.display === "") {
-        showDungeonDropdown();
-      } else {
-        hideDungeonDropdown();
-      }
-    }
-    function outsideClickListener(event) {
-      if (!dropdownMenu.contains(event.target) && !dropdownBtn.contains(event.target)) {
-        hideDungeonDropdown();
-      }
-    }
-    dropdownBtn.onclick = toggleDungeonDropdown;
-    window.hideDungeonDropdown = hideDungeonDropdown;
+window.hideDungeonDropdown = hideDungeonDropdown;
 
 
     async function runMain() {
