@@ -254,28 +254,27 @@ body.boss-mode .monster-element-detail-content {
 .detail-toggle-btn {
   background: rgba(0, 255, 255, 0.1);
   border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 0.8em;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.7em;
   color: #00ffff;
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: 'Orbitron', sans-serif;
   font-weight: 600;
-  margin: 0 auto 10px auto;
-  display: block;
-  width: fit-content;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .detail-toggle-btn:hover {
   background: rgba(0, 255, 255, 0.2);
-  transform: scale(1.05);
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+  transform: scale(1.02);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
 }
 
 .detail-toggle-btn.active {
-  background: rgba(0, 255, 255, 0.3);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  background: rgba(0, 255, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
   border-color: rgba(0, 255, 255, 0.6);
 }
 
@@ -315,13 +314,22 @@ body.boss-mode .monster-element-detail.expanded {
   padding: 0;
 }
 
+/* 玩家名稱和按鈕的容器 */
+.player-name-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+  gap: 15px;
+}
+
 .player-name {
   color: #00ffff;
   text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-  text-align: center;
-  margin: 10px 0;
   font-family: 'Orbitron', sans-serif;
   font-size: 1.3em;
+  margin: 0;
+  flex: 1;
 }
 
 /* 怪物信息容器零間距 */
@@ -380,9 +388,17 @@ body.boss-mode .monster-element-detail.expanded {
 /* 響應式設計 */
 @media (max-width: 768px) {
   .detail-toggle-btn {
-    padding: 6px 12px;
-    font-size: 0.7em;
-    margin-bottom: 8px;
+    padding: 5px 8px;
+    font-size: 0.6em;
+  }
+  
+  .player-name-container {
+    gap: 10px;
+    margin: 8px 0;
+  }
+  
+  .player-name {
+    font-size: 1.1em;
   }
   
   .stat-detail-content,
@@ -405,10 +421,29 @@ body.boss-mode .monster-element-detail.expanded {
     font-size: 0.8em;
   }
   
-  .player-name,
   .monster-name {
     font-size: 1.1em;
     margin: 8px 0;
+  }
+}
+
+/* 超小螢幕適配 */
+@media (max-width: 480px) {
+  .player-name-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .detail-toggle-btn {
+    width: auto;
+    padding: 6px 10px;
+    font-size: 0.65em;
+  }
+  
+  .player-name {
+    text-align: center;
+    font-size: 1em;
   }
 }
 </style>
@@ -725,8 +760,10 @@ function formatStats(data) {
 
   let html = `
     <div class="player-info-container">
-      <button class="detail-toggle-btn" onclick="toggleDetails()">${detailsExpanded ? '收起詳細說明' : '顯示詳細說明'}</button>
-      <h3 class="player-name">👤 ${data.nickname}</h3>
+      <div class="player-name-container">
+        <h3 class="player-name">👤 ${data.nickname}</h3>
+        <button class="detail-toggle-btn" onclick="toggleDetails()">${detailsExpanded ? '收起詳細說明' : '顯示詳細說明'}</button>
+      </div>
       <div class="stats-container">
   `;
   
