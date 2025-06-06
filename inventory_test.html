@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>背包與裝備管理</title>
+  <title>背包與裝備管理 - 修復版</title>
   <link rel="icon" href="favicon.ico" />
   <link href="css/inventory.css" rel="stylesheet"/>
   <style>
@@ -46,6 +46,18 @@
       transform: translateY(-2px) scale(1.05);
     }
 
+    /* Debug 資訊區域 */
+    .debug-info {
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 20px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      color: #ffcccc;
+    }
+
     /* 響應式設計 */
     @media (max-width: 768px) {
       .item-category-buttons {
@@ -85,6 +97,14 @@
   </script>
 
   <h1 class="fancy-title">🌌 卡片矩陣系統</h1>
+  
+  <!-- 🚀 新增：Debug 資訊區域 -->
+  <div class="debug-info" id="debugInfo" style="display: none;">
+    <h4>🔍 Debug 資訊</h4>
+    <div id="debugContent">載入中...</div>
+    <button onclick="toggleDebug()" style="margin-top: 10px; padding: 5px 10px; background: #ff6b6b; color: white; border: none; border-radius: 5px; cursor: pointer;">隱藏 Debug</button>
+  </div>
+  
   <div class="top-grid">
     <div class="stats-section">
       <h2 class="fancy-subtitle">🧬 角色屬性</h2>
@@ -100,6 +120,8 @@
   <div class="btn-group">
     <button class="square-btn" onclick="openCraftUI()">💻 製作終端</button>
     <button class="square-btn" onclick="openEquipUI()">🛰️ 插槽管理</button>
+    <!-- 🚀 新增：Debug 按鈕 -->
+    <button class="square-btn" onclick="showDebugInfo()" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">🔍 Debug 資訊</button>
   </div>
   
   <div class="items-section">
@@ -150,6 +172,60 @@
       7: "第一要塞",
       8: "第二要塞"
     };
+
+    // 🚀 新增：Debug 函數
+    function showDebugInfo() {
+      const debugDiv = document.getElementById("debugInfo");
+      const debugContent = document.getElementById("debugContent");
+      
+      let debugText = `
+📊 資料載入狀態：
+• userItems 物件大小: ${Object.keys(userItems).length} 個道具
+• itemMeta 陣列大小: ${itemMeta.length} 個道具定義
+• 當前分類: ${currentCategory}
+
+🎒 使用者道具清單 (前10個):
+${Object.entries(userItems).slice(0, 10).map(([id, count]) => 
+  `  • ${id}: ${count} 個`
+).join('\n')}
+
+🏰 副本道具統計:
+${Object.entries(dungeonNames).map(([belongId, name]) => {
+  const items = Object.entries(userItems).filter(([id, count]) => {
+    const meta = itemMeta.find(m => m.id === id);
+    return count > 0 && meta && meta.belong == belongId;
+  });
+  return `  • ${name} (belong=${belongId}): ${items.length} 種道具`;
+}).join('\n')}
+
+📋 itemMeta 範例 (前5個):
+${itemMeta.slice(0, 5).map(item => 
+  `  • ${item.id}: belong=${item.belong}, special=${item.special}`
+).join('\n')}
+
+🔍 篩選結果 (當前分類 ${currentCategory}):
+${(() => {
+  if (currentCategory === 'all') return '顯示所有道具';
+  if (currentCategory === 'all_dungeons') return '顯示所有副本道具 (belong > 0)';
+  if (String(currentCategory).startsWith('dungeon_')) {
+    const belongValue = parseInt(String(currentCategory).split('_')[1]);
+    return `顯示 ${dungeonNames[belongValue]} 道具 (belong=${belongValue})`;
+  }
+  return `顯示 special=${currentCategory} 道具`;
+})()}
+      `;
+      
+      debugContent.textContent = debugText;
+      debugDiv.style.display = "block";
+    }
+
+    function toggleDebug() {
+      const debugDiv = document.getElementById("debugInfo");
+      debugDiv.style.display = "none";
+    }
+
+    window.showDebugInfo = showDebugInfo;
+    window.toggleDebug = toggleDebug;
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
@@ -226,10 +302,13 @@
       filterItems(categoryType);
     }
 
+    // 🚀 修復：改進資料載入
     async function loadGameData() {
       PerformanceMonitor.startTiming('loadGameData');
       
       try {
+        console.log('🔄 開始載入遊戲資料...');
+        
         const [equipRes, itemRes, cardRes] = await Promise.all([
           SecureAPI.getStaticData('equips_table'),
           SecureAPI.getStaticData('items_table'), 
@@ -237,31 +316,60 @@
         ]);
         
         equipData = Array.isArray(equipRes) ? equipRes : Object.values(equipRes);
+        console.log('✅ 裝備資料載入完成:', equipData.length, '個');
         
+        // 🚀 修復：改進 itemMeta 載入邏輯
         if (Array.isArray(itemRes)) {
           itemMeta = itemRes;
-        } else if (typeof itemRes === 'object') {
+          console.log('✅ 道具資料載入完成 (陣列格式):', itemMeta.length, '個');
+        } else if (typeof itemRes === 'object' && itemRes !== null) {
           itemMeta = Object.values(itemRes);
+          console.log('✅ 道具資料載入完成 (物件格式轉陣列):', itemMeta.length, '個');
         } else {
-          throw new Error('無效的道具資料格式');
+          // 🚀 新增：嘗試直接從 parameter/items.json 載入
+          console.warn('⚠️ API 載入失敗，嘗試直接載入 items.json');
+          try {
+            const directResponse = await fetch('parameter/items.json');
+            if (directResponse.ok) {
+              itemMeta = await directResponse.json();
+              console.log('✅ 直接載入 items.json 成功:', itemMeta.length, '個');
+            } else {
+              throw new Error('直接載入也失敗');
+            }
+          } catch (directError) {
+            console.error('❌ 直接載入 items.json 也失敗:', directError);
+            throw new Error('無法載入道具資料');
+          }
         }
         
+        // 🚀 確保每個道具都有正確的屬性
         itemMeta = itemMeta.map(item => ({
           ...item,
-          belong: item.belong || 0,
-          sort: item.sort || 0
+          belong: parseInt(item.belong) || 0,
+          special: parseInt(item.special) || 0,
+          sort: parseInt(item.sort) || 0
         }));
         
+        console.log('🎯 道具統計:', {
+          總數: itemMeta.length,
+          副本道具: itemMeta.filter(item => item.belong > 0).length,
+          稀有道具: itemMeta.filter(item => item.special === 1).length,
+          超稀有道具: itemMeta.filter(item => item.special === 2).length,
+          罕見道具: itemMeta.filter(item => item.special === 3).length
+        });
+        
+        // 載入卡片資料
         try {
           const cardResponse = await fetch("parameter/cards_data.json");
           cardData = await cardResponse.json();
+          console.log('✅ 卡片資料載入完成:', cardData.length, '個');
         } catch (error) {
-          console.warn('載入卡片資料失敗，使用空陣列:', error);
+          console.warn('⚠️ 載入卡片資料失敗，使用空陣列:', error);
           cardData = [];
         }
         
       } catch (error) {
-        console.error("載入遊戲資料失敗:", error);
+        console.error("❌ 載入遊戲資料失敗:", error);
         alert("載入遊戲資料失敗，請重新整理頁面");
         throw error;
       } finally {
@@ -309,10 +417,13 @@
       return html;
     }
 
+    // 🚀 修復：改進使用者資料載入
     async function loadUserData(forceRefresh = true) {
       PerformanceMonitor.startTiming('loadUserData');
       
       try {
+        console.log('🔄 開始載入使用者資料...');
+        
         const promises = [
           SecureAPI.getStatus(forceRefresh),
           SecureAPI.get(`${API_BASE}/user_items`, !forceRefresh),
@@ -322,12 +433,26 @@
         const [statusRes, itemsRes, cardsRes] = await Promise.all(promises);
         
         userData = await statusRes.json();
+        console.log('✅ 使用者基本資料載入完成');
         
+        // 🚀 修復：改進道具資料處理
         if (itemsRes && itemsRes.ok) {
-          userItems = await itemsRes.json();
+          const itemsData = await itemsRes.json();
+          // 確保取得 items 物件
+          userItems = itemsData.items || itemsData || {};
+          console.log('✅ 使用者道具載入完成 (API):', Object.keys(userItems).length, '種道具');
         } else {
           userItems = userData.items || {};
+          console.log('✅ 使用者道具載入完成 (備用):', Object.keys(userItems).length, '種道具');
         }
+        
+        // 🚀 Debug：輸出道具統計
+        const itemCount = Object.entries(userItems).filter(([id, count]) => count > 0).length;
+        console.log('🎒 持有道具統計:', {
+          總種類: Object.keys(userItems).length,
+          有數量的道具: itemCount,
+          範例道具: Object.entries(userItems).slice(0, 5)
+        });
         
         if (cardsRes && cardsRes.ok) {
           userCards = await cardsRes.json();
@@ -339,7 +464,7 @@
         renderPage();
 
       } catch (error) {
-        console.error("載入使用者資料失敗:", error);
+        console.error("❌ 載入使用者資料失敗:", error);
         
         if (forceRefresh) {
           try {
@@ -472,8 +597,9 @@
       equipEl.innerHTML = html;
     }
 
-    // 修正：完整的 filterItems 函數
+    // 🚀 修復：強化 filterItems 函數
     function filterItems(category) {
+      console.log('🔍 篩選道具，分類:', category);
       currentCategory = category;
       
       // 清除所有分類按鈕的 active 狀態
@@ -584,16 +710,33 @@
       statsEl.textContent = displayText;
     }
 
+    // 🚀 修復：強化 renderItems 函數
     function renderItems() {
+      console.log('🎨 開始渲染道具，當前分類:', currentCategory);
       const itemEl = document.getElementById("itemGrid");
       let html = "";
       let displayedCount = 0;
       
       const itemsArray = [];
       
+      // 🚀 Debug：詳細記錄篩選過程
+      const debugInfo = {
+        總道具數: Object.keys(userItems).length,
+        有數量道具: 0,
+        符合分類: 0,
+        篩選詳情: []
+      };
+      
       Object.entries(userItems).forEach(([id, count]) => {
         if (count > 0) {
-          const meta = itemMeta.find(m => m.id === id) || { name: id, description: "", special: 0, belong: 0, sort: 0 };
+          debugInfo.有數量道具++;
+          
+          // 🚀 改進：更安全的 meta 資料查找
+          const meta = itemMeta.find(m => m.id === id);
+          if (!meta) {
+            console.warn(`⚠️ 找不到道具 ${id} 的 meta 資料`);
+            return; // 跳過沒有 meta 的道具
+          }
           
           let shouldShow = false;
           
@@ -604,11 +747,21 @@
           } else if (String(currentCategory).startsWith('dungeon_')) {
             const belongValue = parseInt(String(currentCategory).split('_')[1]);
             shouldShow = (meta.belong === belongValue);
+            
+            // 🚀 Debug 記錄
+            debugInfo.篩選詳情.push({
+              道具ID: id,
+              道具belong: meta.belong,
+              目標belong: belongValue,
+              匹配: shouldShow
+            });
+            
           } else {
             shouldShow = (meta.special === Number(currentCategory));
           }
           
           if (shouldShow) {
+            debugInfo.符合分類++;
             itemsArray.push({
               id: id,
               count: count,
@@ -618,12 +771,16 @@
         }
       });
       
+      console.log('🔍 篩選統計:', debugInfo);
+      
+      // 排序
       itemsArray.sort((a, b) => {
         const sortA = a.meta.sort || 0;
         const sortB = b.meta.sort || 0;
         return sortB - sortA;
       });
       
+      // 渲染道具
       itemsArray.forEach(item => {
         const { id, count, meta } = item;
         
@@ -663,14 +820,30 @@
     
       updateCategoryStats();
       
+      // 🚀 改進：更詳細的空狀態訊息
       if (displayedCount === 0) {
         let categoryName = '道具';
+        let emptyReason = '';
         
         if (currentCategory === 'all_dungeons') {
           categoryName = '副本道具';
+          emptyReason = `
+            <div style="margin-top: 15px; color: #ffd93d;">
+              💡 可能的原因：<br>
+              • 尚未獲得任何副本道具<br>
+              • 副本道具的 belong 值不正確<br>
+              • 資料載入問題
+            </div>
+          `;
         } else if (String(currentCategory).startsWith('dungeon_')) {
           const belongValue = parseInt(String(currentCategory).split('_')[1]);
           categoryName = dungeonNames[belongValue] + '道具';
+          emptyReason = `
+            <div style="margin-top: 15px; color: #ffd93d;">
+              💡 嘗試挑戰 ${dungeonNames[belongValue]} 副本來獲得道具！<br>
+              或檢查是否有道具但 belong 值設定錯誤。
+            </div>
+          `;
         } else {
           const categoryNames = {
             'all': '道具',
@@ -681,10 +854,19 @@
           categoryName = categoryNames[currentCategory] || '道具';
         }
         
-        html = `<div class="item-card">暫無${categoryName}</div>`;
+        html = `
+          <div class="item-card">
+            <div style="text-align: center;">
+              <div style="font-size: 2em; margin-bottom: 10px;">📦</div>
+              <div>暫無${categoryName}</div>
+              ${emptyReason}
+            </div>
+          </div>
+        `;
       }
       
       itemEl.innerHTML = html;
+      console.log(`✅ 渲染完成，顯示 ${displayedCount} 個道具`);
     }
 
     function renderPage() {
