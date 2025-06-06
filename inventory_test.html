@@ -158,100 +158,72 @@
       if (spinner) spinner.style.display = show ? "block" : "none";
     }
 
-    // 修正：優化 hideDungeonDropdown 函數
-    function hideDungeonDropdown() {
-      // 已棄用 - 改用對話框UI
-      console.warn('hideDungeonDropdown 已棄用，使用對話框UI替代');
+    // 新增：副本選擇器對話框
+    function openDungeonSelector() {
+      const dialog = document.getElementById("dialogContainer");
+      
+      let html = `
+        <div class='dialog-box'>
+          <h3>🏰 選擇副本分類</h3>
+          <div class="scroll-content">
+            <div style="display: grid; gap: 15px; margin: 20px 0;">
+      `;
+      
+      // 添加「全部副本道具」選項
+      html += `
+        <button class="dungeon-btn" onclick="selectDungeon('all_dungeons')" style="
+          background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 165, 0, 0.1) 100%);
+          border-color: rgba(255, 215, 0, 0.4);
+          color: #FFD700;
+          font-weight: 700;
+          border: 1px solid rgba(255, 215, 0, 0.4);
+          border-radius: 10px;
+          padding: 12px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-family: 'Orbitron', sans-serif;
+        ">
+          🌟 全部副本道具
+        </button>
+      `;
+      
+      // 遍歷所有副本
+      Object.entries(dungeonNames).forEach(([belongId, dungeonName]) => {
+        html += `
+          <button class="dungeon-btn" onclick="selectDungeon('dungeon_${belongId}')" style="
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.05) 100%);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 12px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+          ">
+            🏰 ${dungeonName}
+          </button>
+        `;
+      });
+      
+      html += `
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="square-btn" onclick="closeDialog()">取消</button>
+          </div>
+        </div>
+      `;
+      
+      dialog.innerHTML = html;
+      dialog.style.display = "flex";
+      document.body.style.overflow = "hidden";
+      document.body.classList.add("dialog-open");
     }
 
-    // 修正：改善 toggleDungeonDropdown 函數，簡化位置計算
-    function toggleDungeonDropdown() {
-      const dropdown = document.getElementById("dungeonDropdown");
-      const dropdownBtn = document.getElementById("dungeonDropdownBtn");
-      
-      if (!dropdown || !dropdownBtn) {
-        console.error('下拉選單元素未找到');
-        return;
-      }
-      
-      isDungeonDropdownOpen = !isDungeonDropdownOpen;
-      
-      if (isDungeonDropdownOpen) {
-        // 先顯示下拉選單以便計算尺寸
-        dropdown.style.display = "flex";
-        dropdown.style.opacity = "0";
-        dropdown.style.visibility = "hidden";
-        
-        // 計算按鈕位置
-        const btnRect = dropdownBtn.getBoundingClientRect();
-        const dropdownRect = dropdown.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
-        
-        // 計算水平置中位置
-        let leftPos = btnRect.left + (btnRect.width / 2) - (dropdownRect.width / 2);
-        
-        // 確保不超出左右邊界（留 10px 邊距）
-        const minLeft = 10;
-        const maxLeft = viewportWidth - dropdownRect.width - 10;
-        leftPos = Math.max(minLeft, Math.min(leftPos, maxLeft));
-        
-        // 計算垂直位置
-        const spaceBelow = viewportHeight - btnRect.bottom;
-        const spaceAbove = btnRect.top;
-        
-        let topPos;
-        let dropdownUp = false;
-        
-        if (spaceBelow >= dropdownRect.height + 20 || spaceBelow > spaceAbove) {
-          // 向下展開
-          topPos = btnRect.bottom + 10;
-          dropdownUp = false;
-        } else {
-          // 向上展開
-          topPos = btnRect.top - dropdownRect.height - 10;
-          dropdownUp = true;
-        }
-        
-        // 應用位置
-        dropdown.style.left = leftPos + 'px';
-        dropdown.style.top = topPos + 'px';
-        dropdown.style.bottom = 'auto';
-        dropdown.style.right = 'auto';
-        
-        // 添加向上展開的 class
-        if (dropdownUp) {
-          dropdown.classList.add('dropdown-up');
-        } else {
-          dropdown.classList.remove('dropdown-up');
-        }
-        
-        // 顯示下拉選單和遮罩
-        dropdown.style.visibility = "visible";
-        dropdown.style.opacity = "1";
-        dropdown.classList.add("show");
-        dropdownBtn.classList.add("expanded");
-        
-        // 添加遮罩背景
-        let backdrop = document.getElementById("dropdownBackdrop");
-        if (!backdrop) {
-          backdrop = document.createElement("div");
-          backdrop.id = "dropdownBackdrop";
-          backdrop.className = "dropdown-backdrop";
-          document.body.appendChild(backdrop);
-        }
-        backdrop.classList.add("show");
-        
-        // 綁定遮罩點擊事件
-        backdrop.onclick = function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          hideDungeonDropdown();
-        };
-        
-      } else {
-        hideDungeonDropdown();
-      }
+    function selectDungeon(categoryType) {
+      closeDialog();
+      filterItems(categoryType);
     }
 
     async function loadGameData() {
@@ -500,7 +472,7 @@
       equipEl.innerHTML = html;
     }
 
-    // 簡化：改善 filterItems 函數
+    // 修正：完整的 filterItems 函數
     function filterItems(category) {
       currentCategory = category;
       
@@ -511,7 +483,7 @@
       
       const categoryStr = String(category);
       
-      if (categoryStr.startsWith('dungeon_')) {
+      if (categoryStr.startsWith('dungeon_') || categoryStr === 'all_dungeons') {
         // 設置副本分類按鈕為 active
         const dungeonCategoryBtn = document.getElementById("dungeonCategoryBtn");
         if (dungeonCategoryBtn) {
@@ -561,56 +533,159 @@
     }
 
     function updateCategoryStats() {
-  const statsEl = document.getElementById("categoryStats");
-  
-  if (currentCategory === 'all_dungeons') {
-    // 計算總副本道具數量
-    let totalDungeonItems = 0;
-    Object.entries(userItems).forEach(([id, count]) => {
-      if (count > 0) {
-        const meta = itemMeta.find(m => m.id === id) || { belong: 0 };
-        if ((meta.belong || 0) > 0) {
-          totalDungeonItems++;
+      const statsEl = document.getElementById("categoryStats");
+      const stats = calculateCategoryStats();
+      
+      let displayText = "";
+      
+      if (currentCategory === 'all') {
+        const total = stats.all;
+        const rare = stats[1] || 0;
+        const superRare = stats[2] || 0;
+        const mythical = stats[3] || 0;
+        const normal = stats[0] || 0;
+        
+        displayText = `共 ${total} 種道具 (普通: ${normal}, 稀有: ${rare}, 超稀有: ${superRare}, 罕見: ${mythical})`;
+        
+      } else if (currentCategory === 'all_dungeons') {
+        // 計算所有副本道具總數
+        let totalDungeonItems = 0;
+        const dungeonCounts = [];
+        
+        Object.entries(stats.dungeons).forEach(([belongId, count]) => {
+          if (count > 0) {
+            totalDungeonItems += count;
+            dungeonCounts.push(`${dungeonNames[belongId]}: ${count}`);
+          }
+        });
+        
+        displayText = `全部副本道具: ${totalDungeonItems} 種`;
+        if (dungeonCounts.length > 0) {
+          displayText += ` (${dungeonCounts.join(', ')})`;
         }
+        
+      } else if (String(currentCategory).startsWith('dungeon_')) {
+        const belongValue = parseInt(String(currentCategory).split('_')[1]);
+        const dungeonName = dungeonNames[belongValue];
+        const count = stats.dungeons[belongValue] || 0;
+        displayText = `${dungeonName} 道具: ${count} 種`;
+        
+      } else {
+        const categoryNames = {
+          1: "稀有",
+          2: "超稀有", 
+          3: "罕見"
+        };
+        const categoryName = categoryNames[Number(currentCategory)];
+        const count = stats[Number(currentCategory)] || 0;
+        displayText = `${categoryName}道具: ${count} 種`;
       }
-    });
-    updateCategoryStatsForAllDungeons(totalDungeonItems);
-    return;
-  }
-  
-  // 原有的統計邏輯
-  const stats = calculateCategoryStats();
-  
-  let displayText = "";
-  
-  if (currentCategory === 'all') {
-    const total = stats.all;
-    const rare = stats[1] || 0;
-    const superRare = stats[2] || 0;
-    const mythical = stats[3] || 0;
-    const normal = stats[0] || 0;
+      
+      statsEl.textContent = displayText;
+    }
+
+    function renderItems() {
+      const itemEl = document.getElementById("itemGrid");
+      let html = "";
+      let displayedCount = 0;
+      
+      const itemsArray = [];
+      
+      Object.entries(userItems).forEach(([id, count]) => {
+        if (count > 0) {
+          const meta = itemMeta.find(m => m.id === id) || { name: id, description: "", special: 0, belong: 0, sort: 0 };
+          
+          let shouldShow = false;
+          
+          if (currentCategory === 'all') {
+            shouldShow = true;
+          } else if (currentCategory === 'all_dungeons') {
+            shouldShow = (meta.belong > 0); // 顯示所有副本道具
+          } else if (String(currentCategory).startsWith('dungeon_')) {
+            const belongValue = parseInt(String(currentCategory).split('_')[1]);
+            shouldShow = (meta.belong === belongValue);
+          } else {
+            shouldShow = (meta.special === Number(currentCategory));
+          }
+          
+          if (shouldShow) {
+            itemsArray.push({
+              id: id,
+              count: count,
+              meta: meta
+            });
+          }
+        }
+      });
+      
+      itemsArray.sort((a, b) => {
+        const sortA = a.meta.sort || 0;
+        const sortB = b.meta.sort || 0;
+        return sortB - sortA;
+      });
+      
+      itemsArray.forEach(item => {
+        const { id, count, meta } = item;
+        
+        let cardClass = "item-card";
+        let rarityLabel = "";
+        let nameColor = "#D0D0D0";
+        
+        if (meta.special === 1) {
+          cardClass += " rare";
+          rarityLabel = "【稀有】";
+          nameColor = "#00bfff";
+        } else if (meta.special === 2) {
+          cardClass += " super-rare";
+          rarityLabel = "【超稀有】";
+          nameColor = "#ff69b4";
+        } else if (meta.special === 3) {
+          cardClass += " mythical";
+          rarityLabel = "【罕見】";
+          nameColor = "#FFD306";
+        }
+        
+        let dungeonLabel = "";
+        if (!String(currentCategory).startsWith('dungeon_') && currentCategory !== 'all_dungeons' && meta.belong > 0 && dungeonNames[meta.belong]) {
+          dungeonLabel = ` - ${dungeonNames[meta.belong]}`;
+        }
     
-    displayText = `共 ${total} 種道具 (普通: ${normal}, 稀有: ${rare}, 超稀有: ${superRare}, 罕見: ${mythical})`;
+        html += `
+          <div class="${cardClass}">
+            <div class="item-name" style="color: ${nameColor}">${rarityLabel}${meta.name}${dungeonLabel}</div>
+            <div class="item-desc">${meta.description}</div>
+            <div class="item-count">持有數量: <span class="count-highlight">${count}</span></div>
+          </div>
+        `;
+        
+        displayedCount++;
+      });
     
-  } else if (String(currentCategory).startsWith('dungeon_')) {
-    const belongValue = parseInt(String(currentCategory).split('_')[1]);
-    const dungeonName = dungeonNames[belongValue];
-    const count = stats.dungeons[belongValue] || 0;
-    displayText = `${dungeonName} 道具: ${count} 種`;
-    
-  } else {
-    const categoryNames = {
-      1: "稀有",
-      2: "超稀有", 
-      3: "罕見"
-    };
-    const categoryName = categoryNames[Number(currentCategory)];
-    const count = stats[Number(currentCategory)] || 0;
-    displayText = `${categoryName}道具: ${count} 種`;
-  }
-  
-  statsEl.textContent = displayText;
-}
+      updateCategoryStats();
+      
+      if (displayedCount === 0) {
+        let categoryName = '道具';
+        
+        if (currentCategory === 'all_dungeons') {
+          categoryName = '副本道具';
+        } else if (String(currentCategory).startsWith('dungeon_')) {
+          const belongValue = parseInt(String(currentCategory).split('_')[1]);
+          categoryName = dungeonNames[belongValue] + '道具';
+        } else {
+          const categoryNames = {
+            'all': '道具',
+            1: '稀有道具',
+            2: '超稀有道具', 
+            3: '罕見道具'
+          };
+          categoryName = categoryNames[currentCategory] || '道具';
+        }
+        
+        html = `<div class="item-card">暫無${categoryName}</div>`;
+      }
+      
+      itemEl.innerHTML = html;
+    }
 
     function renderPage() {
       renderStats();
@@ -1087,164 +1162,6 @@
         dialogContainer.style.display = "none";
       }
     }
-    function openDungeonSelector() {
-  const dialog = document.getElementById("dialogContainer");
-  
-  let html = `
-    <div class='dialog-box'>
-      <h3>🏰 選擇副本分類</h3>
-      <div class="scroll-content">
-        <div style="display: grid; gap: 15px; margin: 20px 0;">
-  `;
-  
-  // 添加「全部副本道具」選項
-  html += `
-    <button class="dungeon-btn" onclick="selectDungeon('all_dungeons')" style="
-      background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 165, 0, 0.1) 100%);
-      border-color: rgba(255, 215, 0, 0.4);
-      color: #FFD700;
-      font-weight: 700;
-    ">
-      🌟 全部副本道具
-    </button>
-  `;
-  
-  // 遍歷所有副本
-  Object.entries(dungeonNames).forEach(([belongId, dungeonName]) => {
-    html += `
-      <button class="dungeon-btn" onclick="selectDungeon('dungeon_${belongId}')">
-        🏰 ${dungeonName}
-      </button>
-    `;
-  });
-  
-  html += `
-        </div>
-      </div>
-      <div class="btn-group">
-        <button class="square-btn" onclick="closeDialog()">取消</button>
-      </div>
-    </div>
-  `;
-  
-  dialog.innerHTML = html;
-  dialog.style.display = "flex";
-  document.body.style.overflow = "hidden";
-  document.body.classList.add("dialog-open");
-}
-
-function selectDungeon(categoryType) {
-  closeDialog();
-  
-  if (categoryType === 'all_dungeons') {
-    // 顯示所有副本道具
-    filterItemsByAllDungeons();
-  } else {
-    // 顯示特定副本道具
-    filterItems(categoryType);
-  }
-}
-
-function renderItemsForAllDungeons() {
-  const itemEl = document.getElementById("itemGrid");
-  let html = "";
-  let displayedCount = 0;
-  
-  const itemsArray = [];
-  
-  // 收集所有副本道具 (belong > 0)
-  Object.entries(userItems).forEach(([id, count]) => {
-    if (count > 0) {
-      const meta = itemMeta.find(m => m.id === id) || { name: id, description: "", special: 0, belong: 0, sort: 0 };
-      
-      // 只顯示副本道具 (belong > 0)
-      if (meta.belong > 0) {
-        itemsArray.push({
-          id: id,
-          count: count,
-          meta: meta
-        });
-      }
-    }
-  });
-  
-  // 按照副本ID和sort排序
-  itemsArray.sort((a, b) => {
-    const belongA = a.meta.belong || 0;
-    const belongB = b.meta.belong || 0;
-    
-    if (belongA !== belongB) {
-      return belongA - belongB; // 先按副本ID排序
-    }
-    
-    const sortA = a.meta.sort || 0;
-    const sortB = b.meta.sort || 0;
-    return sortB - sortA; // 再按sort排序
-  });
-  
-  itemsArray.forEach(item => {
-    const { id, count, meta } = item;
-    
-    let cardClass = "item-card";
-    let rarityLabel = "";
-    let nameColor = "#D0D0D0";
-    
-    if (meta.special === 1) {
-      cardClass += " rare";
-      rarityLabel = "【稀有】";
-      nameColor = "#00bfff";
-    } else if (meta.special === 2) {
-      cardClass += " super-rare";
-      rarityLabel = "【超稀有】";
-      nameColor = "#ff69b4";
-    } else if (meta.special === 3) {
-      cardClass += " mythical";
-      rarityLabel = "【罕見】";
-      nameColor = "#FFD306";
-    }
-    
-    // 顯示副本名稱
-    const dungeonLabel = dungeonNames[meta.belong] ? ` - ${dungeonNames[meta.belong]}` : '';
-
-    html += `
-      <div class="${cardClass}">
-        <div class="item-name" style="color: ${nameColor}">${rarityLabel}${meta.name}${dungeonLabel}</div>
-        <div class="item-desc">${meta.description}</div>
-        <div class="item-count">持有數量: <span class="count-highlight">${count}</span></div>
-      </div>
-    `;
-    
-    displayedCount++;
-  });
-
-  // 更新統計資訊
-  updateCategoryStatsForAllDungeons(displayedCount);
-  
-  if (displayedCount === 0) {
-    html = `<div class="item-card">暫無副本道具</div>`;
-  }
-  
-  itemEl.innerHTML = html;
-}
-
-    
-    function filterItemsByAllDungeons() {
-  // 設置當前分類為特殊的「所有副本」分類
-  currentCategory = 'all_dungeons';
-  
-  // 清除所有分類按鈕的 active 狀態
-  document.querySelectorAll('.category-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  
-  // 設置副本分類按鈕為 active
-  const dungeonCategoryBtn = document.getElementById("dungeonCategoryBtn");
-  if (dungeonCategoryBtn) {
-    dungeonCategoryBtn.classList.add('active');
-  }
-  
-  renderItemsForAllDungeons();
-}
 
     // 確保所有函數都正確註冊到 window 物件
     window.openCraftUI = openCraftUI;
@@ -1255,7 +1172,7 @@ function renderItemsForAllDungeons() {
     window.filterItems = filterItems;
     window.openDungeonSelector = openDungeonSelector;
     window.selectDungeon = selectDungeon;
-    
+
     async function runMain() {
       showLoading(true);
       
@@ -1295,40 +1212,6 @@ function renderItemsForAllDungeons() {
         }
       }
     });
-
-    function updateCategoryStatsForAllDungeons(totalCount) {
-  const statsEl = document.getElementById("categoryStats");
-  
-  // 計算各副本的道具數量
-  const dungeonStats = {};
-  Object.keys(dungeonNames).forEach(belongId => {
-    dungeonStats[belongId] = 0;
-  });
-  
-  Object.entries(userItems).forEach(([id, count]) => {
-    if (count > 0) {
-      const meta = itemMeta.find(m => m.id === id) || { belong: 0 };
-      const belong = meta.belong || 0;
-      
-      if (belong > 0 && dungeonStats.hasOwnProperty(belong)) {
-        dungeonStats[belong]++;
-      }
-    }
-  });
-  
-  const dungeonList = Object.entries(dungeonStats)
-    .filter(([belongId, count]) => count > 0)
-    .map(([belongId, count]) => `${dungeonNames[belongId]}: ${count}`)
-    .join(', ');
-  
-  let displayText = `全部副本道具: ${totalCount} 種`;
-  if (dungeonList) {
-    displayText += ` (${dungeonList})`;
-  }
-  
-  statsEl.textContent = displayText;
-}
-
 
     // 頁面可見性檢查
     document.addEventListener('visibilitychange', function() {
