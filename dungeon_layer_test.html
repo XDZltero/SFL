@@ -2072,8 +2072,82 @@ async function preloadDungeonData() {
   }
 }
 
-    onAuthStateChanged(auth, async (user) => {
+     onAuthStateChanged(auth, async (user) => {
 	  if (user) {
 	    try {
 	      PerformanceMonitor.startTiming('dungeonPageInit');
 	      await fetchProgress(true);
+	      await loadLayer();
+	      
+	      preloadDungeonData().catch(error => {
+	        console.warn('背景預載入失敗:', error);
+	      });
+	      
+	      PerformanceMonitor.endTiming('dungeonPageInit');
+	      
+	    } catch (error) {
+	      console.error('副本頁面初始化失敗:', error);
+	      alert('頁面載入失敗，請重新整理');
+	    }
+	  } else {
+	    window.parent.location.href = "/SFL/login.html";
+	  }
+	});
+
+if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+  setInterval(() => {
+    const cacheSize = monsterCache.size;
+    const memoryUsage = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : '未知';
+    
+    if (cacheSize > 20) {
+      monsterCache.clear();
+    }
+  }, 30000);
+  
+  window.dungeonDebug = {
+    cache: monsterCache,
+    userData: () => userData,
+    clearMonsterCache: () => {
+      monsterCache.clear();
+      console.log('🧹 怪物快取已清除');
+    },
+    preloadAll: preloadDungeonData
+  };
+}
+
+window.emergencyResetCooldown = function() {
+  if (confirm('緊急重置冷卻狀態？（僅限開發測試）')) {
+    if (cooldownTimer) {
+      clearInterval(cooldownTimer);
+      cooldownTimer = null;
+    }
+    updateBattleButton(battleBtn, 0, "開始戰鬥");
+    updateBattleButton(retryBtn, 0, "再戰一次");
+    console.log('緊急重置完成');
+  }
+};
+
+if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+  setInterval(async () => {
+    if (userData) {
+      try {
+        const currentUser = await fetchUser(false);
+        const serverCooldown = currentUser.battle_cooldown_remaining || 0;
+        const currentCooldown = currentRemainingTime;
+        
+        console.log(`狀態監控 - 服務器: ${serverCooldown.toFixed(2)}s, 本地: ${currentCooldown}s`);
+        
+        if (Math.abs(serverCooldown - currentCooldown) > 5 && serverCooldown > 0) {
+          console.warn(`⚠️ 冷卻時間差異較大，可能需要同步`);
+        }
+      } catch (error) {
+        console.warn('狀態監控失敗:', error);
+      }
+    }
+  }, 10000);
+  
+  console.log('🔧 開發模式已啟用，使用 emergencyResetCooldown() 來緊急重置冷卻');
+}
+  </script>
+</body>
+</html>
