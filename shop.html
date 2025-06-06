@@ -111,60 +111,81 @@
       }
     }
 
-    // 🚀 修復：優化的載入商店資料函數
+    // 優化的載入商店資料函數
     async function loadShopData(forceRefreshPurchases = false) {
-      try {
-        console.log("🏪 載入商店資料...");
-        
-        const promises = [
-          fetch("parameter/shop_items.json"),
-          SecureAPI.getStaticData('items_table'),
-          SecureAPI.get(`${API_BASE}/user_items`),
-          SecureAPI.getStatus()
-        ];
-        
-        // 🚀 修復：根據需要決定是否強制重新載入購買記錄
-        if (forceRefreshPurchases) {
-          promises.push(forceReloadPurchases());
-        } else {
-          promises.push(SecureAPI.get(`${API_BASE}/shop_user_purchases`));
-        }
+	  try {
+		console.log("🏪 載入商店資料...");
+		
+		const promises = [
+		  fetch("parameter/shop_items.json"),
+		  SecureAPI.getStaticData('items_table'),
+		  SecureAPI.get(`${API_BASE}/user_items`),
+		  SecureAPI.getStatus()
+		];
+		
+		// 🚀 新增：進入商店時自動檢查重置
+		const autoResetPromise = SecureAPI.post(`${API_BASE}/shop_auto_reset_check`, {})
+		  .then(response => response.json())
+		  .catch(error => {
+			console.warn('⚠️ 自動重置檢查失敗:', error);
+			return { success: false, reset_count: 0 };
+		  });
+		
+		promises.push(autoResetPromise);
+		
+		// 根據需要決定是否強制重新載入購買記錄
+		if (forceRefreshPurchases) {
+		  promises.push(forceReloadPurchases());
+		} else {
+		  promises.push(SecureAPI.get(`${API_BASE}/shop_user_purchases`));
+		}
 
-        const [shopRes, itemsRes, userItemsRes, userRes, purchasesResult] = await Promise.all(promises);
+		const [shopRes, itemsRes, userItemsRes, userRes, autoResetResult, purchasesResult] = await Promise.all(promises);
 
-        shopItems = await shopRes.json();
-        
-        if (Array.isArray(itemsRes)) {
-          itemMeta = itemsRes.reduce((acc, item) => {
-            acc[item.id] = item;
-            return acc;
-          }, {});
-        } else {
-          itemMeta = itemsRes;
-        }
+		// 🚀 處理自動重置結果
+		if (autoResetResult.success && autoResetResult.reset_applied) {
+		  console.log(`🔄 進入商店時自動重置了 ${autoResetResult.reset_count} 個商品:`);
+		  autoResetResult.reset_items.forEach(item => {
+			console.log(`  - ${item.item_name}: ${item.reset_types.join(', ')}`);
+		  });
+		  
+		  // 如果有重置，強制重新載入購買記錄
+		  forceRefreshPurchases = true;
+		}
 
-        userItems = userItemsRes.ok ? await userItemsRes.json() : {};
-        userData = await userRes.json();
-        
-        // 🚀 修復：處理購買記錄的不同來源
-        if (forceRefreshPurchases) {
-          userPurchases = purchasesResult; // 已經是處理好的資料
-        } else {
-          userPurchases = purchasesResult.ok ? await purchasesResult.json() : {
-            user_id: auth.currentUser?.email,
-            purchases: {}
-          };
-        }
-        
-        console.log("✅ 商店資料載入完成");
-        console.log("📊 購買記錄:", userPurchases);
-        
-      } catch (error) {
-        console.error("❌ 載入商店資料失敗:", error);
-        alert("載入商店資料失敗，請重新整理頁面");
-        throw error;
-      }
-    }
+		shopItems = await shopRes.json();
+		
+		if (Array.isArray(itemsRes)) {
+		  itemMeta = itemsRes.reduce((acc, item) => {
+			acc[item.id] = item;
+			return acc;
+		  }, {});
+		} else {
+		  itemMeta = itemsRes;
+		}
+
+		userItems = userItemsRes.ok ? await userItemsRes.json() : {};
+		userData = await userRes.json();
+		
+		// 🚀 如果有自動重置或強制刷新，重新載入購買記錄
+		if (forceRefreshPurchases || autoResetResult.reset_applied) {
+		  userPurchases = await forceReloadPurchases();
+		} else {
+		  userPurchases = purchasesResult.ok ? await purchasesResult.json() : {
+			user_id: auth.currentUser?.email,
+			purchases: {}
+		  };
+		}
+		
+		console.log("✅ 商店資料載入完成");
+		console.log("📊 購買記錄:", userPurchases);
+		
+	  } catch (error) {
+		console.error("❌ 載入商店資料失敗:", error);
+		alert("載入商店資料失敗，請重新整理頁面");
+		throw error;
+	  }
+	}
 
     // 簡化的重置時間顯示
     function updateResetTimerDisplay() {
