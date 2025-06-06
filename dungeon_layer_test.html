@@ -13,7 +13,59 @@
   background: none !important;
 }
 
-/* 完全零間隙的詳細說明容器 */
+/* 玩家信息容器 */
+.player-info-container {
+  margin: 0;
+  padding: 0;
+}
+
+/* 玩家名稱和按鈕的容器 */
+.player-name-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+  gap: 15px;
+}
+
+.player-name {
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+  margin: 0;
+  flex: 1;
+}
+
+/* 詳細說明按鈕 */
+.detail-toggle-btn {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.7em;
+  color: #00ffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.detail-toggle-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  transform: scale(1.02);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+.detail-toggle-btn.active {
+  background: rgba(0, 255, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  border-color: rgba(0, 255, 255, 0.6);
+}
+
+/* 玩家屬性項目容器 */
 .stat-item-container {
   position: relative;
   margin: 0;
@@ -28,33 +80,13 @@
   padding: 8px 12px;
   background: rgba(0, 255, 255, 0.05);
   border: 1px solid rgba(0, 255, 255, 0.1);
-  border-bottom: none; /* 移除底部邊框避免重複 */
+  border-bottom: none;
   font-family: 'Orbitron', sans-serif;
   font-weight: 600;
   font-size: 0.9em;
   transition: all 0.3s ease;
   cursor: pointer;
   position: relative;
-}
-
-/* 最後一個項目添加底部邊框 */
-.stat-item-container:last-child .stat-item {
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-/* 第一個項目的圓角 */
-.stat-item-container:first-child .stat-item {
-  border-radius: 6px 6px 0 0;
-}
-
-/* 最後一個項目的圓角（如果沒有展開詳細說明） */
-.stat-item-container:last-child .stat-item {
-  border-radius: 0 0 6px 6px;
-}
-
-/* 只有一個項目時的完整圓角 */
-.stat-item-container:first-child:last-child .stat-item {
-  border-radius: 6px;
 }
 
 .stat-item:hover {
@@ -77,7 +109,27 @@
   text-align: right;
 }
 
-/* 完全零間隙的詳細說明容器 */
+/* 最後一個項目添加底部邊框 */
+.stat-item-container:last-child .stat-item {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+/* 第一個項目的圓角 */
+.stat-item-container:first-child .stat-item {
+  border-radius: 6px 6px 0 0;
+}
+
+/* 最後一個項目的圓角 */
+.stat-item-container:last-child .stat-item {
+  border-radius: 0 0 6px 6px;
+}
+
+/* 只有一個項目時的完整圓角 */
+.stat-item-container:first-child:last-child .stat-item {
+  border-radius: 6px;
+}
+
+/* 詳細說明容器 */
 .stat-detail {
   max-height: 0;
   overflow: hidden;
@@ -102,7 +154,6 @@
   line-height: 1.5;
   text-shadow: 0 0 3px rgba(184, 230, 255, 0.6);
   margin: 0;
-  /* 確保內容不會在收起時顯示 */
   opacity: 0;
   transform: translateY(-8px);
   transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
@@ -113,7 +164,50 @@
   transform: translateY(0);
 }
 
-/* 怪物屬性完全零間隙設計 */
+/* 展開時圓角處理 */
+.stat-item-container.has-expanded .stat-item {
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.stat-detail.expanded {
+  border-radius: 0 0 6px 6px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+/* 怪物信息容器 */
+.monster-info-container {
+  margin: 0;
+  padding: 0;
+}
+
+.monster-name {
+  color: #ff6b6b;
+  text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+  text-align: center;
+  margin: 10px 0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+}
+
+.monster-image {
+  display: block;
+  margin: 10px auto;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 107, 107, 0.3);
+}
+
+.monster-description {
+  color: #ffd1d1;
+  text-align: center;
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(255, 107, 107, 0.05);
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+/* 怪物屬性項目容器 */
 .monster-stat-container {
   position: relative;
   margin: 0;
@@ -136,6 +230,24 @@
   cursor: pointer;
 }
 
+.monster-stat-item:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.4);
+  transform: translateX(2px);
+  z-index: 2;
+}
+
+.monster-stat-item span:first-child {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+}
+
+.monster-stat-item span:last-child {
+  color: #fff8b0;
+  text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+  font-weight: 700;
+}
+
 /* 最後一個怪物項目添加底部邊框 */
 .monster-stat-container:last-child .monster-stat-item {
   border-bottom: 1px solid rgba(255, 107, 107, 0.2);
@@ -156,24 +268,7 @@
   border-radius: 6px;
 }
 
-.monster-stat-item:hover {
-  background: rgba(255, 107, 107, 0.2);
-  border-color: rgba(255, 107, 107, 0.4);
-  transform: translateX(2px);
-  z-index: 2;
-}
-
-.monster-stat-item span:first-child {
-  color: #ffd93d;
-  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
-}
-
-.monster-stat-item span:last-child {
-  color: #fff8b0;
-  text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
-  font-weight: 700;
-}
-
+/* 怪物屬性詳細說明 */
 .monster-element-detail {
   max-height: 0;
   overflow: hidden;
@@ -208,6 +303,16 @@
   transform: translateY(0);
 }
 
+.monster-stat-container.has-expanded .monster-stat-item {
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.monster-element-detail.expanded {
+  border-radius: 0 0 6px 6px;
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
 /* BOSS模式適配 */
 body.boss-mode .monster-stat-item {
   background: rgba(255, 69, 0, 0.15);
@@ -236,6 +341,14 @@ body.boss-mode .monster-element-detail-content {
   text-shadow: 0 0 5px rgba(255, 184, 77, 0.4);
 }
 
+body.boss-mode .monster-stat-container.has-expanded .monster-stat-item {
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
+body.boss-mode .monster-element-detail.expanded {
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
 /* BOSS裝飾標題 */
 .boss-title-decoration {
   text-align: center;
@@ -250,134 +363,19 @@ body.boss-mode .monster-element-detail-content {
   border: 1px solid rgba(255, 69, 0, 0.3);
 }
 
-/* 展開控制按鈕 */
-.detail-toggle-btn {
-  background: rgba(0, 255, 255, 0.1);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 0.7em;
-  color: #00ffff;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.detail-toggle-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-  transform: scale(1.02);
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-}
-
-.detail-toggle-btn.active {
-  background: rgba(0, 255, 255, 0.25);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-  border-color: rgba(0, 255, 255, 0.6);
-}
-
-/* 展開時圓角處理 - 使用類別控制 */
-.stat-item-container.has-expanded .stat-item {
-  border-radius: 6px 6px 0 0 !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.stat-detail.expanded {
-  border-radius: 0 0 6px 6px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.monster-stat-container.has-expanded .monster-stat-item {
-  border-radius: 6px 6px 0 0 !important;
-  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
-}
-
-.monster-element-detail.expanded {
-  border-radius: 0 0 6px 6px;
-  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
-}
-
-/* BOSS模式下的展開樣式 */
-body.boss-mode .monster-stat-container.has-expanded .monster-stat-item {
-  border-bottom-color: rgba(255, 69, 0, 0.3);
-}
-
-body.boss-mode .monster-element-detail.expanded {
-  border-bottom-color: rgba(255, 69, 0, 0.3);
-}
-
-/* 玩家信息容器零間距 */
-.player-info-container {
-  margin: 0;
-  padding: 0;
-}
-
-/* 玩家名稱和按鈕的容器 */
-.player-name-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 10px 0;
-  gap: 15px;
-}
-
-.player-name {
-  color: #00ffff;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.3em;
-  margin: 0;
-  flex: 1;
-}
-
-/* 怪物信息容器零間距 */
-.monster-info-container {
-  margin: 0;
-  padding: 0;
-}
-
-.monster-name {
-  color: #ff6b6b;
-  text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
-  text-align: center;
-  margin: 10px 0;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.3em;
-}
-
-.monster-image {
-  display: block;
-  margin: 10px auto;
-  border-radius: 8px;
-  border: 2px solid rgba(255, 107, 107, 0.3);
-}
-
-.monster-description {
-  color: #ffd1d1;
-  text-align: center;
-  margin: 10px 0;
-  padding: 10px;
-  background: rgba(255, 107, 107, 0.05);
-  border-radius: 6px;
-  line-height: 1.4;
-}
-
-/* 完全消除所有間隙 */
-.stats-container > *,
-.monster-stats > * {
-  margin: 0;
-  padding: 0;
-}
-
+/* 統一容器樣式 */
 .stats-container,
 .monster-stats {
   margin: 0;
   padding: 0;
 }
 
-/* 確保展開內容不會影響其他元素 */
+.stats-container > *,
+.monster-stats > * {
+  margin: 0;
+  padding: 0;
+}
+
 .stat-item-container,
 .monster-stat-container {
   isolation: isolate;
