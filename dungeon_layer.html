@@ -12,6 +12,438 @@
   animation: none !important;
   background: none !important;
 }
+
+/* 玩家信息容器 */
+.player-info-container {
+  margin: 0;
+  padding: 0;
+}
+
+/* 玩家名稱和按鈕的容器 */
+.player-name-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+  gap: 15px;
+}
+
+.player-name {
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+  margin: 0;
+  flex: 1;
+}
+
+/* 詳細說明按鈕 */
+.detail-toggle-btn {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.7em;
+  color: #00ffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.detail-toggle-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  transform: scale(1.02);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+.detail-toggle-btn.active {
+  background: rgba(0, 255, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  border-color: rgba(0, 255, 255, 0.6);
+}
+
+/* 玩家屬性項目容器 */
+.stat-item-container {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-bottom: none;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.stat-item:hover {
+  background: rgba(0, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.3);
+  transform: translateX(2px);
+  z-index: 2;
+}
+
+.stat-item span:first-child {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+  flex: 1;
+}
+
+.stat-item span:last-child {
+  color: #00ffff;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* 最後一個項目添加底部邊框 */
+.stat-item-container:last-child .stat-item {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+/* 第一個項目的圓角 */
+.stat-item-container:first-child .stat-item {
+  border-radius: 6px 6px 0 0;
+}
+
+/* 最後一個項目的圓角 */
+.stat-item-container:last-child .stat-item {
+  border-radius: 0 0 6px 6px;
+}
+
+/* 只有一個項目時的完整圓角 */
+.stat-item-container:first-child:last-child .stat-item {
+  border-radius: 6px;
+}
+
+/* 詳細說明容器 */
+.stat-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.08), rgba(0, 255, 255, 0.02));
+  border-left: 1px solid rgba(0, 255, 255, 0.1);
+  border-right: 1px solid rgba(0, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+  margin: 0;
+  padding: 0;
+  border-top: none;
+}
+
+.stat-detail.expanded {
+  max-height: 200px;
+}
+
+.stat-detail-content {
+  padding: 10px 12px;
+  font-size: 0.75em;
+  color: #b8e6ff;
+  line-height: 1.5;
+  text-shadow: 0 0 3px rgba(184, 230, 255, 0.6);
+  margin: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+}
+
+.stat-detail.expanded .stat-detail-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 展開時圓角處理 */
+.stat-item-container.has-expanded .stat-item {
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.stat-detail.expanded {
+  border-radius: 0 0 6px 6px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+/* 怪物信息容器 */
+.monster-info-container {
+  margin: 0;
+  padding: 0;
+}
+
+.monster-name {
+  color: #ff6b6b;
+  text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+  text-align: center;
+  margin: 10px 0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+}
+
+.monster-image {
+  display: block;
+  margin: 10px auto;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 107, 107, 0.3);
+}
+
+.monster-description {
+  color: #ffd1d1;
+  text-align: center;
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(255, 107, 107, 0.05);
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+/* 怪物屬性項目容器 */
+.monster-stat-container {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.monster-stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  border-bottom: none;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.85em;
+  transition: all 0.3s ease;
+  margin: 0;
+  cursor: pointer;
+}
+
+.monster-stat-item:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.4);
+  transform: translateX(2px);
+  z-index: 2;
+}
+
+.monster-stat-item span:first-child {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+}
+
+.monster-stat-item span:last-child {
+  color: #fff8b0;
+  text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+  font-weight: 700;
+}
+
+/* 最後一個怪物項目添加底部邊框 */
+.monster-stat-container:last-child .monster-stat-item {
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+/* 第一個怪物項目的圓角 */
+.monster-stat-container:first-child .monster-stat-item {
+  border-radius: 6px 6px 0 0;
+}
+
+/* 最後一個怪物項目的圓角 */
+.monster-stat-container:last-child .monster-stat-item {
+  border-radius: 0 0 6px 6px;
+}
+
+/* 只有一個怪物項目時的完整圓角 */
+.monster-stat-container:first-child:last-child .monster-stat-item {
+  border-radius: 6px;
+}
+
+/* 怪物屬性詳細說明 */
+.monster-element-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(255, 107, 107, 0.02));
+  border-left: 1px solid rgba(255, 107, 107, 0.2);
+  border-right: 1px solid rgba(255, 107, 107, 0.2);
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+  margin: 0;
+  padding: 0;
+  border-top: none;
+}
+
+.monster-element-detail.expanded {
+  max-height: 300px;
+}
+
+.monster-element-detail-content {
+  padding: 10px 12px;
+  font-size: 0.8em;
+  color: #ffd1d1;
+  line-height: 1.5;
+  text-shadow: 0 0 3px rgba(255, 209, 209, 0.3);
+  white-space: pre-line;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+}
+
+.monster-element-detail.expanded .monster-element-detail-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.monster-stat-container.has-expanded .monster-stat-item {
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.monster-element-detail.expanded {
+  border-radius: 0 0 6px 6px;
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+/* BOSS模式適配 */
+body.boss-mode .monster-stat-item {
+  background: rgba(255, 69, 0, 0.15);
+  border-color: rgba(255, 69, 0, 0.3);
+}
+
+body.boss-mode .monster-stat-item:hover {
+  background: rgba(255, 69, 0, 0.25);
+  border-color: rgba(255, 69, 0, 0.5);
+}
+
+body.boss-mode .monster-stat-item span:last-child {
+  color: #ffd700;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+}
+
+body.boss-mode .monster-element-detail {
+  background: linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 69, 0, 0.05));
+  border-left-color: rgba(255, 69, 0, 0.3);
+  border-right-color: rgba(255, 69, 0, 0.3);
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
+body.boss-mode .monster-element-detail-content {
+  color: #ffb84d;
+  text-shadow: 0 0 5px rgba(255, 184, 77, 0.4);
+}
+
+body.boss-mode .monster-stat-container.has-expanded .monster-stat-item {
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
+body.boss-mode .monster-element-detail.expanded {
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
+/* BOSS裝飾標題 */
+.boss-title-decoration {
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: 900;
+  color: #ff4500;
+  text-shadow: 0 0 15px rgba(255, 69, 0, 0.8);
+  margin-bottom: 8px;
+  padding: 5px;
+  background: linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 69, 0, 0.05));
+  border-radius: 6px;
+  border: 1px solid rgba(255, 69, 0, 0.3);
+}
+
+/* 統一容器樣式 */
+.stats-container,
+.monster-stats {
+  margin: 0;
+  padding: 0;
+}
+
+.stats-container > *,
+.monster-stats > * {
+  margin: 0;
+  padding: 0;
+}
+
+.stat-item-container,
+.monster-stat-container {
+  isolation: isolate;
+  margin: 0;
+  padding: 0;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .detail-toggle-btn {
+    padding: 5px 8px;
+    font-size: 0.6em;
+  }
+  
+  .player-name-container {
+    gap: 10px;
+    margin: 8px 0;
+  }
+  
+  .player-name {
+    font-size: 1.1em;
+  }
+  
+  .stat-detail-content,
+  .monster-element-detail-content {
+    font-size: 0.7em;
+    padding: 8px 10px;
+  }
+  
+  .stat-detail.expanded {
+    max-height: 150px;
+  }
+  
+  .monster-element-detail.expanded {
+    max-height: 250px;
+  }
+  
+  .stat-item,
+  .monster-stat-item {
+    padding: 6px 8px;
+    font-size: 0.8em;
+  }
+  
+  .monster-name {
+    font-size: 1.1em;
+    margin: 8px 0;
+  }
+}
+
+/* 超小螢幕適配 */
+@media (max-width: 480px) {
+  .player-name-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .detail-toggle-btn {
+    width: auto;
+    padding: 6px 10px;
+    font-size: 0.65em;
+  }
+  
+  .player-name {
+    text-align: center;
+    font-size: 1em;
+  }
+}
 </style>
 </head>
 <body>
@@ -162,6 +594,24 @@ function percent(val) {
 	let originalCooldownTime = 0;
 	let currentProgress = 0; 
 	let isLastLayer = false;
+	let detailsExpanded = false; // 新增詳細說明展開狀態
+	
+	// 詳細說明 tooltips
+	const tooltips = {
+	  level: "角色的當前等級。等級差距會影響戰鬥傷害：最多7等差距時傷害變為1.5倍或0.5倍。",
+	  exp: "角色的經驗值與升級進度。透過戰鬥獲得經驗值，累積足夠經驗值後會自動升級。不同怪物給予的經驗值不同，高等級怪物給予更多經驗值。",
+	  hp: "玩家的總生命值，決定角色的生存能力。當生命值降至0時戰鬥失敗。",
+	  attack: "決定對敵人造成傷害的基礎數值。攻擊力越高，傷害越大。會受到屬性克制、技能倍率、等級差距等因素影響。",
+	  shield: "減少受到傷害的防護值。每點護盾值減少0.1%傷害，最多99%。可透過護盾穿透降低效果，提供穩定的傷害減免。",
+	  luck: "影響迴避率、物品掉落率的幸運值。每點幸運提供額外0.2%迴避率加成(不直接顯示在迴避率上)，同時提升物品掉落及額外掉落機率。",
+	  accuracy: "攻擊命中敵人的機率，會與敵人迴避率相抗(命中率-迴避率)。命中率不足會導致失去本次攻擊傷害。",
+	  evade: "閃避敵人攻擊的機率，數值越高越容易完全無視敵人的攻擊，最高99%。迴避成功時完全無視該次攻擊傷害。",
+	  atk_speed: "決定戰鬥中的出手順序與頻率。攻擊速度高的一方會優先行動，並可能在一回合內進行多次攻擊。速度差距越大，優勢方的行動次數越多。並且進而加快技能冷卻回合。",
+	  other_bonus: "額外傷害加成，按百分比增加最終傷害。這是一個倍率加成，會在所有其他計算完成後套用。",
+	  penetrate: "無視敵人護盾值的能力。穿透值會直接扣除敵人的有效護盾值，是突破高防禦敵人的關鍵屬性。每點穿透可無視1點敵人護盾。",
+	  stat_points: "可用於提升基礎能力值的點數。每升級獲得5點。可分配到生命值(+5/點)、攻擊力(+1/點)或幸運值(+1/點)。",
+	  skill_points: "可用於升級技能的點數。每升級獲得3點。"
+	};
 	
 	class BoundedMonsterCache {
 	  constructor(maxSize = 50) {
@@ -233,6 +683,111 @@ function percent(val) {
     const battleBtn = document.getElementById("battleBtn");
     const retryBtn = document.getElementById("retryBtn");
     const nextBtn = document.getElementById("nextBtn");
+
+	// 新增：詳細說明展開/收起控制函數
+	function toggleDetails() {
+	  detailsExpanded = !detailsExpanded;
+	  const button = document.querySelector('.detail-toggle-btn');
+	  
+	  if (button) {
+	    button.textContent = detailsExpanded ? '收起詳細說明' : '顯示詳細說明';
+	    button.classList.toggle('active', detailsExpanded);
+	  }
+	  
+	  // 控制玩家詳細說明
+	  const playerDetails = document.querySelectorAll('.stat-detail');
+	  const playerContainers = document.querySelectorAll('.stat-item-container');
+	  
+	  playerDetails.forEach((detail, index) => {
+	    detail.classList.toggle('expanded', detailsExpanded);
+	    // 為包含詳細說明的容器添加類別
+	    if (playerContainers[index] && detail.querySelector('.stat-detail-content')) {
+	      playerContainers[index].classList.toggle('has-expanded', detailsExpanded);
+	    }
+	  });
+	  
+	  // 控制怪物屬性詳細說明
+	  const monsterDetail = document.querySelector('.monster-element-detail');
+	  const monsterContainer = monsterDetail?.closest('.monster-stat-container');
+	  
+	  if (monsterDetail) {
+	    monsterDetail.classList.toggle('expanded', detailsExpanded);
+	    if (monsterContainer) {
+	      monsterContainer.classList.toggle('has-expanded', detailsExpanded);
+	    }
+	  }
+	}
+
+	// 設定全域函數
+	window.toggleDetails = toggleDetails;
+
+	// 新增：屬性克制說明生成函數
+	function generateElementDescription(elements) {
+	  const descriptions = [];
+	  
+	  elements.forEach(element => {
+	    switch(element) {
+	      case "pyro":
+	      case "火":
+	        descriptions.push("🔥 火屬性");
+	        descriptions.push("優勢：水屬性、全屬性 (+25% 傷害)");
+	        descriptions.push("劣勢：自然屬性 (-25% 傷害)");
+	        break;
+	      case "hydro":
+	      case "水":
+	        descriptions.push("💧 水屬性");
+	        descriptions.push("優勢： 雷屬性、全屬性 (+25% 傷害)");
+	        descriptions.push("劣勢： 火屬性 (-25% 傷害)");
+	        break;
+	      case "electro":
+	      case "雷":
+	        descriptions.push("⚡ 雷屬性");
+	        descriptions.push("優勢：自然屬性、全屬性 (+25% 傷害)");
+	        descriptions.push("劣勢：水屬性 (-25% 傷害)");
+	        break;
+	      case "nature":
+	      case "自然":
+	        descriptions.push("🌿 自然屬性");
+	        descriptions.push("優勢：火屬性、全屬性 (+25% 傷害)");
+	        descriptions.push("劣勢：雷屬性 (-25% 傷害)");
+	        break;
+	      case "light":
+	      case "光":
+	        descriptions.push("✨ 光屬性");
+	        descriptions.push("優勢：暗屬性、全屬性 (+25% 傷害)");
+	        break;
+	      case "dark":
+	      case "暗":
+	        descriptions.push("🌑 暗屬性");
+	        descriptions.push("優勢：光屬性、全屬性 (+25% 傷害)");
+	        break;
+	      case "all":
+	      case "全":
+	        descriptions.push("🌟 全屬性");
+	        descriptions.push("  └ 劣勢：其他屬性 (-25% 傷害)");
+	        break;
+	      case "none":
+	      case "無":
+	        descriptions.push("⚪ 無屬性");
+	        descriptions.push("優勢：全屬性 (+25% 傷害)");
+	        break;
+	      default:
+	        descriptions.push(`${elementMap[element] || element}屬性`);
+	    }
+	  });
+	  
+	  if (elements.length > 1) {
+	    descriptions.push("");
+	    descriptions.push("【複數屬性機制】");
+	    descriptions.push("• 擁有多個屬性時，傷害計算將取所有屬性克制關係平均值");
+	    descriptions.push("• 例如：火水雙屬性怪物被雷屬性攻擊時");
+	    descriptions.push("  - 雷→火：100%傷害(無克制)");
+	    descriptions.push("  - 雷→水：125%傷害(克制)");
+	    descriptions.push("  - 最終傷害：(100% + 125%) ÷ 2 = 112.5%");
+	  }
+	  
+	  return descriptions.join("\n");
+	}
 
     // 戰鬥冷卻相關函數
     function updateBattleButton(buttonElement, remainingSeconds, buttonText = "開始戰鬥") {
@@ -748,20 +1303,41 @@ function percent(val) {
 	
 	  let html = `
 	    <div class="player-info-container">
-	      <h3 class="player-name">👤 ${data.nickname}</h3>
+	      <div class="player-name-container">
+	        <h3 class="player-name">👤 ${data.nickname}</h3>
+	        <button class="detail-toggle-btn" onclick="toggleDetails()">${detailsExpanded ? '收起詳細說明' : '顯示詳細說明'}</button>
+	      </div>
 	      <div class="stats-container">
 	  `;
 	  
 	  statsList.forEach(({ key, label, value }) => {
+	    html += `<div class="stat-item-container">`;
+	    
 	    if (value !== undefined) {
-	      html += `<div class="stat-item"><span>${label}:</span><span>${value}</span></div>`;
+	      html += `<div class="stat-item">
+	                 <span>${label}:</span>
+	                 <span>${value}</span>
+	               </div>`;
 	    } else if (["hp", "attack", "shield", "penetrate", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
 	      const formatted = getFormatted(key);
-	      html += `<div class="stat-item"><span>${label}:</span><span>${formatted.total} (${formatted.detail})</span></div>`;
+	      html += `<div class="stat-item">
+	                 <span>${label}:</span>
+	                 <span>${formatted.total} (${formatted.detail})</span>
+	               </div>`;
 	    }
+	    
+	    if (tooltips[key]) {
+	      html += `<div class="stat-detail ${detailsExpanded ? 'expanded' : ''}">
+	                 <div class="stat-detail-content">${tooltips[key]}</div>
+	               </div>`;
+	    }
+	    
+	    html += `</div>`;
 	  });
 	  
-	  html += '</div></div>';
+	  html += `
+	      </div>
+	    </div>`;
 	  return html;
 	}
 
@@ -782,6 +1358,10 @@ function percent(val) {
 	
 	  // 取得怪物護盾穿透值，如果沒有則預設為0
 	  const monsterPenetrate = mon.stats.penetrate || 0;
+	  
+	  // 新增：生成屬性說明
+	  const elements = Array.isArray(mon.element) ? mon.element : [mon.element];
+	  const elementDescription = generateElementDescription(elements);
 	
 	  const html = `
 	    <div class="${containerClass}">
@@ -790,41 +1370,62 @@ function percent(val) {
 	      <img src="${mon.image_url}" class="monster-image" width="200">
 	      <div class="monster-description">${description}</div>
 	      <div class="monster-stats">
-	        <div class="monster-stat-item">
-	          <span>等級：</span>
-	          <span>${mon.level}</span>
+	        <div class="monster-stat-container">
+	          <div class="monster-stat-item">
+	            <span>等級：</span>
+	            <span>${mon.level}</span>
+	          </div>
 	        </div>
-	        <div class="monster-stat-item">
-	          <span>屬性：</span>
-	          <span>${elementText}</span>
+	        <div class="monster-stat-container">
+	          <div class="monster-stat-item">
+	            <span>屬性：</span>
+	            <span>${elementText}</span>
+	          </div>
+	          <div class="monster-element-detail ${detailsExpanded ? 'expanded' : ''}">
+	            <div class="monster-element-detail-content">${elementDescription}</div>
+	          </div>
 	        </div>
-	        <div class="monster-stat-item">
-	          <span>生命值：</span>
-	          <span>${mon.stats.hp}</span>
+	        <div class="monster-stat-container">
+	          <div class="monster-stat-item">
+	            <span>生命值：</span>
+	            <span>${mon.stats.hp}</span>
+	          </div>
 	        </div>
-	        <div class="monster-stat-item">
-	          <span>攻擊力：</span>
-	          <span>${mon.stats.attack}</span>
+	        <div class="monster-stat-container">
+	          <div class="monster-stat-item">
+	            <span>攻擊力：</span>
+	            <span>${mon.stats.attack}</span>
+	          </div>
 	        </div>
-	        <div class="monster-stat-item">
-	          <span>護盾值：</span>
-	          <span>${mon.stats.shield}</span>
+	        <div class="monster-stat-container">
+	          <div class="monster-stat-item">
+	            <span>護盾值：</span>
+	            <span>${mon.stats.shield}</span>
+	          </div>
 	        </div>
-	        <div class="monster-stat-item">
-	          <span>命中率：</span>
-	          <span>${Math.round(mon.stats.accuracy * 100)}%</span>
+	        <div class="monster-stat-container">
+	          <div class="monster-stat-item">
+	            <span>命中率：</span>
+	            <span>${Math.round(mon.stats.accuracy * 100)}%</span>
+	          </div>
 	        </div>
-	        <div class="monster-stat-item">
-	          <span>迴避率：</span>
-	          <span>${Math.round(mon.stats.evade * 100)}%</span>
+	        <div class="monster-stat-container">
+	          <div class="monster-stat-item">
+	            <span>迴避率：</span>
+	            <span>${Math.round(mon.stats.evade * 100)}%</span>
+	          </div>
 	        </div>
-	        <div class="monster-stat-item">
-	          <span>攻擊速度：</span>
-	          <span>${mon.stats.atk_speed}</span>
+	        <div class="monster-stat-container">
+	          <div class="monster-stat-item">
+	            <span>攻擊速度：</span>
+	            <span>${mon.stats.atk_speed}</span>
+	          </div>
 	        </div>
-	 	<div class="monster-stat-item">
-	          <span>護盾穿透：</span>
-	          <span>${monsterPenetrate}</span>
+	 	<div class="monster-stat-container">
+	          <div class="monster-stat-item">
+	            <span>護盾穿透：</span>
+	            <span>${monsterPenetrate}</span>
+	          </div>
 	        </div>
 	      </div>
 	    </div>
@@ -909,6 +1510,25 @@ function percent(val) {
 	    
 	    // 設定初始按鈕狀態
 	    setInitialButtonState();
+	    
+		// 新增：確保正確應用展開狀態
+		setTimeout(() => {
+		  const playerContainers = document.querySelectorAll('.stat-item-container');
+		  const playerDetails = document.querySelectorAll('.stat-detail');
+		  
+		  playerDetails.forEach((detail, index) => {
+		    if (detail.classList.contains('expanded') && playerContainers[index]) {
+		      playerContainers[index].classList.add('has-expanded');
+		    }
+		  });
+		  
+		  const monsterDetail = document.querySelector('.monster-element-detail');
+		  const monsterContainer = monsterDetail?.closest('.monster-stat-container');
+		  
+		  if (monsterDetail?.classList.contains('expanded') && monsterContainer) {
+		    monsterContainer.classList.add('has-expanded');
+		  }
+		}, 50);
 	    
 	    hidePageLoading();
 	    
@@ -1100,6 +1720,20 @@ function percent(val) {
             userData = updatedUser;
             console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser);
             userDiv.innerHTML = formatStats(updatedUser);
+            
+			// 新增：重新應用展開狀態
+			setTimeout(() => {
+			  if (detailsExpanded) {
+			    const playerContainers = document.querySelectorAll('.stat-item-container');
+			    const playerDetails = document.querySelectorAll('.stat-detail');
+			    
+			    playerDetails.forEach((detail, index) => {
+			      if (detail.classList.contains('expanded') && playerContainers[index]) {
+			        playerContainers[index].classList.add('has-expanded');
+			      }
+			    });
+			  }
+			}, 50);
             
             const serverCooldown = updatedUser.battle_cooldown_remaining || 0;
             console.log("伺服器返回的冷卻時間:", serverCooldown);
@@ -1438,7 +2072,7 @@ async function preloadDungeonData() {
   }
 }
 
-    onAuthStateChanged(auth, async (user) => {
+     onAuthStateChanged(auth, async (user) => {
 	  if (user) {
 	    try {
 	      PerformanceMonitor.startTiming('dungeonPageInit');
