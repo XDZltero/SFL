@@ -3205,7 +3205,7 @@ def admin_user_info():
         return jsonify({"error": f"查詢使用者資料失敗: {str(e)}"}), 500
 
 def check_and_reset_expired_purchases(user_id):
-    """檢查並重置用戶過期的購買記錄（提取自 process_shop_purchase）"""
+    """檢查並重置用戶過期的購買記錄（修復版）"""
     try:
         # 取得用戶購買記錄
         purchase_ref = db.collection("shop_purchases").document(user_id)
@@ -3224,53 +3224,68 @@ def check_and_reset_expired_purchases(user_id):
         # 📅 取得當前時間週期
         current_periods = get_current_reset_periods()
         
+        # 🚀 載入商店商品配置以檢查 reset_type
+        shop_items = get_shop_items()
+        shop_items_dict = {item["id"]: item for item in shop_items}
+        
         reset_count = 0
         reset_items = []
         
-        # 🔄 檢查所有購買記錄是否需要重置
+        # 🔄 只檢查有購買記錄的商品
         for check_item_id, item_purchases in purchases.items():
+            # 🚀 關鍵修復：取得商品的重置類型
+            shop_item = shop_items_dict.get(check_item_id)
+            if not shop_item:
+                print(f"⚠️ 找不到商品配置: {check_item_id}")
+                continue
+            
+            item_reset_type = shop_item.get("reset_type", "none")
             reset_info = []
             
-            # 檢查每日重置
-            current_daily = current_periods.get('daily')
-            last_daily = item_purchases.get('last_daily_period', '')
-            if current_daily != last_daily:
-                print(f"🌅 手動重置每日計數: {check_item_id} ({last_daily} → {current_daily})")
-                item_purchases['daily_purchased'] = 0
-                item_purchases['last_daily_period'] = current_daily
-                reset_info.append("每日")
-                reset_count += 1
+            # 🚀 關鍵修復：只對對應的重置類型進行重置
+            if item_reset_type == "daily":
+                current_daily = current_periods.get('daily')
+                last_daily = item_purchases.get('last_daily_period', '')
+                if current_daily != last_daily:
+                    print(f"🌅 重置每日商品: {check_item_id} ({last_daily} → {current_daily})")
+                    item_purchases['daily_purchased'] = 0
+                    item_purchases['last_daily_period'] = current_daily
+                    reset_info.append("每日")
+                    reset_count += 1
             
-            # 檢查每週重置
-            current_weekly = current_periods.get('weekly')
-            last_weekly = item_purchases.get('last_weekly_period', '')
-            if current_weekly != last_weekly:
-                print(f"📅 手動重置每週計數: {check_item_id} ({last_weekly} → {current_weekly})")
-                item_purchases['weekly_purchased'] = 0
-                item_purchases['last_weekly_period'] = current_weekly
-                reset_info.append("每週")
-                reset_count += 1
+            elif item_reset_type == "weekly":
+                current_weekly = current_periods.get('weekly')
+                last_weekly = item_purchases.get('last_weekly_period', '')
+                if current_weekly != last_weekly:
+                    print(f"📅 重置每週商品: {check_item_id} ({last_weekly} → {current_weekly})")
+                    item_purchases['weekly_purchased'] = 0
+                    item_purchases['last_weekly_period'] = current_weekly
+                    reset_info.append("每週")
+                    reset_count += 1
             
-            # 檢查每月重置
-            current_monthly = current_periods.get('monthly')
-            last_monthly = item_purchases.get('last_monthly_period', '')
-            if current_monthly != last_monthly:
-                print(f"🗓️ 手動重置每月計數: {check_item_id} ({last_monthly} → {current_monthly})")
-                item_purchases['monthly_purchased'] = 0
-                item_purchases['last_monthly_period'] = current_monthly
-                reset_info.append("每月")
-                reset_count += 1
+            elif item_reset_type == "monthly":
+                current_monthly = current_periods.get('monthly')
+                last_monthly = item_purchases.get('last_monthly_period', '')
+                if current_monthly != last_monthly:
+                    print(f"🗓️ 重置每月商品: {check_item_id} ({last_monthly} → {current_monthly})")
+                    item_purchases['monthly_purchased'] = 0
+                    item_purchases['last_monthly_period'] = current_monthly
+                    reset_info.append("每月")
+                    reset_count += 1
             
+            elif item_reset_type == "none":
+                # 🚀 關鍵修復：一次性商品永遠不重置
+                print(f"🔒 跳過一次性商品: {check_item_id}")
+                continue
+            
+            # 記錄重置的商品
             if reset_info:
-                # 取得商品中文名稱
-                shop_items = get_shop_items()
-                shop_item = next((item for item in shop_items if item["id"] == check_item_id), None)
-                item_name = shop_item.get("name", check_item_id) if shop_item else check_item_id
-                
+                item_name = shop_item.get("name", check_item_id)
                 reset_items.append({
                     "item_id": check_item_id,
                     "item_name": item_name,
-                    "reset_types": reset_info
+                    "reset_types": reset_info,
+                    "reset_type": item_reset_type
                 })
         
         # 如果有重置，更新到資料庫
@@ -3279,7 +3294,9 @@ def check_and_reset_expired_purchases(user_id):
             user_purchases["last_manual_refresh"] = time.time()
             purchase_ref.set(user_purchases)
             
-            print(f"🔄 手動刷新：使用者 {user_id} 重置了 {reset_count} 個商品的購買記錄")
+            print(f"🔄 修復版重置：使用者 {user_id} 重置了 {reset_count} 個商品")
+            for item in reset_items:
+                print(f"  - {item['item_name']} ({item['reset_type']}): {', '.join(item['reset_types'])}")
         
         return {
             "reset_count": reset_count,
