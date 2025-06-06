@@ -35,7 +35,8 @@
       padding: 15px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
       z-index: 1000;
-      display: none;
+      /* 🔧 修復：預設完全隱藏 */
+      display: none !important;
       flex-direction: column;
       gap: 8px;
       margin-top: 10px;
@@ -46,9 +47,10 @@
     }
 
     .dungeon-dropdown.show {
+      /* 🔧 修復：強制顯示，覆蓋預設隱藏 */
+      display: flex !important;
       visibility: visible !important;
       opacity: 1 !important;
-      display: flex !important;
     }
 
     .dungeon-btn {
@@ -137,13 +139,12 @@
     </div>
     
     <!-- 🆕 副本分類下拉選單 -->
-    <div class="dungeon-dropdown" id="dungeonDropdown" style="display: none;">
+    <div class="dungeon-dropdown" id="dungeonDropdown">
       <button class="dungeon-btn" data-belong="1" onclick="filterItems('dungeon_1')">腐爛沼澤地</button>
       <button class="dungeon-btn" data-belong="2" onclick="filterItems('dungeon_2')">天空之城</button>
       <button class="dungeon-btn" data-belong="3" onclick="filterItems('dungeon_3')">鋼鐵都市</button>
       <button class="dungeon-btn" data-belong="4" onclick="filterItems('dungeon_4')">紫魔之城</button>
       <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_5')">夢魘幻境</button>
-      <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_6')">聖天教會</button>
       <button class="dungeon-btn" data-belong="7" onclick="filterItems('dungeon_7')">第一要塞</button>
       <button class="dungeon-btn" data-belong="8" onclick="filterItems('dungeon_8')">第二要塞</button>
     </div>
@@ -463,30 +464,33 @@
       equipEl.innerHTML = html;
     }
 
-    // 🆕 切換副本分類下拉選單（改進版）
+    // 🆕 切換副本分類下拉選單（完全修復版）
     function toggleDungeonDropdown() {
       const dropdown = document.getElementById("dungeonDropdown");
       const dropdownBtn = document.querySelector('[data-category="dungeon"]');
       
-      console.log('🔧 副本分類按鈕被點擊'); // 調試用
-      console.log('下拉選單元素:', dropdown); // 調試用
-      console.log('當前狀態:', isDungeonDropdownOpen); // 調試用
+      console.log('🔧 副本分類按鈕被點擊');
+      console.log('下拉選單元素:', dropdown);
+      console.log('當前狀態:', isDungeonDropdownOpen);
       
       if (!dropdown) {
         console.error('❌ 找不到 dungeonDropdown 元素');
         return;
       }
       
+      // 🔧 直接切換顯示狀態
       isDungeonDropdownOpen = !isDungeonDropdownOpen;
       
       if (isDungeonDropdownOpen) {
         dropdown.classList.add("show");
-        dropdownBtn.classList.add("expanded");
+        dropdownBtn?.classList.add("expanded");
         console.log('✅ 下拉選單已展開');
+        console.log('dropdown classes:', dropdown.classList.toString());
       } else {
         dropdown.classList.remove("show");
-        dropdownBtn.classList.remove("expanded");
+        dropdownBtn?.classList.remove("expanded");
         console.log('✅ 下拉選單已收起');
+        console.log('dropdown classes:', dropdown.classList.toString());
       }
     }
 
@@ -519,9 +523,10 @@
         if (isDungeonDropdownOpen) {
           const dropdown = document.getElementById("dungeonDropdown");
           const dropdownBtn = document.querySelector('[data-category="dungeon"]');
-          dropdown.classList.remove("show");
-          dropdownBtn.classList.remove("expanded");
+          dropdown?.classList.remove("show");
+          dropdownBtn?.classList.remove("expanded");
           isDungeonDropdownOpen = false;
+          console.log('🔄 切換到其他分類，下拉選單已關閉');
         }
         
         // 清除副本按鈕狀態
