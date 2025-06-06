@@ -931,8 +931,9 @@ body.dialog-open .dialog-box::before {
     }
 
     .dungeon-dropdown.show {
-      display: flex;
-      opacity: 1;
+      display: flex !important;
+      opacity: 1 !important;
+      z-index: 9999 !important;
     }
 
     .dungeon-btn {
