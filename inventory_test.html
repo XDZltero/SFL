@@ -5,6 +5,125 @@
   <title>背包與裝備管理</title>
   <link rel="icon" href="favicon.ico" />
   <link href="css/inventory.css" rel="stylesheet"/>
+  <style>
+    /* 下拉選單增強樣式 */
+    .dungeon-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(25, 25, 55, 0.95) 100%);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      min-width: 200px;
+      max-width: 300px;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      
+      /* 添加滾動支持 */
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    /* 向上展開的樣式 */
+    .dungeon-dropdown.dropdown-up {
+      top: auto;
+      bottom: 100%;
+      margin-top: 0;
+      margin-bottom: 10px;
+      transform: translateX(-50%);
+    }
+
+    .dungeon-dropdown.show {
+      display: flex !important;
+      opacity: 1 !important;
+      z-index: 9999 !important;
+    }
+
+    /* 自定義滾動條樣式 */
+    .dungeon-dropdown::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .dungeon-dropdown::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 3px;
+    }
+
+    .dungeon-dropdown::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 255, 0.5);
+      border-radius: 3px;
+    }
+
+    .dungeon-dropdown::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 255, 255, 0.7);
+    }
+
+    /* Firefox 滾動條樣式 */
+    .dungeon-dropdown {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 255, 255, 0.5) rgba(0, 0, 0, 0.3);
+    }
+
+    .dungeon-btn {
+      background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.05) 100%);
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.85em;
+      text-align: left;
+      flex-shrink: 0; /* 防止按鈕縮小 */
+    }
+
+    .dungeon-btn:hover {
+      background: linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(255, 119, 198, 0.1) 100%);
+      border-color: rgba(0, 255, 255, 0.4);
+      transform: translateX(3px);
+    }
+
+    .dungeon-btn.active {
+      background: linear-gradient(135deg, #00ffff 0%, #00bfff 100%);
+      color: #000;
+      border-color: #00ffff;
+      font-weight: 700;
+    }
+
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+      .dungeon-dropdown {
+        left: 10px;
+        right: 10px;
+        transform: none;
+        width: auto;
+        min-width: auto;
+        max-width: none;
+        max-height: 250px;
+      }
+      
+      .dungeon-dropdown.dropdown-up {
+        transform: none;
+      }
+    }
+
+    /* 提高下拉選單的層級 */
+    .item-category-buttons {
+      position: relative;
+      z-index: 1000;
+    }
+  </style>
 </head>
 <body>
   <div id="initialOverlay">載入中...</div>
@@ -61,15 +180,15 @@
       <button class="category-btn dropdown-btn" id="dungeonDropdownBtn" data-category="dungeon" onclick="toggleDungeonDropdown()">
         副本分類 <span id="dropdown-arrow">▼</span>
       </button>
-      <div class="dungeon-dropdown" id="dungeonDropdown" style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); z-index:9999;">
+      <div class="dungeon-dropdown" id="dungeonDropdown">
         <button class="dungeon-btn" data-belong="1" onclick="filterItems('dungeon_1'); hideDungeonDropdown();">腐爛沼澤地</button>
         <button class="dungeon-btn" data-belong="2" onclick="filterItems('dungeon_2'); hideDungeonDropdown();">天空之城</button>
         <button class="dungeon-btn" data-belong="3" onclick="filterItems('dungeon_3'); hideDungeonDropdown();">鋼鐵都市</button>
         <button class="dungeon-btn" data-belong="4" onclick="filterItems('dungeon_4'); hideDungeonDropdown();">紫魔之城</button>
         <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_5'); hideDungeonDropdown();">夢魘幻境</button>
         <button class="dungeon-btn" data-belong="6" onclick="filterItems('dungeon_6'); hideDungeonDropdown();">聖天教會</button>
-        <button class="dungeon-btn" data-belong="7" onclick="filterItems('dungeon_7'); hideDungeonDropdown();">第一要塞</button>
-        <button class="dungeon-btn" data-belong="8" onclick="filterItems('dungeon_8'); hideDungeonDropdown();">第二要塞</button>
+        <button class="dungeon-btn" data-belong="7" onclick="filterItems('dungeon_7'); hideDungeonDropdown();">第一要塞「方尖塔」</button>
+        <button class="dungeon-btn" data-belong="8" onclick="filterItems('dungeon_8'); hideDungeonDropdown();">第二要塞「飛船比爾加賽」</button>
       </div>
     </div>
 
@@ -122,12 +241,18 @@
       
       if (dropdown && dropdownBtn) {
         dropdown.classList.remove("show");
+        dropdown.classList.remove("dropdown-up");
+        dropdown.style.display = "none";
+        dropdown.style.top = '';
+        dropdown.style.bottom = '';
+        dropdown.style.marginTop = '';
+        dropdown.style.marginBottom = '';
         dropdownBtn.classList.remove("expanded");
         isDungeonDropdownOpen = false;
       }
     }
 
-    // 修正：改善 toggleDungeonDropdown 函數
+    // 修正：改善 toggleDungeonDropdown 函數，支持智能定位
     function toggleDungeonDropdown() {
       const dropdown = document.getElementById("dungeonDropdown");
       const dropdownBtn = document.getElementById("dungeonDropdownBtn");
@@ -140,13 +265,39 @@
       isDungeonDropdownOpen = !isDungeonDropdownOpen;
       
       if (isDungeonDropdownOpen) {
+        // 重置位置樣式
+        dropdown.style.top = '';
+        dropdown.style.bottom = '';
+        dropdown.classList.remove('dropdown-up');
+        
         dropdown.classList.add("show");
         dropdown.style.display = "flex";
         dropdownBtn.classList.add("expanded");
+        
+        // 計算是否需要向上展開
+        setTimeout(() => {
+          const btnRect = dropdownBtn.getBoundingClientRect();
+          const dropdownRect = dropdown.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          
+          // 檢查下拉選單是否會超出視窗底部
+          const wouldOverflow = btnRect.bottom + dropdownRect.height > viewportHeight - 20;
+          
+          if (wouldOverflow) {
+            // 向上展開
+            dropdown.classList.add('dropdown-up');
+            dropdown.style.top = 'auto';
+            dropdown.style.bottom = '100%';
+            dropdown.style.marginTop = '0';
+            dropdown.style.marginBottom = '10px';
+          }
+        }, 10);
+        
       } else {
         dropdown.classList.remove("show");
         dropdown.style.display = "none";
         dropdownBtn.classList.remove("expanded");
+        dropdown.classList.remove('dropdown-up');
       }
     }
 
