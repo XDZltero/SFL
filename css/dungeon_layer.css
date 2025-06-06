@@ -23,16 +23,66 @@
   50% { transform: translateX(100%); }
 }
 
-.player-name {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.4em;
-  font-weight: 700;
-  color: #00ffff;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
-  margin-bottom: 15px;
-  text-align: center;
+/* 玩家名稱和按鈕的容器 - 修正版：保持名稱絕對居中 */
+.player-name-container {
   position: relative;
+  margin: 10px 0;
+  padding: 0;
+  min-height: 40px; /* 確保容器有足夠高度 */
+  display: flex;
+  align-items: center;
+}
+
+.player-name {
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+  margin: 0;
+  /* 保持絕對居中 - 名稱永遠在卡面中間 */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
   z-index: 1;
+  /* 在小螢幕上允許文字縮放 */
+  max-width: 70%; /* 預留按鈕空間 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 詳細說明按鈕 - 絕對定位靠右 */
+.detail-toggle-btn {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.7em;
+  color: #00ffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+  /* 絕對定位靠右，不影響名稱位置 */
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.detail-toggle-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  transform: translateY(-50%) scale(1.02);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+.detail-toggle-btn.active {
+  background: rgba(0, 255, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  border-color: rgba(0, 255, 255, 0.6);
 }
 
 .stats-container {
@@ -372,44 +422,6 @@ body.boss-mode #logArea {
   font-weight: bold;
 }
 
-/* 獎勵訊息樣式已在 dungeon_layer_winning.css 中定義 */
-
-/* 響應式設計 */
-@media (max-width: 768px) {
-  .player-info-container,
-  .monster-info-container {
-    padding: 15px;
-  }
-  
-  .player-name,
-  .monster-name {
-    font-size: 1.2em;
-  }
-  
-  .stat-item,
-  .monster-stat-item {
-    font-size: 0.8em;
-    padding: 6px 8px;
-  }
-  
-  .monster-image {
-    max-width: 150px;
-  }
-  
-  .boss-title-decoration::before,
-  .boss-title-decoration::after {
-    display: none;
-  }
-  
-  #logArea {
-    max-height: 300px;
-  }
-  
-  #logArea::-webkit-scrollbar {
-    width: 8px;
-  }
-}
-
 /* 冷卻按鈕樣式 */
 .cooldown-button {
   background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
@@ -504,69 +516,10 @@ body.boss-mode .monster-hp {
   to { text-shadow: 0 0 12px rgba(255, 107, 107, 0.9), 0 0 16px rgba(255, 107, 107, 0.4); }
 }
 
-/* 詳細說明 */
-
+/* 詳細說明系統 */
 .section::before {
   animation: none !important;
   background: none !important;
-}
-
-/* 玩家訊息容器 */
-.player-info-container {
-  margin: 0;
-  padding: 0;
-}
-
-/* 玩家名稱和按鈕的容器 */
-.player-name-container {
-  display: flex;
-  justify-content: flex-end;  /* 按鈕靠右 */
-  align-items: center;
-  margin: 10px 0;
-  padding-right: 8px;
-  position: relative;  /* ⭐ 讓 player-name 可以絕對定位 */
-}
-
-.player-name {
-  color: #00ffff;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.3em;
-  margin: 0;
-  position: absolute;   /* ⭐ 絕對定位 */
-  left: 50%;            /* ⭐ 左邊 50% */
-  transform: translateX(-50%); /* ⭐ 水平置中 */
-  display: flex;
-  align-items: center;
-}
-
-/* 詳細說明按鈕 */
-.detail-toggle-btn {
-  background: rgba(0, 255, 255, 0.1);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 0.7em;
-  color: #00ffff;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
-  margin-right: 5px;
-}
-
-.detail-toggle-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-  transform: scale(1.02);
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-}
-
-.detail-toggle-btn.active {
-  background: rgba(0, 255, 255, 0.25);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-  border-color: rgba(0, 255, 255, 0.6);
 }
 
 /* 玩家屬性項目容器 */
@@ -677,38 +630,6 @@ body.boss-mode .monster-hp {
 .stat-detail.expanded {
   border-radius: 0 0 6px 6px;
   border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-/* 怪物訊息容器 */
-.monster-info-container {
-  margin: 0;
-  padding: 0;
-}
-
-.monster-name {
-  color: #ff6b6b;
-  text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
-  text-align: center;
-  margin: 10px 0;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.3em;
-}
-
-.monster-image {
-  display: block;
-  margin: 10px auto;
-  border-radius: 8px;
-  border: 2px solid rgba(255, 107, 107, 0.3);
-}
-
-.monster-description {
-  color: #ffd1d1;
-  text-align: center;
-  margin: 10px 0;
-  padding: 10px;
-  background: rgba(255, 107, 107, 0.05);
-  border-radius: 6px;
-  line-height: 1.4;
 }
 
 /* 怪物屬性項目容器 */
@@ -853,20 +774,6 @@ body.boss-mode .monster-element-detail.expanded {
   border-bottom-color: rgba(255, 69, 0, 0.3);
 }
 
-/* BOSS裝飾標題 */
-.boss-title-decoration {
-  text-align: center;
-  font-size: 1.2em;
-  font-weight: 900;
-  color: #ff4500;
-  text-shadow: 0 0 15px rgba(255, 69, 0, 0.8);
-  margin-bottom: 8px;
-  padding: 5px;
-  background: linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 69, 0, 0.05));
-  border-radius: 6px;
-  border: 1px solid rgba(255, 69, 0, 0.3);
-}
-
 /* 統一容器樣式 */
 .stats-container,
 .monster-stats {
@@ -887,20 +794,53 @@ body.boss-mode .monster-element-detail.expanded {
   padding: 0;
 }
 
-/* 響應式設計 */
+/* 響應式設計 - 確保名稱始終居中 */
 @media (max-width: 768px) {
-  .detail-toggle-btn {
-    padding: 5px 8px;
-    font-size: 0.6em;
+  .player-info-container,
+  .monster-info-container {
+    padding: 15px;
   }
   
   .player-name-container {
-    gap: 10px;
-    margin: 8px 0;
+    min-height: 35px;
   }
   
   .player-name {
     font-size: 1.1em;
+    max-width: 65%; /* 在平板上稍微增加名稱空間 */
+  }
+  
+  .detail-toggle-btn {
+    padding: 5px 8px;
+    font-size: 0.6em;
+    right: 5px;
+  }
+  
+  .monster-name {
+    font-size: 1.2em;
+  }
+  
+  .stat-item,
+  .monster-stat-item {
+    font-size: 0.8em;
+    padding: 6px 8px;
+  }
+  
+  .monster-image {
+    max-width: 150px;
+  }
+  
+  .boss-title-decoration::before,
+  .boss-title-decoration::after {
+    display: none;
+  }
+  
+  #logArea {
+    max-height: 300px;
+  }
+  
+  #logArea::-webkit-scrollbar {
+    width: 8px;
   }
   
   .stat-detail-content,
@@ -916,11 +856,35 @@ body.boss-mode .monster-element-detail.expanded {
   .monster-element-detail.expanded {
     max-height: 250px;
   }
+}
+
+/* 小手機螢幕 - 名稱保持絕對居中 */
+@media (max-width: 480px) {
+  .player-name-container {
+    min-height: 50px; /* 增加容器高度避免重疊 */
+    flex-direction: column;
+    justify-content: center;
+  }
   
-  .stat-item,
-  .monster-stat-item {
-    padding: 6px 8px;
-    font-size: 0.8em;
+  .player-name {
+    position: relative; /* 在小螢幕改為相對定位 */
+    left: auto;
+    top: auto;
+    transform: none;
+    text-align: center;
+    font-size: 1em;
+    max-width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .detail-toggle-btn {
+    position: relative; /* 在小螢幕改為相對定位 */
+    right: auto;
+    top: auto;
+    transform: none;
+    align-self: center;
+    padding: 6px 10px;
+    font-size: 0.65em;
   }
   
   .monster-name {
@@ -930,21 +894,13 @@ body.boss-mode .monster-element-detail.expanded {
 }
 
 /* 超小螢幕適配 */
-@media (max-width: 480px) {
-  .player-name-container {
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+@media (max-width: 360px) {
+  .player-name {
+    font-size: 0.9em;
   }
   
   .detail-toggle-btn {
-    width: auto;
-    padding: 6px 10px;
-    font-size: 0.65em;
-  }
-  
-  .player-name {
-    text-align: center;
-    font-size: 1em;
+    font-size: 0.6em;
+    padding: 5px 8px;
   }
 }
