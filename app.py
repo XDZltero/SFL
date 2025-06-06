@@ -3812,7 +3812,7 @@ def shop_purchase():
         print(f"購買錯誤: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@@app.route("/shop_auto_reset_check", methods=["POST"])
+@app.route("/shop_auto_reset_check", methods=["POST"])
 @require_auth
 def shop_auto_reset_check():
     """進入商店時自動檢查並重置過期的購買記錄"""
