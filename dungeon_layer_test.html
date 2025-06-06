@@ -13,114 +13,436 @@
   background: none !important;
 }
 
-/* 新增：下拉功能相關樣式 */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-  margin-bottom: 10px;
-}
-
-.card-header h3 {
-  margin: 0;
-  color: #00ffff;
-  font-size: 1.2em;
-}
-
-.toggle-btn {
-  background: none;
-  border: none;
-  color: #00ffff;
-  font-size: 1.2em;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-  padding: 5px;
-  border-radius: 50%;
-  background: rgba(0, 255, 255, 0.1);
-}
-
-.toggle-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-}
-
-.toggle-btn.collapsed {
-  transform: rotate(-90deg);
-}
-
-.collapsible-content {
-  overflow: hidden;
-  transition: all 0.3s ease;
-  opacity: 1;
-  max-height: 1000px;
-}
-
-.collapsible-content.collapsed {
-  max-height: 0;
-  opacity: 0;
+/* 玩家信息容器 */
+.player-info-container {
   margin: 0;
   padding: 0;
 }
 
-/* BOSS模式下的樣式調整 */
-body.boss-mode .card-header {
-  border-bottom-color: rgba(255, 50, 50, 0.3);
+/* 玩家名稱和按鈕的容器 */
+.player-name-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+  gap: 15px;
 }
 
-body.boss-mode .card-header h3 {
-  color: #ff4500;
-}
-
-body.boss-mode .toggle-btn {
-  color: #ff4500;
-  background: rgba(255, 69, 0, 0.1);
-}
-
-body.boss-mode .toggle-btn:hover {
-  background: rgba(255, 69, 0, 0.2);
-}
-
-/* 詳細內容按鈕樣式 */
-.detail-controls {
-  text-align: center;
-  margin: 20px 0;
-}
-
-.detail-btn {
-  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 25px;
-  color: white;
+.player-name {
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
   font-family: 'Orbitron', sans-serif;
-  font-weight: 600;
-  font-size: 1em;
+  font-size: 1.3em;
+  margin: 0;
+  flex: 1;
+}
+
+/* 詳細說明按鈕 */
+.detail-toggle-btn {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.7em;
+  color: #00ffff;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
-  margin: 0 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.detail-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(78, 205, 196, 0.6);
+.detail-toggle-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  transform: scale(1.02);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
 }
 
-.detail-btn.active {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+.detail-toggle-btn.active {
+  background: rgba(0, 255, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  border-color: rgba(0, 255, 255, 0.6);
 }
 
-/* BOSS模式下的詳細按鈕 */
-body.boss-mode .detail-btn {
-  background: linear-gradient(135deg, #ff4500 0%, #dc143c 100%);
-  box-shadow: 0 4px 15px rgba(255, 69, 0, 0.4);
+/* 玩家屬性項目容器 */
+.stat-item-container {
+  position: relative;
+  margin: 0;
+  padding: 0;
 }
 
-body.boss-mode .detail-btn:hover {
-  box-shadow: 0 6px 20px rgba(255, 69, 0, 0.6);
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-bottom: none;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.stat-item:hover {
+  background: rgba(0, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.3);
+  transform: translateX(2px);
+  z-index: 2;
+}
+
+.stat-item span:first-child {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+  flex: 1;
+}
+
+.stat-item span:last-child {
+  color: #00ffff;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* 最後一個項目添加底部邊框 */
+.stat-item-container:last-child .stat-item {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+/* 第一個項目的圓角 */
+.stat-item-container:first-child .stat-item {
+  border-radius: 6px 6px 0 0;
+}
+
+/* 最後一個項目的圓角 */
+.stat-item-container:last-child .stat-item {
+  border-radius: 0 0 6px 6px;
+}
+
+/* 只有一個項目時的完整圓角 */
+.stat-item-container:first-child:last-child .stat-item {
+  border-radius: 6px;
+}
+
+/* 詳細說明容器 */
+.stat-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.08), rgba(0, 255, 255, 0.02));
+  border-left: 1px solid rgba(0, 255, 255, 0.1);
+  border-right: 1px solid rgba(0, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+  margin: 0;
+  padding: 0;
+  border-top: none;
+}
+
+.stat-detail.expanded {
+  max-height: 200px;
+}
+
+.stat-detail-content {
+  padding: 10px 12px;
+  font-size: 0.75em;
+  color: #b8e6ff;
+  line-height: 1.5;
+  text-shadow: 0 0 3px rgba(184, 230, 255, 0.6);
+  margin: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+}
+
+.stat-detail.expanded .stat-detail-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 展開時圓角處理 */
+.stat-item-container.has-expanded .stat-item {
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.stat-detail.expanded {
+  border-radius: 0 0 6px 6px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+/* 怪物信息容器 */
+.monster-info-container {
+  margin: 0;
+  padding: 0;
+}
+
+.monster-name {
+  color: #ff6b6b;
+  text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+  text-align: center;
+  margin: 10px 0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+}
+
+.monster-image {
+  display: block;
+  margin: 10px auto;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 107, 107, 0.3);
+}
+
+.monster-description {
+  color: #ffd1d1;
+  text-align: center;
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(255, 107, 107, 0.05);
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+/* 怪物屬性項目容器 */
+.monster-stat-container {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.monster-stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  border-bottom: none;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  font-size: 0.85em;
+  transition: all 0.3s ease;
+  margin: 0;
+  cursor: pointer;
+}
+
+.monster-stat-item:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.4);
+  transform: translateX(2px);
+  z-index: 2;
+}
+
+.monster-stat-item span:first-child {
+  color: #ffd93d;
+  text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+}
+
+.monster-stat-item span:last-child {
+  color: #fff8b0;
+  text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+  font-weight: 700;
+}
+
+/* 最後一個怪物項目添加底部邊框 */
+.monster-stat-container:last-child .monster-stat-item {
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+/* 第一個怪物項目的圓角 */
+.monster-stat-container:first-child .monster-stat-item {
+  border-radius: 6px 6px 0 0;
+}
+
+/* 最後一個怪物項目的圓角 */
+.monster-stat-container:last-child .monster-stat-item {
+  border-radius: 0 0 6px 6px;
+}
+
+/* 只有一個怪物項目時的完整圓角 */
+.monster-stat-container:first-child:last-child .monster-stat-item {
+  border-radius: 6px;
+}
+
+/* 怪物屬性詳細說明 */
+.monster-element-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(255, 107, 107, 0.02));
+  border-left: 1px solid rgba(255, 107, 107, 0.2);
+  border-right: 1px solid rgba(255, 107, 107, 0.2);
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+  margin: 0;
+  padding: 0;
+  border-top: none;
+}
+
+.monster-element-detail.expanded {
+  max-height: 300px;
+}
+
+.monster-element-detail-content {
+  padding: 10px 12px;
+  font-size: 0.8em;
+  color: #ffd1d1;
+  line-height: 1.5;
+  text-shadow: 0 0 3px rgba(255, 209, 209, 0.3);
+  white-space: pre-line;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+}
+
+.monster-element-detail.expanded .monster-element-detail-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.monster-stat-container.has-expanded .monster-stat-item {
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.monster-element-detail.expanded {
+  border-radius: 0 0 6px 6px;
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+/* BOSS模式適配 */
+body.boss-mode .monster-stat-item {
+  background: rgba(255, 69, 0, 0.15);
+  border-color: rgba(255, 69, 0, 0.3);
+}
+
+body.boss-mode .monster-stat-item:hover {
+  background: rgba(255, 69, 0, 0.25);
+  border-color: rgba(255, 69, 0, 0.5);
+}
+
+body.boss-mode .monster-stat-item span:last-child {
+  color: #ffd700;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+}
+
+body.boss-mode .monster-element-detail {
+  background: linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 69, 0, 0.05));
+  border-left-color: rgba(255, 69, 0, 0.3);
+  border-right-color: rgba(255, 69, 0, 0.3);
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
+body.boss-mode .monster-element-detail-content {
+  color: #ffb84d;
+  text-shadow: 0 0 5px rgba(255, 184, 77, 0.4);
+}
+
+body.boss-mode .monster-stat-container.has-expanded .monster-stat-item {
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
+body.boss-mode .monster-element-detail.expanded {
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
+/* BOSS裝飾標題 */
+.boss-title-decoration {
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: 900;
+  color: #ff4500;
+  text-shadow: 0 0 15px rgba(255, 69, 0, 0.8);
+  margin-bottom: 8px;
+  padding: 5px;
+  background: linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 69, 0, 0.05));
+  border-radius: 6px;
+  border: 1px solid rgba(255, 69, 0, 0.3);
+}
+
+/* 統一容器樣式 */
+.stats-container,
+.monster-stats {
+  margin: 0;
+  padding: 0;
+}
+
+.stats-container > *,
+.monster-stats > * {
+  margin: 0;
+  padding: 0;
+}
+
+.stat-item-container,
+.monster-stat-container {
+  isolation: isolate;
+  margin: 0;
+  padding: 0;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .detail-toggle-btn {
+    padding: 5px 8px;
+    font-size: 0.6em;
+  }
+  
+  .player-name-container {
+    gap: 10px;
+    margin: 8px 0;
+  }
+  
+  .player-name {
+    font-size: 1.1em;
+  }
+  
+  .stat-detail-content,
+  .monster-element-detail-content {
+    font-size: 0.7em;
+    padding: 8px 10px;
+  }
+  
+  .stat-detail.expanded {
+    max-height: 150px;
+  }
+  
+  .monster-element-detail.expanded {
+    max-height: 250px;
+  }
+  
+  .stat-item,
+  .monster-stat-item {
+    padding: 6px 8px;
+    font-size: 0.8em;
+  }
+  
+  .monster-name {
+    font-size: 1.1em;
+    margin: 8px 0;
+  }
+}
+
+/* 超小螢幕適配 */
+@media (max-width: 480px) {
+  .player-name-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .detail-toggle-btn {
+    width: auto;
+    padding: 6px 10px;
+    font-size: 0.65em;
+  }
+  
+  .player-name {
+    text-align: center;
+    font-size: 1em;
+  }
 }
 </style>
 </head>
@@ -183,43 +505,10 @@ body.boss-mode .detail-btn:hover {
 </div>
 </div>
 
-<!-- 詳細內容控制按鈕 -->
-<div class="detail-controls">
-  <button class="detail-btn" id="toggleDetailBtn" onclick="toggleDetailView()">
-    📋 顯示詳細內容
-  </button>
-</div>
-
 <div id="content">
-<div class="section" id="userInfo">
-  <div class="card-header" onclick="toggleUserInfo()">
-    <h3>🧍 角色資訊</h3>
-    <button class="toggle-btn" id="userToggleBtn">▼</button>
-  </div>
-  <div class="collapsible-content" id="userInfoContent">
-    載入中...
-  </div>
-</div>
-
-<div class="section" id="monsterInfo">
-  <div class="card-header" onclick="toggleMonsterInfo()">
-    <h3>👹 怪物資訊</h3>
-    <button class="toggle-btn" id="monsterToggleBtn">▼</button>
-  </div>
-  <div class="collapsible-content" id="monsterInfoContent">
-    載入中...
-  </div>
-</div>
-
-<div class="section">
-  <div class="card-header" onclick="toggleBattleLog()">
-    <h3>📜 戰鬥紀錄</h3>
-    <button class="toggle-btn" id="logToggleBtn">▼</button>
-  </div>
-  <div class="collapsible-content" id="logContent">
-    <pre id="logArea"></pre>
-  </div>
-</div>
+<div class="section" id="userInfo">🧍 角色資訊載入中...</div>
+<div class="section" id="monsterInfo">👹 怪物資訊載入中...</div>
+<div class="section"><strong>📜 戰鬥紀錄</strong><pre id="logArea"></pre></div>
 </div>
 
 <div id="footer">
@@ -229,1527 +518,774 @@ body.boss-mode .detail-btn:hover {
 <button id="leaveBtn" onclick="leaveDungeon()" style="display:none">離開副本</button>
 </div>
 
-<script>
+<script type="module">
+import { auth, SecureAPI, PerformanceMonitor } from "./js/firebase-init.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const API_BASE = "https://sfl-9cb8.onrender.com";
+
+// 全局變量
+let currentDungeon = null;
+let currentLayer = null;
+let currentMonster = null;
+let userStatus = null;
+let dungeonData = null;
+let detailsExpanded = false;
+
+// 詳細說明 tooltips
+const tooltips = {
+  level: "角色的當前等級。等級差距會影響戰鬥傷害：最多7等差距時傷害變為1.5倍或0.5倍。",
+  exp: "角色的經驗值與升級進度。透過戰鬥獲得經驗值，累積足夠經驗值後會自動升級。不同怪物給予的經驗值不同，高等級怪物給予更多經驗值。",
+  hp: "玩家的總生命值，決定角色的生存能力。當生命值降至0時戰鬥失敗。",
+  attack: "決定對敵人造成傷害的基礎數值。攻擊力越高，傷害越大。會受到屬性克制、技能倍率、等級差距等因素影響。",
+  shield: "減少受到傷害的防護值。每點護盾值減少0.1%傷害，最多99%。可透過護盾穿透降低效果，提供穩定的傷害減免。",
+  luck: "影響迴避率、物品掉落率的幸運值。每點幸運提供額外0.2%迴避率加成(不直接顯示在迴避率上)，同時提升物品掉落及額外掉落機率。",
+  accuracy: "攻擊命中敵人的機率，會與敵人迴避率相抗(命中率-迴避率)。命中率不足會導致失去本次攻擊傷害。",
+  evade: "閃避敵人攻擊的機率，數值越高越容易完全無視敵人的攻擊，最高99%。迴避成功時完全無視該次攻擊傷害。",
+  atk_speed: "決定戰鬥中的出手順序與頻率。攻擊速度高的一方會優先行動，並可能在一回合內進行多次攻擊。速度差距越大，優勢方的行動次數越多。並且進而加快技能冷卻回合。",
+  other_bonus: "額外傷害加成，按百分比增加最終傷害。這是一個倍率加成，會在所有其他計算完成後套用。",
+  penetrate: "無視敵人護盾值的能力。穿透值會直接扣除敵人的有效護盾值，是突破高防禦敵人的關鍵屬性。每點穿透可無視1點敵人護盾。",
+  stat_points: "可用於提升基礎能力值的點數。每升級獲得5點。可分配到生命值(+5/點)、攻擊力(+1/點)或幸運值(+1/點)。",
+  skill_points: "可用於升級技能的點數。每升級獲得3點。"
+};
+
+// URL 參數解析
+function getURLParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    dungeon: params.get("dungeon"),
+    layer: params.get("layer")
+  };
+}
+
+// 工具函數
 function percent(val) {
   return (val * 100).toFixed(1) + '%';
 }
 
-// 新增：下拉功能控制
-let detailViewExpanded = true;
-
-function toggleDetailView() {
-  const btn = document.getElementById('toggleDetailBtn');
-  detailViewExpanded = !detailViewExpanded;
-  
-  if (detailViewExpanded) {
-    // 展開所有內容
-    expandAllSections();
-    btn.textContent = '📋 隱藏詳細內容';
-    btn.classList.remove('active');
-  } else {
-    // 收起所有內容
-    collapseAllSections();
-    btn.textContent = '📋 顯示詳細內容';
-    btn.classList.add('active');
-  }
+function showLoading(show) {
+  const loading = document.getElementById("loadingOverlay");
+  if (loading) loading.style.display = show ? "flex" : "none";
 }
 
-function expandAllSections() {
-  const contents = document.querySelectorAll('.collapsible-content');
-  const toggleBtns = document.querySelectorAll('.toggle-btn');
+function showBattleLoading(show, isBoss = false) {
+  const battleLoading = document.getElementById("battleLoadingOverlay");
+  if (!battleLoading) return;
   
-  contents.forEach(content => {
-    content.classList.remove('collapsed');
-  });
+  battleLoading.style.display = show ? "flex" : "none";
   
-  toggleBtns.forEach(btn => {
-    btn.classList.remove('collapsed');
-    btn.textContent = '▼';
-  });
-}
-
-function collapseAllSections() {
-  const contents = document.querySelectorAll('.collapsible-content');
-  const toggleBtns = document.querySelectorAll('.toggle-btn');
-  
-  contents.forEach(content => {
-    content.classList.add('collapsed');
-  });
-  
-  toggleBtns.forEach(btn => {
-    btn.classList.add('collapsed');
-    btn.textContent = '▶';
-  });
-}
-
-function toggleUserInfo() {
-  const content = document.getElementById('userInfoContent');
-  const btn = document.getElementById('userToggleBtn');
-  
-  if (content.classList.contains('collapsed')) {
-    content.classList.remove('collapsed');
-    btn.classList.remove('collapsed');
-    btn.textContent = '▼';
-  } else {
-    content.classList.add('collapsed');
-    btn.classList.add('collapsed');
-    btn.textContent = '▶';
-  }
-}
-
-function toggleMonsterInfo() {
-  const content = document.getElementById('monsterInfoContent');
-  const btn = document.getElementById('monsterToggleBtn');
-  
-  if (content.classList.contains('collapsed')) {
-    content.classList.remove('collapsed');
-    btn.classList.remove('collapsed');
-    btn.textContent = '▼';
-  } else {
-    content.classList.add('collapsed');
-    btn.classList.add('collapsed');
-    btn.textContent = '▶';
-  }
-}
-
-function toggleBattleLog() {
-  const content = document.getElementById('logContent');
-  const btn = document.getElementById('logToggleBtn');
-  
-  if (content.classList.contains('collapsed')) {
-    content.classList.remove('collapsed');
-    btn.classList.remove('collapsed');
-    btn.textContent = '▼';
-  } else {
-    content.classList.add('collapsed');
-    btn.classList.add('collapsed');
-    btn.textContent = '▶';
-  }
-}
-
-	  (function() {
-		function createPageParticles() {
-		  const particlesContainer = document.getElementById("pageParticles");
-		  if (!particlesContainer) return;
-		  particlesContainer.innerHTML = "";
-		  for (let i = 0; i < 30; i++) {
-			const particle = document.createElement("div");
-			particle.className = "particle";
-			particle.style.left = Math.random() * 100 + "%";
-			particle.style.animationDelay = Math.random() * 4 + "s";
-			particle.style.animationDuration = (Math.random() * 2 + 3) + "s";
-			particle.style.background = `rgba(${Math.random() > 0.5 ? '56, 239, 125' : '17, 153, 142'}, 0.7)`;
-			particlesContainer.appendChild(particle);
-		  }
-		}
-
-		function startPageLoadingProgress() {
-		  const progressBar = document.getElementById("pageProgressBar");
-		  const progressText = document.getElementById("pageProgressText");
-		  const loadingText = document.getElementById("pageLoadingText");
-		  if (!progressBar || !progressText || !loadingText) return;
-
-		  const messages = [
-			"正在載入副本資料...",
-			"獲取玩家狀態...",
-			"載入怪物資訊...",
-			"準備戰鬥環境...",
-			"載入完成！"
-		  ];
-
-		  let progress = 0;
-		  let messageIndex = 0;
-		  const progressInterval = setInterval(() => {
-			progress += Math.random() * 20 + 10;
-			if (progress > 100) progress = 100;
-
-			progressBar.style.width = progress + "%";
-			progressText.textContent = Math.round(progress) + "%";
-
-			if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 20) {
-			  messageIndex++;
-			  loadingText.textContent = messages[messageIndex];
-			}
-
-			if (progress >= 100) {
-			  clearInterval(progressInterval);
-			  loadingText.textContent = messages[messages.length - 1];
-			}
-		  }, 300);
-
-		  window.pageLoadingInterval = progressInterval;
-		}
-
-		createPageParticles();
-		startPageLoadingProgress();
-	  })();
-  </script>
-
-<script type="module">
-    import { auth, SecureAPI, PerformanceMonitor } from "./js/firebase-init.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-    let equipData = [];
-    let cooldownTimer = null;
-    let userData = null;
-	let levelExp = {};
-	let dungeonData = null;
-	let startCooldownTime = null;
-	let originalCooldownTime = 0;
-	let currentProgress = 0; 
-	let isLastLayer = false;
-	
-	class BoundedMonsterCache {
-	  constructor(maxSize = 50) {
-	    this.cache = new Map();
-	    this.maxSize = maxSize;
-	  }
-	  
-	  set(key, value) {
-	    if (this.cache.size >= this.maxSize) {
-	      const firstKey = this.cache.keys().next().value;
-	      this.cache.delete(firstKey);
-	    }
-	    this.cache.set(key, value);
-	  }
-	  
-	  has(key) {
-    return this.cache.has(key);
-  }
-
-  get(key) {
-	    const value = this.cache.get(key);
-	    if (value) {
-	      this.cache.delete(key);
-	      this.cache.set(key, value);
-	    }
-	    return value;
-	  }
-	  
-	  delete(key) {
-    return this.cache.delete(key);
-  }
-
-  clear() {
-	    this.cache.clear();
-	  }
-	  
-	  get size() {
-	    return this.cache.size;
-	  }
-	}
-	
-	let monsterCache = new BoundedMonsterCache(50);
-
-    const elementMap = {
-      "none": "無",
-      "phy": "物理",
-      "pyro": "火",
-      "hydro": "水",
-      "electro": "雷",
-      "nature": "自然",
-      "light": "光",
-      "dark": "暗",
-      "all": "全"
-    };
-    const API = "https://sfl-9cb8.onrender.com";
-    const params = new URLSearchParams(location.search);
-    const dungeon = params.get("dungeon");
-    let layer = parseInt(params.get("layer") || "0");
+  if (show) {
+    battleLoading.className = isBoss ? "boss-battle" : "";
+    const title = document.getElementById("battleTitle");
+    const icon = document.getElementById("battleIcon");
+    const tips = document.getElementById("battleTips");
     
-    const inheritedCooldown = parseInt(params.get("cooldown") || "0");
-    console.log("URL參數中的冷卻時間:", inheritedCooldown);
-
-    const logArea = document.getElementById("logArea");
-    const userDiv = document.getElementById("userInfoContent");
-    const monsterDiv = document.getElementById("monsterInfoContent");
-    const loading = document.getElementById("loadingOverlay");
-    const battleLoading = document.getElementById("battleLoadingOverlay");
-
-    const battleBtn = document.getElementById("battleBtn");
-    const retryBtn = document.getElementById("retryBtn");
-    const nextBtn = document.getElementById("nextBtn");
-
-    // 戰鬥冷卻相關函數
-    function updateBattleButton(buttonElement, remainingSeconds, buttonText = "開始戰鬥") {
-      if (remainingSeconds > 0) {
-        buttonElement.classList.add("cooldown-button");
-        buttonElement.disabled = true;
-        buttonElement.innerHTML = `<span class="cooldown-text">冷卻中 (${Math.ceil(remainingSeconds)}s)</span>`;
-      } else {
-        buttonElement.classList.remove("cooldown-button");
-        buttonElement.disabled = false;
-        buttonElement.innerHTML = buttonText;
-      }
-    }
-
-    let currentRemainingTime = 0;
-    function startCooldownTimer(initialRemaining) {
-      console.log("開始冷卻計時器，初始剩餘時間:", initialRemaining);
-      
-      if (cooldownTimer) {
-        clearInterval(cooldownTimer);
-      }
-      
-      startCooldownTime = Date.now();
-      originalCooldownTime = initialRemaining;
-      currentRemainingTime = Math.ceil(initialRemaining);
-      
-      const startTime = Date.now();
-      let remaining = Math.ceil(initialRemaining);
-      
-      cooldownTimer = setInterval(() => {
-        const elapsedSeconds = (Date.now() - startTime) / 1000;
-        remaining = Math.ceil(initialRemaining - elapsedSeconds);
-        currentRemainingTime = remaining;
-        
-        console.log("冷卻倒數:", remaining);
-        
-        if (remaining <= 0) {
-          console.log("冷卻完成，恢復按鈕");
-          updateBattleButton(battleBtn, 0, "開始戰鬥");
-          updateBattleButton(retryBtn, 0, "再戰一次");
-          clearInterval(cooldownTimer);
-          cooldownTimer = null;
-          startCooldownTime = null;
-          originalCooldownTime = 0;
-          currentRemainingTime = 0;
-        } else {
-          updateBattleButton(battleBtn, remaining, "開始戰鬥");
-          if (retryBtn.style.display !== "none") {
-            updateBattleButton(retryBtn, remaining, "再戰一次");
-          }
-        }
-      }, 1000);
-    }
-    
-    function validateCooldownTime(serverTime, inheritedTime) {
-	  // 驗證冷卻時間
-	  
-	  if (serverTime > 35) {
-	    // ⚠️ 服務器冷卻時間異常，使用繼承時間
-	    return Math.max(0, inheritedTime);
-	  }
-	  
-	  if (inheritedTime > 0 && Math.abs(serverTime - inheritedTime) > 10) {
-	    // ⚠️ 服務器與繼承時間差異過大，優先使用繼承時間
-	    return Math.max(0, inheritedTime);
-	  }
-	  
-	  if (serverTime < 1) {
-	    // 服務器冷卻時間很短，視為已完成
-	    return 0;
-	  }
-	  
-	  return Math.max(0, Math.round(serverTime));
-	}
-
-    function initializeBattleButtons(userData) {
-	  console.log("初始化戰鬥按鈕，使用者資料:", userData);
-	  
-	  let remaining = 0;
-	  let isReady = true;
-	  
-	  const serverCooldown = userData.battle_cooldown_remaining || 0;
-	  const serverReady = userData.battle_ready !== false;
-	  
-	  if (inheritedCooldown > 0) {
-	    remaining = validateCooldownTime(serverCooldown, inheritedCooldown);
-	    isReady = remaining <= 0;
-	  } else {
-	    remaining = validateCooldownTime(serverCooldown, 0);
-	    isReady = remaining <= 0 && serverReady;
-	  }
-	  
-	  if (!isReady && remaining > 0) {
-	    // 冷卻倒數
-	    updateBattleButton(battleBtn, remaining, "開始戰鬥");
-	    startCooldownTimer(remaining);
-	  } else {
-	    // 戰鬥按鈕準備完成
-	    updateBattleButton(battleBtn, 0, "開始戰鬥");
-	  }
-	}
-
-    // 設定初始按鈕狀態的函數
-    function setInitialButtonState() {
-      console.log(`設定初始按鈕狀態 - 當前層: ${layer}, 進度: ${currentProgress}, 是否BOSS: ${isLastLayer}`);
-      
-      // 隱藏所有按鈕
-      battleBtn.style.display = "none";
-      retryBtn.style.display = "none";
-      nextBtn.style.display = "none";
-      document.getElementById("leaveBtn").style.display = "none";
-      
-      if (isLastLayer) {
-        // BOSS層：只有當層數等於進度時才顯示開始戰鬥，否則不應該到這裡
-        battleBtn.style.display = "inline-block";
-        // BOSS層 - 顯示開始戰鬥
-      } else if (layer < currentProgress) {
-        // 回到上一層：顯示再戰一次和下一層
-        retryBtn.style.display = "inline-block";
-        nextBtn.style.display = "inline-block";
-        // 回到上一層 - 顯示再戰一次和下一層
-        
-        // 設定下一層按鈕功能
-        nextBtn.onclick = async () => {
-          if (cooldownTimer) {
-            clearInterval(cooldownTimer);
-            cooldownTimer = null;
-          }
-          
-          try {
-            let remainingCooldown = currentRemainingTime;
-            
-            const cooldownParam = remainingCooldown > 2 ? `&cooldown=${remainingCooldown}` : '';
-            const nextUrl = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
-            
-            setTimeout(() => {
-              window.parent.loadPage(nextUrl);
-            }, 500);
-          } catch (error) {
-            console.error("準備跳轉時發生錯誤:", error);
-            setTimeout(() => {
-              window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-            }, 500);
-          }
-        };
-      } else {
-        // 新挑戰：顯示開始戰鬥
-        battleBtn.style.display = "inline-block";
-      }
-    }
-
-    // 特效控制函數
-    function showVictoryEffect() {
-      const overlay = document.getElementById("victoryOverlay");
-      overlay.style.display = "flex";
-      createFireworks();
-    }
-
-    function hideVictoryEffect() {
-      const overlay = document.getElementById("victoryOverlay");
-      overlay.style.display = "none";
-      clearFireworks();
-    }
-
-    function setRandomDefeatMessage() {
-	    const messages = [
-	      "適當分配技能點數，用最優屬性克制敵人。",
-	      "等級壓制最高可達七等，準備好再來吧。",
-	      "善用屬性克制！水→火→自然→雷→水、光暗互剋。",
-	      "製作與強化卡片提升能力值再來挑戰！",
-	      "不如先試試簡單的怪物提升等級？"
-	    ];
-	    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-	    const messageDiv = document.getElementById("defeatMessage");
-	    if (messageDiv) {
-	      messageDiv.textContent = randomMsg;
-	    }
-	  }
-
-    function showDefeatEffect() {
-      const overlay = document.getElementById("defeatOverlay");
-      overlay.style.display = "flex";
-      createDebris();
-      setRandomDefeatMessage();
-    }
-
-    function hideDefeatEffect() {
-      const overlay = document.getElementById("defeatOverlay");
-      overlay.style.display = "none";
-      clearDebris();
-    }
-
-    // 煙花效果
-    function createFireworks() {
-      const container = document.getElementById("fireworksContainer");
-      container.innerHTML = "";
-      
-      for (let i = 0; i < 20; i++) {
-        setTimeout(() => {
-          const firework = document.createElement("div");
-          firework.className = "firework";
-          firework.style.left = Math.random() * 100 + "%";
-          firework.style.top = Math.random() * 100 + "%";
-          firework.style.background = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.8)`;
-          firework.style.animationDelay = Math.random() * 2 + "s";
-          container.appendChild(firework);
-          
-          setTimeout(() => {
-            if (firework.parentNode) {
-              firework.parentNode.removeChild(firework);
-            }
-          }, 2000);
-        }, i * 200);
-      }
-    }
-
-    function clearFireworks() {
-      const container = document.getElementById("fireworksContainer");
-      if (container) container.innerHTML = "";
-    }
-
-    // 碎片效果
-    function createDebris() {
-      const container = document.getElementById("debrisContainer");
-      container.innerHTML = "";
-      
-      for (let i = 0; i < 15; i++) {
-        setTimeout(() => {
-          const debris = document.createElement("div");
-          debris.className = "debris-piece";
-          debris.style.left = Math.random() * 100 + "%";
-          debris.style.animationDelay = Math.random() * 1 + "s";
-          debris.style.animationDuration = (Math.random() * 2 + 2) + "s";
-          container.appendChild(debris);
-          
-          setTimeout(() => {
-            if (debris.parentNode) {
-              debris.parentNode.removeChild(debris);
-            }
-          }, 3000);
-        }, i * 100);
-      }
-    }
-
-    function clearDebris() {
-      const container = document.getElementById("debrisContainer");
-      if (container) container.innerHTML = "";
-    }
-
-    // 將特效函數設為全域
-    window.hideVictoryEffect = hideVictoryEffect;
-    window.hideDefeatEffect = hideDefeatEffect;
-
-    // 離開副本函數
-    function leaveDungeon() {
-      window.parent.postMessage({ command: "restoreMainMusic" }, "*");
-      setTimeout(() => {
-	    window.parent.loadPage('dungeons.html');
-	  }, 300);
-    }
-    window.leaveDungeon = leaveDungeon;
-
-    // 頁面載入畫面控制
-    function showLoading(show) {
-      loading.style.display = show ? "flex" : "none";
-    }
-
-    // 隱藏頁面載入畫面
-    function hidePageLoading() {
-      if (window.pageLoadingInterval) {
-        clearInterval(window.pageLoadingInterval);
-      }
-      setTimeout(() => {
-        showLoading(false);
-      }, 500);
-    }
-
-    // 戰鬥載入畫面控制
-    function showBattleLoading(show) {
-      battleLoading.style.display = show ? "flex" : "none";
-      if (show) {
-        createParticles();
-        startLoadingProgress();
-      }
-    }
-
-    // 創建粒子效果
-    function createParticles() {
-      const particlesContainer = document.getElementById("particles");
-      particlesContainer.innerHTML = "";
-      
-      for (let i = 0; i < 50; i++) {
-        const particle = document.createElement("div");
-        particle.className = "particle";
-        particle.style.left = Math.random() * 100 + "%";
-        particle.style.animationDelay = Math.random() * 6 + "s";
-        particle.style.animationDuration = (Math.random() * 3 + 4) + "s";
-        particlesContainer.appendChild(particle);
-      }
-    }
-
-    // 進度條動畫
-    function startLoadingProgress() {
-      const progressBar = document.getElementById("progressBar");
-      const progressText = document.getElementById("progressText");
-      const loadingText = document.getElementById("loadingText");
-      
-      const messages = [
-        "正在分析戰況...",
-        "計算屬性克制...",
-        "準備戰鬥技能...",
-        "載入怪物資料...",
-        "初始化戰鬥系統...",
-        "準備就緒！"
-      ];
-      
-      let progress = 0;
-      let messageIndex = 0;
-      
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 15 + 5;
-        if (progress > 100) progress = 100;
-        
-        progressBar.style.width = progress + "%";
-        progressText.textContent = Math.round(progress) + "%";
-        
-        if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 15) {
-          messageIndex++;
-          loadingText.textContent = messages[messageIndex];
-        }
-        
-        if (progress >= 100) {
-          clearInterval(progressInterval);
-          loadingText.textContent = messages[messages.length - 1];
-        }
-      }, 200);
-      
-      window.battleProgressInterval = progressInterval;
-    }
-
-    async function fetchUser(force = false) {
-	  PerformanceMonitor.startTiming('fetchUser');
-	
-	  try {
-	    const res = force ? await SecureAPI.getStatus(true) : await SecureAPI.getStatus(false);
-	    const data = await res.json();
-	    return data;
-	
-	  } catch (error) {
-	    console.error('載入使用者資料失敗:', error);
-		try {
-		  const fallbackRes = await SecureAPI.getWithRetry(API + '/status', 1, true);
-		  return await fallbackRes.json();
-		} catch (fallbackError) {
-		  console.error('降級載入失敗:', fallbackError);
-		  throw new Error('無法載入使用者資料');
-		}
-	  } finally {
-	    PerformanceMonitor.endTiming('fetchUser');
-	  }
-	}
-	
-
-    async function fetchMonster(monsterId) {
-	  PerformanceMonitor.startTiming('fetchMonster');
-	  
-	  try {
-	    if (monsterCache.has(monsterId)) {
-	      console.log(`🎯 怪物資料快取命中: ${monsterId}`);
-	      return monsterCache.get(monsterId);
-	    }
-	    
-	    const res = await fetch(`${API}/monster?id=${encodeURIComponent(monsterId)}`);
-	    if (!res.ok) {
-	      throw new Error(`載入怪物失敗: ${res.status}`);
-	    }
-	    
-	    const monsterData = await res.json();
-	    
-	    monsterCache.set(monsterId, monsterData);
-	    setTimeout(() => {
-	      monsterCache.delete(monsterId);
-	    }, 10 * 60 * 1000);
-	    
-	    return monsterData;
-	    
-	  } catch (error) {
-	    console.error(`載入怪物 ${monsterId} 失敗:`, error);
-	    throw error;
-	  } finally {
-	    PerformanceMonitor.endTiming('fetchMonster');
-	  }
-	}
-
-	async function loadStaticData() {
-	  PerformanceMonitor.startTiming('loadStaticData');
-	  
-	  try {
-	    const [levelExpRes, equipRes, dungeonRes] = await Promise.all([
-	      SecureAPI.getStaticData('exp_table'),
-	      SecureAPI.getStaticData('equips_table'),
-	      SecureAPI.getStaticData('dungeon_table')
-	    ]);
-	    
-	    levelExp = levelExpRes;
-	    equipData = Array.isArray(equipRes) ? equipRes : Object.values(equipRes);
-	    dungeonData = dungeonRes;
-	    
-	    // 靜態資料載入完成
-	    
-	  } catch (error) {
-	    console.error('載入靜態資料失敗:', error);
-	    
-	    try {
-	      console.log('嘗試降級載入...');
-	      
-	      try {
-	        const expRes = await fetch(`${API}/exp_table`);
-	        levelExp = await expRes.json();
-	      } catch (e) {
-	        console.warn('經驗值表載入失敗:', e);
-	      }
-	      
-	      try {
-	        const equipResponse = await fetch(`${API}/equips_table`);
-	        const equipResult = await equipResponse.json();
-	        equipData = Array.isArray(equipResult) ? equipResult : Object.values(equipResult);
-	      } catch (e) {
-	        console.warn('裝備資料載入失敗:', e);
-	        equipData = [];
-	      }
-	      
-	      try {
-	        const dungeonResponse = await fetch(`${API}/dungeon_table`);
-	        dungeonData = await dungeonResponse.json();
-	      } catch (e) {
-	        console.warn('副本資料載入失敗:', e);
-	      }
-	      
-	    } catch (fallbackError) {
-	      console.error('降級載入失敗:', fallbackError);
-	      alert('載入基礎資料失敗，部分功能可能受限');
-	    }
-	  } finally {
-	    PerformanceMonitor.endTiming('loadStaticData');
-	  }
-	}
-
-    // 計算裝備數值
-    function calculateEquipmentBonus(equipment, equipData) {
-	  const bonus = {};
-	
-	  for (let slot = 1; slot <= 5; slot++) {
-	    const equippedCard = equipment[slot];
-	    if (!equippedCard) continue;
-	
-	    const cardId = Object.keys(equippedCard)[0];
-	    const cardLevel = equippedCard[cardId];
-	    const equipInfo = equipData.find(e => e.id === cardId);
-	
-	    if (equipInfo?.value?.[cardLevel]) {
-	      const cardStats = equipInfo.value[cardLevel];
-	      for (const [stat, value] of Object.entries(cardStats)) {
-	        bonus[stat] = (bonus[stat] || 0) + value;
-	      }
-	    }
-	  }
-	
-	  return bonus;
-	}
-
-    function formatStats(data) {
-	  const b = data.base_stats;
-	  const e = calculateEquipmentBonus(data.equipment || {}, equipData);
-	  const levelMaxExp = levelExp[data.level] || 1;
-	  const progress = percent(data.exp / levelMaxExp);
-	
-	  const getValue = (key) => (b[key] || 0) + (e[key] || 0);
-	  const getFormatted = (key) => {
-	    const isPercent = ["evade", "accuracy", "other_bonus"].includes(key);
-	    const total = getValue(key);
-	    const base = b[key] || 0;
-	    const bonus = e[key] || 0;
-	    
-	    if (isPercent) {
-	      return {
-	        total: `${percent(total)}`,
-	        detail: `${percent(base)} + ${percent(bonus)}`
-	      };
-	    } else {
-	      return {
-	        total: total.toString(),
-	        detail: `${base} + ${bonus}`
-	      };
-	    }
-	  };
-	
-	  const statsList = [
-	    { key: "level", label: "等級", value: data.level },
-	    { key: "exp", label: "經驗值", value: `${data.exp} (${progress})` },
-	    { key: "hp", label: "生命值" },
-	    { key: "attack", label: "攻擊力" },
-	    { key: "shield", label: "護盾值" },
-	    { key: "luck", label: "幸運值" },
-	    { key: "accuracy", label: "命中率" },
-	    { key: "evade", label: "迴避率" },
-	    { key: "atk_speed", label: "攻擊速度" },
-	    { key: "other_bonus", label: "額外傷害加成" },
-	    { key: "penetrate", label: "護盾穿透" },
-	    { key: "stat_points", label: "剩餘能力值點數", value: data.stat_points },
-	    { key: "skill_points", label: "剩餘技能點", value: data.skill_points }
-	  ];
-	
-	  let html = `
-	    <div class="player-info-container">
-	      <h3 class="player-name">👤 ${data.nickname}</h3>
-	      <div class="stats-container">
-	  `;
-	  
-	  statsList.forEach(({ key, label, value }) => {
-	    if (value !== undefined) {
-	      html += `<div class="stat-item"><span>${label}:</span><span>${value}</span></div>`;
-	    } else if (["hp", "attack", "shield", "penetrate", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
-	      const formatted = getFormatted(key);
-	      html += `<div class="stat-item"><span>${label}:</span><span>${formatted.total} (${formatted.detail})</span></div>`;
-	    }
-	  });
-	  
-	  html += '</div></div>';
-	  return html;
-	}
-
-    function formatMonsterInfo(mon, isLastLayer) {
-	  const description = (mon.info || '').replace(/\/n/g, '\n');
-	  
-	  const elementText = Array.isArray(mon.element) 
-	    ? mon.element.map(e => elementMap[e] || e).join("、") 
-	    : (elementMap[mon.element] || mon.element);
-	
-	  let containerClass = "monster-info-container";
-	  let bossTitle = "";
-	  
-	  if (isLastLayer) {
-	    containerClass += " boss";
-	    bossTitle = '<div class="boss-title-decoration">BOSS</div>';
-	  }
-	
-	  // 取得怪物護盾穿透值，如果沒有則預設為0
-	  const monsterPenetrate = mon.stats.penetrate || 0;
-	
-	  const html = `
-	    <div class="${containerClass}">
-	      ${bossTitle}
-	      <h2 class="monster-name">${mon.name}</h2>
-	      <img src="${mon.image_url}" class="monster-image" width="200">
-	      <div class="monster-description">${description}</div>
-	      <div class="monster-stats">
-	        <div class="monster-stat-item">
-	          <span>等級：</span>
-	          <span>${mon.level}</span>
-	        </div>
-	        <div class="monster-stat-item">
-	          <span>屬性：</span>
-	          <span>${elementText}</span>
-	        </div>
-	        <div class="monster-stat-item">
-	          <span>生命值：</span>
-	          <span>${mon.stats.hp}</span>
-	        </div>
-	        <div class="monster-stat-item">
-	          <span>攻擊力：</span>
-	          <span>${mon.stats.attack}</span>
-	        </div>
-	        <div class="monster-stat-item">
-	          <span>護盾值：</span>
-	          <span>${mon.stats.shield}</span>
-	        </div>
-	        <div class="monster-stat-item">
-	          <span>命中率：</span>
-	          <span>${Math.round(mon.stats.accuracy * 100)}%</span>
-	        </div>
-	        <div class="monster-stat-item">
-	          <span>迴避率：</span>
-	          <span>${Math.round(mon.stats.evade * 100)}%</span>
-	        </div>
-	        <div class="monster-stat-item">
-	          <span>攻擊速度：</span>
-	          <span>${mon.stats.atk_speed}</span>
-	        </div>
-	 	<div class="monster-stat-item">
-	          <span>護盾穿透：</span>
-	          <span>${monsterPenetrate}</span>
-	        </div>
-	      </div>
-	    </div>
-	  `;
-	  
-	  return html;
-	}
-
-    async function loadLayer() {
-	  PerformanceMonitor.startTiming('loadLayer');
-	  
-	  try {
-	    const [userDataPromise, staticDataPromise] = await Promise.allSettled([
-	      fetchUser(true),
-	      loadStaticData()
-	    ]);
-	    
-	    if (userDataPromise.status === 'fulfilled') {
-	  userData = userDataPromise.value;
-	
-	  initializeBattleButtons(userData);
-	} else {
-	      throw new Error('使用者資料載入失敗: ' + userDataPromise.reason);
-	    }
-	    
-	    if (staticDataPromise.status === 'rejected') {
-	      console.warn('靜態資料載入失敗:', staticDataPromise.reason);
-	    }
-	    
-	    window.parent.postMessage({
-	      nickname: userData.nickname
-	    }, "*");
-	    
-	    initializeBattleButtons(userData);
-	    
-	    userDiv.innerHTML = formatStats(userData);
-	
-	    let current;
-	    if (dungeonData) {
-	      current = dungeonData.find(d => d.id === dungeon);
-	    } else {
-	      const dungeonRes = await fetch(`${API}/dungeon_table`);
-	      const allDungeons = await dungeonRes.json();
-	      current = allDungeons.find(d => d.id === dungeon);
-	    }
-	    
-	    if (!current) throw new Error("副本不存在");
-	
-	    const totalLayers = current.monsters.length + 1;
-	    isLastLayer = (layer === totalLayers - 1);
-	    
-	    const progRes = await SecureAPI.get(`${API}/get_progress?force=1`);
-	    const progData = await progRes.json();
-	    currentProgress = progData.progress?.[dungeon] ?? 0;
-	    
-	    console.log(`副本狀態 - 當前層: ${layer}, 總層數: ${totalLayers}, 進度: ${currentProgress}, 是否BOSS: ${isLastLayer}`);
-	
-	    const monsterId = isLastLayer ? current.bossId : current.monsters[layer];
-	    const mon = await fetchMonster(monsterId);
-	
-	    if (isLastLayer) {
-	      document.body.classList.add("boss-mode");
-	      window.parent.postMessage({ command: "switchToBossMusic" }, "*");
-	
-	      document.getElementById("battleLoadingOverlay")?.classList.add("boss-battle");
-	      document.getElementById("battleIcon")?.classList.add("boss");
-	      document.getElementById("battleTitle")?.classList.add("boss");
-	      document.getElementById("loadingText")?.classList.add("boss");
-	      document.getElementById("progressContainer")?.classList.add("boss");
-	      document.getElementById("progressText")?.classList.add("boss");
-	      document.getElementById("battleTips")?.classList.add("boss");
-	
-	      document.getElementById("monsterInfo")?.classList.add("boss");
-	    }
-	
-	    // 重置按鈕狀態並設定初始狀態
-	    retryBtn.style.display = "none";
-	    nextBtn.style.display = "none";
-	    document.getElementById("leaveBtn").style.display = "none";
-	    
-	    monsterDiv.innerHTML = formatMonsterInfo(mon, isLastLayer);
-	    
-	    // 設定初始按鈕狀態
-	    setInitialButtonState();
-	    
-	    hidePageLoading();
-	    
-	  } catch (err) {
-	    console.error("載入層級失敗:", err);
-	    monsterDiv.innerHTML = "❌ 載入資料失敗";
-	    hidePageLoading();
-	  } finally {
-	    PerformanceMonitor.endTiming('loadLayer');
-	  }
-	}
-
-    async function fetchProgress(force = false) {
-	  const url = `${API}/get_progress${force ? "?force=1" : ""}`;
-	  const res = await SecureAPI.get(url);
-	  const data = await res.json();
-	  currentProgress = data.progress?.[dungeon] ?? 0;
-	  return data;
-	}		
-
-    function checkProgressBeforeBattle() {
-      if (layer > currentProgress) {
-        alert("層數異常（尚未解鎖），請重新進入副本");
-        window.parent.loadPage('dungeons.html');
-        return false;
-      }
-      return true;
-    }
-
-    function scrollLogToBottom() {
-      setTimeout(() => {
-        logArea.scrollTop = logArea.scrollHeight;
-      }, 50);
-    }
-	
-    let isBattleInProgress = false;
-    // 執行戰鬥
-    async function executeBattle() {
-  if (isBattleInProgress) {
-    console.log("戰鬥已在進行中，忽略重複點擊");
-    return;
-  }
-  
-  if (!checkProgressBeforeBattle()) return;
-  
-  isBattleInProgress = true;
-  battleBtn.disabled = true;
-  retryBtn.disabled = true;
-  
-  
-  try {
-    // 獲取最新戰鬥狀態
-    const latestUser = await fetchUser(true);
-    userData = latestUser;
-    
-    const serverRemaining = userData?.battle_cooldown_remaining || 0;
-    const serverReady = userData?.battle_ready !== false;
-    
-    const validatedRemaining = validateCooldownTime(serverRemaining, 0);
-    const shouldAllowBattle = validatedRemaining <= 0;
-    
-    if (!shouldAllowBattle && validatedRemaining > 0) {
-      console.warn(`❌ 戰鬥被冷卻阻止，剩餘: ${validatedRemaining}秒`);
-      
-      if (validatedRemaining > 30) {
-        const shouldReset = confirm(`檢測到冷卻時間異常 (${validatedRemaining}秒)，這可能是系統錯誤。\n\n是否要重新整理頁面來重置狀態？`);
-        if (shouldReset) {
-          window.location.reload();
-          return;
-        }
-      } else {
-        alert(`戰鬥冷卻中，請等待 ${validatedRemaining} 秒`);
-      }
-      
-      initializeBattleButtons(userData);
-      isBattleInProgress = false;
-      return;
-    }
-    
-    if (serverRemaining > 30 && shouldAllowBattle) {
-      console.warn(`⚠️ 服務器冷卻數據異常但允許戰鬥，可能需要檢查後端邏輯`);
-    }
-    
-  } catch (error) {
-    console.error("獲取最新狀態失敗:", error);
-    
-    if (error.message.includes('fetch') || error.message.includes('network')) {
-      const shouldProceed = confirm("無法確認戰鬥狀態（網路問題），是否仍要嘗試戰鬥？");
-      if (!shouldProceed) {
-        isBattleInProgress = false;
-        battleBtn.disabled = false;
-        retryBtn.disabled = false;
-        return;
-      }
+    if (isBoss) {
+      if (title) title.textContent = "BOSS戰鬥準備中";
+      if (icon) icon.textContent = "👑";
+      if (tips) tips.innerHTML = "⚔️ BOSS戰鬥即將開始！<br/>🔥 運用你的最強技能組合！";
+      title?.classList.add("boss");
+      icon?.classList.add("boss");
+      tips?.classList.add("boss");
     } else {
-      alert("無法確認戰鬥狀態，請重新整理頁面");
-      isBattleInProgress = false;
-      battleBtn.disabled = false;
-      retryBtn.disabled = false;
-      return;
+      if (title) title.textContent = "戰鬥準備中";
+      if (icon) icon.textContent = "⚔️";
+      if (tips) tips.innerHTML = "💡 戰鬥小提示：善用屬性克制關係可以提高勝率！<br/>🛡️ 記得切換不同技能來應對不同關卡";
+      title?.classList.remove("boss");
+      icon?.classList.remove("boss");
+      tips?.classList.remove("boss");
     }
-  }
-  
-  showBattleLoading(true);
-  logArea.innerHTML = "";
-  retryBtn.style.display = "none";
-  nextBtn.style.display = "none";
-  battleBtn.style.display = "none";
-  document.getElementById("leaveBtn").style.display = "none";
-
-  try {
-    // 發送戰鬥請求
-    const res = await SecureAPI.post(`${API}/battle_dungeon`, {
-      dungeon: dungeon,
-      layer: layer
-    });
-    
-    console.log("戰鬥請求回應狀態:", res.status);
-    
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.log("戰鬥錯誤資料:", errorData);
-      
-      if (errorData.cooldown_remaining) {
-        const cooldownTime = validateCooldownTime(errorData.cooldown_remaining, 0);
-        
-        if (cooldownTime > 30) {
-          const shouldReset = confirm(`服務器返回異常冷卻時間 (${cooldownTime}秒)，這可能是系統錯誤。\n\n是否要重新整理頁面？`);
-          if (shouldReset) {
-            window.location.reload();
-            return;
-          }
-        }
-        
-        alert(`戰鬥冷卻中，請等待 ${cooldownTime} 秒`);
-        
-        try {
-          const updatedUser = await fetchUser();
-          userData = updatedUser;
-          initializeBattleButtons(updatedUser);
-        } catch (e) {
-          console.error("更新使用者狀態失敗:", e);
-        }
-        showBattleLoading(false);
-        
-        // 根據當前狀態恢復按鈕
-        if (layer < currentProgress && !isLastLayer) {
-          retryBtn.style.display = "inline-block";
-          nextBtn.style.display = "inline-block";
-        } else {
-          battleBtn.style.display = "inline-block";
-        }
-        
-        isBattleInProgress = false;
-        return;
-      }
-      throw new Error(errorData.error || '戰鬥失敗');
-    }
-    
-    const data = await res.json();
-    
-    const log = data.battle_log;
-    if (!Array.isArray(log)) throw new Error("伺服器未回傳戰鬥紀錄");
-
-    if (data.user) {
-      userData = data.user;
-    }
-
-    try {
-      if (window.devTools?.cache) {
-        window.devTools.clearUserCache();
-      }
-      
-      if (data.success) {
-        monsterCache.clear();
-      }
-    } catch (cacheError) {
-      console.warn('清除快取失敗:', cacheError);
-    }
-
-    setTimeout(() => {
-      showBattleLoading(false);
-      playBattleLog(log).then(() => {
-        isBattleInProgress = false;
-        
-        if (data.success) {
-          // 戰鬥勝利後重新載入使用者資料
-          fetchUser(true).then(updatedUser => {
-            userData = updatedUser;
-            console.log("戰鬥勝利後重新獲取的使用者資料:", updatedUser);
-            userDiv.innerHTML = formatStats(updatedUser);
-            
-            const serverCooldown = updatedUser.battle_cooldown_remaining || 0;
-            console.log("伺服器返回的冷卻時間:", serverCooldown);
-            
-            initializeBattleButtons(updatedUser);
-          }).catch(error => {
-            console.error('重新載入使用者資料失敗:', error);
-          });
-
-          if (data.is_last_layer) {
-            showVictoryEffect();
-            document.getElementById("leaveBtn").style.display = "inline-block";
-          } else {
-            // 戰鬥勝利後，總是顯示再戰一次和下一層（除非是BOSS）
-            retryBtn.style.display = "inline-block";
-            nextBtn.style.display = "inline-block";
-            
-            updateBattleButton(retryBtn, 30, "再戰一次");
-            startCooldownTimer(30);
-            
-            fetchUser(true).then(updatedUser => {
-              const actualCooldown = updatedUser.battle_cooldown_remaining || 0;
-              console.log("🔧 API回應後更正冷卻時間:", actualCooldown);
-              
-              if (actualCooldown > 0 && Math.abs(actualCooldown - 30) > 1) {
-                console.log("⚠️ 更正冷卻時間差異過大，重新設定為:", actualCooldown);
-                if (cooldownTimer) {
-                  clearInterval(cooldownTimer);
-                  cooldownTimer = null;
-                }
-                updateBattleButton(retryBtn, actualCooldown, "再戰一次");
-                startCooldownTimer(actualCooldown);
-              }
-            }).catch(error => {
-              console.error('獲取實際冷卻時間失敗:', error);
-            });
-            
-            nextBtn.onclick = async () => {
-              await fetchProgress();
-              
-              if (cooldownTimer) {
-                clearInterval(cooldownTimer);
-                cooldownTimer = null;
-              }
-              
-              try {
-                let remainingCooldown = currentRemainingTime;
-                
-                const cooldownParam = remainingCooldown > 2 ? `&cooldown=${remainingCooldown}` : '';
-                const nextUrl = `dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}${cooldownParam}`;
-                
-                setTimeout(() => {
-                  window.parent.loadPage(nextUrl);
-                }, 500);
-              } catch (error) {
-                console.error("準備跳轉時發生錯誤:", error);
-                setTimeout(() => {
-                  window.parent.loadPage(`dungeon_layer.html?dungeon=${dungeon}&layer=${layer + 1}`);
-                }, 500);
-              }
-            };
-          }
-
-          const winMsg = document.createElement("div");
-          winMsg.innerHTML = "<span style='color:green'>═══════════════ 🌟 戰鬥結束 🌟 ═══════════════";
-          logArea.appendChild(winMsg);
-          scrollLogToBottom();
-
-		if (data.rewards) {
-		  const { 
-		    base_exp, 
-		    exp_luck_bonus, 
-		    leveled_up, 
-		    actual_drops, 
-		    round_1_bonus,
-		    round_2_bonus,
-		    round_3_bonus,
-		    drops 
-		  } = data.rewards;
-		  
-		  fetch(`${API}/items_table`).then(res => res.json()).then(itemMap => {
-		    const rewardLog = document.createElement("div");
-		    rewardLog.className = "reward-message";
-		    
-		    let expText = `<br><strong>🎁 戰利品：</strong><br>獲得 ${base_exp} 經驗值`;
-		    
-		    if (exp_luck_bonus > 0) {
-		      expText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>🍀 幸運加成！額外獲得 ${exp_luck_bonus} 經驗值！</span>`;
-		    }
-		    
-		    if (leveled_up) {
-		      expText += `<br><span style='color:red'>🎊 等級提升！</span>`;
-		    }
-		    
-		    let dropText = "";
-		    
-		    const hasActualDrops = actual_drops && Object.keys(actual_drops).length > 0;
-		    const originalDrops = drops || [];
-		    
-		    if (hasActualDrops) {
-		      dropText += "<br><strong>📦 獲得物品：</strong>";
-		      
-		      const round1Items = round_1_bonus || {};
-		      const round2Items = round_2_bonus || {};
-		      const round3Items = round_3_bonus || {};
-		      
-		      for (const [itemId, totalQuantity] of Object.entries(actual_drops)) {
-		        const meta = itemMap[itemId] || { name: itemId, special: 0 };
-		        
-		        const round1Bonus = round1Items[itemId] || 0;
-		        const round2Bonus = round2Items[itemId] || 0;
-		        const round3Bonus = round3Items[itemId] || 0;
-		        const totalLuckBonus = round1Bonus + round2Bonus + round3Bonus;
-		        const baseQuantity = totalQuantity - totalLuckBonus;
-		        
-		        let itemText = "";
-		        
-		        if (meta.special === 2) {
-		          itemText = `<br><span style='color:crimson'>【超稀有】${meta.name} × ${totalQuantity}</span>`;
-		        } else if (meta.special === 1) {
-		          itemText = `<br><span style='color:cornflowerblue'>【稀有】${meta.name} × ${totalQuantity}</span>`;
-		        } else if (meta.special === 3) {
-		          itemText = `<br><span style='color:#FFD306'>【罕見】${meta.name} × ${totalQuantity}</span>`;
-		        } else {
-		          itemText = `<br>${meta.name} × ${totalQuantity}`;
-		        }
-		        
-		        if (totalLuckBonus > 0) {
-		          let bonusDetails = [];
-		          
-		          if (round1Bonus > 0) {
-		            bonusDetails.push(`第一輪幸運 +${round1Bonus}`);
-		          }
-		          if (round2Bonus > 0) {
-		            bonusDetails.push(`第二輪幸運 +${round2Bonus}`);
-		          }
-		          if (round3Bonus > 0) {
-		            bonusDetails.push(`第三輪幸運 +${round3Bonus}`);
-		          }
-		          
-		          const bonusText = bonusDetails.join('，');
-		          itemText += `<br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;margin-left:20px;'>🍀 幸運觸發！${bonusText}，額外獲得 ${totalLuckBonus} 個</span>`;
-		        }
-		        
-		        dropText += itemText;
-		      }
-		      
-		      const allLuckItems = {...round1Items, ...round2Items, ...round3Items};
-		      const totalLuckQuantity = Object.values(allLuckItems).reduce((sum, qty) => sum + qty, 0);
-		      const uniqueLuckItems = Object.keys(allLuckItems).length;
-		      
-		      if (totalLuckQuantity > 0) {
-		        dropText += `<br><br><span style='color:gold;text-shadow:0 0 5px rgba(255,215,0,0.8);font-weight:bold;'>✨ 幸運觸發了 ${uniqueLuckItems} 種道具，總計額外獲得 ${totalLuckQuantity} 個道具！</span>`;
-		        
-		        const round1Total = Object.values(round1Items).reduce((sum, qty) => sum + qty, 0);
-		        const round2Total = Object.values(round2Items).reduce((sum, qty) => sum + qty, 0);
-		        const round3Total = Object.values(round3Items).reduce((sum, qty) => sum + qty, 0);
-		        
-		        let roundDetails = [];
-		        if (round1Total > 0) roundDetails.push(`第一輪: ${round1Total}個`);
-		        if (round2Total > 0) roundDetails.push(`第二輪: ${round2Total}個`);
-		        if (round3Total > 0) roundDetails.push(`第三輪: ${round3Total}個`);
-		        
-		        if (roundDetails.length > 1) {
-		          dropText += `<br><span style='color:gold;font-size:0.9em;margin-left:20px;'>各輪詳情：${roundDetails.join('，')}</span>`;
-		        }
-		      }
-		      
-		    } else {
-		      let hasGuaranteedDrops = false;
-		      let totalGuaranteedItems = 0;
-		      
-		      for (const drop of originalDrops) {
-		        if (drop.rate >= 1.0) {
-		          hasGuaranteedDrops = true;
-		          totalGuaranteedItems++;
-		        }
-		      }
-		      
-		      if (hasGuaranteedDrops) {
-		        dropText += `<br><span style='color:orange'>⚠️ 背包已滿，無法獲得 ${totalGuaranteedItems} 種必定掉落的道具</span>`;
-		      } else {
-		        const hasAnyDropChance = originalDrops.some(drop => drop.rate > 0);
-		        if (hasAnyDropChance) {
-		          dropText += "<br>本次運氣不佳，沒有掉落物品 😔";
-		        } else {
-		          dropText += "<br>此怪物沒有掉落物品";
-		        }
-		      }
-		    }
-		    
-		    rewardLog.innerHTML = expText + dropText;
-		    logArea.appendChild(rewardLog);
-		    scrollLogToBottom();
-		  });
-		}
-        } else {
-          showDefeatEffect();
-          const loseMsg = document.createElement("div");
-          loseMsg.innerHTML = "<span style='color:red'>═══════════════ ☠️ 你已戰敗 ☠️ ═══════════════";
-          logArea.appendChild(loseMsg);
-          const failMsg = document.createElement("div");
-          failMsg.innerHTML = `<br>❌ ${data.message}`;
-          logArea.appendChild(failMsg);
-          scrollLogToBottom();
-          document.getElementById("leaveBtn").style.display = "inline-block";
-        }
-      });
-    }, 1000);
-    
-  } catch (err) {
-    console.error("戰鬥執行錯誤:", err);
-    showBattleLoading(false);
-    logArea.innerHTML = "❌ 錯誤：無法完成戰鬥<br>" + err.message;
-    document.getElementById("leaveBtn").style.display = "inline-block";
-    
-    // 根據當前狀態恢復按鈕
-    if (layer < currentProgress && !isLastLayer) {
-      retryBtn.style.display = "inline-block";
-      nextBtn.style.display = "inline-block";
-    } else {
-      battleBtn.style.display = "inline-block";
-    }
-    
-    battleBtn.disabled = false;
-    isBattleInProgress = false;
   }
 }
 
-    // 開始戰鬥函數
-    window.startBattle = executeBattle;
-
-    // 重試戰鬥函數
-    function retryBattle() {
-	  if (isBattleInProgress) {
-	    console.log("戰鬥已在進行中，忽略重試請求");
-	    return;
-	  }
-	  
-	  hideVictoryEffect();
-	  hideDefeatEffect();
-	  executeBattle();
-	}
-    window.retryBattle = retryBattle;
-
-    function playBattleLog(log) {
-      return new Promise((resolve) => {
-        logArea.innerHTML = "";
-        let roundIndex = 0;
-        let actionIndex = 0;
-
-        function nextLine() {
-          if (roundIndex >= log.length) {
-            clearInterval(player);
-            resolve();
-            return;
-          }
-
-          const round = log[roundIndex];
-          if (actionIndex === 0) {
-            const roundTitle = document.createElement("div");
-            roundTitle.innerHTML = `<span style='color:#ffa500'>────────────── 第 ${round.round} 回合 ──────────────</span>`;
-            logArea.appendChild(roundTitle);
-            scrollLogToBottom();
-          }
-
-          const line = round.actions[actionIndex];
-          const entry = document.createElement("div");
-          
-          let formattedLine = line;
-          
-          if (formattedLine.includes('你受到') || 
-              formattedLine.includes('你的 HP') ||
-              formattedLine.includes('對你造成') ||
-              (formattedLine.includes('你使用') && formattedLine.includes('目前 HP'))) {
-            formattedLine = formattedLine.replace(
-              /（目前 HP：(\d+\/\d+)）/g, 
-              '（目前 HP：<span class="player-hp">$1</span>）'
-            );
-            formattedLine = formattedLine.replace(
-              /你的 HP：(\d+\/\d+)/g, 
-              '你的 HP：<span class="player-hp">$1</span>'
-            );
-          }
-          else {
-            formattedLine = formattedLine.replace(
-              /（對方 HP：(\d+\/\d+)）/g, 
-              '（對方 HP：<span class="monster-hp">$1</span>）'
-            );
-            formattedLine = formattedLine.replace(
-              /（目前 HP：(\d+\/\d+)）/g, 
-              '（目前 HP：<span class="monster-hp">$1</span>）'
-            );
-          }
-          
-          if (formattedLine !== line) {
-            entry.innerHTML = formattedLine;
-          } else {
-            entry.textContent = line;
-          }
-          
-          logArea.appendChild(entry);
-          scrollLogToBottom();
-
-          actionIndex++;
-          if (actionIndex >= round.actions.length) {
-            roundIndex++;
-            actionIndex = 0;
-          }
-        }
-
-        const player = setInterval(nextLine, 400);
-      });
-    }
-
-async function preloadDungeonData() {
-  
-  try {
-    if (dungeonData) {
-      const currentDungeon = dungeonData.find(d => d.id === dungeon);
-      if (currentDungeon) {
-        const allMonsterIds = [...currentDungeon.monsters, currentDungeon.bossId];
-        
-        const preloadPromises = allMonsterIds.map(monsterId => 
-          fetchMonster(monsterId).catch(error => {
-            console.warn(`預載入怪物 ${monsterId} 失敗:`, error);
-            return null;
-          })
-        );
-        
-        await Promise.allSettled(preloadPromises);
-      }
-    }
-  } catch (error) {
-    console.warn('預載入副本資料失敗:', error);
-  }
-}
-
-    onAuthStateChanged(auth, async (user) => {
-	  if (user) {
-	    try {
-	      PerformanceMonitor.startTiming('dungeonPageInit');
-	      await fetchProgress(true);
-	      await loadLayer();
-	      
-	      preloadDungeonData().catch(error => {
-	        console.warn('背景預載入失敗:', error);
-	      });
-	      
-	      PerformanceMonitor.endTiming('dungeonPageInit');
-	      
-	    } catch (error) {
-	      console.error('副本頁面初始化失敗:', error);
-	      alert('頁面載入失敗，請重新整理');
-	    }
-	  } else {
-	    window.parent.location.href = "/SFL/login.html";
-	  }
-	});
-
-if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
-  setInterval(() => {
-    const cacheSize = monsterCache.size;
-    const memoryUsage = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : '未知';
-    
-    if (cacheSize > 20) {
-      monsterCache.clear();
-    }
-  }, 30000);
-  
-  window.dungeonDebug = {
-    cache: monsterCache,
-    userData: () => userData,
-    clearMonsterCache: () => {
-      monsterCache.clear();
-      console.log('🧹 怪物快取已清除');
-    },
-    preloadAll: preloadDungeonData
-  };
-}
-
-window.emergencyResetCooldown = function() {
-  if (confirm('緊急重置冷卻狀態？（僅限開發測試）')) {
-    if (cooldownTimer) {
-      clearInterval(cooldownTimer);
-      cooldownTimer = null;
-    }
-    updateBattleButton(battleBtn, 0, "開始戰鬥");
-    updateBattleButton(retryBtn, 0, "再戰一次");
-    console.log('緊急重置完成');
-  }
+const elementMap = {
+  "none": "無",
+  "phy": "物理", 
+  "pyro": "火",
+  "hydro": "水",
+  "electro": "雷",
+  "nature": "自然",
+  "light": "光",
+  "dark": "暗",
+  "all": "全"
 };
 
-if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
-  setInterval(async () => {
-    if (userData) {
-      try {
-        const currentUser = await fetchUser(false);
-        const serverCooldown = currentUser.battle_cooldown_remaining || 0;
-        const currentCooldown = currentRemainingTime;
-        
-        console.log(`狀態監控 - 服務器: ${serverCooldown.toFixed(2)}s, 本地: ${currentCooldown}s`);
-        
-        if (Math.abs(serverCooldown - currentCooldown) > 5 && serverCooldown > 0) {
-          console.warn(`⚠️ 冷卻時間差異較大，可能需要同步`);
-        }
-      } catch (error) {
-        console.warn('狀態監控失敗:', error);
+// 屬性克制說明生成
+function generateElementDescription(elements) {
+  const descriptions = [];
+  
+  elements.forEach(element => {
+    switch(element) {
+      case "pyro":
+      case "火":
+        descriptions.push("🔥 火屬性");
+        descriptions.push("優勢：水屬性、全屬性 (+25% 傷害)");
+        descriptions.push("劣勢：自然屬性 (-25% 傷害)");
+        break;
+      case "hydro":
+      case "水":
+        descriptions.push("💧 水屬性");
+        descriptions.push("優勢： 雷屬性、全屬性 (+25% 傷害)");
+        descriptions.push("劣勢： 火屬性 (-25% 傷害)");
+        break;
+      case "electro":
+      case "雷":
+        descriptions.push("⚡ 雷屬性");
+        descriptions.push("優勢：自然屬性、全屬性 (+25% 傷害)");
+        descriptions.push("劣勢：水屬性 (-25% 傷害)");
+        break;
+      case "nature":
+      case "自然":
+        descriptions.push("🌿 自然屬性");
+        descriptions.push("優勢：火屬性、全屬性 (+25% 傷害)");
+        descriptions.push("劣勢：雷屬性 (-25% 傷害)");
+        break;
+      case "light":
+      case "光":
+        descriptions.push("✨ 光屬性");
+        descriptions.push("優勢：暗屬性、全屬性 (+25% 傷害)");
+        break;
+      case "dark":
+      case "暗":
+        descriptions.push("🌑 暗屬性");
+        descriptions.push("優勢：光屬性、全屬性 (+25% 傷害)");
+        break;
+      case "all":
+      case "全":
+        descriptions.push("🌟 全屬性");
+        descriptions.push("  └ 劣勢：其他屬性 (-25% 傷害)");
+        break;
+      case "none":
+      case "無":
+        descriptions.push("⚪ 無屬性");
+        descriptions.push("優勢：全屬性 (+25% 傷害)");
+        break;
+      default:
+        descriptions.push(`${elementMap[element] || element}屬性`);
+    }
+  });
+  
+  if (elements.length > 1) {
+    descriptions.push("");
+    descriptions.push("【複數屬性機制】");
+    descriptions.push("• 擁有多個屬性時，傷害計算將取所有屬性克制關係平均值");
+    descriptions.push("• 例如：火水雙屬性怪物被雷屬性攻擊時");
+    descriptions.push("  - 雷→火：100%傷害(無克制)");
+    descriptions.push("  - 雷→水：125%傷害(克制)");
+    descriptions.push("  - 最終傷害：(100% + 125%) ÷ 2 = 112.5%");
+  }
+  
+  return descriptions.join("\n");
+}
+
+// 詳細說明展開/收起控制
+function toggleDetails() {
+  detailsExpanded = !detailsExpanded;
+  const button = document.querySelector('.detail-toggle-btn');
+  
+  if (button) {
+    button.textContent = detailsExpanded ? '收起詳細說明' : '顯示詳細說明';
+    button.classList.toggle('active', detailsExpanded);
+  }
+  
+  // 控制玩家詳細說明
+  const playerDetails = document.querySelectorAll('.stat-detail');
+  const playerContainers = document.querySelectorAll('.stat-item-container');
+  
+  playerDetails.forEach((detail, index) => {
+    detail.classList.toggle('expanded', detailsExpanded);
+    // 為包含詳細說明的容器添加類別
+    if (playerContainers[index] && detail.querySelector('.stat-detail-content')) {
+      playerContainers[index].classList.toggle('has-expanded', detailsExpanded);
+    }
+  });
+  
+  // 控制怪物屬性詳細說明
+  const monsterDetail = document.querySelector('.monster-element-detail');
+  const monsterContainer = monsterDetail?.closest('.monster-stat-container');
+  
+  if (monsterDetail) {
+    monsterDetail.classList.toggle('expanded', detailsExpanded);
+    if (monsterContainer) {
+      monsterContainer.classList.toggle('has-expanded', detailsExpanded);
+    }
+  }
+}
+
+// 設定全域函數
+window.toggleDetails = toggleDetails;
+
+// 格式化玩家狀態
+function formatStats(data) {
+  const b = data.base_stats;
+  const e = data.equipment_bonus || {};
+  
+  const getValue = (key) => (b[key] || 0) + (e[key] || 0);
+  const getFormatted = (key) => {
+    const isPercent = ["evade", "accuracy", "other_bonus"].includes(key);
+    const total = getValue(key);
+    const base = b[key] || 0;
+    const bonus = e[key] || 0;
+    
+    if (isPercent) {
+      return {
+        total: `${percent(total)}`,
+        detail: `${percent(base)} + ${percent(bonus)}`
+      };
+    } else {
+      return {
+        total: total.toString(),
+        detail: `${base} + ${bonus}`
+      };
+    }
+  };
+
+  const statsList = [
+    { key: "level", label: "等級", value: data.level },
+    { key: "exp", label: "經驗值", value: `${data.exp}` },
+    { key: "hp", label: "生命值" },
+    { key: "attack", label: "攻擊力" },
+    { key: "shield", label: "護盾值" },
+    { key: "luck", label: "幸運值" },
+    { key: "accuracy", label: "命中率" },
+    { key: "evade", label: "迴避率" },
+    { key: "atk_speed", label: "攻擊速度" },
+    { key: "other_bonus", label: "額外傷害加成" },
+    { key: "penetrate", label: "護盾穿透" },
+    { key: "stat_points", label: "剩餘能力值點數", value: data.stat_points },
+    { key: "skill_points", label: "剩餘技能點", value: data.skill_points }
+  ];
+
+  let html = `
+    <div class="player-info-container">
+      <div class="player-name-container">
+        <h3 class="player-name">👤 ${data.nickname}</h3>
+        <button class="detail-toggle-btn" onclick="toggleDetails()">${detailsExpanded ? '收起詳細說明' : '顯示詳細說明'}</button>
+      </div>
+      <div class="stats-container">
+  `;
+  
+  statsList.forEach(({ key, label, value }) => {
+    html += `<div class="stat-item-container">`;
+    
+    if (value !== undefined) {
+      html += `<div class="stat-item">
+                 <span>${label}:</span>
+                 <span>${value}</span>
+               </div>`;
+    } else if (["hp", "attack", "shield", "penetrate", "luck", "accuracy", "evade", "atk_speed", "other_bonus"].includes(key)) {
+      const formatted = getFormatted(key);
+      html += `<div class="stat-item">
+                 <span>${label}:</span>
+                 <span>${formatted.total} (${formatted.detail})</span>
+               </div>`;
+    }
+    
+    if (tooltips[key]) {
+      html += `<div class="stat-detail ${detailsExpanded ? 'expanded' : ''}">
+                 <div class="stat-detail-content">${tooltips[key]}</div>
+               </div>`;
+    }
+    
+    html += `</div>`;
+  });
+  
+  html += `
+      </div>
+    </div>`;
+  return html;
+}
+
+// 格式化怪物資訊
+function formatMonsterInfo(mon, isLastLayer) {
+  const description = (mon.info || '').replace(/\/n/g, '\n');
+  
+  const elementText = Array.isArray(mon.element) 
+    ? mon.element.map(e => elementMap[e] || e).join("、") 
+    : (elementMap[mon.element] || mon.element);
+
+  let containerClass = "monster-info-container";
+  let bossTitle = "";
+  
+  if (isLastLayer) {
+    containerClass += " boss";
+    bossTitle = '<div class="boss-title-decoration">BOSS</div>';
+  }
+
+  const monsterPenetrate = mon.stats.penetrate || 0;
+  const elements = Array.isArray(mon.element) ? mon.element : [mon.element];
+  const elementDescription = generateElementDescription(elements);
+
+  const html = `
+    <div class="${containerClass}">
+      ${bossTitle}
+      <h2 class="monster-name">${mon.name}</h2>
+      <img src="${mon.image_url}" class="monster-image" width="200">
+      <div class="monster-description">${description}</div>
+      <div class="monster-stats">
+        <div class="monster-stat-container">
+          <div class="monster-stat-item">
+            <span>等級：</span>
+            <span>${mon.level}</span>
+          </div>
+        </div>
+        <div class="monster-stat-container">
+          <div class="monster-stat-item">
+            <span>屬性：</span>
+            <span>${elementText}</span>
+          </div>
+          <div class="monster-element-detail ${detailsExpanded ? 'expanded' : ''}">
+            <div class="monster-element-detail-content">${elementDescription}</div>
+          </div>
+        </div>
+        <div class="monster-stat-container">
+          <div class="monster-stat-item">
+            <span>生命值：</span>
+            <span>${mon.stats.hp}</span>
+          </div>
+        </div>
+        <div class="monster-stat-container">
+          <div class="monster-stat-item">
+            <span>攻擊力：</span>
+            <span>${mon.stats.attack}</span>
+          </div>
+        </div>
+        <div class="monster-stat-container">
+          <div class="monster-stat-item">
+            <span>護盾值：</span>
+            <span>${mon.stats.shield}</span>
+          </div>
+        </div>
+        <div class="monster-stat-container">
+          <div class="monster-stat-item">
+            <span>命中率：</span>
+            <span>${Math.round(mon.stats.accuracy * 100)}%</span>
+          </div>
+        </div>
+        <div class="monster-stat-container">
+          <div class="monster-stat-item">
+            <span>迴避率：</span>
+            <span>${Math.round(mon.stats.evade * 100)}%</span>
+          </div>
+        </div>
+        <div class="monster-stat-container">
+          <div class="monster-stat-item">
+            <span>攻擊速度：</span>
+            <span>${mon.stats.atk_speed}</span>
+          </div>
+        </div>
+        <div class="monster-stat-container">
+          <div class="monster-stat-item">
+            <span>護盾穿透：</span>
+            <span>${monsterPenetrate}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
+
+// 載入副本資料
+async function loadDungeonData() {
+  try {
+    const response = await fetch("parameter/dungeons.json");
+    dungeonData = await response.json();
+    return dungeonData;
+  } catch (error) {
+    console.error("載入副本資料失敗:", error);
+    throw error;
+  }
+}
+
+// 載入使用者狀態
+async function loadUserStatus() {
+  try {
+    const response = await SecureAPI.get(`${API_BASE}/status`);
+    userStatus = await response.json();
+    return userStatus;
+  } catch (error) {
+    console.error("載入使用者狀態失敗:", error);
+    throw error;
+  }
+}
+
+// 載入怪物資料
+async function loadMonster(monsterId) {
+  try {
+    const response = await SecureAPI.get(`${API_BASE}/monster?id=${monsterId}`);
+    currentMonster = await response.json();
+    return currentMonster;
+  } catch (error) {
+    console.error("載入怪物資料失敗:", error);
+    throw error;
+  }
+}
+
+// 戰鬥函數
+async function startBattle() {
+  if (!currentMonster || !userStatus) {
+    alert("戰鬥資料載入中，請稍候");
+    return;
+  }
+
+  const isLastLayer = parseInt(currentLayer) === dungeonData.find(d => d.id === currentDungeon).monsters.length;
+  
+  showBattleLoading(true, isLastLayer);
+  
+  // 模擬戰鬥載入過程
+  await new Promise(resolve => {
+    let progress = 0;
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    
+    const interval = setInterval(() => {
+      progress += Math.random() * 15 + 5;
+      if (progress > 100) progress = 100;
+      
+      if (progressBar) progressBar.style.width = progress + "%";
+      if (progressText) progressText.textContent = Math.round(progress) + "%";
+      
+      if (progress >= 100) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 100);
+  });
+
+  try {
+    const response = await SecureAPI.post(`${API_BASE}/battle_dungeon`, {
+      dungeon: currentDungeon,
+      layer: parseInt(currentLayer)
+    });
+    
+    const result = await response.json();
+    
+    showBattleLoading(false);
+    
+    if (response.ok) {
+      handleBattleResult(result);
+    } else {
+      alert(result.error || "戰鬥失敗");
+    }
+  } catch (error) {
+    showBattleLoading(false);
+    console.error("戰鬥錯誤:", error);
+    alert("戰鬥過程發生錯誤");
+  }
+}
+
+// 處理戰鬥結果
+function handleBattleResult(result) {
+  const logArea = document.getElementById("logArea");
+  if (logArea && result.battle_log) {
+    logArea.textContent = result.battle_log.join('\n');
+  }
+
+  const battleBtn = document.getElementById("battleBtn");
+  const retryBtn = document.getElementById("retryBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const leaveBtn = document.getElementById("leaveBtn");
+
+  if (result.success) {
+    // 戰鬥勝利
+    showVictoryEffect();
+    
+    if (battleBtn) battleBtn.style.display = "none";
+    if (retryBtn) retryBtn.style.display = "none";
+    
+    if (result.is_last_layer) {
+      // BOSS關卡完成
+      if (nextBtn) {
+        nextBtn.textContent = "返回副本列表";
+        nextBtn.onclick = () => window.parent.loadPage("dungeons.html");
+        nextBtn.style.display = "inline-block";
+      }
+    } else {
+      // 普通關卡完成，可進入下一層
+      if (nextBtn) {
+        nextBtn.textContent = "下一層";
+        nextBtn.onclick = () => {
+          const nextLayer = parseInt(currentLayer) + 1;
+          window.parent.loadPage(`dungeon_layer.html?dungeon=${currentDungeon}&layer=${nextLayer}`);
+        };
+        nextBtn.style.display = "inline-block";
       }
     }
-  }, 10000);
-  
-  console.log('🔧 開發模式已啟用，使用 emergencyResetCooldown() 來緊急重置冷卻');
+    
+    if (leaveBtn) leaveBtn.style.display = "inline-block";
+    
+    // 更新使用者狀態
+    if (result.user) {
+      userStatus = result.user;
+      document.getElementById("userInfo").innerHTML = formatStats(userStatus);
+      
+      // 重新應用展開狀態
+      setTimeout(() => {
+        if (detailsExpanded) {
+          const playerContainers = document.querySelectorAll('.stat-item-container');
+          const playerDetails = document.querySelectorAll('.stat-detail');
+          
+          playerDetails.forEach((detail, index) => {
+            if (detail.classList.contains('expanded') && playerContainers[index]) {
+              playerContainers[index].classList.add('has-expanded');
+            }
+          });
+        }
+      }, 50);
+    }
+    
+  } else {
+    // 戰鬥失敗
+    showDefeatEffect();
+    
+    if (battleBtn) battleBtn.style.display = "none";
+    if (retryBtn) retryBtn.style.display = "inline-block";
+    if (nextBtn) nextBtn.style.display = "none";
+    if (leaveBtn) leaveBtn.style.display = "inline-block";
+  }
 }
-  </script>
+
+// 重試戰鬥
+function retryBattle() {
+  const battleBtn = document.getElementById("battleBtn");
+  const retryBtn = document.getElementById("retryBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const leaveBtn = document.getElementById("leaveBtn");
+  
+  if (battleBtn) battleBtn.style.display = "inline-block";
+  if (retryBtn) retryBtn.style.display = "none";
+  if (nextBtn) nextBtn.style.display = "none";
+  if (leaveBtn) leaveBtn.style.display = "none";
+  
+  // 清空戰鬥記錄
+  const logArea = document.getElementById("logArea");
+  if (logArea) logArea.textContent = "";
+}
+
+// 離開副本
+function leaveDungeon() {
+  window.parent.loadPage("dungeons.html");
+}
+
+// 特效函數
+function showVictoryEffect() {
+  const overlay = document.getElementById("victoryOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    createFireworks();
+  }
+}
+
+function hideVictoryEffect() {
+  const overlay = document.getElementById("victoryOverlay");
+  if (overlay) overlay.style.display = "none";
+}
+
+function showDefeatEffect() {
+  const overlay = document.getElementById("defeatOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    createDebris();
+  }
+}
+
+function hideDefeatEffect() {
+  const overlay = document.getElementById("defeatOverlay");
+  if (overlay) overlay.style.display = "none";
+}
+
+// 煙火效果
+function createFireworks() {
+  const container = document.getElementById("fireworksContainer");
+  if (!container) return;
+  
+  container.innerHTML = "";
+  
+  for (let i = 0; i < 10; i++) {
+    setTimeout(() => {
+      const firework = document.createElement("div");
+      firework.className = "firework";
+      firework.style.left = Math.random() * 100 + "%";
+      firework.style.top = Math.random() * 100 + "%";
+      container.appendChild(firework);
+      
+      setTimeout(() => {
+        if (firework.parentNode) {
+          firework.parentNode.removeChild(firework);
+        }
+      }, 2000);
+    }, i * 200);
+  }
+}
+
+// 碎片效果
+function createDebris() {
+  const container = document.getElementById("debrisContainer");
+  if (!container) return;
+  
+  container.innerHTML = "";
+  
+  for (let i = 0; i < 15; i++) {
+    const debris = document.createElement("div");
+    debris.className = "debris-piece";
+    debris.style.left = Math.random() * 100 + "%";
+    debris.style.animationDelay = Math.random() * 2 + "s";
+    container.appendChild(debris);
+  }
+}
+
+// 設定全域函數
+window.startBattle = startBattle;
+window.retryBattle = retryBattle;
+window.leaveDungeon = leaveDungeon;
+window.hideVictoryEffect = hideVictoryEffect;
+window.hideDefeatEffect = hideDefeatEffect;
+
+// 初始化
+async function initDungeonLayer() {
+  showLoading(true);
+  
+  try {
+    const params = getURLParams();
+    currentDungeon = params.dungeon;
+    currentLayer = params.layer;
+    
+    if (!currentDungeon || currentLayer === null) {
+      throw new Error("缺少副本參數");
+    }
+    
+    // 並行載入資料
+    await Promise.all([
+      loadDungeonData(),
+      loadUserStatus()
+    ]);
+    
+    // 找到對應的副本
+    const dungeon = dungeonData.find(d => d.id === currentDungeon);
+    if (!dungeon) {
+      throw new Error("找不到指定副本");
+    }
+    
+    // 確定怪物ID
+    const layerIndex = parseInt(currentLayer);
+    const isLastLayer = layerIndex === dungeon.monsters.length;
+    const monsterId = isLastLayer ? dungeon.bossId : dungeon.monsters[layerIndex];
+    
+    if (!monsterId) {
+      throw new Error("找不到對應層數的怪物");
+    }
+    
+    // 載入怪物資料
+    await loadMonster(monsterId);
+    
+    // 設定BOSS模式
+    if (isLastLayer) {
+      document.body.classList.add("boss-mode");
+      
+      // 通知父框架切換音樂
+      window.parent.postMessage({
+        command: "switchToBossMusic"
+      }, "*");
+    }
+    
+    // 渲染介面
+    document.getElementById("userInfo").innerHTML = formatStats(userStatus);
+    document.getElementById("monsterInfo").innerHTML = formatMonsterInfo(currentMonster, isLastLayer);
+    
+    // 確保正確應用展開狀態
+    setTimeout(() => {
+      const playerContainers = document.querySelectorAll('.stat-item-container');
+      const playerDetails = document.querySelectorAll('.stat-detail');
+      
+      playerDetails.forEach((detail, index) => {
+        if (detail.classList.contains('expanded') && playerContainers[index]) {
+          playerContainers[index].classList.add('has-expanded');
+        }
+      });
+      
+      const monsterDetail = document.querySelector('.monster-element-detail');
+      const monsterContainer = monsterDetail?.closest('.monster-stat-container');
+      
+      if (monsterDetail?.classList.contains('expanded') && monsterContainer) {
+        monsterContainer.classList.add('has-expanded');
+      }
+    }, 50);
+    
+  } catch (error) {
+    console.error("初始化失敗:", error);
+    alert("載入副本失敗：" + error.message);
+    window.parent.loadPage("dungeons.html");
+  } finally {
+    showLoading(false);
+  }
+}
+
+// 監聽登入狀態
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    initDungeonLayer();
+  } else {
+    window.parent.location.href = "/SFL/login.html";
+  }
+});
+
+// 頁面載入粒子效果
+function createPageParticles() {
+  const particlesContainer = document.getElementById("pageParticles");
+  if (!particlesContainer) return;
+  particlesContainer.innerHTML = "";
+  for (let i = 0; i < 30; i++) {
+    const particle = document.createElement("div");
+    particle.className = "particle";
+    particle.style.left = Math.random() * 100 + "%";
+    particle.style.animationDelay = Math.random() * 4 + "s";
+    particle.style.animationDuration = (Math.random() * 2 + 3) + "s";
+    particle.style.background = `rgba(${Math.random() > 0.5 ? '56, 239, 125' : '17, 153, 142'}, 0.7)`;
+    particlesContainer.appendChild(particle);
+  }
+}
+
+function startPageLoadingProgress() {
+  const progressBar = document.getElementById("pageProgressBar");
+  const progressText = document.getElementById("pageProgressText");
+  const loadingText = document.getElementById("pageLoadingText");
+  if (!progressBar || !progressText || !loadingText) return;
+
+  const messages = [
+    "正在載入副本資料...",
+    "獲取玩家狀態...",
+    "載入怪物資訊...",
+    "準備戰鬥環境...",
+    "載入完成！"
+  ];
+
+  let progress = 0;
+  let messageIndex = 0;
+  const progressInterval = setInterval(() => {
+    progress += Math.random() * 20 + 10;
+    if (progress > 100) progress = 100;
+
+    progressBar.style.width = progress + "%";
+    progressText.textContent = Math.round(progress) + "%";
+
+    if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 20) {
+      messageIndex++;
+      loadingText.textContent = messages[messageIndex];
+    }
+
+    if (progress >= 100) {
+      clearInterval(progressInterval);
+      loadingText.textContent = messages[messages.length - 1];
+    }
+  }, 300);
+
+  window.pageLoadingInterval = progressInterval;
+}
+
+createPageParticles();
+startPageLoadingProgress();
+</script>
 </body>
 </html>
