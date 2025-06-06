@@ -13,7 +13,7 @@
   background: none !important;
 }
 
-/* 優化的詳細說明容器 - 消除空格問題 */
+/* 完全零間隙的詳細說明容器 */
 .stat-item-container {
   position: relative;
   margin: 0;
@@ -24,11 +24,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 8px 0;
+  margin: 0;
   padding: 8px 12px;
   background: rgba(0, 255, 255, 0.05);
   border: 1px solid rgba(0, 255, 255, 0.1);
-  border-radius: 6px;
+  border-bottom: none; /* 移除底部邊框避免重複 */
   font-family: 'Orbitron', sans-serif;
   font-weight: 600;
   font-size: 0.9em;
@@ -37,10 +37,31 @@
   position: relative;
 }
 
+/* 最後一個項目添加底部邊框 */
+.stat-item-container:last-child .stat-item {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+/* 第一個項目的圓角 */
+.stat-item-container:first-child .stat-item {
+  border-radius: 6px 6px 0 0;
+}
+
+/* 最後一個項目的圓角（如果沒有展開詳細說明） */
+.stat-item-container:last-child .stat-item {
+  border-radius: 0 0 6px 6px;
+}
+
+/* 只有一個項目時的完整圓角 */
+.stat-item-container:first-child:last-child .stat-item {
+  border-radius: 6px;
+}
+
 .stat-item:hover {
   background: rgba(0, 255, 255, 0.1);
   border-color: rgba(0, 255, 255, 0.3);
-  transform: translateX(3px);
+  transform: translateX(2px);
+  z-index: 2;
 }
 
 .stat-item span:first-child {
@@ -56,19 +77,17 @@
   text-align: right;
 }
 
-/* 詳細說明容器 - 零空隙設計 */
+/* 完全零間隙的詳細說明容器 */
 .stat-detail {
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   background: linear-gradient(135deg, rgba(0, 255, 255, 0.08), rgba(0, 255, 255, 0.02));
-  border-radius: 0 0 6px 6px;
-  margin: 0;
-  border-left: 3px solid rgba(0, 255, 255, 0.3);
+  border-left: 1px solid rgba(0, 255, 255, 0.1);
   border-right: 1px solid rgba(0, 255, 255, 0.1);
   border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-  /* 負邊距消除間隙 */
-  margin-top: -1px;
+  margin: 0;
+  padding: 0;
   border-top: none;
 }
 
@@ -77,7 +96,7 @@
 }
 
 .stat-detail-content {
-  padding: 12px 15px;
+  padding: 10px 12px;
   font-size: 0.75em;
   color: #b8e6ff;
   line-height: 1.5;
@@ -85,7 +104,7 @@
   margin: 0;
   /* 確保內容不會在收起時顯示 */
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-8px);
   transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
 }
 
@@ -94,10 +113,11 @@
   transform: translateY(0);
 }
 
-/* 怪物屬性詳細說明 - 零空隙設計 */
+/* 怪物屬性完全零間隙設計 */
 .monster-stat-container {
   position: relative;
   margin: 0;
+  padding: 0;
 }
 
 .monster-stat-item {
@@ -107,19 +127,40 @@
   padding: 6px 10px;
   background: rgba(255, 107, 107, 0.1);
   border: 1px solid rgba(255, 107, 107, 0.2);
-  border-radius: 6px;
+  border-bottom: none;
   font-family: 'Orbitron', sans-serif;
   font-weight: 600;
   font-size: 0.85em;
   transition: all 0.3s ease;
-  margin: 6px 0;
+  margin: 0;
   cursor: pointer;
+}
+
+/* 最後一個怪物項目添加底部邊框 */
+.monster-stat-container:last-child .monster-stat-item {
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+/* 第一個怪物項目的圓角 */
+.monster-stat-container:first-child .monster-stat-item {
+  border-radius: 6px 6px 0 0;
+}
+
+/* 最後一個怪物項目的圓角 */
+.monster-stat-container:last-child .monster-stat-item {
+  border-radius: 0 0 6px 6px;
+}
+
+/* 只有一個怪物項目時的完整圓角 */
+.monster-stat-container:first-child:last-child .monster-stat-item {
+  border-radius: 6px;
 }
 
 .monster-stat-item:hover {
   background: rgba(255, 107, 107, 0.2);
   border-color: rgba(255, 107, 107, 0.4);
-  transform: translateX(3px);
+  transform: translateX(2px);
+  z-index: 2;
 }
 
 .monster-stat-item span:first-child {
@@ -138,11 +179,11 @@
   overflow: hidden;
   transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   background: linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(255, 107, 107, 0.02));
-  border-radius: 0 0 6px 6px;
-  border-left: 3px solid rgba(255, 107, 107, 0.4);
+  border-left: 1px solid rgba(255, 107, 107, 0.2);
   border-right: 1px solid rgba(255, 107, 107, 0.2);
   border-bottom: 1px solid rgba(255, 107, 107, 0.2);
-  margin-top: -1px;
+  margin: 0;
+  padding: 0;
   border-top: none;
 }
 
@@ -151,14 +192,14 @@
 }
 
 .monster-element-detail-content {
-  padding: 12px 15px;
+  padding: 10px 12px;
   font-size: 0.8em;
   color: #ffd1d1;
   line-height: 1.5;
   text-shadow: 0 0 3px rgba(255, 209, 209, 0.3);
   white-space: pre-line;
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-8px);
   transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
 }
 
@@ -185,12 +226,28 @@ body.boss-mode .monster-stat-item span:last-child {
 
 body.boss-mode .monster-element-detail {
   background: linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 69, 0, 0.05));
-  border-left-color: rgba(255, 69, 0, 0.5);
+  border-left-color: rgba(255, 69, 0, 0.3);
+  border-right-color: rgba(255, 69, 0, 0.3);
+  border-bottom-color: rgba(255, 69, 0, 0.3);
 }
 
 body.boss-mode .monster-element-detail-content {
   color: #ffb84d;
   text-shadow: 0 0 5px rgba(255, 184, 77, 0.4);
+}
+
+/* BOSS裝飾標題 */
+.boss-title-decoration {
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: 900;
+  color: #ff4500;
+  text-shadow: 0 0 15px rgba(255, 69, 0, 0.8);
+  margin-bottom: 8px;
+  padding: 5px;
+  background: linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 69, 0, 0.05));
+  border-radius: 6px;
+  border: 1px solid rgba(255, 69, 0, 0.3);
 }
 
 /* 展開控制按鈕 */
@@ -205,11 +262,9 @@ body.boss-mode .monster-element-detail-content {
   transition: all 0.3s ease;
   font-family: 'Orbitron', sans-serif;
   font-weight: 600;
-  margin-bottom: 15px;
+  margin: 0 auto 10px auto;
   display: block;
   width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .detail-toggle-btn:hover {
@@ -224,16 +279,102 @@ body.boss-mode .monster-element-detail-content {
   border-color: rgba(0, 255, 255, 0.6);
 }
 
-/* 展開指示器 */
-.expand-indicator {
-  margin-left: 8px;
-  transition: transform 0.3s ease;
-  font-size: 0.8em;
+/* 展開時圓角處理 - 使用類別控制 */
+.stat-item-container.has-expanded .stat-item {
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
 }
 
-.stat-detail.expanded ~ .stat-item .expand-indicator,
-.monster-element-detail.expanded ~ .monster-stat-item .expand-indicator {
-  transform: rotate(180deg);
+.stat-detail.expanded {
+  border-radius: 0 0 6px 6px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.monster-stat-container.has-expanded .monster-stat-item {
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.monster-element-detail.expanded {
+  border-radius: 0 0 6px 6px;
+  border-bottom: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+/* BOSS模式下的展開樣式 */
+body.boss-mode .monster-stat-container.has-expanded .monster-stat-item {
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
+body.boss-mode .monster-element-detail.expanded {
+  border-bottom-color: rgba(255, 69, 0, 0.3);
+}
+
+/* 玩家信息容器零間距 */
+.player-info-container {
+  margin: 0;
+  padding: 0;
+}
+
+.player-name {
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  text-align: center;
+  margin: 10px 0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+}
+
+/* 怪物信息容器零間距 */
+.monster-info-container {
+  margin: 0;
+  padding: 0;
+}
+
+.monster-name {
+  color: #ff6b6b;
+  text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+  text-align: center;
+  margin: 10px 0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3em;
+}
+
+.monster-image {
+  display: block;
+  margin: 10px auto;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 107, 107, 0.3);
+}
+
+.monster-description {
+  color: #ffd1d1;
+  text-align: center;
+  margin: 10px 0;
+  padding: 10px;
+  background: rgba(255, 107, 107, 0.05);
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+/* 完全消除所有間隙 */
+.stats-container > *,
+.monster-stats > * {
+  margin: 0;
+  padding: 0;
+}
+
+.stats-container,
+.monster-stats {
+  margin: 0;
+  padding: 0;
+}
+
+/* 確保展開內容不會影響其他元素 */
+.stat-item-container,
+.monster-stat-container {
+  isolation: isolate;
+  margin: 0;
+  padding: 0;
 }
 
 /* 響應式設計 */
@@ -241,12 +382,13 @@ body.boss-mode .monster-element-detail-content {
   .detail-toggle-btn {
     padding: 6px 12px;
     font-size: 0.7em;
+    margin-bottom: 8px;
   }
   
   .stat-detail-content,
   .monster-element-detail-content {
     font-size: 0.7em;
-    padding: 10px 12px;
+    padding: 8px 10px;
   }
   
   .stat-detail.expanded {
@@ -256,23 +398,18 @@ body.boss-mode .monster-element-detail-content {
   .monster-element-detail.expanded {
     max-height: 250px;
   }
-}
-
-/* 消除所有可能的間隙 */
-.stats-container > *,
-.monster-stats > * {
-  margin-bottom: 0;
-}
-
-.stats-container .stat-item-container:not(:last-child),
-.monster-stats .monster-stat-container:not(:last-child) {
-  margin-bottom: 8px;
-}
-
-/* 確保展開內容不會影響其他元素 */
-.stat-item-container,
-.monster-stat-container {
-  isolation: isolate;
+  
+  .stat-item,
+  .monster-stat-item {
+    padding: 6px 8px;
+    font-size: 0.8em;
+  }
+  
+  .player-name,
+  .monster-name {
+    font-size: 1.1em;
+    margin: 8px 0;
+  }
 }
 </style>
 </head>
@@ -348,70 +485,18 @@ body.boss-mode .monster-element-detail-content {
 <button id="leaveBtn" onclick="leaveDungeon()" style="display:none">離開副本</button>
 </div>
 
-<script>
-function percent(val) {
-  return (val * 100).toFixed(1) + '%';
-}
+<script type="module">
+import { auth, SecureAPI, PerformanceMonitor } from "./js/firebase-init.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// 頁面載入粒子效果
-(function() {
-  function createPageParticles() {
-    const particlesContainer = document.getElementById("pageParticles");
-    if (!particlesContainer) return;
-    particlesContainer.innerHTML = "";
-    for (let i = 0; i < 30; i++) {
-      const particle = document.createElement("div");
-      particle.className = "particle";
-      particle.style.left = Math.random() * 100 + "%";
-      particle.style.animationDelay = Math.random() * 4 + "s";
-      particle.style.animationDuration = (Math.random() * 2 + 3) + "s";
-      particle.style.background = `rgba(${Math.random() > 0.5 ? '56, 239, 125' : '17, 153, 142'}, 0.7)`;
-      particlesContainer.appendChild(particle);
-    }
-  }
+const API_BASE = "https://sfl-9cb8.onrender.com";
 
-  function startPageLoadingProgress() {
-    const progressBar = document.getElementById("pageProgressBar");
-    const progressText = document.getElementById("pageProgressText");
-    const loadingText = document.getElementById("pageLoadingText");
-    if (!progressBar || !progressText || !loadingText) return;
-
-    const messages = [
-      "正在載入副本資料...",
-      "獲取玩家狀態...",
-      "載入怪物資訊...",
-      "準備戰鬥環境...",
-      "載入完成！"
-    ];
-
-    let progress = 0;
-    let messageIndex = 0;
-    const progressInterval = setInterval(() => {
-      progress += Math.random() * 20 + 10;
-      if (progress > 100) progress = 100;
-
-      progressBar.style.width = progress + "%";
-      progressText.textContent = Math.round(progress) + "%";
-
-      if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 20) {
-        messageIndex++;
-        loadingText.textContent = messages[messageIndex];
-      }
-
-      if (progress >= 100) {
-        clearInterval(progressInterval);
-        loadingText.textContent = messages[messages.length - 1];
-      }
-    }, 300);
-
-    window.pageLoadingInterval = progressInterval;
-  }
-
-  createPageParticles();
-  startPageLoadingProgress();
-})();
-
-// 詳細說明狀態
+// 全局變量
+let currentDungeon = null;
+let currentLayer = null;
+let currentMonster = null;
+let userStatus = null;
+let dungeonData = null;
 let detailsExpanded = false;
 
 // 詳細說明 tooltips
@@ -429,6 +514,67 @@ const tooltips = {
   penetrate: "無視敵人護盾值的能力。穿透值會直接扣除敵人的有效護盾值，是突破高防禦敵人的關鍵屬性。每點穿透可無視1點敵人護盾。",
   stat_points: "可用於提升基礎能力值的點數。每升級獲得5點。可分配到生命值(+5/點)、攻擊力(+1/點)或幸運值(+1/點)。",
   skill_points: "可用於升級技能的點數。每升級獲得3點。"
+};
+
+// URL 參數解析
+function getURLParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    dungeon: params.get("dungeon"),
+    layer: params.get("layer")
+  };
+}
+
+// 工具函數
+function percent(val) {
+  return (val * 100).toFixed(1) + '%';
+}
+
+function showLoading(show) {
+  const loading = document.getElementById("loadingOverlay");
+  if (loading) loading.style.display = show ? "flex" : "none";
+}
+
+function showBattleLoading(show, isBoss = false) {
+  const battleLoading = document.getElementById("battleLoadingOverlay");
+  if (!battleLoading) return;
+  
+  battleLoading.style.display = show ? "flex" : "none";
+  
+  if (show) {
+    battleLoading.className = isBoss ? "boss-battle" : "";
+    const title = document.getElementById("battleTitle");
+    const icon = document.getElementById("battleIcon");
+    const tips = document.getElementById("battleTips");
+    
+    if (isBoss) {
+      if (title) title.textContent = "BOSS戰鬥準備中";
+      if (icon) icon.textContent = "👑";
+      if (tips) tips.innerHTML = "⚔️ BOSS戰鬥即將開始！<br/>🔥 運用你的最強技能組合！";
+      title?.classList.add("boss");
+      icon?.classList.add("boss");
+      tips?.classList.add("boss");
+    } else {
+      if (title) title.textContent = "戰鬥準備中";
+      if (icon) icon.textContent = "⚔️";
+      if (tips) tips.innerHTML = "💡 戰鬥小提示：善用屬性克制關係可以提高勝率！<br/>🛡️ 記得切換不同技能來應對不同關卡";
+      title?.classList.remove("boss");
+      icon?.classList.remove("boss");
+      tips?.classList.remove("boss");
+    }
+  }
+}
+
+const elementMap = {
+  "none": "無",
+  "phy": "物理", 
+  "pyro": "火",
+  "hydro": "水",
+  "electro": "雷",
+  "nature": "自然",
+  "light": "光",
+  "dark": "暗",
+  "all": "全"
 };
 
 // 屬性克制說明生成
@@ -511,34 +657,32 @@ function toggleDetails() {
   
   // 控制玩家詳細說明
   const playerDetails = document.querySelectorAll('.stat-detail');
-  playerDetails.forEach(detail => {
+  const playerContainers = document.querySelectorAll('.stat-item-container');
+  
+  playerDetails.forEach((detail, index) => {
     detail.classList.toggle('expanded', detailsExpanded);
+    // 為包含詳細說明的容器添加類別
+    if (playerContainers[index] && detail.querySelector('.stat-detail-content')) {
+      playerContainers[index].classList.toggle('has-expanded', detailsExpanded);
+    }
   });
   
   // 控制怪物屬性詳細說明
   const monsterDetail = document.querySelector('.monster-element-detail');
+  const monsterContainer = monsterDetail?.closest('.monster-stat-container');
+  
   if (monsterDetail) {
     monsterDetail.classList.toggle('expanded', detailsExpanded);
+    if (monsterContainer) {
+      monsterContainer.classList.toggle('has-expanded', detailsExpanded);
+    }
   }
 }
 
 // 設定全域函數
 window.toggleDetails = toggleDetails;
 
-// 模擬的遊戲資料和函數（這裡需要根據你的實際實現來調整）
-const elementMap = {
-  "none": "無",
-  "phy": "物理", 
-  "pyro": "火",
-  "hydro": "水",
-  "electro": "雷",
-  "nature": "自然",
-  "light": "光",
-  "dark": "暗",
-  "all": "全"
-};
-
-// 模擬格式化玩家狀態
+// 格式化玩家狀態
 function formatStats(data) {
   const b = data.base_stats;
   const e = data.equipment_bonus || {};
@@ -565,7 +709,7 @@ function formatStats(data) {
 
   const statsList = [
     { key: "level", label: "等級", value: data.level },
-    { key: "exp", label: "經驗值", value: `${data.exp} (${percent(data.exp / 1000)})` },
+    { key: "exp", label: "經驗值", value: `${data.exp}` },
     { key: "hp", label: "生命值" },
     { key: "attack", label: "攻擊力" },
     { key: "shield", label: "護盾值" },
@@ -611,11 +755,13 @@ function formatStats(data) {
     html += `</div>`;
   });
   
-  html += '</div></div>';
+  html += `
+      </div>
+    </div>`;
   return html;
 }
 
-// 模擬格式化怪物資訊
+// 格式化怪物資訊
 function formatMonsterInfo(mon, isLastLayer) {
   const description = (mon.info || '').replace(/\/n/g, '\n');
   
@@ -706,91 +852,405 @@ function formatMonsterInfo(mon, isLastLayer) {
   return html;
 }
 
-// 示例資料用於展示
-const sampleUserData = {
-  nickname: "測試玩家",
-  level: 25,
-  exp: 750,
-  stat_points: 5,
-  skill_points: 3,
-  base_stats: {
-    hp: 150,
-    attack: 45,
-    shield: 20,
-    luck: 15,
-    accuracy: 0.85,
-    evade: 0.15,
-    atk_speed: 110,
-    other_bonus: 0.1,
-    penetrate: 5
-  },
-  equipment_bonus: {
-    hp: 30,
-    attack: 15,
-    shield: 10,
-    luck: 5,
-    accuracy: 0.05,
-    evade: 0.02,
-    other_bonus: 0.05,
-    penetrate: 2
+// 載入副本資料
+async function loadDungeonData() {
+  try {
+    const response = await fetch("parameter/dungeons.json");
+    dungeonData = await response.json();
+    return dungeonData;
+  } catch (error) {
+    console.error("載入副本資料失敗:", error);
+    throw error;
   }
-};
+}
 
-const sampleMonsterData = {
-  name: "沼澤之王",
-  image_url: "https://via.placeholder.com/200x200?text=Monster",
-  element: ["hydro", "nature"],
-  level: 30,
-  info: "統治沼澤地的強大生物，擁有水與自然的雙重力量。",
-  stats: {
-    hp: 2500,
-    attack: 80,
-    shield: 50,
-    accuracy: 0.9,
-    evade: 0.1,
-    atk_speed: 95,
-    penetrate: 8
+// 載入使用者狀態
+async function loadUserStatus() {
+  try {
+    const response = await SecureAPI.get(`${API_BASE}/status`);
+    userStatus = await response.json();
+    return userStatus;
+  } catch (error) {
+    console.error("載入使用者狀態失敗:", error);
+    throw error;
   }
-};
+}
 
-// 初始化示例顯示
-setTimeout(() => {
-  document.getElementById('userInfo').innerHTML = formatStats(sampleUserData);
-  document.getElementById('monsterInfo').innerHTML = formatMonsterInfo(sampleMonsterData, false);
+// 載入怪物資料
+async function loadMonster(monsterId) {
+  try {
+    const response = await SecureAPI.get(`${API_BASE}/monster?id=${monsterId}`);
+    currentMonster = await response.json();
+    return currentMonster;
+  } catch (error) {
+    console.error("載入怪物資料失敗:", error);
+    throw error;
+  }
+}
+
+// 戰鬥函數
+async function startBattle() {
+  if (!currentMonster || !userStatus) {
+    alert("戰鬥資料載入中，請稍候");
+    return;
+  }
+
+  const isLastLayer = parseInt(currentLayer) === dungeonData.find(d => d.id === currentDungeon).monsters.length;
   
-  // 隱藏載入畫面
-  const loading = document.getElementById('loadingOverlay');
-  if (loading) {
-    loading.style.display = 'none';
-  }
-}, 2000);
+  showBattleLoading(true, isLastLayer);
+  
+  // 模擬戰鬥載入過程
+  await new Promise(resolve => {
+    let progress = 0;
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    
+    const interval = setInterval(() => {
+      progress += Math.random() * 15 + 5;
+      if (progress > 100) progress = 100;
+      
+      if (progressBar) progressBar.style.width = progress + "%";
+      if (progressText) progressText.textContent = Math.round(progress) + "%";
+      
+      if (progress >= 100) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 100);
+  });
 
-// 模擬特效函數
+  try {
+    const response = await SecureAPI.post(`${API_BASE}/battle_dungeon`, {
+      dungeon: currentDungeon,
+      layer: parseInt(currentLayer)
+    });
+    
+    const result = await response.json();
+    
+    showBattleLoading(false);
+    
+    if (response.ok) {
+      handleBattleResult(result);
+    } else {
+      alert(result.error || "戰鬥失敗");
+    }
+  } catch (error) {
+    showBattleLoading(false);
+    console.error("戰鬥錯誤:", error);
+    alert("戰鬥過程發生錯誤");
+  }
+}
+
+// 處理戰鬥結果
+function handleBattleResult(result) {
+  const logArea = document.getElementById("logArea");
+  if (logArea && result.battle_log) {
+    logArea.textContent = result.battle_log.join('\n');
+  }
+
+  const battleBtn = document.getElementById("battleBtn");
+  const retryBtn = document.getElementById("retryBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const leaveBtn = document.getElementById("leaveBtn");
+
+  if (result.success) {
+    // 戰鬥勝利
+    showVictoryEffect();
+    
+    if (battleBtn) battleBtn.style.display = "none";
+    if (retryBtn) retryBtn.style.display = "none";
+    
+    if (result.is_last_layer) {
+      // BOSS關卡完成
+      if (nextBtn) {
+        nextBtn.textContent = "返回副本列表";
+        nextBtn.onclick = () => window.parent.loadPage("dungeons.html");
+        nextBtn.style.display = "inline-block";
+      }
+    } else {
+      // 普通關卡完成，可進入下一層
+      if (nextBtn) {
+        nextBtn.textContent = "下一層";
+        nextBtn.onclick = () => {
+          const nextLayer = parseInt(currentLayer) + 1;
+          window.parent.loadPage(`dungeon_layer.html?dungeon=${currentDungeon}&layer=${nextLayer}`);
+        };
+        nextBtn.style.display = "inline-block";
+      }
+    }
+    
+    if (leaveBtn) leaveBtn.style.display = "inline-block";
+    
+    // 更新使用者狀態
+    if (result.user) {
+      userStatus = result.user;
+      document.getElementById("userInfo").innerHTML = formatStats(userStatus);
+      
+      // 重新應用展開狀態
+      setTimeout(() => {
+        if (detailsExpanded) {
+          const playerContainers = document.querySelectorAll('.stat-item-container');
+          const playerDetails = document.querySelectorAll('.stat-detail');
+          
+          playerDetails.forEach((detail, index) => {
+            if (detail.classList.contains('expanded') && playerContainers[index]) {
+              playerContainers[index].classList.add('has-expanded');
+            }
+          });
+        }
+      }, 50);
+    }
+    
+  } else {
+    // 戰鬥失敗
+    showDefeatEffect();
+    
+    if (battleBtn) battleBtn.style.display = "none";
+    if (retryBtn) retryBtn.style.display = "inline-block";
+    if (nextBtn) nextBtn.style.display = "none";
+    if (leaveBtn) leaveBtn.style.display = "inline-block";
+  }
+}
+
+// 重試戰鬥
+function retryBattle() {
+  const battleBtn = document.getElementById("battleBtn");
+  const retryBtn = document.getElementById("retryBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const leaveBtn = document.getElementById("leaveBtn");
+  
+  if (battleBtn) battleBtn.style.display = "inline-block";
+  if (retryBtn) retryBtn.style.display = "none";
+  if (nextBtn) nextBtn.style.display = "none";
+  if (leaveBtn) leaveBtn.style.display = "none";
+  
+  // 清空戰鬥記錄
+  const logArea = document.getElementById("logArea");
+  if (logArea) logArea.textContent = "";
+}
+
+// 離開副本
+function leaveDungeon() {
+  window.parent.loadPage("dungeons.html");
+}
+
+// 特效函數
+function showVictoryEffect() {
+  const overlay = document.getElementById("victoryOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    createFireworks();
+  }
+}
+
 function hideVictoryEffect() {
-  document.getElementById("victoryOverlay").style.display = "none";
+  const overlay = document.getElementById("victoryOverlay");
+  if (overlay) overlay.style.display = "none";
+}
+
+function showDefeatEffect() {
+  const overlay = document.getElementById("defeatOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    createDebris();
+  }
 }
 
 function hideDefeatEffect() {
-  document.getElementById("defeatOverlay").style.display = "none";
+  const overlay = document.getElementById("defeatOverlay");
+  if (overlay) overlay.style.display = "none";
 }
 
-function leaveDungeon() {
-  alert("離開副本");
+// 煙火效果
+function createFireworks() {
+  const container = document.getElementById("fireworksContainer");
+  if (!container) return;
+  
+  container.innerHTML = "";
+  
+  for (let i = 0; i < 10; i++) {
+    setTimeout(() => {
+      const firework = document.createElement("div");
+      firework.className = "firework";
+      firework.style.left = Math.random() * 100 + "%";
+      firework.style.top = Math.random() * 100 + "%";
+      container.appendChild(firework);
+      
+      setTimeout(() => {
+        if (firework.parentNode) {
+          firework.parentNode.removeChild(firework);
+        }
+      }, 2000);
+    }, i * 200);
+  }
 }
 
-function startBattle() {
-  alert("開始戰鬥");
+// 碎片效果
+function createDebris() {
+  const container = document.getElementById("debrisContainer");
+  if (!container) return;
+  
+  container.innerHTML = "";
+  
+  for (let i = 0; i < 15; i++) {
+    const debris = document.createElement("div");
+    debris.className = "debris-piece";
+    debris.style.left = Math.random() * 100 + "%";
+    debris.style.animationDelay = Math.random() * 2 + "s";
+    container.appendChild(debris);
+  }
 }
 
-function retryBattle() {
-  alert("再戰一次");
-}
-
-window.hideVictoryEffect = hideVictoryEffect;
-window.hideDefeatEffect = hideDefeatEffect;
-window.leaveDungeon = leaveDungeon;
+// 設定全域函數
 window.startBattle = startBattle;
 window.retryBattle = retryBattle;
+window.leaveDungeon = leaveDungeon;
+window.hideVictoryEffect = hideVictoryEffect;
+window.hideDefeatEffect = hideDefeatEffect;
+
+// 初始化
+async function initDungeonLayer() {
+  showLoading(true);
+  
+  try {
+    const params = getURLParams();
+    currentDungeon = params.dungeon;
+    currentLayer = params.layer;
+    
+    if (!currentDungeon || currentLayer === null) {
+      throw new Error("缺少副本參數");
+    }
+    
+    // 並行載入資料
+    await Promise.all([
+      loadDungeonData(),
+      loadUserStatus()
+    ]);
+    
+    // 找到對應的副本
+    const dungeon = dungeonData.find(d => d.id === currentDungeon);
+    if (!dungeon) {
+      throw new Error("找不到指定副本");
+    }
+    
+    // 確定怪物ID
+    const layerIndex = parseInt(currentLayer);
+    const isLastLayer = layerIndex === dungeon.monsters.length;
+    const monsterId = isLastLayer ? dungeon.bossId : dungeon.monsters[layerIndex];
+    
+    if (!monsterId) {
+      throw new Error("找不到對應層數的怪物");
+    }
+    
+    // 載入怪物資料
+    await loadMonster(monsterId);
+    
+    // 設定BOSS模式
+    if (isLastLayer) {
+      document.body.classList.add("boss-mode");
+      
+      // 通知父框架切換音樂
+      window.parent.postMessage({
+        command: "switchToBossMusic"
+      }, "*");
+    }
+    
+    // 渲染介面
+    document.getElementById("userInfo").innerHTML = formatStats(userStatus);
+    document.getElementById("monsterInfo").innerHTML = formatMonsterInfo(currentMonster, isLastLayer);
+    
+    // 確保正確應用展開狀態
+    setTimeout(() => {
+      const playerContainers = document.querySelectorAll('.stat-item-container');
+      const playerDetails = document.querySelectorAll('.stat-detail');
+      
+      playerDetails.forEach((detail, index) => {
+        if (detail.classList.contains('expanded') && playerContainers[index]) {
+          playerContainers[index].classList.add('has-expanded');
+        }
+      });
+      
+      const monsterDetail = document.querySelector('.monster-element-detail');
+      const monsterContainer = monsterDetail?.closest('.monster-stat-container');
+      
+      if (monsterDetail?.classList.contains('expanded') && monsterContainer) {
+        monsterContainer.classList.add('has-expanded');
+      }
+    }, 50);
+    
+  } catch (error) {
+    console.error("初始化失敗:", error);
+    alert("載入副本失敗：" + error.message);
+    window.parent.loadPage("dungeons.html");
+  } finally {
+    showLoading(false);
+  }
+}
+
+// 監聽登入狀態
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    initDungeonLayer();
+  } else {
+    window.parent.location.href = "/SFL/login.html";
+  }
+});
+
+// 頁面載入粒子效果
+function createPageParticles() {
+  const particlesContainer = document.getElementById("pageParticles");
+  if (!particlesContainer) return;
+  particlesContainer.innerHTML = "";
+  for (let i = 0; i < 30; i++) {
+    const particle = document.createElement("div");
+    particle.className = "particle";
+    particle.style.left = Math.random() * 100 + "%";
+    particle.style.animationDelay = Math.random() * 4 + "s";
+    particle.style.animationDuration = (Math.random() * 2 + 3) + "s";
+    particle.style.background = `rgba(${Math.random() > 0.5 ? '56, 239, 125' : '17, 153, 142'}, 0.7)`;
+    particlesContainer.appendChild(particle);
+  }
+}
+
+function startPageLoadingProgress() {
+  const progressBar = document.getElementById("pageProgressBar");
+  const progressText = document.getElementById("pageProgressText");
+  const loadingText = document.getElementById("pageLoadingText");
+  if (!progressBar || !progressText || !loadingText) return;
+
+  const messages = [
+    "正在載入副本資料...",
+    "獲取玩家狀態...",
+    "載入怪物資訊...",
+    "準備戰鬥環境...",
+    "載入完成！"
+  ];
+
+  let progress = 0;
+  let messageIndex = 0;
+  const progressInterval = setInterval(() => {
+    progress += Math.random() * 20 + 10;
+    if (progress > 100) progress = 100;
+
+    progressBar.style.width = progress + "%";
+    progressText.textContent = Math.round(progress) + "%";
+
+    if (messageIndex < messages.length - 1 && progress > (messageIndex + 1) * 20) {
+      messageIndex++;
+      loadingText.textContent = messages[messageIndex];
+    }
+
+    if (progress >= 100) {
+      clearInterval(progressInterval);
+      loadingText.textContent = messages[messages.length - 1];
+    }
+  }, 300);
+
+  window.pageLoadingInterval = progressInterval;
+}
+
+createPageParticles();
+startPageLoadingProgress();
 </script>
 </body>
 </html>
