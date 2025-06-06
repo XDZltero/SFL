@@ -6,123 +6,56 @@
   <link rel="icon" href="favicon.ico" />
   <link href="css/inventory.css" rel="stylesheet"/>
   <style>
-    /* 下拉選單增強樣式 */
-    .dungeon-dropdown {
-      position: fixed; /* 保持 fixed 定位確保最頂層 */
-      background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(25, 25, 55, 0.98) 100%);
-      backdrop-filter: blur(20px);
-      border: 2px solid rgba(0, 255, 255, 0.4);
-      border-radius: 15px;
-      padding: 15px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
-      z-index: 99999; /* 提高到最高層級 */
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 200px;
-      max-width: 300px;
-      opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      
-      /* 添加滾動支持 */
-      max-height: 300px;
-      overflow-y: auto;
-      
-      /* 確保可以點擊 */
-      pointer-events: auto;
+    /* 道具分類按鈕樣式 */
+    .item-category-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
-
-    .dungeon-dropdown.show {
-      display: flex !important;
-      opacity: 1 !important;
-      z-index: 99999 !important;
-      pointer-events: auto !important;
-    }
-
-    /* 自定義滾動條樣式 */
-    .dungeon-dropdown::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .dungeon-dropdown::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 3px;
-    }
-
-    .dungeon-dropdown::-webkit-scrollbar-thumb {
-      background: rgba(0, 255, 255, 0.5);
-      border-radius: 3px;
-    }
-
-    .dungeon-dropdown::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 255, 255, 0.7);
-    }
-
-    /* Firefox 滾動條樣式 */
-    .dungeon-dropdown {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(0, 255, 255, 0.5) rgba(0, 0, 0, 0.3);
-    }
-
-    .dungeon-btn {
-      background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.05) 100%);
-      border: 1px solid rgba(0, 255, 255, 0.2);
-      border-radius: 10px;
-      padding: 10px 12px;
+    
+    .category-btn {
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 20px;
+      padding: 8px 16px;
       color: #fff;
       font-family: 'Orbitron', sans-serif;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 0.85em;
-      text-align: left;
-      flex-shrink: 0; /* 防止按鈕縮小 */
-      pointer-events: auto; /* 確保按鈕可以點擊 */
+      font-size: 0.9em;
     }
-
-    .dungeon-btn:hover {
-      background: linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(255, 119, 198, 0.1) 100%);
-      border-color: rgba(0, 255, 255, 0.4);
-      transform: translateX(3px);
+    
+    .category-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+      border-color: rgba(0, 255, 255, 0.6);
     }
-
-    .dungeon-btn.active {
+    
+    .category-btn.active {
       background: linear-gradient(135deg, #00ffff 0%, #00bfff 100%);
       color: #000;
       border-color: #00ffff;
+      box-shadow: 0 6px 20px rgba(0, 255, 255, 0.6);
       font-weight: 700;
+    }
+    
+    .category-btn.active:hover {
+      transform: translateY(-2px) scale(1.05);
     }
 
     /* 響應式設計 */
     @media (max-width: 768px) {
-      .dungeon-dropdown {
-        min-width: 180px;
-        max-width: 280px;
-        max-height: 250px;
+      .item-category-buttons {
+        gap: 8px;
       }
-    }
-
-    /* 確保按鈕容器的層級 */
-    .item-category-buttons {
-      position: relative;
-      z-index: 1000;
-    }
-
-    /* 修正遮罩背景樣式 */
-    .dropdown-backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 50000; /* 降低層級，讓下拉選單在上面 */
-      background: transparent;
-      display: none;
-      pointer-events: auto; /* 允許點擊事件穿透到遮罩 */
-    }
-
-    .dropdown-backdrop.show {
-      display: block;
+      
+      .category-btn {
+        font-size: 0.8em;
+        padding: 6px 12px;
+      }
     }
   </style>
 </head>
@@ -172,25 +105,15 @@
   <div class="items-section">
     <h2 class="fancy-subtitle">📦 持有道具</h2>
     
-    <div class="item-category-buttons" style="position:relative;">
+    <div class="item-category-buttons">
       <button class="category-btn active" data-category="all" onclick="filterItems('all')">全部</button>
       <button class="category-btn" data-category="1" onclick="filterItems(1)">稀有</button>
       <button class="category-btn" data-category="2" onclick="filterItems(2)">超稀有</button>
       <button class="category-btn" data-category="3" onclick="filterItems(3)">罕見</button>
-      <!-- 修正：添加正確的 data-category 屬性和 onclick 事件 -->
-      <button class="category-btn dropdown-btn" id="dungeonDropdownBtn" data-category="dungeon" onclick="toggleDungeonDropdown()">
-        副本分類 <span id="dropdown-arrow">▼</span>
+      <!-- 修改：改成對話框UI -->
+      <button class="category-btn" id="dungeonCategoryBtn" onclick="openDungeonSelector()">
+        副本分類 📋
       </button>
-      <div class="dungeon-dropdown" id="dungeonDropdown">
-        <button class="dungeon-btn" data-belong="1" onclick="filterItems('dungeon_1'); hideDungeonDropdown();">腐爛沼澤地</button>
-        <button class="dungeon-btn" data-belong="2" onclick="filterItems('dungeon_2'); hideDungeonDropdown();">天空之城</button>
-        <button class="dungeon-btn" data-belong="3" onclick="filterItems('dungeon_3'); hideDungeonDropdown();">鋼鐵都市</button>
-        <button class="dungeon-btn" data-belong="4" onclick="filterItems('dungeon_4'); hideDungeonDropdown();">紫魔之城</button>
-        <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_5'); hideDungeonDropdown();">夢魘幻境</button>
-        <button class="dungeon-btn" data-belong="6" onclick="filterItems('dungeon_6'); hideDungeonDropdown();">聖天教會</button>
-        <button class="dungeon-btn" data-belong="7" onclick="filterItems('dungeon_7'); hideDungeonDropdown();">第一要塞「方尖塔」</button>
-        <button class="dungeon-btn" data-belong="8" onclick="filterItems('dungeon_8'); hideDungeonDropdown();">第二要塞「飛船比爾加賽」</button>
-      </div>
     </div>
 
     <div class="category-stats" id="categoryStats">載入中...</div>
@@ -237,38 +160,8 @@
 
     // 修正：優化 hideDungeonDropdown 函數
     function hideDungeonDropdown() {
-      const dropdown = document.getElementById("dungeonDropdown");
-      const dropdownBtn = document.getElementById("dungeonDropdownBtn");
-      const backdrop = document.getElementById("dropdownBackdrop");
-      
-      if (dropdown) {
-        dropdown.classList.remove("show");
-        dropdown.classList.remove("dropdown-up");
-        dropdown.style.display = "none";
-        dropdown.style.opacity = "0";
-        dropdown.style.visibility = "hidden";
-        dropdown.style.top = '';
-        dropdown.style.bottom = '';
-        dropdown.style.left = '';
-        dropdown.style.right = '';
-      }
-      
-      if (dropdownBtn) {
-        dropdownBtn.classList.remove("expanded");
-      }
-      
-      // 移除遮罩背景
-      if (backdrop) {
-        backdrop.classList.remove("show");
-        // 延遲移除元素，避免影響動畫
-        setTimeout(() => {
-          if (backdrop && backdrop.parentNode) {
-            backdrop.parentNode.removeChild(backdrop);
-          }
-        }, 100);
-      }
-      
-      isDungeonDropdownOpen = false;
+      // 已棄用 - 改用對話框UI
+      console.warn('hideDungeonDropdown 已棄用，使用對話框UI替代');
     }
 
     // 修正：改善 toggleDungeonDropdown 函數，簡化位置計算
@@ -607,50 +500,25 @@
       equipEl.innerHTML = html;
     }
 
-    // 修正：改善 filterItems 函數，修正選擇器問題和遮罩背景處理
+    // 簡化：改善 filterItems 函數
     function filterItems(category) {
       currentCategory = category;
+      
+      // 清除所有分類按鈕的 active 狀態
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
       
       const categoryStr = String(category);
       
       if (categoryStr.startsWith('dungeon_')) {
-        const belongValue = parseInt(categoryStr.split('_')[1]);
-        
-        // 清除所有副本按鈕的 active 狀態
-        document.querySelectorAll('.dungeon-btn').forEach(btn => {
-          btn.classList.remove('active');
-        });
-        // 設置選中的副本按鈕為 active
-        const selectedDungeonBtn = document.querySelector(`[data-belong="${belongValue}"]`);
-        if (selectedDungeonBtn) {
-          selectedDungeonBtn.classList.add('active');
-        }
-        
-        // 清除所有分類按鈕的 active 狀態
-        document.querySelectorAll('.category-btn').forEach(btn => {
-          btn.classList.remove('active');
-        });
         // 設置副本分類按鈕為 active
-        const dungeonCategoryBtn = document.getElementById("dungeonDropdownBtn");
+        const dungeonCategoryBtn = document.getElementById("dungeonCategoryBtn");
         if (dungeonCategoryBtn) {
           dungeonCategoryBtn.classList.add('active');
         }
-        
       } else {
-        // 如果下拉選單是開啟的，關閉它
-        if (isDungeonDropdownOpen) {
-          hideDungeonDropdown();
-        }
-        
-        // 清除所有副本按鈕的 active 狀態
-        document.querySelectorAll('.dungeon-btn').forEach(btn => {
-          btn.classList.remove('active');
-        });
-        
-        // 清除所有分類按鈕的 active 狀態，然後設置選中的為 active
-        document.querySelectorAll('.category-btn').forEach(btn => {
-          btn.classList.remove('active');
-        });
+        // 設置對應的分類按鈕為 active
         const selectedCategoryBtn = document.querySelector(`[data-category="${category}"]`);
         if (selectedCategoryBtn) {
           selectedCategoryBtn.classList.add('active');
@@ -711,7 +579,7 @@
         const belongValue = parseInt(String(currentCategory).split('_')[1]);
         const dungeonName = dungeonNames[belongValue];
         const count = stats.dungeons[belongValue] || 0;
-        displayText = `${dungeonName}道具: ${count} 種`;
+        displayText = `${dungeonName} 道具: ${count} 種`;
         
       } else {
         const categoryNames = {
@@ -1302,15 +1170,15 @@
       }
     }
 
-    // 修正：確保所有函數都正確註冊到 window 物件
+    // 確保所有函數都正確註冊到 window 物件
     window.openCraftUI = openCraftUI;
     window.openEquipUI = openEquipUI;
     window.closeDialog = closeDialog;
     window.craftCard = craftCard;
     window.saveEquipment = saveEquipment;
     window.filterItems = filterItems;
-    window.toggleDungeonDropdown = toggleDungeonDropdown;
-    window.hideDungeonDropdown = hideDungeonDropdown;
+    window.openDungeonSelector = openDungeonSelector;
+    window.selectDungeon = selectDungeon;
 
     async function runMain() {
       showLoading(true);
@@ -1342,28 +1210,17 @@
       }
     });
 
-    // 修正：改善事件監聽器，確保下拉選單內容可以點擊
-    document.addEventListener('click', function(event) {
-      const dropdown = document.getElementById("dungeonDropdown");
-      const dropdownBtn = document.getElementById("dungeonDropdownBtn");
-      const backdrop = document.getElementById("dropdownBackdrop");
-      
-      // 如果點擊的是下拉選單內部，不做任何處理
-      if (dropdown && dropdown.contains(event.target)) {
-        return; // 讓事件正常傳播，允許按鈕點擊
-      }
-      
-      // 如果點擊的是下拉選單按鈕，也不做處理（由 onclick 處理）
-      if (dropdownBtn && dropdownBtn.contains(event.target)) {
-        return;
-      }
-      
-      // 如果下拉選單是開啟的，且點擊了外部區域，則關閉
-      if (isDungeonDropdownOpen) {
-        hideDungeonDropdown();
+    // 修正：ESC 鍵支援關閉對話框
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        const dialogContainer = document.getElementById("dialogContainer");
+        if (dialogContainer && dialogContainer.style.display === "flex") {
+          closeDialog();
+        }
       }
     });
 
+    // 頁面可見性檢查
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden) {
         setTimeout(async () => {
@@ -1383,37 +1240,6 @@
             console.warn("頁面可見性檢查失敗:", error);
           }
         }, 1000);
-      }
-    });
-
-    // 修正：添加鍵盤事件支援（ESC 關閉對話框），處理遮罩背景
-    document.addEventListener('keydown', function(event) {
-      if (event.key === 'Escape') {
-        const dialogContainer = document.getElementById("dialogContainer");
-        if (dialogContainer && dialogContainer.style.display === "flex") {
-          closeDialog();
-          return;
-        }
-        if (isDungeonDropdownOpen) {
-          hideDungeonDropdown();
-          return;
-        }
-      }
-    });
-
-    // 簡化窗口大小變化處理
-    window.addEventListener('resize', function() {
-      if (isDungeonDropdownOpen) {
-        // 窗口大小變化時直接關閉下拉選單，避免複雜的重新計算
-        hideDungeonDropdown();
-      }
-    });
-
-    // 簡化滾動事件處理
-    window.addEventListener('scroll', function() {
-      if (isDungeonDropdownOpen) {
-        // 頁面滾動時關閉下拉選單
-        hideDungeonDropdown();
       }
     });
   </script>
