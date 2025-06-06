@@ -341,13 +341,19 @@
     }
 
     async function loadShopData() {
-      try {
-        const [shopRes, itemsRes, userItemsRes, userRes] = await Promise.all([
-          fetch("parameter/shop_items.json"),
-          SecureAPI.getStaticData('items_table'),
-          SecureAPI.get(`${API_BASE}/user_items`, true),
-          SecureAPI.getStatus(true)
-        ]);
+	  try {
+	    console.log("🏪 載入商店資料...");
+	    
+	    // 1. 首先檢查重置 ⭐ 新增這行
+	    await checkShopReset();
+	    
+	    // 2. 並行載入其他資料
+	    const [shopRes, itemsRes, userItemsRes, userRes] = await Promise.all([
+	      fetch("parameter/shop_items.json"),
+	      SecureAPI.getStaticData('items_table'),
+	      SecureAPI.get(`${API_BASE}/user_items`),
+	      SecureAPI.getStatus()
+	    ]);
 
         shopItems = await shopRes.json();
         
@@ -927,27 +933,27 @@
 	
 	async function checkShopReset() {
 	  try {
-		console.log("🏪 檢查商店重置...");
-		const response = await SecureAPI.post(`${API_BASE}/shop_check_reset`, {});
-		const result = await response.json();
-		
-		if (response.ok && result.success) {
-		  // 如果有重置發生，顯示通知
-		  if (result.reset_occurred && result.reset_items && result.reset_items.length > 0) {
-			const resetMessage = `🔄 商店重置完成！\n\n重置項目：\n${result.reset_items.map(item => `• ${item}`).join('\n')}`;
-			setTimeout(() => alert(resetMessage), 500);
-		  }
-		  
-		  // 更新購買記錄
-		  userPurchases = result.purchases || userPurchases;
-		  console.log("✅ 商店重置檢查完成");
-		  
-		} else {
-		  console.warn("❌ 商店重置檢查失敗:", result.error);
-		}
-		
+	    console.log("🏪 檢查商店重置...");
+	    const response = await SecureAPI.post(`${API_BASE}/shop_check_reset`, {});
+	    const result = await response.json();
+	    
+	    if (response.ok && result.success) {
+	      // 如果有重置發生，顯示通知
+	      if (result.reset_occurred && result.reset_items && result.reset_items.length > 0) {
+		const resetMessage = `🔄 商店重置完成！\n\n重置項目：\n${result.reset_items.map(item => `• ${item}`).join('\n')}`;
+		setTimeout(() => alert(resetMessage), 500);
+	      }
+	      
+	      // 更新購買記錄
+	      userPurchases = result.purchases || userPurchases;
+	      console.log("✅ 商店重置檢查完成");
+	      
+	    } else {
+	      console.warn("❌ 商店重置檢查失敗:", result.error);
+	    }
+	    
 	  } catch (error) {
-		console.error("❌ 商店重置檢查錯誤:", error);
+	    console.error("❌ 商店重置檢查錯誤:", error);
 	  }
 	}
 
