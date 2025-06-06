@@ -895,3 +895,80 @@ body.dialog-open .dialog-box::before {
     padding: 6px 12px;
   }
 }
+
+.item-category-buttons {
+      position: relative;
+    }
+    
+    .dropdown-btn #dropdown-arrow {
+      margin-left: 5px;
+      transition: transform 0.3s ease;
+    }
+
+    .dropdown-btn.expanded #dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .dungeon-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(25, 25, 55, 0.95) 100%);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      min-width: 200px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .dungeon-dropdown.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    .dungeon-btn {
+      background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.05) 100%);
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.85em;
+      text-align: left;
+    }
+
+    .dungeon-btn:hover {
+      background: linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(255, 119, 198, 0.1) 100%);
+      border-color: rgba(0, 255, 255, 0.4);
+      transform: translateX(3px);
+    }
+
+    .dungeon-btn.active {
+      background: linear-gradient(135deg, #00ffff 0%, #00bfff 100%);
+      color: #000;
+      border-color: #00ffff;
+      font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+      .dungeon-dropdown {
+        left: 10px;
+        right: 10px;
+        transform: none;
+        width: auto;
+        min-width: auto;
+      }
+    }
+
