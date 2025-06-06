@@ -24,7 +24,7 @@
 
   <pre id="statusBlock">正在載入角色資料...</pre>
 
-  <!-- 🚀 立即實施：快取狀態顯示（開發模式） -->
+  <!-- （開發模式） -->
   <div id="cacheStatus" style="display:none; background: rgba(0,255,255,0.1); padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 0.8em;">
     <strong>🚀 快取狀態：</strong>
     <span id="cacheInfo">載入中...</span>
@@ -45,7 +45,7 @@
 
   <div>
     <button onclick="window.parent.loadPage('story.html')">主線故事</button>
-    <button onclick="window.parent.loadPage('shop.html')">次元商店(壞了)</button>
+    <button onclick="window.parent.loadPage('shop.html')">次元商店</button>
   </div>
 
   <script type="module">
@@ -397,7 +397,7 @@
       }
     });
 
-    // 🚀 立即實施：效能監控（開發模式）
+    // 效能監控（開發模式）
     if (isDevelopment) {
       // 監控頁面載入效能
       window.addEventListener('load', () => {
