@@ -932,6 +932,7 @@ body.boss-mode .monster-element-detail.expanded {
 /* 超小螢幕適配 */
 @media (max-width: 480px) {
   .player-name-container {
+    flex-direction: column;
     align-items: center;
     gap: 8px;
   }
