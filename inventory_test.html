@@ -8,7 +8,7 @@
   <style>
     /* 下拉選單增強樣式 */
     .dungeon-dropdown {
-      position: fixed; /* 改為 fixed 定位確保最頂層 */
+      position: fixed; /* 保持 fixed 定位確保最頂層 */
       background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(25, 25, 55, 0.98) 100%);
       backdrop-filter: blur(20px);
       border: 2px solid rgba(0, 255, 255, 0.4);
@@ -27,17 +27,16 @@
       /* 添加滾動支持 */
       max-height: 300px;
       overflow-y: auto;
-    }
-
-    /* 向上展開的樣式 */
-    .dungeon-dropdown.dropdown-up {
-      /* fixed 定位下的向上展開樣式將在 JS 中動態設置 */
+      
+      /* 確保可以點擊 */
+      pointer-events: auto;
     }
 
     .dungeon-dropdown.show {
       display: flex !important;
       opacity: 1 !important;
       z-index: 99999 !important;
+      pointer-events: auto !important;
     }
 
     /* 自定義滾動條樣式 */
@@ -78,6 +77,7 @@
       font-size: 0.85em;
       text-align: left;
       flex-shrink: 0; /* 防止按鈕縮小 */
+      pointer-events: auto; /* 確保按鈕可以點擊 */
     }
 
     .dungeon-btn:hover {
@@ -108,16 +108,17 @@
       z-index: 1000;
     }
 
-    /* 添加遮罩背景防止誤點 */
+    /* 修正遮罩背景樣式 */
     .dropdown-backdrop {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: 50000;
+      z-index: 50000; /* 降低層級，讓下拉選單在上面 */
       background: transparent;
       display: none;
+      pointer-events: auto; /* 允許點擊事件穿透到遮罩 */
     }
 
     .dropdown-backdrop.show {
@@ -234,37 +235,43 @@
       if (spinner) spinner.style.display = show ? "block" : "none";
     }
 
-    // 修正：添加缺少的 hideDungeonDropdown 函數，支持遮罩背景
+    // 修正：優化 hideDungeonDropdown 函數
     function hideDungeonDropdown() {
       const dropdown = document.getElementById("dungeonDropdown");
       const dropdownBtn = document.getElementById("dungeonDropdownBtn");
       const backdrop = document.getElementById("dropdownBackdrop");
       
-      if (dropdown && dropdownBtn) {
+      if (dropdown) {
         dropdown.classList.remove("show");
         dropdown.classList.remove("dropdown-up");
         dropdown.style.display = "none";
+        dropdown.style.opacity = "0";
+        dropdown.style.visibility = "hidden";
         dropdown.style.top = '';
         dropdown.style.bottom = '';
         dropdown.style.left = '';
         dropdown.style.right = '';
+      }
+      
+      if (dropdownBtn) {
         dropdownBtn.classList.remove("expanded");
-        isDungeonDropdownOpen = false;
       }
       
       // 移除遮罩背景
       if (backdrop) {
         backdrop.classList.remove("show");
-        // 延遲移除元素以允許動畫完成
+        // 延遲移除元素，避免影響動畫
         setTimeout(() => {
-          if (backdrop.parentNode) {
+          if (backdrop && backdrop.parentNode) {
             backdrop.parentNode.removeChild(backdrop);
           }
-        }, 300);
+        }, 100);
       }
+      
+      isDungeonDropdownOpen = false;
     }
 
-    // 修正：改善 toggleDungeonDropdown 函數，支持智能定位和遮罩背景
+    // 修正：改善 toggleDungeonDropdown 函數，簡化位置計算
     function toggleDungeonDropdown() {
       const dropdown = document.getElementById("dungeonDropdown");
       const dropdownBtn = document.getElementById("dungeonDropdownBtn");
@@ -277,56 +284,77 @@
       isDungeonDropdownOpen = !isDungeonDropdownOpen;
       
       if (isDungeonDropdownOpen) {
+        // 先顯示下拉選單以便計算尺寸
+        dropdown.style.display = "flex";
+        dropdown.style.opacity = "0";
+        dropdown.style.visibility = "hidden";
+        
+        // 計算按鈕位置
+        const btnRect = dropdownBtn.getBoundingClientRect();
+        const dropdownRect = dropdown.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        
+        // 計算水平置中位置
+        let leftPos = btnRect.left + (btnRect.width / 2) - (dropdownRect.width / 2);
+        
+        // 確保不超出左右邊界（留 10px 邊距）
+        const minLeft = 10;
+        const maxLeft = viewportWidth - dropdownRect.width - 10;
+        leftPos = Math.max(minLeft, Math.min(leftPos, maxLeft));
+        
+        // 計算垂直位置
+        const spaceBelow = viewportHeight - btnRect.bottom;
+        const spaceAbove = btnRect.top;
+        
+        let topPos;
+        let dropdownUp = false;
+        
+        if (spaceBelow >= dropdownRect.height + 20 || spaceBelow > spaceAbove) {
+          // 向下展開
+          topPos = btnRect.bottom + 10;
+          dropdownUp = false;
+        } else {
+          // 向上展開
+          topPos = btnRect.top - dropdownRect.height - 10;
+          dropdownUp = true;
+        }
+        
+        // 應用位置
+        dropdown.style.left = leftPos + 'px';
+        dropdown.style.top = topPos + 'px';
+        dropdown.style.bottom = 'auto';
+        dropdown.style.right = 'auto';
+        
+        // 添加向上展開的 class
+        if (dropdownUp) {
+          dropdown.classList.add('dropdown-up');
+        } else {
+          dropdown.classList.remove('dropdown-up');
+        }
+        
+        // 顯示下拉選單和遮罩
+        dropdown.style.visibility = "visible";
+        dropdown.style.opacity = "1";
+        dropdown.classList.add("show");
+        dropdownBtn.classList.add("expanded");
+        
         // 添加遮罩背景
         let backdrop = document.getElementById("dropdownBackdrop");
         if (!backdrop) {
           backdrop = document.createElement("div");
           backdrop.id = "dropdownBackdrop";
           backdrop.className = "dropdown-backdrop";
-          backdrop.onclick = hideDungeonDropdown;
           document.body.appendChild(backdrop);
         }
         backdrop.classList.add("show");
         
-        dropdown.classList.add("show");
-        dropdown.style.display = "flex";
-        dropdownBtn.classList.add("expanded");
-        
-        // 使用 fixed 定位精確計算位置
-        setTimeout(() => {
-          const btnRect = dropdownBtn.getBoundingClientRect();
-          const dropdownRect = dropdown.getBoundingClientRect();
-          const viewportHeight = window.innerHeight;
-          const viewportWidth = window.innerWidth;
-          
-          // 計算水平位置（置中對齊按鈕）
-          let leftPos = btnRect.left + (btnRect.width / 2) - (dropdown.offsetWidth / 2);
-          
-          // 確保不會超出左右邊界
-          if (leftPos < 10) leftPos = 10;
-          if (leftPos + dropdown.offsetWidth > viewportWidth - 10) {
-            leftPos = viewportWidth - dropdown.offsetWidth - 10;
-          }
-          
-          dropdown.style.left = leftPos + 'px';
-          
-          // 計算垂直位置
-          const spaceBelow = viewportHeight - btnRect.bottom - 20;
-          const spaceAbove = btnRect.top - 20;
-          const dropdownHeight = dropdown.offsetHeight;
-          
-          if (spaceBelow >= dropdownHeight || spaceBelow > spaceAbove) {
-            // 向下展開
-            dropdown.style.top = (btnRect.bottom + 10) + 'px';
-            dropdown.style.bottom = 'auto';
-            dropdown.classList.remove('dropdown-up');
-          } else {
-            // 向上展開
-            dropdown.style.bottom = (viewportHeight - btnRect.top + 10) + 'px';
-            dropdown.style.top = 'auto';
-            dropdown.classList.add('dropdown-up');
-          }
-        }, 10);
+        // 綁定遮罩點擊事件
+        backdrop.onclick = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          hideDungeonDropdown();
+        };
         
       } else {
         hideDungeonDropdown();
@@ -1314,22 +1342,24 @@
       }
     });
 
-    // 修正：改善事件監聽器，處理遮罩背景
+    // 修正：改善事件監聽器，確保下拉選單內容可以點擊
     document.addEventListener('click', function(event) {
       const dropdown = document.getElementById("dungeonDropdown");
       const dropdownBtn = document.getElementById("dungeonDropdownBtn");
       const backdrop = document.getElementById("dropdownBackdrop");
       
-      // 如果點擊的是遮罩背景，關閉下拉選單
-      if (event.target === backdrop) {
-        hideDungeonDropdown();
+      // 如果點擊的是下拉選單內部，不做任何處理
+      if (dropdown && dropdown.contains(event.target)) {
+        return; // 讓事件正常傳播，允許按鈕點擊
+      }
+      
+      // 如果點擊的是下拉選單按鈕，也不做處理（由 onclick 處理）
+      if (dropdownBtn && dropdownBtn.contains(event.target)) {
         return;
       }
       
-      // 原有的點擊外部關閉邏輯（作為備用）
-      if (isDungeonDropdownOpen && dropdown && dropdownBtn &&
-          !dropdown.contains(event.target) && 
-          !dropdownBtn.contains(event.target)) {
+      // 如果下拉選單是開啟的，且點擊了外部區域，則關閉
+      if (isDungeonDropdownOpen) {
         hideDungeonDropdown();
       }
     });
@@ -1371,50 +1401,18 @@
       }
     });
 
-    // 添加窗口大小變化處理
+    // 簡化窗口大小變化處理
     window.addEventListener('resize', function() {
       if (isDungeonDropdownOpen) {
-        // 窗口大小變化時重新計算下拉選單位置
-        setTimeout(() => {
-          const dropdown = document.getElementById("dungeonDropdown");
-          const dropdownBtn = document.getElementById("dungeonDropdownBtn");
-          
-          if (dropdown && dropdownBtn && dropdown.classList.contains('show')) {
-            const btnRect = dropdownBtn.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const viewportWidth = window.innerWidth;
-            
-            // 重新計算水平位置
-            let leftPos = btnRect.left + (btnRect.width / 2) - (dropdown.offsetWidth / 2);
-            if (leftPos < 10) leftPos = 10;
-            if (leftPos + dropdown.offsetWidth > viewportWidth - 10) {
-              leftPos = viewportWidth - dropdown.offsetWidth - 10;
-            }
-            dropdown.style.left = leftPos + 'px';
-            
-            // 重新計算垂直位置
-            const spaceBelow = viewportHeight - btnRect.bottom - 20;
-            const spaceAbove = btnRect.top - 20;
-            const dropdownHeight = dropdown.offsetHeight;
-            
-            if (spaceBelow >= dropdownHeight || spaceBelow > spaceAbove) {
-              dropdown.style.top = (btnRect.bottom + 10) + 'px';
-              dropdown.style.bottom = 'auto';
-              dropdown.classList.remove('dropdown-up');
-            } else {
-              dropdown.style.bottom = (viewportHeight - btnRect.top + 10) + 'px';
-              dropdown.style.top = 'auto';
-              dropdown.classList.add('dropdown-up');
-            }
-          }
-        }, 100);
+        // 窗口大小變化時直接關閉下拉選單，避免複雜的重新計算
+        hideDungeonDropdown();
       }
     });
 
-    // 添加滾動事件處理
+    // 簡化滾動事件處理
     window.addEventListener('scroll', function() {
       if (isDungeonDropdownOpen) {
-        // 頁面滾動時關閉下拉選單，避免位置錯亂
+        // 頁面滾動時關閉下拉選單
         hideDungeonDropdown();
       }
     });
