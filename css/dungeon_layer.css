@@ -505,6 +505,12 @@ body.boss-mode .monster-hp {
 }
 
 /* 詳細說明 */
+
+.section::before {
+  animation: none !important;
+  background: none !important;
+}
+
 /* 玩家訊息容器 */
 .player-info-container {
   margin: 0;
@@ -673,7 +679,7 @@ body.boss-mode .monster-hp {
   border-bottom: 1px solid rgba(0, 255, 255, 0.1);
 }
 
-/* 怪物信息容器 */
+/* 怪物訊息容器 */
 .monster-info-container {
   margin: 0;
   padding: 0;
