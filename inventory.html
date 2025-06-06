@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>卡片矩陣系統</title>
+  <title>背包與卡片</title>
   <link rel="icon" href="favicon.ico" />
   <link href="css/inventory.css" rel="stylesheet"/>
 </head>
@@ -32,7 +32,6 @@
   </script>
 
   <h1 class="fancy-title">🌌 卡片矩陣系統</h1>
-
   
   <div class="top-grid">
     <div class="stats-section">
@@ -99,7 +98,6 @@
       7: "第一要塞",
       8: "第二要塞"
     };
-
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
@@ -190,23 +188,17 @@
         ]);
         
         equipData = Array.isArray(equipRes) ? equipRes : Object.values(equipRes);
-        console.log('✅ 裝備資料載入完成:', equipData.length, '個');
         
-        // 🚀 修復：改進 itemMeta 載入邏輯
         if (Array.isArray(itemRes)) {
           itemMeta = itemRes;
-          console.log('✅ 道具資料載入完成 (陣列格式):', itemMeta.length, '個');
         } else if (typeof itemRes === 'object' && itemRes !== null) {
           itemMeta = Object.values(itemRes);
-          console.log('✅ 道具資料載入完成 (物件格式轉陣列):', itemMeta.length, '個');
         } else {
-          // 🚀 新增：嘗試直接從 parameter/items.json 載入
           console.warn('⚠️ API 載入失敗，嘗試直接載入 items.json');
           try {
             const directResponse = await fetch('parameter/items.json');
             if (directResponse.ok) {
               itemMeta = await directResponse.json();
-              console.log('✅ 直接載入 items.json 成功:', itemMeta.length, '個');
             } else {
               throw new Error('直接載入也失敗');
             }
@@ -216,7 +208,6 @@
           }
         }
         
-        // 🚀 確保每個道具都有正確的屬性
         itemMeta = itemMeta.map(item => ({
           ...item,
           belong: parseInt(item.belong) || 0,
@@ -224,7 +215,7 @@
           sort: parseInt(item.sort) || 0
         }));
         
-        console.log('🎯 道具統計:', {
+        console.log('道具統計:', {
           總數: itemMeta.length,
           副本道具: itemMeta.filter(item => item.belong > 0).length,
           稀有道具: itemMeta.filter(item => item.special === 1).length,
@@ -236,7 +227,6 @@
         try {
           const cardResponse = await fetch("parameter/cards_data.json");
           cardData = await cardResponse.json();
-          console.log('✅ 卡片資料載入完成:', cardData.length, '個');
         } catch (error) {
           console.warn('⚠️ 載入卡片資料失敗，使用空陣列:', error);
           cardData = [];
@@ -307,19 +297,22 @@
         const [statusRes, itemsRes, cardsRes] = await Promise.all(promises);
         
         userData = await statusRes.json();
-        console.log('✅ 使用者基本資料載入完成');
         
         // 🚀 修復：改進道具資料處理
         if (itemsRes && itemsRes.ok) {
           const itemsData = await itemsRes.json();
           // 確保取得 items 物件
           userItems = itemsData.items || itemsData || {};
-          console.log('✅ 使用者道具載入完成 (API):', Object.keys(userItems).length, '種道具');
         } else {
           userItems = userData.items || {};
-          console.log('✅ 使用者道具載入完成 (備用):', Object.keys(userItems).length, '種道具');
         }
-      
+        
+        const itemCount = Object.entries(userItems).filter(([id, count]) => count > 0).length;
+        console.log('持有道具統計:', {
+          總種類: Object.keys(userItems).length,
+          有數量的道具: itemCount,
+          範例道具: Object.entries(userItems).slice(0, 5)
+        });
         
         if (cardsRes && cardsRes.ok) {
           userCards = await cardsRes.json();
@@ -464,7 +457,6 @@
       equipEl.innerHTML = html;
     }
 
-    // 🚀 修復：強化 filterItems 函數
     function filterItems(category) {
       console.log('🔍 篩選道具，分類:', category);
       currentCategory = category;
@@ -576,8 +568,6 @@
       
       statsEl.textContent = displayText;
     }
-
-    // 🚀 修復：強化 renderItems 函數
     function renderItems() {
       console.log('🎨 開始渲染道具，當前分類:', currentCategory);
       const itemEl = document.getElementById("itemGrid");
@@ -585,6 +575,38 @@
       let displayedCount = 0;
       
       const itemsArray = [];
+      
+      Object.entries(userItems).forEach(([id, count]) => {
+        if (count > 0) {
+          // 🚀 改進：更安全的 meta 資料查找
+          const meta = itemMeta.find(m => m.id === id);
+          if (!meta) {
+            console.warn(`⚠️ 找不到道具 ${id} 的 meta 資料`);
+            return; // 跳過沒有 meta 的道具
+          }
+          
+          let shouldShow = false;
+          
+          if (currentCategory === 'all') {
+            shouldShow = true;
+          } else if (currentCategory === 'all_dungeons') {
+            shouldShow = (meta.belong > 0); // 顯示所有副本道具
+          } else if (String(currentCategory).startsWith('dungeon_')) {
+            const belongValue = parseInt(String(currentCategory).split('_')[1]);
+            shouldShow = (meta.belong === belongValue);
+          } else {
+            shouldShow = (meta.special === Number(currentCategory));
+          }
+          
+          if (shouldShow) {
+            itemsArray.push({
+              id: id,
+              count: count,
+              meta: meta
+            });
+          }
+        }
+      });
       
       // 排序
       itemsArray.sort((a, b) => {
@@ -679,7 +701,6 @@
       }
       
       itemEl.innerHTML = html;
-      console.log(`✅ 渲染完成，顯示 ${displayedCount} 個道具`);
     }
 
     function renderPage() {
