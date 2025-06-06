@@ -9,7 +9,9 @@
 <body>
   <div id="initialOverlay">載入中...</div>
   <div id="loading-placeholder"></div>
-  <script src="js/loading.js"></script>
+  <script src="js/loading.js">
+window.hideDungeonDropdown = hideDungeonDropdown;
+</script>
   <script>
     fetch("loadingOverlay.html")
       .then(res => res.text())
