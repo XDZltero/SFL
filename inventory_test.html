@@ -41,27 +41,27 @@
   <div class="items-section">
     <h2 class="fancy-subtitle">📦 持有道具</h2>
     
-    <div class="item-category-buttons">
+    
+    <div class="item-category-buttons" style="position:relative;">
       <button class="category-btn active" data-category="all" onclick="filterItems('all')">全部</button>
       <button class="category-btn" data-category="1" onclick="filterItems(1)">稀有</button>
       <button class="category-btn" data-category="2" onclick="filterItems(2)">超稀有</button>
       <button class="category-btn" data-category="3" onclick="filterItems(3)">罕見</button>
-      <button class="category-btn dropdown-btn" data-category="dungeon" onclick="toggleDungeonDropdown()">
+      <button class="category-btn dropdown-btn" id="dungeonDropdownBtn" type="button">
         副本分類 <span id="dropdown-arrow">▼</span>
       </button>
+      <div class="dungeon-dropdown" id="dungeonDropdown" style="display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); z-index:9999;">
+        <button class="dungeon-btn" data-belong="1" onclick="filterItems('dungeon_1');hideDungeonDropdown();">腐爛沼澤地</button>
+        <button class="dungeon-btn" data-belong="2" onclick="filterItems('dungeon_2');hideDungeonDropdown();">天空之城</button>
+        <button class="dungeon-btn" data-belong="3" onclick="filterItems('dungeon_3');hideDungeonDropdown();">鋼鐵都市</button>
+        <button class="dungeon-btn" data-belong="4" onclick="filterItems('dungeon_4');hideDungeonDropdown();">紫魔之城</button>
+        <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_5');hideDungeonDropdown();">夢魘幻境</button>
+        <button class="dungeon-btn" data-belong="6" onclick="filterItems('dungeon_6');hideDungeonDropdown();">聖天教會</button>
+        <button class="dungeon-btn" data-belong="7" onclick="filterItems('dungeon_7');hideDungeonDropdown();">第一要塞</button>
+        <button class="dungeon-btn" data-belong="8" onclick="filterItems('dungeon_8');hideDungeonDropdown();">第二要塞</button>
+      </div>
     </div>
-    
-    <div class="dungeon-dropdown" id="dungeonDropdown">
-      <button class="dungeon-btn" data-belong="1" onclick="filterItems('dungeon_1')">腐爛沼澤地</button>
-      <button class="dungeon-btn" data-belong="2" onclick="filterItems('dungeon_2')">天空之城</button>
-      <button class="dungeon-btn" data-belong="3" onclick="filterItems('dungeon_3')">鋼鐵都市</button>
-      <button class="dungeon-btn" data-belong="4" onclick="filterItems('dungeon_4')">紫魔之城</button>
-      <button class="dungeon-btn" data-belong="5" onclick="filterItems('dungeon_5')">夢魘幻境</button>
-      <button class="dungeon-btn" data-belong="6" onclick="filterItems('dungeon_6')">聖天教會</button>
-      <button class="dungeon-btn" data-belong="7" onclick="filterItems('dungeon_7')">第一要塞</button>
-      <button class="dungeon-btn" data-belong="8" onclick="filterItems('dungeon_8')">第二要塞</button>
-    </div>
-    
+
     <div class="category-stats" id="categoryStats">載入中...</div>
     
     <div class="item-grid" id="itemGrid"></div>
@@ -1044,6 +1044,40 @@
     window.saveEquipment = saveEquipment;
     window.filterItems = filterItems;
     window.toggleDungeonDropdown = toggleDungeonDropdown;
+
+    // ===================== 副本分類下拉選單控制 =========================
+    // 全新修正版，無論點哪裡都能正常開關
+    const dropdownBtn = document.getElementById("dungeonDropdownBtn");
+    const dropdownMenu = document.getElementById("dungeonDropdown");
+    const dropdownArrow = document.getElementById("dropdown-arrow");
+
+    function showDungeonDropdown() {
+      dropdownMenu.style.display = "flex";
+      dropdownArrow.style.transform = "rotate(180deg)";
+      isDungeonDropdownOpen = true;
+      setTimeout(() => { document.addEventListener('mousedown', outsideClickListener); }, 10);
+    }
+    function hideDungeonDropdown() {
+      dropdownMenu.style.display = "none";
+      dropdownArrow.style.transform = "rotate(0deg)";
+      isDungeonDropdownOpen = false;
+      document.removeEventListener('mousedown', outsideClickListener);
+    }
+    function toggleDungeonDropdown() {
+      if (dropdownMenu.style.display === "none" || dropdownMenu.style.display === "") {
+        showDungeonDropdown();
+      } else {
+        hideDungeonDropdown();
+      }
+    }
+    function outsideClickListener(event) {
+      if (!dropdownMenu.contains(event.target) && !dropdownBtn.contains(event.target)) {
+        hideDungeonDropdown();
+      }
+    }
+    dropdownBtn.onclick = toggleDungeonDropdown;
+    window.hideDungeonDropdown = hideDungeonDropdown;
+
 
     async function runMain() {
       showLoading(true);
