@@ -3001,16 +3001,21 @@ def shop_items_endpoint():
         return jsonify({"error": f"取得商店道具失敗: {str(e)}"}), 500
 
 @app.route('/shop_user_purchases', methods=['GET'])
-@require_auth  # 添加認證裝飾器
-def shop_user_purchases_with_auto_reset():
+def shop_user_purchases():
     try:
-        user_id = request.user_id
+        user_id = get_user_id_from_token()
+        if not user_id:
+            return jsonify({"success": False, "error": "未授權"}), 401
         
-        # 🚀 進入時自動檢查並重置過期購買記錄
+        # 🚀 重要修復：獲取購買記錄前先檢查並執行自動重置
         try:
             reset_result = check_and_reset_expired_purchases(user_id)
             if reset_result["reset_count"] > 0:
                 print(f"🔄 用戶 {user_id} 進入商店時自動重置了 {reset_result['reset_count']} 個商品")
+                
+                # 清除用戶相關快取以確保前端獲取最新資料
+                invalidate_user_cache(user_id)
+                
         except Exception as reset_error:
             print(f"⚠️ 自動重置失敗，但繼續載入購買記錄: {reset_error}")
         
@@ -3807,7 +3812,7 @@ def shop_purchase():
         print(f"購買錯誤: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/shop_auto_reset_check", methods=["POST"])
+@@app.route("/shop_auto_reset_check", methods=["POST"])
 @require_auth
 def shop_auto_reset_check():
     """進入商店時自動檢查並重置過期的購買記錄"""
