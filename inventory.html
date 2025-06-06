@@ -2,25 +2,38 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>背包與裝備管理</title>
+  <title>卡片矩陣系統</title>
   <link rel="icon" href="favicon.ico" />
   <link href="css/inventory.css" rel="stylesheet"/>
 </head>
 <body>
   <div id="initialOverlay">載入中...</div>
   <div id="loading-placeholder"></div>
+  
+  <!-- 修正：分離 script 標籤 -->
   <script src="js/loading.js"></script>
   <script>
-    fetch("loadingOverlay.html")
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById("loading-placeholder").innerHTML = html;
-        document.getElementById("initialOverlay")?.remove();
-        if (typeof startPageLoadingProgress === "function") startPageLoadingProgress();
-      });
+    // 確保 loading.js 載入後的初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch("loadingOverlay.html")
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById("loading-placeholder").innerHTML = html;
+          document.getElementById("initialOverlay")?.remove();
+          if (typeof startPageLoadingProgress === "function") {
+            startPageLoadingProgress();
+          }
+        })
+        .catch(error => {
+          console.error('載入 loadingOverlay.html 失敗:', error);
+          document.getElementById("initialOverlay")?.remove();
+        });
+    });
   </script>
 
   <h1 class="fancy-title">🌌 卡片矩陣系統</h1>
+
+  
   <div class="top-grid">
     <div class="stats-section">
       <h2 class="fancy-subtitle">🧬 角色屬性</h2>
@@ -41,15 +54,17 @@
   <div class="items-section">
     <h2 class="fancy-subtitle">📦 持有道具</h2>
     
-    <!-- 🆕 道具分類按鈕 -->
     <div class="item-category-buttons">
       <button class="category-btn active" data-category="all" onclick="filterItems('all')">全部</button>
       <button class="category-btn" data-category="1" onclick="filterItems(1)">稀有</button>
       <button class="category-btn" data-category="2" onclick="filterItems(2)">超稀有</button>
       <button class="category-btn" data-category="3" onclick="filterItems(3)">罕見</button>
+      <!-- 修改：改成對話框UI -->
+      <button class="category-btn" id="dungeonCategoryBtn" onclick="openDungeonSelector()">
+        副本分類 📋
+      </button>
     </div>
-    
-    <!-- 🆕 分類統計顯示 -->
+
     <div class="category-stats" id="categoryStats">載入中...</div>
     
     <div class="item-grid" id="itemGrid"></div>
@@ -71,8 +86,20 @@
     let userCards = {};
     let cardFailureCounts = {};
     
-    // 🆕 道具分類狀態
     let currentCategory = 'all';
+    let isDungeonDropdownOpen = false;
+
+    const dungeonNames = {
+      1: "腐爛沼澤地",
+      2: "天空之城", 
+      3: "鋼鐵都市",
+      4: "紫魔之城",
+      5: "夢魘幻境",
+      6: "聖天教會",
+      7: "第一要塞",
+      8: "第二要塞"
+    };
+
 
     function showLoading(show) {
       const loading = document.getElementById("loadingOverlay");
@@ -81,12 +108,81 @@
       if (spinner) spinner.style.display = show ? "block" : "none";
     }
 
-    // 遊戲資料載入
+    // 新增：副本選擇器對話框
+    function openDungeonSelector() {
+      const dialog = document.getElementById("dialogContainer");
+      
+      let html = `
+        <div class='dialog-box'>
+          <h3>🏰 選擇副本分類</h3>
+          <div class="scroll-content">
+            <div style="display: grid; gap: 15px; margin: 20px 0;">
+      `;
+      
+      // 添加「全部副本道具」選項
+      html += `
+        <button class="dungeon-btn" onclick="selectDungeon('all_dungeons')" style="
+          background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 165, 0, 0.1) 100%);
+          border-color: rgba(255, 215, 0, 0.4);
+          color: #FFD700;
+          font-weight: 700;
+          border: 1px solid rgba(255, 215, 0, 0.4);
+          border-radius: 10px;
+          padding: 12px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-family: 'Orbitron', sans-serif;
+        ">
+          🌟 全部副本道具
+        </button>
+      `;
+      
+      // 遍歷所有副本
+      Object.entries(dungeonNames).forEach(([belongId, dungeonName]) => {
+        html += `
+          <button class="dungeon-btn" onclick="selectDungeon('dungeon_${belongId}')" style="
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 119, 198, 0.05) 100%);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 12px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+          ">
+            🏰 ${dungeonName}
+          </button>
+        `;
+      });
+      
+      html += `
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="square-btn" onclick="closeDialog()">取消</button>
+          </div>
+        </div>
+      `;
+      
+      dialog.innerHTML = html;
+      dialog.style.display = "flex";
+      document.body.style.overflow = "hidden";
+      document.body.classList.add("dialog-open");
+    }
+
+    function selectDungeon(categoryType) {
+      closeDialog();
+      filterItems(categoryType);
+    }
+
+    // 🚀 修復：改進資料載入
     async function loadGameData() {
       PerformanceMonitor.startTiming('loadGameData');
       
       try {
-        // 並行載入所有靜態資料，使用快取
+        console.log('🔄 開始載入遊戲資料...');
+        
         const [equipRes, itemRes, cardRes] = await Promise.all([
           SecureAPI.getStaticData('equips_table'),
           SecureAPI.getStaticData('items_table'), 
@@ -94,27 +190,60 @@
         ]);
         
         equipData = Array.isArray(equipRes) ? equipRes : Object.values(equipRes);
+        console.log('✅ 裝備資料載入完成:', equipData.length, '個');
         
-        // 處理 items 資料格式
+        // 🚀 修復：改進 itemMeta 載入邏輯
         if (Array.isArray(itemRes)) {
           itemMeta = itemRes;
-        } else if (typeof itemRes === 'object') {
+          console.log('✅ 道具資料載入完成 (陣列格式):', itemMeta.length, '個');
+        } else if (typeof itemRes === 'object' && itemRes !== null) {
           itemMeta = Object.values(itemRes);
+          console.log('✅ 道具資料載入完成 (物件格式轉陣列):', itemMeta.length, '個');
         } else {
-          throw new Error('無效的道具資料格式');
+          // 🚀 新增：嘗試直接從 parameter/items.json 載入
+          console.warn('⚠️ API 載入失敗，嘗試直接載入 items.json');
+          try {
+            const directResponse = await fetch('parameter/items.json');
+            if (directResponse.ok) {
+              itemMeta = await directResponse.json();
+              console.log('✅ 直接載入 items.json 成功:', itemMeta.length, '個');
+            } else {
+              throw new Error('直接載入也失敗');
+            }
+          } catch (directError) {
+            console.error('❌ 直接載入 items.json 也失敗:', directError);
+            throw new Error('無法載入道具資料');
+          }
         }
         
-        // cardData
+        // 🚀 確保每個道具都有正確的屬性
+        itemMeta = itemMeta.map(item => ({
+          ...item,
+          belong: parseInt(item.belong) || 0,
+          special: parseInt(item.special) || 0,
+          sort: parseInt(item.sort) || 0
+        }));
+        
+        console.log('🎯 道具統計:', {
+          總數: itemMeta.length,
+          副本道具: itemMeta.filter(item => item.belong > 0).length,
+          稀有道具: itemMeta.filter(item => item.special === 1).length,
+          超稀有道具: itemMeta.filter(item => item.special === 2).length,
+          罕見道具: itemMeta.filter(item => item.special === 3).length
+        });
+        
+        // 載入卡片資料
         try {
           const cardResponse = await fetch("parameter/cards_data.json");
           cardData = await cardResponse.json();
+          console.log('✅ 卡片資料載入完成:', cardData.length, '個');
         } catch (error) {
-          console.warn('載入卡片資料失敗，使用空陣列:', error);
+          console.warn('⚠️ 載入卡片資料失敗，使用空陣列:', error);
           cardData = [];
         }
         
       } catch (error) {
-        console.error("載入遊戲資料失敗:", error);
+        console.error("❌ 載入遊戲資料失敗:", error);
         alert("載入遊戲資料失敗，請重新整理頁面");
         throw error;
       } finally {
@@ -138,10 +267,9 @@
 
     function calculateEnhancedSuccessRate(baseRate, failureCount) {
       const enhancedRate = baseRate + (failureCount * 0.05);
-      return Math.min(enhancedRate, 1.0); // 最高100%
+      return Math.min(enhancedRate, 1.0);
     }
 
-    // 格式化成功率顯示
     function formatSuccessRateDisplay(baseRate, failureCount) {
       const enhancedRate = calculateEnhancedSuccessRate(baseRate, failureCount);
       const enhancedPercentage = (enhancedRate * 100).toFixed(0);
@@ -150,7 +278,6 @@
       let html = `<span class="craft-success-rate">成功率: `;
       
       if (enhancedRate >= 1.0) {
-        // 100% 必定成功
         html += `<span class="guaranteed-success">必定成功 ${enhancedPercentage}%</span>`;
       } else {
         html += `${enhancedPercentage}%`;
@@ -164,49 +291,49 @@
       return html;
     }
 
+    // 🚀 修復：改進使用者資料載入
     async function loadUserData(forceRefresh = true) {
       PerformanceMonitor.startTiming('loadUserData');
       
       try {
-        console.log(`🔄 載入使用者資料 ${forceRefresh ? '(強制刷新)' : '(允許快取)'}`);
+        console.log('🔄 開始載入使用者資料...');
         
-        // 🎯 強制從伺服器重新獲取資料
         const promises = [
           SecureAPI.getStatus(forceRefresh),
-          SecureAPI.get(`${API_BASE}/user_items`, !forceRefresh), // 如果forceRefresh=true，則useCache=false
+          SecureAPI.get(`${API_BASE}/user_items`, !forceRefresh),
           SecureAPI.get(`${API_BASE}/user_cards`, !forceRefresh)
         ];
         
         const [statusRes, itemsRes, cardsRes] = await Promise.all(promises);
         
-        // 處理使用者狀態
         userData = await statusRes.json();
+        console.log('✅ 使用者基本資料載入完成');
         
-        // 處理使用者道具
+        // 🚀 修復：改進道具資料處理
         if (itemsRes && itemsRes.ok) {
-          userItems = await itemsRes.json();
+          const itemsData = await itemsRes.json();
+          // 確保取得 items 物件
+          userItems = itemsData.items || itemsData || {};
+          console.log('✅ 使用者道具載入完成 (API):', Object.keys(userItems).length, '種道具');
         } else {
           userItems = userData.items || {};
+          console.log('✅ 使用者道具載入完成 (備用):', Object.keys(userItems).length, '種道具');
         }
+      
         
-        // 處理使用者卡片
         if (cardsRes && cardsRes.ok) {
           userCards = await cardsRes.json();
         } else {
           userCards = userData.cards_owned || {};
         }
         
-        // 驗證裝備等級不一致問題
         await validateAndFixEquipmentLevels();
-        
         renderPage();
 
       } catch (error) {
-        console.error("載入使用者資料失敗:", error);
+        console.error("❌ 載入使用者資料失敗:", error);
         
-        // 如果載入失敗，嘗試重新載入但允許快取
         if (forceRefresh) {
-          console.log("🔄 強制載入失敗，嘗試使用快取資料...");
           try {
             await loadUserData(false);
           } catch (fallbackError) {
@@ -337,49 +464,73 @@
       equipEl.innerHTML = html;
     }
 
-    // 道具分類過濾函數
+    // 🚀 修復：強化 filterItems 函數
     function filterItems(category) {
+      console.log('🔍 篩選道具，分類:', category);
       currentCategory = category;
       
-      // 更新按鈕狀態
+      // 清除所有分類按鈕的 active 狀態
       document.querySelectorAll('.category-btn').forEach(btn => {
         btn.classList.remove('active');
       });
-      document.querySelector(`[data-category="${category}"]`).classList.add('active');
       
-      // 重新渲染道具列表
+      const categoryStr = String(category);
+      
+      if (categoryStr.startsWith('dungeon_') || categoryStr === 'all_dungeons') {
+        // 設置副本分類按鈕為 active
+        const dungeonCategoryBtn = document.getElementById("dungeonCategoryBtn");
+        if (dungeonCategoryBtn) {
+          dungeonCategoryBtn.classList.add('active');
+        }
+      } else {
+        // 設置對應的分類按鈕為 active
+        const selectedCategoryBtn = document.querySelector(`[data-category="${category}"]`);
+        if (selectedCategoryBtn) {
+          selectedCategoryBtn.classList.add('active');
+        }
+      }
+      
       renderItems();
     }
 
-    // 計算各分類的道具數量
     function calculateCategoryStats() {
       const stats = {
         all: 0,
-        1: 0,   // 稀有
-        2: 0,   // 超稀有
-        3: 0,   // 罕見
-        0: 0    // 普通
+        1: 0,
+        2: 0,
+        3: 0,
+        0: 0,
+        dungeons: {}
       };
+      
+      Object.keys(dungeonNames).forEach(belongId => {
+        stats.dungeons[belongId] = 0;
+      });
       
       Object.entries(userItems).forEach(([id, count]) => {
         if (count > 0) {
-          const meta = itemMeta.find(m => m.id === id) || { special: 0 };
+          const meta = itemMeta.find(m => m.id === id) || { special: 0, belong: 0 };
           const special = meta.special || 0;
+          const belong = meta.belong || 0;
           
           stats.all++;
           stats[special]++;
+          
+          if (belong > 0 && stats.dungeons.hasOwnProperty(belong)) {
+            stats.dungeons[belong]++;
+          }
         }
       });
       
       return stats;
     }
 
-    // 更新分類統計顯示
     function updateCategoryStats() {
       const statsEl = document.getElementById("categoryStats");
       const stats = calculateCategoryStats();
       
       let displayText = "";
+      
       if (currentCategory === 'all') {
         const total = stats.all;
         const rare = stats[1] || 0;
@@ -388,34 +539,64 @@
         const normal = stats[0] || 0;
         
         displayText = `共 ${total} 種道具 (普通: ${normal}, 稀有: ${rare}, 超稀有: ${superRare}, 罕見: ${mythical})`;
+        
+      } else if (currentCategory === 'all_dungeons') {
+        // 計算所有副本道具總數
+        let totalDungeonItems = 0;
+        const dungeonCounts = [];
+        
+        Object.entries(stats.dungeons).forEach(([belongId, count]) => {
+          if (count > 0) {
+            totalDungeonItems += count;
+            dungeonCounts.push(`${dungeonNames[belongId]}: ${count}`);
+          }
+        });
+        
+        displayText = `全部副本道具: ${totalDungeonItems} 種`;
+        if (dungeonCounts.length > 0) {
+          displayText += ` (${dungeonCounts.join(', ')})`;
+        }
+        
+      } else if (String(currentCategory).startsWith('dungeon_')) {
+        const belongValue = parseInt(String(currentCategory).split('_')[1]);
+        const dungeonName = dungeonNames[belongValue];
+        const count = stats.dungeons[belongValue] || 0;
+        displayText = `${dungeonName} 道具: ${count} 種`;
+        
       } else {
         const categoryNames = {
           1: "稀有",
           2: "超稀有", 
           3: "罕見"
         };
-        const categoryName = categoryNames[currentCategory];
-        const count = stats[currentCategory] || 0;
+        const categoryName = categoryNames[Number(currentCategory)];
+        const count = stats[Number(currentCategory)] || 0;
         displayText = `${categoryName}道具: ${count} 種`;
       }
       
       statsEl.textContent = displayText;
     }
 
-    // 🔧 修改 renderItems 函數以支援分類過濾
+    // 🚀 修復：強化 renderItems 函數
     function renderItems() {
+      console.log('🎨 開始渲染道具，當前分類:', currentCategory);
       const itemEl = document.getElementById("itemGrid");
       let html = "";
       let displayedCount = 0;
-    
-      Object.entries(userItems).forEach(([id, count]) => {
-        const meta = itemMeta.find(m => m.id === id) || { name: id, description: "", special: 0 };
+      
+      const itemsArray = [];
+      
+      // 排序
+      itemsArray.sort((a, b) => {
+        const sortA = a.meta.sort || 0;
+        const sortB = b.meta.sort || 0;
+        return sortB - sortA;
+      });
+      
+      // 渲染道具
+      itemsArray.forEach(item => {
+        const { id, count, meta } = item;
         
-        // 分類過濾邏輯
-        if (currentCategory !== 'all' && meta.special !== currentCategory) {
-          return; // 跳過不符合分類的道具
-        }
-
         let cardClass = "item-card";
         let rarityLabel = "";
         let nameColor = "#D0D0D0";
@@ -433,10 +614,15 @@
           rarityLabel = "【罕見】";
           nameColor = "#FFD306";
         }
+        
+        let dungeonLabel = "";
+        if (!String(currentCategory).startsWith('dungeon_') && currentCategory !== 'all_dungeons' && meta.belong > 0 && dungeonNames[meta.belong]) {
+          dungeonLabel = ` - ${dungeonNames[meta.belong]}`;
+        }
     
         html += `
           <div class="${cardClass}">
-            <div class="item-name" style="color: ${nameColor}">${rarityLabel}${meta.name}</div>
+            <div class="item-name" style="color: ${nameColor}">${rarityLabel}${meta.name}${dungeonLabel}</div>
             <div class="item-desc">${meta.description}</div>
             <div class="item-count">持有數量: <span class="count-highlight">${count}</span></div>
           </div>
@@ -445,21 +631,55 @@
         displayedCount++;
       });
     
-      // 更新統計顯示
       updateCategoryStats();
       
+      // 🚀 改進：更詳細的空狀態訊息
       if (displayedCount === 0) {
-        const categoryNames = {
-          'all': '道具',
-          1: '稀有道具',
-          2: '超稀有道具', 
-          3: '罕見道具'
-        };
-        const categoryName = categoryNames[currentCategory] || '道具';
-        html = `<div class="item-card">暫無${categoryName}</div>`;
+        let categoryName = '道具';
+        let emptyReason = '';
+        
+        if (currentCategory === 'all_dungeons') {
+          categoryName = '副本道具';
+          emptyReason = `
+            <div style="margin-top: 15px; color: #ffd93d;">
+              💡 可能的原因：<br>
+              • 尚未獲得任何副本道具<br>
+              • 副本道具的 belong 值不正確<br>
+              • 資料載入問題
+            </div>
+          `;
+        } else if (String(currentCategory).startsWith('dungeon_')) {
+          const belongValue = parseInt(String(currentCategory).split('_')[1]);
+          categoryName = dungeonNames[belongValue] + '道具';
+          emptyReason = `
+            <div style="margin-top: 15px; color: #ffd93d;">
+              💡 嘗試挑戰 ${dungeonNames[belongValue]} 副本來獲得道具！<br>
+              或檢查是否有道具但 belong 值設定錯誤。
+            </div>
+          `;
+        } else {
+          const categoryNames = {
+            'all': '道具',
+            1: '稀有道具',
+            2: '超稀有道具', 
+            3: '罕見道具'
+          };
+          categoryName = categoryNames[currentCategory] || '道具';
+        }
+        
+        html = `
+          <div class="item-card">
+            <div style="text-align: center;">
+              <div style="font-size: 2em; margin-bottom: 10px;">📦</div>
+              <div>暫無${categoryName}</div>
+              ${emptyReason}
+            </div>
+          </div>
+        `;
       }
       
       itemEl.innerHTML = html;
+      console.log(`✅ 渲染完成，顯示 ${displayedCount} 個道具`);
     }
 
     function renderPage() {
@@ -468,7 +688,6 @@
       renderItems();
     }
 
-    // 🚀 優化的卡片等級同步
     async function syncEquippedCardLevels(upgradedCardId, newLevel) {
       const equipment = userData.equipment || {};
       let needsUpdate = false;
@@ -481,14 +700,12 @@
           if (equippedCardId === upgradedCardId) {
             newEquipment[slot] = { [upgradedCardId]: newLevel };
             needsUpdate = true;
-            console.log(`📝 準備更新插槽 ${slot} 的 ${upgradedCardId} 等級至 ${newLevel}`);
           }
         }
       }
       
       if (needsUpdate) {
         try {
-          
           const response = await SecureAPI.post(`${API_BASE}/save_equipment`, {
             equipment: newEquipment
           });
@@ -497,23 +714,14 @@
           
           if (response.ok && result.success) {
             userData.equipment = newEquipment;
-            
-            // 立即重新渲染一次確保顯示正確
             renderEquipment();
             renderStats();
-            
           } else {
-            console.error("❌ 同步裝備等級失敗:", result.error || result.message);
-            
-            // 如果同步失敗，回滾本地資料
-            console.log("同步失敗，重新載入伺服器資料...");
+            console.error("同步裝備等級失敗:", result.error || result.message);
             await loadUserData();
           }
         } catch (error) {
-          console.error("❌ 同步裝備等級時發生錯誤:", error);
-          
-          // 如果同步失敗，重新載入伺服器資料
-          console.log("同步錯誤，重新載入伺服器資料...");
+          console.error("同步裝備等級時發生錯誤:", error);
           await loadUserData();
         }
       }
@@ -522,7 +730,6 @@
     async function openCraftUI() {
       PerformanceMonitor.startTiming('openCraftUI');
       
-      // 載入失敗次數資料
       await loadCardFailureCounts();
       
       const dialog = document.getElementById("dialogContainer");
@@ -572,7 +779,6 @@
           const hasAllMaterials = Object.entries(levelData.materials)
             .every(([matId, qty]) => (userItems[matId] || 0) >= qty);
           
-          // 取得失敗次數並計算強化成功率
           const failureCount = cardFailureCounts[card.id] || 0;
           const baseSuccessRate = levelData.chance;
           const successRateDisplay = formatSuccessRateDisplay(baseSuccessRate, failureCount);
@@ -609,25 +815,23 @@
       PerformanceMonitor.endTiming('openCraftUI');
     }
 
-    // 卡片製作
     async function craftCard(cardId, currentLevel) {
       const card = cardData.find(c => c.id === cardId);
       const levelData = card.levels[currentLevel];
       
       if (!levelData) {
-        alert("❌ 資料錯誤");
+        alert("資料錯誤");
         return;
       }
       
       for (const [matId, qty] of Object.entries(levelData.materials)) {
         const ownedQty = userItems[String(matId)] || 0;
         if (ownedQty < qty) {
-          alert(`❌ 材料不足：${matId} 需要 ${qty}，持有 ${ownedQty}`);
+          alert(`材料不足：${matId} 需要 ${qty}，持有 ${ownedQty}`);
           return;
         }
       }
       
-      // 計算並顯示強化成功率
       const failureCount = cardFailureCounts[cardId] || 0;
       const baseSuccessRate = levelData.chance;
       const enhancedSuccessRate = calculateEnhancedSuccessRate(baseSuccessRate, failureCount);
@@ -636,7 +840,7 @@
       let confirmMessage = `確定要${currentLevel === 0 ? '製作' : '升級'} ${card.name} 嗎？\n`;
       
       if (enhancedSuccessRate >= 1.0) {
-        confirmMessage += `✨ 必定成功！(100%)`;
+        confirmMessage += `必定成功！(100%)`;
       } else {
         confirmMessage += `成功率: ${enhancedPercentage}%`;
         if (failureCount > 0) {
@@ -661,48 +865,40 @@
         
         if (response.ok) {
           if (result.success) {
-            // 成功處理
             let successMsg = result.message;
             if (result.failure_count_reset && result.previous_failure_count > 0) {
-              successMsg += `\n🎉 失敗次數已重置！(之前累積 ${result.previous_failure_count} 次失敗)`;
+              successMsg += `\n失敗次數已重置！(之前累積 ${result.previous_failure_count} 次失敗)`;
             }
             alert(`✅ ${successMsg}`);
             
             const newLevel = currentLevel + 1;
             userCards[cardId] = newLevel;
             
-            // 重置本地失敗次數記錄
             if (cardFailureCounts[cardId]) {
               delete cardFailureCounts[cardId];
             }
             
-            // 立即更新本地裝備資料
             updateLocalEquipmentLevels(cardId, newLevel);
             
-            // 同步裝備等級到伺服器
             try {
               await syncEquippedCardLevels(cardId, newLevel);
             } catch (syncError) {
               console.error("同步裝備等級時發生錯誤:", syncError);
             }
             
-            // 強制清除所有相關快取
             await forceRefreshAllData();
             
           } else {
-            // 失敗處理
             let failMsg = result.message;
             if (result.failure_count && result.next_success_rate) {
               const nextRate = (result.next_success_rate * 100).toFixed(0);
               failMsg += `\n 失敗次數: ${result.failure_count}`;
               failMsg += `\n 下次成功率: ${nextRate}% (+${result.bonus_rate}% 加成)`;
               
-              // 更新本地失敗次數記錄
               cardFailureCounts[cardId] = result.failure_count;
             }
             alert(`❌ ${failMsg}`);
             
-            // 製作失敗也要清除快取並重新載入，因為材料已經被消耗
             await forceRefreshAllData();
           }
           
@@ -720,38 +916,27 @@
     }
 
     async function forceRefreshAllData() {
-      
       try {
-        // 清除前端所有快取
         SecureAPI.clearCache();
         
-        // 發送後端快取清除請求（可選，針對嚴重快取問題）
         try {
           await fetch(`${API_BASE}/clear_cache`, { method: 'POST' });
         } catch (cacheError) {
           console.warn("後端快取清除失敗:", cacheError);
         }
         
-        // 等待一小段時間確保快取清除完成
         await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // 強制重新載入所有使用者資料
         await loadUserData();
-        
-        // 重新渲染所有顯示
         renderPage();
         
       } catch (error) {
         console.error("強制刷新資料時發生錯誤:", error);
-        // 如果自動刷新失敗，提示使用者手動重新整理
         if (confirm("資料同步可能有問題，是否要重新整理頁面確保資料一致性？")) {
           window.location.reload();
         }
       }
     }
 
-    
-    // 驗證裝備等級一致性
     async function validateAndFixEquipmentLevels() {
       const equipment = userData.equipment || {};
       let needsUpdate = false;
@@ -767,7 +952,6 @@
           if (actualLevel > 0 && equippedLevel < actualLevel) {
             newEquipment[slot] = { [equippedCardId]: actualLevel };
             needsUpdate = true;
-            console.log(`修復插槽 ${slot} 的 ${equippedCardId} 等級：${equippedLevel} → ${actualLevel}`);
           }
         }
       }
@@ -785,7 +969,7 @@
             renderPage();
           }
         } catch (error) {
-          console.error("❌ 自動修復裝備等級時發生錯誤:", error);
+          console.error("自動修復裝備等級時發生錯誤:", error);
         }
       }
     }
@@ -841,7 +1025,7 @@
     
       html += `
           <div class="btn-group">
-            <button class="square-btn" onclick="saveEquipment()">✅ 儲存插槽</button>
+            <button class="square-btn" onclick="saveEquipment()">儲存插槽</button>
             <button class="square-btn" onclick="closeDialog()">取消</button>
           </div>
         </div>
@@ -854,9 +1038,11 @@
     
       selectIds.forEach(id => {
         const select = document.getElementById(id);
-        select.addEventListener("change", () => {
-          updateEquipDropdowns(selectIds);
-        });
+        if (select) {
+          select.addEventListener("change", () => {
+            updateEquipDropdowns(selectIds);
+          });
+        }
       });
     
       updateEquipDropdowns(selectIds);
@@ -864,7 +1050,6 @@
     }
 
     function updateLocalEquipmentLevels(cardId, newLevel) {
-      
       const equipment = userData.equipment || {};
       let updated = false;
       
@@ -873,7 +1058,6 @@
         if (equippedCard && typeof equippedCard === 'object') {
           const equippedCardId = Object.keys(equippedCard)[0];
           if (equippedCardId === cardId) {
-            // 立即更新本地資料
             userData.equipment[slot] = { [cardId]: newLevel };
             updated = true;
           }
@@ -881,17 +1065,21 @@
       }
       
       if (updated) {
-        // 立即重新渲染頁面
         renderEquipment();
         renderStats();
       }
     }
 
     function updateEquipDropdowns(selectIds) {
-      const selectedValues = selectIds.map(id => document.getElementById(id).value);
+      const selectedValues = selectIds.map(id => {
+        const element = document.getElementById(id);
+        return element ? element.value : '';
+      });
     
       selectIds.forEach((id, idx) => {
         const select = document.getElementById(id);
+        if (!select) return;
+        
         const currentValue = select.value;
         const slot = select.dataset.slot;
         
@@ -915,18 +1103,19 @@
       });
     }
 
-    // 儲存裝備功能
     async function saveEquipment() {
       const newEquipment = {};
       const usedCardIds = new Set();
     
       for (let slot = 1; slot <= 5; slot++) {
         const selectEl = document.getElementById(`equip_slot_${slot}`);
+        if (!selectEl) continue;
+        
         const cardId = selectEl.value;
     
         if (cardId) {
           if (usedCardIds.has(cardId)) {
-            alert(`❌ 同一張卡片「${cardId}」不能裝備在多個欄位`);
+            alert(`同一張卡片「${cardId}」不能裝備在多個欄位`);
             return;
           }
           usedCardIds.add(cardId);
@@ -945,13 +1134,10 @@
     
         if (response.ok && result.success) {
           userData.equipment = newEquipment;
-          
-          // 🧹 清除快取
           SecureAPI.clearUserCache();
-          
           renderPage();
           closeDialog();
-          alert("✅ 插槽更新成功");
+          alert("插槽更新成功");
         } else {
           alert(result.error || result.message || "插槽更新失敗");
         }
@@ -966,25 +1152,28 @@
     function closeDialog() {
       document.body.style.overflow = "";
       document.body.classList.remove("dialog-open");
-      document.getElementById("dialogContainer").style.display = "none";
+      const dialogContainer = document.getElementById("dialogContainer");
+      if (dialogContainer) {
+        dialogContainer.style.display = "none";
+      }
     }
 
-    // 全域函數
+    // 確保所有函數都正確註冊到 window 物件
     window.openCraftUI = openCraftUI;
     window.openEquipUI = openEquipUI;
     window.closeDialog = closeDialog;
     window.craftCard = craftCard;
     window.saveEquipment = saveEquipment;
     window.filterItems = filterItems;
+    window.openDungeonSelector = openDungeonSelector;
+    window.selectDungeon = selectDungeon;
 
-    // 主要初始化函數
     async function runMain() {
       showLoading(true);
       
       try {
         PerformanceMonitor.startTiming('totalLoad');
         
-        // 並行載入遊戲資料和使用者資料
         await Promise.all([
           loadGameData(),
           loadUserData(),
@@ -1001,7 +1190,6 @@
       }
     }
 
-    // 監聽登入狀態
     onAuthStateChanged(auth, (user) => {
       if (user) {
         runMain();
@@ -1010,17 +1198,24 @@
       }
     });
 
+    // 修正：ESC 鍵支援關閉對話框
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        const dialogContainer = document.getElementById("dialogContainer");
+        if (dialogContainer && dialogContainer.style.display === "flex") {
+          closeDialog();
+        }
+      }
+    });
+
+    // 頁面可見性檢查
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden) {
-        
-        // 頁面重新可見時，輕量級檢查資料是否需要更新
         setTimeout(async () => {
           try {
-            // 只重新載入使用者狀態，不強制刷新快取
             const latestUser = await SecureAPI.getStatus(false);
             const latestUserData = await latestUser.json();
             
-            // 比較裝備資料是否有變化
             const currentEquipment = JSON.stringify(userData.equipment);
             const latestEquipment = JSON.stringify(latestUserData.equipment);
             
@@ -1035,50 +1230,6 @@
         }, 1000);
       }
     });
-    
-    // 🚀 新增：開發者偵錯工具
-    if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
-      window.inventoryDebug = {
-        // 強制刷新所有資料
-        forceRefresh: () => forceRefreshAllData(),
-        
-        // 檢查資料一致性
-        checkConsistency: () => {
-          console.log("🔍 檢查資料一致性...");
-          console.log("使用者卡片:", userCards);
-          console.log("裝備狀態:", userData.equipment);
-          
-          // 檢查裝備中的卡片等級是否與擁有的卡片等級一致
-          for (let slot = 1; slot <= 5; slot++) {
-            const equippedCard = userData.equipment[slot];
-            if (equippedCard) {
-              const cardId = Object.keys(equippedCard)[0];
-              const equippedLevel = equippedCard[cardId];
-              const ownedLevel = userCards[cardId] || 0;
-              
-              if (equippedLevel !== ownedLevel) {
-                console.warn(`⚠️ 插槽 ${slot} 等級不一致: 裝備=${equippedLevel}, 擁有=${ownedLevel}`);
-              }
-            }
-          }
-        },
-        
-        // 手動同步裝備等級
-        syncAll: async () => {
-          for (const [cardId, level] of Object.entries(userCards)) {
-            await syncEquippedCardLevels(cardId, level);
-          }
-        },
-        
-        // 測試分類功能
-        testCategory: (category) => {
-          console.log(`🧪 測試分類功能: ${category}`);
-          filterItems(category);
-        }
-      };
-      
-      console.log("🔧 背包偵錯工具已啟用，使用 inventoryDebug 存取");
-    }
   </script>
 </body>
 </html>
