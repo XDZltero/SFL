@@ -335,169 +335,6 @@
       return validatePurchaseWithTimeCheck(item, userPurchases, userData, userItems);
     }
 
-    function checkTimeBasedResets(lastShopVisitTime) {
-      const currentTime = getTaipeiTime();
-      const lastTime = new Date(lastShopVisitTime);
-      
-      console.log(`🕐 檢查重置：上次進入 ${lastTime.toLocaleString('zh-TW')} → 本次進入 ${currentTime.toLocaleString('zh-TW')}`);
-      
-      const currentDate = formatDateString(currentTime);
-      const lastDate = formatDateString(lastTime);
-      
-      const currentWeek = formatWeekString(currentTime);
-      const lastWeek = formatWeekString(lastTime);
-      
-      const currentMonth = formatMonthString(currentTime);
-      const lastMonth = formatMonthString(lastTime);
-      
-      const needsReset = {
-        daily: currentDate !== lastDate,
-        weekly: currentWeek !== lastWeek,
-        monthly: currentMonth !== lastMonth
-      };
-      
-      console.log(`📊 重置檢查結果:`, {
-        daily: needsReset.daily ? `${lastDate} → ${currentDate}` : '無需重置',
-        weekly: needsReset.weekly ? `${lastWeek} → ${currentWeek}` : '無需重置',
-        monthly: needsReset.monthly ? `${lastMonth} → ${currentMonth}` : '無需重置'
-      });
-      
-      return {
-        needsReset,
-        periods: {
-          currentDate,
-          currentWeek, 
-          currentMonth
-        }
-      };
-    }
-
-    function applyResetsToUserPurchases(userPurchases, resetInfo) {
-      const { needsReset, periods } = resetInfo;
-      const purchases = userPurchases.purchases || {};
-      let resetCount = 0;
-      let resetItems = [];
-      
-      for (const [itemId, itemPurchases] of Object.entries(purchases)) {
-        let itemResetTypes = [];
-        
-        if (needsReset.daily) {
-          itemPurchases.daily_purchased = 0;
-          itemPurchases.last_daily_period = periods.currentDate;
-          itemResetTypes.push("每日");
-          resetCount++;
-        }
-        
-        if (needsReset.weekly) {
-          itemPurchases.weekly_purchased = 0;
-          itemPurchases.last_weekly_period = periods.currentWeek;
-          itemResetTypes.push("每週");
-          resetCount++;
-        }
-        
-        if (needsReset.monthly) {
-          itemPurchases.monthly_purchased = 0;
-          itemPurchases.last_monthly_period = periods.currentMonth;
-          itemResetTypes.push("每月");
-          resetCount++;
-        }
-        
-        if (itemResetTypes.length > 0) {
-          const shop_item = shopItems.find(item => item.id === itemId);
-          const itemName = shop_item?.name || itemId;
-          
-          resetItems.push({
-            item_id: itemId,
-            item_name: itemName,
-            reset_types: itemResetTypes
-          });
-        }
-      }
-      
-      userPurchases.last_shop_visit_time = getTaipeiTime().getTime();
-      userPurchases.last_update_time = getTaipeiTime().getTime();
-      
-      return {
-        resetCount,
-        resetItems,
-        updatedPurchases: userPurchases
-      };
-    }
-
-    async function performShopEntryResetCheck() {
-      try {
-        console.log("🏪 進入商店，開始檢查重置...");
-        
-        const purchasesRes = await SecureAPI.get(`${API_BASE}/shop_user_purchases`, true);
-        let currentUserPurchases = purchasesRes.ok ? await purchasesRes.json() : {
-          user_id: auth.currentUser?.email,
-          purchases: {},
-          last_shop_visit_time: 0,
-          last_update_time: 0
-        };
-        
-        const lastShopVisitTime = currentUserPurchases.last_shop_visit_time || 0;
-        
-        if (lastShopVisitTime === 0) {
-          console.log("🎉 首次進入商店，初始化時間記錄");
-          currentUserPurchases.last_shop_visit_time = getTaipeiTime().getTime();
-          currentUserPurchases.last_update_time = getTaipeiTime().getTime();
-          
-          await SecureAPI.post(`${API_BASE}/shop_update_visit_time`, {
-            visit_time: currentUserPurchases.last_shop_visit_time
-          });
-          
-          userPurchases = currentUserPurchases;
-          return { resetCount: 0, resetItems: [] };
-        }
-        
-        const resetInfo = checkTimeBasedResets(lastShopVisitTime);
-        
-        if (!resetInfo.needsReset.daily && !resetInfo.needsReset.weekly && !resetInfo.needsReset.monthly) {
-          console.log("✅ 無需重置，更新進入時間");
-          
-          currentUserPurchases.last_shop_visit_time = getTaipeiTime().getTime();
-          
-          await SecureAPI.post(`${API_BASE}/shop_update_visit_time`, {
-            visit_time: currentUserPurchases.last_shop_visit_time
-          });
-          
-          userPurchases = currentUserPurchases;
-          return { resetCount: 0, resetItems: [] };
-        }
-        
-        const resetResult = applyResetsToUserPurchases(currentUserPurchases, resetInfo);
-        
-        console.log(`🔄 應用重置：影響 ${resetResult.resetCount} 個商品項目`);
-        
-        try {
-          const saveResponse = await SecureAPI.post(`${API_BASE}/shop_save_reset_purchases`, {
-            purchases: resetResult.updatedPurchases
-          });
-          
-          if (saveResponse.ok) {
-            console.log("✅ 重置結果已保存到後端");
-            userPurchases = resetResult.updatedPurchases;
-          } else {
-            console.error("❌ 保存重置結果失敗");
-            userPurchases = currentUserPurchases;
-          }
-        } catch (saveError) {
-          console.error("❌ 保存重置結果時發生錯誤:", saveError);
-          userPurchases = currentUserPurchases;
-        }
-        
-        return {
-          resetCount: resetResult.resetCount,
-          resetItems: resetResult.resetItems
-        };
-        
-      } catch (error) {
-        console.error("❌ 進入商店重置檢查失敗:", error);
-        return { resetCount: 0, resetItems: [], error: error.message };
-      }
-    }
-
     function isFreeItem(item) {
       return item.type === 'free' || 
              (item.cost && Object.keys(item.cost).length === 0);
@@ -1087,6 +924,32 @@
         });
       });
     });
+	
+	async function checkShopReset() {
+	  try {
+		console.log("🏪 檢查商店重置...");
+		const response = await SecureAPI.post(`${API_BASE}/shop_check_reset`, {});
+		const result = await response.json();
+		
+		if (response.ok && result.success) {
+		  // 如果有重置發生，顯示通知
+		  if (result.reset_occurred && result.reset_items && result.reset_items.length > 0) {
+			const resetMessage = `🔄 商店重置完成！\n\n重置項目：\n${result.reset_items.map(item => `• ${item}`).join('\n')}`;
+			setTimeout(() => alert(resetMessage), 500);
+		  }
+		  
+		  // 更新購買記錄
+		  userPurchases = result.purchases || userPurchases;
+		  console.log("✅ 商店重置檢查完成");
+		  
+		} else {
+		  console.warn("❌ 商店重置檢查失敗:", result.error);
+		}
+		
+	  } catch (error) {
+		console.error("❌ 商店重置檢查錯誤:", error);
+	  }
+	}
 
     // 🚀 全域函數更新
     window.openPurchaseDialog = openPurchaseDialog;
@@ -1097,6 +960,18 @@
       showLoading(true);
       
       try {
+	  
+		console.log("🏪 載入商店資料...");
+    
+		await checkShopReset();
+		
+		const [shopRes, itemsRes, userItemsRes, userRes] = await Promise.all([
+		  fetch("parameter/shop_items.json"),
+		  SecureAPI.getStaticData('items_table'),
+		  SecureAPI.get(`${API_BASE}/user_items`),
+		  SecureAPI.getStatus()
+		]);
+		
         await loadShopData();
         
         updateUserInfoDisplay();
