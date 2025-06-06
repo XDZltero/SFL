@@ -1008,7 +1008,7 @@ function handleBattleResult(result) {
         nextBtn.textContent = "下一層";
         nextBtn.onclick = () => {
           const nextLayer = parseInt(currentLayer) + 1;
-          window.parent.loadPage(`dungeon_layer.html?dungeon=${currentDungeon}&layer=${nextLayer}`);
+          window.parent.loadPage(`dungeon_layer_test.html?dungeon=${currentDungeon}&layer=${nextLayer}`);
         };
         nextBtn.style.display = "inline-block";
       }
