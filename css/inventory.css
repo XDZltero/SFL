@@ -972,4 +972,66 @@ body.dialog-open .dialog-box::before {
         min-width: auto;
       }
     }
+/* 道具分類按鈕樣式 */
+    .item-category-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .category-btn {
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.8) 0%, rgba(25, 25, 55, 0.6) 100%);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 20px;
+      padding: 8px 16px;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9em;
+    }
+    
+    .category-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4);
+      border-color: rgba(0, 255, 255, 0.6);
+    }
+    
+    .category-btn.active {
+      background: linear-gradient(135deg, #00ffff 0%, #00bfff 100%);
+      color: #000;
+      border-color: #00ffff;
+      box-shadow: 0 6px 20px rgba(0, 255, 255, 0.6);
+      font-weight: 700;
+    }
+    
+    .category-btn.active:hover {
+      transform: translateY(-2px) scale(1.05);
+    }
 
+    /* Debug 資訊區域 */
+    .debug-info {
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 20px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      color: #ffcccc;
+    }
+
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+      .item-category-buttons {
+        gap: 8px;
+      }
+      
+      .category-btn {
+        font-size: 0.8em;
+        padding: 6px 12px;
+      }
+    }
