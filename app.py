@@ -2671,7 +2671,7 @@ def check_weekly_reset():
         now_taipei = datetime.now(taipei_tz)
         
         # 只在週日 01:00~02:00 之間進行重置
-        if now_taipei.weekday() == 7 and 1 <= now_taipei.hour <= 23:
+        if now_taipei.weekday() == 6 and 1 <= now_taipei.hour <= 23:
             global_ref = db.collection("world_boss_global").document("current_status")
             global_doc = global_ref.get()
             
