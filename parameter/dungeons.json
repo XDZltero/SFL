@@ -83,7 +83,7 @@
     "bossId": "obsidian_captain_boss",
     "min_level": 85,
     "image": "https://i.postimg.cc/WbywtspM/dungeon-bigship.png",
-    "monsters": ["patrol_destroyer","bronze_warrior","siege_electromagnetic_bomb","mech_elite_engineer","golden_messenger","optical_tracking_cannon","diamond_messenger","bronze_messenger_elite","obsidian_captain","obsidian_captain_boss"],
+    "monsters": ["patrol_destroyer","bronze_warrior","siege_electromagnetic_bomb","mech_elite_engineer","golden_messenger","optical_tracking_cannon","diamond_messenger","bronze_messenger_elite","obsidian_captain"],
     "Pre-Task": "dungeon_obelisk",
     "Pre-Task-ReqTime" : 3
   },
