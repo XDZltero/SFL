@@ -1304,6 +1304,125 @@
       if (plusBtn) {
         plusBtn.disabled = currentLevel >= skill.maxlvl || remainingSkillPoints <= 0;
       }
+
+      // 🚀 即時更新技能詳細資訊
+      const skillCard = valueEl.closest('.skill-card');
+      if (skillCard) {
+        updateSkillCardDetails(skillCard, skill, currentLevel);
+      }
+    }
+  }
+
+  // 🚀 新增：更新技能卡片的詳細資訊
+  function updateSkillCardDetails(skillCard, skill, currentLevel) {
+    const typeMap = { 
+      atk: "【輸出型】", 
+      heal: "【治療型】", 
+      buff: "【增益型】",
+      debuff: "【減益型】",
+      debuff_atk: "【減益型】",
+      dot_atk: "【輸出型】",
+      invincible: "【增益型】",
+      damage_shield: "【特殊型】"
+    };
+    const elemMap = { pyro: "火", hydro: "水", nature: "自然", electro: "雷", light: "光", dark: "暗", all: "全", none: "無" };
+
+    let skillDetails = "";
+    const skillType = skill.type;
+    
+    if (skillType === "atk" || skillType === "debuff_atk" || skillType === "dot_atk") {
+      const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
+      skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+      if (skill.waitRound) {
+        skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+      }
+      const elementSpans = skill.element.map(e => {
+        const elementName = elemMap[e] || e;
+        return `<span class="skill-element ${e}">${elementName}</span>`;
+      }).join("");
+      skillDetails += `<p>倍率：${currentMultiplier} 屬性：${elementSpans}</p>`;
+      
+      const isGuaranteedHit = (skill.element && skill.element.includes("all")) || skill.guaranteed_hit;
+      if (isGuaranteedHit) {
+        skillDetails += `<p style="color: #00ff00;">✓ 必定命中</p>`;
+      }
+      
+      if (skillType === "debuff_atk" && skill.debuff) {
+        const debuff = skill.debuff;
+        skillDetails += `<p style="color: #ff6b6b;">附加效果：${debuff.name} (${debuff.round}回合，命中率：${(debuff.hit_chance * 100).toFixed(0)}%)</p>`;
+      }
+      
+      if (skillType === "dot_atk" && skill.dot) {
+        const dot = skill.dot;
+        const baseDotDamage = dot.damage_per_turn;
+        const dotDamagePerLevel = dot.damage_per_level || 0;
+        const currentDotDamage = baseDotDamage + (currentLevel - 1) * dotDamagePerLevel;
+        
+        let dotDamageText = `每回合${currentDotDamage}傷害`;
+        if (dotDamagePerLevel > 0 && currentLevel > 1) {
+          dotDamageText += ` (${baseDotDamage}+${(currentLevel - 1) * dotDamagePerLevel})`;
+        }
+        
+        skillDetails += `<p style="color: #ff6b6b;">持續傷害：${dot.name} (${dotDamageText}，持續${dot.round}回合)</p>`;
+      }
+    } else if (skillType === "heal") {
+      const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
+      skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+      if (skill.waitRound) {
+        skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+      }
+      skillDetails += `<p>治療倍率：${currentMultiplier}</p>`;
+    } else if (skillType === "buff") {
+      const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
+      skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+      if (skill.waitRound) {
+        skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+      }
+      skillDetails += `<p>效果倍率：${currentMultiplier} 持續：${skill.round || 0} 回合</p>`;
+    } else if (skillType === "invincible") {
+      const currentRounds = Math.floor(skill.round + (currentLevel - 1) * (skill.multiplierperlvl || 0));
+      skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+      if (skill.waitRound) {
+        skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+      }
+      skillDetails += `<p style="color: #4ecdc4;">無敵時間：${currentRounds} 回合</p>`;
+    } else if (skillType === "damage_shield") {
+      const currentThreshold = Math.floor(skill.damage_threshold + (currentLevel - 1) * (skill.multiplierperlvl * 50 || 0));
+      const currentDamage = Math.floor(skill.ultimate_skill.damage + (currentLevel - 1) * (skill.multiplierperlvl * 100 || 0));
+      skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
+      if (skill.waitRound) {
+        skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+      }
+      skillDetails += `<p style="color: #ffd93d;">蓄力：${skill.shield_rounds}回合 　傷害門檻：${currentThreshold}</p>`;
+      skillDetails += `<p style="color: #ff6b6b;">終極技：${skill.ultimate_skill.name} (${currentDamage}傷害)</p>`;
+    } else {
+      skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd || 0} 回合</p>`;
+      if (skill.waitRound) {
+        skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
+      }
+      if (skill.multiplier) {
+        const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
+        skillDetails += `<p>倍率：${currentMultiplier}</p>`;
+      }
+    }
+
+    // 🚀 更新技能卡片內容，但保留標題、描述和控制項
+    const skillTitle = `<strong>${typeMap[skill.type] || "【其他】"} ${skill.name}</strong>`;
+    const skillDescription = `<p>${skill.description}</p>`;
+    
+    // 找到控制項和鎖定提示（如果有的話）
+    const controls = skillCard.querySelector('.skill-controls');
+    const lockTip = skillCard.querySelector('span[style*="color: red"]');
+    
+    // 重新構建卡片內容
+    skillCard.innerHTML = skillTitle + skillDescription + skillDetails;
+    
+    // 重新添加控制項和鎖定提示
+    if (controls) {
+      skillCard.appendChild(controls);
+    }
+    if (lockTip) {
+      skillCard.appendChild(lockTip);
     }
   }
 
