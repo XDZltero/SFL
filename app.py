@@ -2670,8 +2670,8 @@ def check_weekly_reset():
         taipei_tz = pytz.timezone('Asia/Taipei')
         now_taipei = datetime.now(taipei_tz)
         
-        # 只在週一 01:30~02:00 之間進行重置
-        if now_taipei.weekday() == 0 and 1 <= now_taipei.hour <= 2:
+        # 只在週日 01:00~02:00 之間進行重置
+        if now_taipei.weekday() == 7 and 1 <= now_taipei.hour <= 23:
             global_ref = db.collection("world_boss_global").document("current_status")
             global_doc = global_ref.get()
             
