@@ -1,7 +1,7 @@
 {
   "boss_id": "Creator_defile",
   "name": "「潘朵拉的創世主」\n迪菲爾",
-  "description": "迪菲爾解放了自己的魔力，以真正的創世主的姿態現身。\n\n只有全世界的冒險者團結一致，才有可能與祂抗衡。每一次攻擊都是為了全人類的未來而戰！",
+  "description": "迪菲爾解放了自己的魔力，以真正的創世主的姿態現身。\n\n只有冒險者團結一致，才有可能與祂抗衡。\n「試煉開始了，『神子』。」\n迪菲爾向你說到。",
   "image": "https://i.postimg.cc/T1zwNCFF/Creator-defile.png",
   "level": 100,
   "element": ["all"],
@@ -27,7 +27,7 @@
     "2": {
       "hp_threshold": 60,
       "name": "【第二階段】創世之怒",
-      "description": "感受到威脅的迪菲爾開始認真戰鬥，但玩家們找到了攻擊的弱點！",
+      "description": "感受到威脅的迪菲爾開始認真戰鬥，但冒險者們找到了攻擊的弱點！",
       "player_damage_multiplier": 1.25,
       "boss_defense_multiplier": 1.0
     },
