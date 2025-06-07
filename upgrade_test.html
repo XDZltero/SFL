@@ -7,26 +7,142 @@
   <link href="css/style.css" rel="stylesheet"/>
   <link href="css/normalStyle.css" rel="stylesheet"/>
   <style>
-    /* 能力值重置按鈕樣式 */
+    /* 🎨 統一的能力值區域樣式 */
+    .stats-container {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+
+    .current-stats-panel {
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.9) 0%, rgba(25, 25, 55, 0.7) 100%);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+      min-width: 280px;
+      max-width: 350px;
+    }
+
+    .current-stats-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
+      animation: sectionShine 4s ease-in-out infinite;
+    }
+
+    .allocation-panel {
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.9) 0%, rgba(25, 25, 55, 0.7) 100%);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+      min-width: 400px;
+      flex: 1;
+      max-width: 500px;
+    }
+
+    .allocation-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
+      animation: sectionShine 4s ease-in-out infinite;
+    }
+
+    /* 🎨 統一的標題樣式 */
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.3em;
+      color: #00ffff;
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    /* 🎨 當前能力值列表 */
+    .current-stats-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .current-stats-list li {
+      background: rgba(0, 255, 255, 0.1);
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      color: #ffffff;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .current-stats-list li:hover {
+      background: rgba(0, 255, 255, 0.15);
+      border-color: rgba(0, 255, 255, 0.4);
+      transform: translateX(3px);
+    }
+
+    .stat-label {
+      color: #b8e6ff;
+    }
+
+    .stat-value {
+      color: #ffd93d;
+      font-weight: 700;
+      text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
+    }
+
+    /* 🎨 全部重置按鈕優化 */
     .reset-stats-btn {
       background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
-      color: white;
       border: none;
-      padding: 10px 20px;
-      border-radius: 20px;
+      padding: 15px 25px;
+      border-radius: 25px;
+      color: white;
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
       font-size: 1em;
       cursor: pointer;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(233, 30, 99, 0.4);
-      margin-top: 15px;
+      box-shadow: 0 6px 20px rgba(233, 30, 99, 0.4);
+      margin-top: 20px;
       width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .reset-stats-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .reset-stats-btn:hover::before {
+      left: 100%;
     }
 
     .reset-stats-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(233, 30, 99, 0.6);
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 10px 30px rgba(233, 30, 99, 0.6);
     }
 
     .reset-stats-btn:disabled {
@@ -41,32 +157,74 @@
       box-shadow: 0 2px 8px rgba(158, 158, 158, 0.3);
     }
 
-    /* 🚀 新增：長按按鈕樣式強化 */
+    .reset-stats-btn:disabled::before {
+      display: none;
+    }
+
+    /* 🎨 剩餘點數顯示 */
+    .remaining-points-display {
+      background: linear-gradient(135deg, rgba(255, 217, 61, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
+      border: 2px solid rgba(255, 217, 61, 0.4);
+      border-radius: 15px;
+      padding: 15px 20px;
+      text-align: center;
+      margin-bottom: 25px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.2em;
+      color: #ffd93d;
+      text-shadow: 0 0 10px rgba(255, 217, 61, 0.5);
+      position: relative;
+    }
+
+    .remaining-points-display::before {
+      content: '💎';
+      margin-right: 8px;
+    }
+
+    .remaining-points-number {
+      color: #ffffff;
+      font-size: 1.3em;
+      text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    }
+
+    /* 🚀 長按按鈕優化 - 修正抖動問題 */
     .stat-control {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 15px;
       margin-bottom: 15px;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
+      padding: 15px;
+      background: rgba(0, 255, 255, 0.05);
       border: 1px solid rgba(0, 255, 255, 0.2);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .stat-control:hover {
+      background: rgba(0, 255, 255, 0.1);
+      border-color: rgba(0, 255, 255, 0.4);
+      box-shadow: 0 4px 15px rgba(0, 255, 255, 0.2);
     }
 
     .stat-control label {
       flex: 1;
       color: #00ffff;
       font-weight: 600;
+      font-family: 'Orbitron', sans-serif;
       text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+      white-space: nowrap;
+      min-width: 140px;
     }
 
     .stat-control .minus,
     .stat-control .plus {
-      width: 40px;
-      height: 40px;
+      width: 45px;
+      height: 45px;
       border: none;
       border-radius: 50%;
-      font-size: 1.2em;
+      font-size: 1.4em;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -76,44 +234,46 @@
       -webkit-user-select: none;
       -moz-user-select: none;
       -ms-user-select: none;
+      font-family: 'Orbitron', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .stat-control .minus {
       background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
       color: white;
-      box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
     }
 
     .stat-control .plus {
       background: linear-gradient(135deg, #4ecdc4 0%, #45b7d1 100%);
       color: white;
-      box-shadow: 0 2px 8px rgba(78, 205, 196, 0.4);
     }
 
-    .stat-control .minus:hover {
+    .stat-control .minus:hover:not(:disabled) {
       transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.6);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
     }
 
-    .stat-control .plus:hover {
+    .stat-control .plus:hover:not(:disabled) {
       transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(78, 205, 196, 0.6);
+      box-shadow: 0 6px 20px rgba(78, 205, 196, 0.5);
     }
 
-    /* 🔥 長按按鈕激活狀態 */
+    /* 🔥 長按激活狀態 - 移除會造成抖動的效果 */
     .stat-control .minus.long-pressing,
     .stat-control .plus.long-pressing {
-      transform: scale(0.95);
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
-      animation: longPressRipple 0.6s ease-in-out infinite alternate;
+      animation: longPressGlow 0.8s ease-in-out infinite alternate;
     }
 
-    @keyframes longPressRipple {
+    @keyframes longPressGlow {
       0% {
-        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(255, 255, 255, 0.7);
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 255, 255, 0.3);
       }
       100% {
-        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 8px rgba(255, 255, 255, 0);
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.6);
       }
     }
 
@@ -122,44 +282,110 @@
       background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
       cursor: not-allowed;
       transform: none;
-      box-shadow: 0 1px 4px rgba(158, 158, 158, 0.3);
+      box-shadow: 0 2px 8px rgba(158, 158, 158, 0.3);
+      opacity: 0.6;
     }
 
-    .stat-control .minus:disabled:hover,
-    .stat-control .plus:disabled:hover {
-      transform: none;
-      box-shadow: 0 1px 4px rgba(158, 158, 158, 0.3);
-    }
-
-    .stat-value {
-      min-width: 40px;
+    /* 🎯 數值顯示區域 - 固定寬度防止抖動 */
+    .stat-value-display {
+      min-width: 60px;
+      max-width: 60px;
       text-align: center;
       font-weight: bold;
-      font-size: 1.2em;
+      font-size: 1.3em;
       color: #ffd93d;
-      text-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
-      background: rgba(255, 217, 61, 0.1);
-      border-radius: 5px;
-      padding: 5px 10px;
-      border: 1px solid rgba(255, 217, 61, 0.3);
+      text-shadow: 0 0 8px rgba(255, 217, 61, 0.6);
+      background: linear-gradient(135deg, rgba(255, 217, 61, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
+      border: 2px solid rgba(255, 217, 61, 0.4);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: 'Orbitron', sans-serif;
+      position: relative;
+      overflow: hidden;
+      /* 🔥 關鍵：防止數值變化時的布局抖動 */
+      box-sizing: border-box;
+      flex-shrink: 0;
     }
 
-    /* 🚀 長按提示動畫 */
+    /* 🚀 數值變化動畫 - 僅改變顏色，不改變大小 */
+    .stat-value-display.value-changed {
+      background: linear-gradient(135deg, rgba(78, 205, 196, 0.3) 0%, rgba(69, 183, 209, 0.2) 100%);
+      border-color: rgba(78, 205, 196, 0.6);
+      color: #4ecdc4;
+      text-shadow: 0 0 12px rgba(78, 205, 196, 0.8);
+      transition: all 0.3s ease;
+    }
+
+    .stat-value-display.value-decreased {
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.3) 0%, rgba(238, 90, 36, 0.2) 100%);
+      border-color: rgba(255, 107, 107, 0.6);
+      color: #ff6b6b;
+      text-shadow: 0 0 12px rgba(255, 107, 107, 0.8);
+      transition: all 0.3s ease;
+    }
+
+    /* 🎨 按鈕組樣式統一 */
+    .btn-group {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 25px;
+      flex-wrap: wrap;
+    }
+
+    .square-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      padding: 15px 25px;
+      border-radius: 25px;
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      position: relative;
+      overflow: hidden;
+      min-width: 140px;
+    }
+
+    .square-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .square-btn:hover::before {
+      left: 100%;
+    }
+
+    .square-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
+    }
+
+    /* 🚀 長按提示 */
     .long-press-hint {
       position: absolute;
-      top: -30px;
+      top: -35px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.9);
       color: #00ffff;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.8em;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.75em;
       white-space: nowrap;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.3s ease;
       z-index: 1000;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 600;
+      border: 1px solid rgba(0, 255, 255, 0.3);
     }
 
     .long-press-hint.show {
@@ -172,18 +398,18 @@
       top: 100%;
       left: 50%;
       transform: translateX(-50%);
-      border: 4px solid transparent;
-      border-top-color: rgba(0, 0, 0, 0.8);
+      border: 5px solid transparent;
+      border-top-color: rgba(0, 0, 0, 0.9);
     }
 
     /* 🚀 長按進度條 */
     .long-press-progress {
       position: absolute;
-      bottom: 2px;
-      left: 2px;
-      right: 2px;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.3);
+      bottom: 3px;
+      left: 3px;
+      right: 3px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
       border-radius: 2px;
       overflow: hidden;
       opacity: 0;
@@ -210,6 +436,93 @@
       width: 100%;
       transition: width 0.5s ease;
     }
+
+    /* 🎨 響應式設計 */
+    @media (max-width: 768px) {
+      .stats-container {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .current-stats-panel,
+      .allocation-panel {
+        min-width: 90%;
+        max-width: 90%;
+      }
+
+      .stat-control {
+        gap: 10px;
+      }
+
+      .stat-control label {
+        min-width: 120px;
+        font-size: 0.9em;
+      }
+
+      .stat-control .minus,
+      .stat-control .plus {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2em;
+      }
+
+      .btn-group {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .square-btn {
+        width: 100%;
+        max-width: 200px;
+      }
+    }
+
+    /* 🎨 技能區域統一樣式 */
+    .skills-section {
+      background: linear-gradient(135deg, rgba(15, 15, 35, 0.9) 0%, rgba(25, 25, 55, 0.7) 100%);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+      margin: 30px auto;
+      max-width: 1200px;
+    }
+
+    .skills-section::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.05) 50%, transparent 70%);
+      animation: sectionShine 4s ease-in-out infinite;
+    }
+
+    .remaining-skill-points {
+      background: linear-gradient(135deg, rgba(138, 43, 226, 0.2) 0%, rgba(75, 0, 130, 0.1) 100%);
+      border: 2px solid rgba(138, 43, 226, 0.4);
+      border-radius: 15px;
+      padding: 15px 20px;
+      text-align: center;
+      margin-bottom: 25px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.2em;
+      color: #da70d6;
+      text-shadow: 0 0 10px rgba(218, 112, 214, 0.5);
+    }
+
+    .remaining-skill-points::before {
+      content: '🌀';
+      margin-right: 8px;
+    }
+
+    .remaining-skill-points .remaining-points {
+      color: #ffffff;
+      font-size: 1.3em;
+      text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    }
   </style>
 </head>
 <body>
@@ -230,20 +543,22 @@
 <hr>
 
 <h2 class="fancy-subtitle"><span class="emoji">📊</span> 分配能力點</h2>
-<div class="card" style="display: flex; gap: 40px; align-items: flex-start;">
-  <div>
-    <strong>目前能力值：</strong>
-    <ul id="currentStats"></ul>
-    <!-- 新增能力值重置按鈕 -->
+<div class="stats-container">
+  <div class="current-stats-panel">
+    <div class="panel-title">✨ 目前能力值</div>
+    <ul id="currentStats" class="current-stats-list"></ul>
     <button id="btnResetAllStats" class="reset-stats-btn" onclick="showResetConfirmation()">
       🔄 全部重製
     </button>
   </div>
-  <div>
-    <div><strong>剩餘能力點數：<span id="remainingPoints" class="remaining-points">0</span></strong></div>
+  
+  <div class="allocation-panel">
+    <div class="remaining-points-display">
+      剩餘能力點數：<span id="remainingPoints" class="remaining-points-number">0</span>
+    </div>
     <div id="base_stats"></div>
     <div class="btn-group">
-      <button id="btnResetStats" class="square-btn">重置</button>
+      <button id="btnResetStats" class="square-btn">🔄 重置分配</button>
       <button id="btnSubmitLevel" class="square-btn">✅ 確認升級</button>
     </div>
   </div>
@@ -252,10 +567,12 @@
 <hr>
 
 <h2 class="fancy-subtitle"><span class="emoji">🌀</span> 技能點分配</h2>
-<div class="card">
-  <div><strong>剩餘技能點數：<span id="remainingSkillPoints" class="remaining-points">0</span></strong></div>
-  <div class="btn-row">
-    <button id="btnResetSkills" class="square-btn">重置技能</button>
+<div class="skills-section">
+  <div class="remaining-skill-points">
+    剩餘技能點數：<span id="remainingSkillPoints" class="remaining-points">0</span>
+  </div>
+  <div class="btn-group">
+    <button id="btnResetSkills" class="square-btn">🔄 重置技能</button>
     <button id="btnSubmitSkills" class="square-btn">✅ 儲存技能</button>
   </div>
   <div id="skillList"></div>
@@ -276,7 +593,7 @@
   let skillAlloc = {};
   let allSkills = [];
   let remainingSkillPoints = 0;
-  let userItems = {}; // 用於存儲玩家道具
+  let userItems = {};
 
   const statFields = [
     { key: "hp", label: "生命值（+5）" },
@@ -285,35 +602,32 @@
     { key: "atk_speed", label: "攻擊速度" }
   ];
 
-  // 🚀 長按按鈕管理器
+  // 🚀 優化的長按按鈕管理器
   class LongPressManager {
     constructor() {
       this.pressTimer = null;
       this.repeatTimer = null;
       this.isPressing = false;
-      this.startDelay = 500; // 500ms 後開始重複
-      this.repeatInterval = 150; // 每 150ms 重複一次
-      this.fastRepeatInterval = 80; // 快速重複間隔
-      this.fastRepeatThreshold = 3000; // 3秒後進入快速模式
+      this.startDelay = 500;
+      this.repeatInterval = 150;
+      this.fastRepeatInterval = 80;
+      this.fastRepeatThreshold = 3000;
     }
 
     setupButton(button, callback, statKey, direction) {
       const progressBar = button.querySelector('.long-press-progress');
       const hint = button.querySelector('.long-press-hint');
       
-      // 🔥 處理各種開始事件
       const startPress = (e) => {
         e.preventDefault();
-        if (this.isPressing) return;
+        if (this.isPressing || button.disabled) return;
         
         this.isPressing = true;
         this.pressStartTime = Date.now();
         button.classList.add('long-pressing');
         
-        // 立即執行一次
         callback(statKey, direction);
         
-        // 顯示進度條和提示
         if (progressBar) {
           progressBar.classList.add('active', 'filling');
         }
@@ -321,20 +635,17 @@
           hint.classList.add('show');
         }
         
-        // 設定開始重複的延遲
         this.pressTimer = setTimeout(() => {
           this.startRepeating(callback, statKey, direction);
         }, this.startDelay);
       };
 
-      // 🔥 處理結束事件
       const endPress = (e) => {
         if (!this.isPressing) return;
         
         this.isPressing = false;
         button.classList.remove('long-pressing');
         
-        // 清除所有計時器
         if (this.pressTimer) {
           clearTimeout(this.pressTimer);
           this.pressTimer = null;
@@ -344,7 +655,6 @@
           this.repeatTimer = null;
         }
         
-        // 隱藏進度條和提示
         if (progressBar) {
           progressBar.classList.remove('active', 'filling');
         }
@@ -353,21 +663,18 @@
         }
       };
 
-      // 🔥 開始重複執行
       this.startRepeating = (callback, statKey, direction) => {
         let currentInterval = this.repeatInterval;
         
         this.repeatTimer = setInterval(() => {
-          if (!this.isPressing) return;
+          if (!this.isPressing || button.disabled) return;
           
-          // 檢查是否需要進入快速模式
           const pressDuration = Date.now() - this.pressStartTime;
           if (pressDuration > this.fastRepeatThreshold) {
             currentInterval = this.fastRepeatInterval;
-            // 重新設定更快的間隔
             clearInterval(this.repeatTimer);
             this.repeatTimer = setInterval(() => {
-              if (this.isPressing) {
+              if (this.isPressing && !button.disabled) {
                 callback(statKey, direction);
               }
             }, this.fastRepeatInterval);
@@ -377,26 +684,17 @@
         }, currentInterval);
       };
 
-      // 🔥 綁定事件監聽器
-      // 滑鼠事件
       button.addEventListener('mousedown', startPress);
       button.addEventListener('mouseup', endPress);
       button.addEventListener('mouseleave', endPress);
-      
-      // 觸控事件（移動設備）
       button.addEventListener('touchstart', startPress, { passive: false });
       button.addEventListener('touchend', endPress);
       button.addEventListener('touchcancel', endPress);
-      
-      // 防止右鍵菜單干擾
       button.addEventListener('contextmenu', (e) => e.preventDefault());
-      
-      // 防止拖拽
       button.addEventListener('dragstart', (e) => e.preventDefault());
     }
   }
 
-  // 🚀 創建長按管理器實例
   const longPressManager = new LongPressManager();
 
   function showLoading(show) {
@@ -407,14 +705,15 @@
   function renderStats() {
     if (!userStats.base_stats) return;
     const stats = userStats.base_stats;
+    
+    // 🎨 渲染當前能力值
     document.getElementById("currentStats").innerHTML = `
-      <li>生命值：${stats.hp}</li>
-      <li>攻擊力：${stats.attack}</li>
-      <li>運氣值：${stats.luck}</li>
-      <li>攻擊速度：${stats.atk_speed}</li>
+      <li><span class="stat-label">生命值</span><span class="stat-value">${stats.hp}</span></li>
+      <li><span class="stat-label">攻擊力</span><span class="stat-value">${stats.attack}</span></li>
+      <li><span class="stat-label">運氣值</span><span class="stat-value">${stats.luck}</span></li>
+      <li><span class="stat-label">攻擊速度</span><span class="stat-value">${stats.atk_speed}</span></li>
     `;
 
-    // 檢查是否有重置券並更新按鈕狀態
     updateResetButtonState();
 
     let html = "";
@@ -423,13 +722,13 @@
         <div class="stat-control" data-stat="${key}">
           <label>${label}：</label>
           <button class="minus" data-stat="${key}" data-direction="-1">
-            -
+            −
             <div class="long-press-progress"></div>
             <div class="long-press-hint">長按快速減少</div>
           </button>
-          <span class="stat-value" id="val_${key}">${alloc[key]}</span>
+          <div class="stat-value-display" id="val_${key}">${alloc[key]}</div>
           <button class="plus" data-stat="${key}" data-direction="1">
-            +
+            ＋
             <div class="long-press-progress"></div>
             <div class="long-press-hint">長按快速增加</div>
           </button>
@@ -445,28 +744,13 @@
       const minusBtn = container.querySelector(".minus");
       const plusBtn = container.querySelector(".plus");
       
-      // 設定長按管理器
       longPressManager.setupButton(minusBtn, adjust, key, -1);
       longPressManager.setupButton(plusBtn, adjust, key, 1);
-      
-      // 🔥 保留原有的點擊功能作為備用
-      minusBtn.addEventListener('click', (e) => {
-        if (!longPressManager.isPressing) {
-          // 只有在非長按狀態下才響應點擊
-          // adjust(key, -1);
-        }
-      });
-      
-      plusBtn.addEventListener('click', (e) => {
-        if (!longPressManager.isPressing) {
-          // 只有在非長按狀態下才響應點擊
-          // adjust(key, 1);
-        }
-      });
     });
+
+    updateButtonStates();
   }
 
-  // 更新重置按鈕狀態
   function updateResetButtonState() {
     const resetBtn = document.getElementById("btnResetAllStats");
     const hasResetTicket = (userItems["reset_stats_ticket"] || 0) > 0;
@@ -480,7 +764,6 @@
     }
   }
 
-  // 顯示重置確認對話框
   window.showResetConfirmation = function() {
     const hasResetTicket = (userItems["reset_stats_ticket"] || 0) > 0;
     
@@ -499,7 +782,6 @@
     }
   };
 
-  // 執行能力值重置
   async function executeStatsReset() {
     showLoading(true);
     PerformanceMonitor.startTiming('resetAllStats');
@@ -510,10 +792,7 @@
       
       if (res.ok) {
         alert("✅ 能力值重置成功！");
-        
-        // 重新載入使用者資料和道具
         await performCompleteRefresh('stats_reset');
-        
       } else {
         alert(data.error || "重置失敗");
       }
@@ -526,48 +805,51 @@
     }
   }
 
-  // 🚀 優化的 adjust 函數，支援長按快速操作
+  // 🎯 優化的 adjust 函數 - 防止抖動
   function adjust(stat, delta) {
     const current = alloc[stat];
     const totalAlloc = Object.values(alloc).reduce((a, b) => a + b, 0);
     const remaining = userStats.stat_points - totalAlloc;
 
-    // 檢查是否可以操作
+    let canAdjust = false;
     if (delta > 0 && remaining > 0) {
       alloc[stat]++;
+      canAdjust = true;
     } else if (delta < 0 && current > 0) {
       alloc[stat]--;
-    } else {
-      // 🔥 操作無效時停止長按
-      if (longPressManager.isPressing) {
-        // 可以在這裡添加音效或視覺回饋
-        console.log(`無法繼續 ${delta > 0 ? '增加' : '減少'} ${stat}`);
-      }
-      return; // 無法操作時直接返回
+      canAdjust = true;
     }
 
-    // 更新顯示
+    if (!canAdjust) {
+      if (longPressManager.isPressing) {
+        console.log(`無法繼續 ${delta > 0 ? '增加' : '減少'} ${stat}`);
+      }
+      return;
+    }
+
+    // 🎯 更新顯示 - 只改變顏色和內容，不改變大小
     const valueEl = document.getElementById(`val_${stat}`);
     if (valueEl) {
       valueEl.innerText = alloc[stat];
       
-      // 🔥 添加數值變化動畫效果
-      valueEl.style.transform = 'scale(1.2)';
-      valueEl.style.color = delta > 0 ? '#4ecdc4' : '#ff6b6b';
+      // 🎨 添加顏色變化動畫，不改變尺寸
+      valueEl.classList.remove('value-changed', 'value-decreased');
+      if (delta > 0) {
+        valueEl.classList.add('value-changed');
+      } else {
+        valueEl.classList.add('value-decreased');
+      }
       
+      // 移除動畫類
       setTimeout(() => {
-        valueEl.style.transform = 'scale(1)';
-        valueEl.style.color = '#ffd93d';
-      }, 150);
+        valueEl.classList.remove('value-changed', 'value-decreased');
+      }, 300);
     }
     
     remainingPointsEl.innerText = userStats.stat_points - Object.values(alloc).reduce((a, b) => a + b, 0);
-    
-    // 🔥 更新按鈕狀態
     updateButtonStates();
   }
 
-  // 🚀 更新按鈕可用狀態
   function updateButtonStates() {
     const totalAlloc = Object.values(alloc).reduce((a, b) => a + b, 0);
     const remaining = userStats.stat_points - totalAlloc;
@@ -579,12 +861,10 @@
       const minusBtn = container.querySelector(".minus");
       const plusBtn = container.querySelector(".plus");
       
-      // 更新減少按鈕狀態
       if (minusBtn) {
         minusBtn.disabled = alloc[key] <= 0;
       }
       
-      // 更新增加按鈕狀態
       if (plusBtn) {
         plusBtn.disabled = remaining <= 0;
       }
@@ -601,7 +881,6 @@
     updateButtonStates();
   }
 
-  // 能力值升級提交
   async function submitLevelUp() {
     const totalAlloc = Object.values(alloc).reduce((a, b) => a + b, 0);
     if (totalAlloc === 0) return alert("請先分配能力點！");
@@ -616,10 +895,7 @@
       
       if (res.ok) {
         alert("能力值已分配完畢！");
-        
-        // ✅ 使用完整刷新流程
         await performCompleteRefresh('level');
-        
       } else {
         alert(data.error || "升級失敗");
       }
@@ -655,11 +931,9 @@
       const card = document.createElement("div");
       card.className = "skill-card";
       
-      // 構建技能描述
       let skillDetails = "";
       const skillType = skill.type;
       
-      // 根據技能類型顯示不同資訊
       if (skillType === "atk" || skillType === "debuff_atk" || skillType === "dot_atk") {
         const currentMultiplier = (skill.multiplier + (currentLevel - 1) * (skill.multiplierperlvl || 0)).toFixed(2);
         skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd} 回合</p>`;
@@ -668,19 +942,16 @@
         }
         skillDetails += `<p>倍率：${currentMultiplier} 屬性：${skill.element.map(e => elemMap[e] || e).join("/")}</p>`;
         
-        // 檢查是否必定命中
         const isGuaranteedHit = (skill.element && skill.element.includes("all")) || skill.guaranteed_hit;
         if (isGuaranteedHit) {
           skillDetails += `<p style="color: #00ff00;">✓ 必定命中</p>`;
         }
         
-        // 負面效果攻擊的額外資訊
         if (skillType === "debuff_atk" && skill.debuff) {
           const debuff = skill.debuff;
           skillDetails += `<p style="color: #ff6b6b;">附加效果：${debuff.name} (${debuff.round}回合，命中率：${(debuff.hit_chance * 100).toFixed(0)}%)</p>`;
         }
         
-        // 持續傷害攻擊的額外資訊
         if (skillType === "dot_atk" && skill.dot) {
           const dot = skill.dot;
           const baseDotDamage = dot.damage_per_turn;
@@ -725,7 +996,6 @@
         skillDetails += `<p style="color: #ffd93d;">蓄力：${skill.shield_rounds}回合 　傷害門檻：${currentThreshold}</p>`;
         skillDetails += `<p style="color: #ff6b6b;">終極技：${skill.ultimate_skill.name} (${currentDamage}傷害)</p>`;
       } else {
-        // 其他類型或未知類型
         skillDetails += `<p>等級上限：${skill.maxlvl} 　冷卻：${skill.cd || 0} 回合</p>`;
         if (skill.waitRound) {
           skillDetails += `<p style="color: #ff9500;">等待回合：第 ${skill.waitRound} 回合後可用</p>`;
@@ -742,7 +1012,6 @@
         ${skillDetails}
       `;
 
-      // 只有解鎖的技能才顯示控制按鈕
       if (!isLocked) {
         const controls = document.createElement("div");
         controls.className = "skill-controls";
@@ -781,7 +1050,6 @@
         card.appendChild(controls);
       }
 
-      // 顯示解鎖提示
       if (isLocked) {
         const tip = document.createElement("span");
         tip.style.color = "red";
@@ -806,7 +1074,6 @@
     renderSkills();
   }
 
-  // 🚀 技能儲存
   async function submitSkills() {
     showLoading(true);
     PerformanceMonitor.startTiming('submitSkills');
@@ -817,10 +1084,7 @@
       
       if (res.ok) {
         alert("技能儲存成功！");
-        
-        // ✅ 使用完整刷新流程
         await performCompleteRefresh('skill');
-        
       } else {
         alert(data.error || "儲存失敗");
       }
@@ -837,22 +1101,18 @@
   document.getElementById("btnResetSkills").onclick = resetSkills;
   document.getElementById("btnSubmitSkills").onclick = submitSkills;
 
-  // 🚀 技能載入
   async function loadAllSkills(forceRefresh = false) {
     PerformanceMonitor.startTiming('loadAllSkills');
     
     try {
-      // 🎯 並行載入技能資料和使用者狀態
       const [skillRes, userRes] = await Promise.all([
         SecureAPI.getStaticData('skills_full'),
-        SecureAPI.getStatus(forceRefresh) // ✅ 修正：支援強制刷新
+        SecureAPI.getStatus(forceRefresh)
       ]);
       
-      // 處理技能資料
       if (Array.isArray(skillRes)) {
         allSkills = skillRes;
       } else {
-        // 如果從後端API載入
         const skillResponse = await fetch(`${API_BASE}/skills_full`);
         allSkills = await skillResponse.json();
       }
@@ -868,7 +1128,6 @@
       renderStats();
       renderSkills();
       
-      // 🔄 如果是強制刷新，記錄日誌
       if (forceRefresh) {
         console.log('✅ 已強制刷新技能資料並更新顯示');
       } else {
@@ -883,7 +1142,6 @@
     }
   }
 
-  // 🚀 載入使用者道具
   async function loadUserItems(forceRefresh = false) {
     try {
       const res = await SecureAPI.get(`${API_BASE}/user_items`, !forceRefresh);
@@ -900,35 +1158,30 @@
     }
   }
 
-  // 🚀 優化的狀態載入
   async function loadStatus(forceRefresh = false) {
-      PerformanceMonitor.startTiming('loadStatus');
+    PerformanceMonitor.startTiming('loadStatus');
+    
+    try {
+      const res = await SecureAPI.getStatus(forceRefresh);
+      userStats = await res.json();
+      renderStats();
       
-      try {
-        // ✅ 強制刷新參數
-        const res = await SecureAPI.getStatus(forceRefresh);
-        userStats = await res.json();
-        renderStats();
-        
-        // 🔄 如果是強制刷新，也要更新頁面顯示
-        if (forceRefresh) {
-          console.log('✅ 已強制刷新使用者狀態並更新顯示');
-        }
-      } catch (error) {
-        console.error('載入使用者狀態失敗:', error);
-        alert('載入使用者狀態失敗');
-      } finally {
-        PerformanceMonitor.endTiming('loadStatus');
+      if (forceRefresh) {
+        console.log('✅ 已強制刷新使用者狀態並更新顯示');
       }
+    } catch (error) {
+      console.error('載入使用者狀態失敗:', error);
+      alert('載入使用者狀態失敗');
+    } finally {
+      PerformanceMonitor.endTiming('loadStatus');
     }
+  }
 
-  // 🚀 主要初始化函數
   async function runMain() {
     showLoading(true);
     PerformanceMonitor.startTiming('upgradePageInit');
     
     try {
-      // 🎯 並行載入狀態、技能資料和道具
       await Promise.all([
         loadStatus(),
         loadAllSkills(),
@@ -946,20 +1199,16 @@
     }
   }
 
-  // 主動刷新顯示函數
   function forceUpdateDisplay() {
     console.log('🔄 強制更新所有顯示元件...');
     
     try {
-      // 重新渲染能力值顯示
       renderStats();
       
-      // 重新渲染技能顯示
       if (typeof renderSkills === 'function') {
         renderSkills();
       }
       
-      // 更新剩餘點數顯示
       if (remainingPointsEl && userStats) {
         remainingPointsEl.innerText = userStats.stat_points || 0;
       }
@@ -981,30 +1230,21 @@
     try {
       showLoading(true);
       
-      // 1. 清除所有相關快取
       SecureAPI.clearUserCache();
-      
-      // 2. 等待一小段時間確保快取清除
       await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // 3. 強制重新載入使用者資料
       await loadStatus(true);
       
-      // 4. 如果是技能更新，也要重新載入技能資料
       if (type === 'skill') {
         await loadAllSkills(true);
       }
       
-      // 5. 如果是能力值重置，需要重新載入道具資料
       if (type === 'stats_reset') {
         await loadUserItems(true);
         await loadAllSkills(true);
       }
       
-      // 6. 強制更新顯示
       forceUpdateDisplay();
       
-      // 7. 重置分配狀態
       if (type === 'level' || type === 'stats_reset') {
         resetStats();
       }
@@ -1019,7 +1259,6 @@
     }
   }
 
-  // 監聽登入狀態
   onAuthStateChanged(auth, (user) => {
     if (user) {
       runMain();
