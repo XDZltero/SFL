@@ -437,9 +437,9 @@
       transition: width 0.5s ease;
     }
 
-    /* 🎨 標題置中 */
-    .fancy-subtitle {
-      text-align: center;
+    /* 🎨 標題置中 - 加強優先級 */
+    h2.fancy-subtitle {
+      text-align: center !important;
     }
 
     /* 🎨 技能按鈕與技能列表間距 */
@@ -1002,6 +1002,32 @@
     }
   }
 
+  // 🚀 技能調整函數
+  function adjustSkill(skillId, delta) {
+    const skill = allSkills.find(s => s.id === skillId);
+    if (!skill) return false;
+
+    const currentLevel = skillAlloc[skillId] ?? 0;
+    
+    if (delta > 0) {
+      // 增加技能等級
+      if (currentLevel < skill.maxlvl && remainingSkillPoints > 0) {
+        skillAlloc[skillId] = (skillAlloc[skillId] ?? 0) + 1;
+        remainingSkillPoints--;
+        return true;
+      }
+    } else if (delta < 0) {
+      // 減少技能等級
+      if (currentLevel > 0) {
+        skillAlloc[skillId] = Math.max(0, (skillAlloc[skillId] ?? 0) - 1);
+        remainingSkillPoints++;
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
   function renderSkills() {
     PerformanceMonitor.startTiming('renderSkills');
     
@@ -1118,30 +1144,47 @@
         const minus = document.createElement("button");
         minus.textContent = "-";
         minus.disabled = currentLevel === 0;
-        minus.onclick = () => {
-          if (skillAlloc[skill.id] > 0) {
-            skillAlloc[skill.id]--;
-            remainingSkillPoints++;
-            renderSkills();
+        minus.style.position = "relative";
+        
+        // 🚀 為技能減少按鈕添加長按功能
+        const skillMinusCallback = (skillId, direction) => {
+          const success = adjustSkill(skillId, direction);
+          if (success) {
+            // 只更新當前技能的顯示，避免重新渲染整個列表
+            updateSkillDisplay(skillId);
+            remainingSkillPointsEl.innerText = remainingSkillPoints;
           }
+          return success;
         };
+        
+        // 設置長按功能
+        setupSkillLongPress(minus, skillMinusCallback, skill.id, -1);
 
         const value = document.createElement("span");
         value.textContent = currentLevel;
         value.style.margin = "0 8px";
         value.style.color = "#ffd93d";
         value.style.fontWeight = "bold";
+        value.id = `skill_value_${skill.id}`;
 
         const plus = document.createElement("button");
         plus.textContent = "+";
         plus.disabled = currentLevel >= skill.maxlvl || remainingSkillPoints <= 0;
-        plus.onclick = () => {
-          if (skillAlloc[skill.id] < skill.maxlvl && remainingSkillPoints > 0) {
-            skillAlloc[skill.id]++;
-            remainingSkillPoints--;
-            renderSkills();
+        plus.style.position = "relative";
+        
+        // 🚀 為技能增加按鈕添加長按功能
+        const skillPlusCallback = (skillId, direction) => {
+          const success = adjustSkill(skillId, direction);
+          if (success) {
+            // 只更新當前技能的顯示，避免重新渲染整個列表
+            updateSkillDisplay(skillId);
+            remainingSkillPointsEl.innerText = remainingSkillPoints;
           }
+          return success;
         };
+        
+        // 設置長按功能
+        setupSkillLongPress(plus, skillPlusCallback, skill.id, 1);
 
         controls.appendChild(minus);
         controls.appendChild(value);
@@ -1164,6 +1207,92 @@
     remainingSkillPointsEl.innerText = remainingSkillPoints;
     
     PerformanceMonitor.endTiming('renderSkills');
+  }
+
+  // 🚀 為技能按鈕設置長按功能（簡化版，不改變外觀）
+  function setupSkillLongPress(button, callback, skillId, direction) {
+    let pressTimer = null;
+    let repeatTimer = null;
+    let isPressing = false;
+    const startDelay = 500;
+    const repeatInterval = 150;
+
+    const startPress = (e) => {
+      e.preventDefault();
+      if (isPressing || button.disabled) return;
+      
+      isPressing = true;
+      
+      // 立即執行一次
+      const success = callback(skillId, direction);
+      if (!success) {
+        isPressing = false;
+        return;
+      }
+      
+      // 設定開始重複的延遲
+      pressTimer = setTimeout(() => {
+        if (isPressing && !button.disabled) {
+          repeatTimer = setInterval(() => {
+            if (isPressing && !button.disabled) {
+              const success = callback(skillId, direction);
+              if (!success) {
+                // 無法繼續操作時停止
+                isPressing = false;
+                clearInterval(repeatTimer);
+              }
+            }
+          }, repeatInterval);
+        }
+      }, startDelay);
+    };
+
+    const endPress = (e) => {
+      if (!isPressing) return;
+      
+      isPressing = false;
+      
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      if (repeatTimer) {
+        clearInterval(repeatTimer);
+        repeatTimer = null;
+      }
+    };
+
+    // 綁定事件
+    button.addEventListener('mousedown', startPress);
+    button.addEventListener('mouseup', endPress);
+    button.addEventListener('mouseleave', endPress);
+    button.addEventListener('touchstart', startPress, { passive: false });
+    button.addEventListener('touchend', endPress);
+    button.addEventListener('touchcancel', endPress);
+    button.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  // 🚀 更新單個技能顯示
+  function updateSkillDisplay(skillId) {
+    const valueEl = document.getElementById(`skill_value_${skillId}`);
+    const skill = allSkills.find(s => s.id === skillId);
+    
+    if (valueEl && skill) {
+      const currentLevel = skillAlloc[skillId] ?? 0;
+      valueEl.textContent = currentLevel;
+      
+      // 更新按鈕狀態
+      const controls = valueEl.parentElement;
+      const minusBtn = controls.querySelector('button:first-child');
+      const plusBtn = controls.querySelector('button:last-child');
+      
+      if (minusBtn) {
+        minusBtn.disabled = currentLevel <= 0;
+      }
+      if (plusBtn) {
+        plusBtn.disabled = currentLevel >= skill.maxlvl || remainingSkillPoints <= 0;
+      }
+    }
   }
 
   function resetSkills() {
