@@ -437,9 +437,21 @@
       transition: width 0.5s ease;
     }
 
-    /* 🎨 標題置中 - 加強優先級 */
-    h2.fancy-subtitle {
+    /* 🎨 專用標題置中樣式 - 避免外部CSS衝突 */
+    .upgrade-section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5em;
+      color: #ffd93d;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 5px rgba(255, 217, 61, 0.4);
       text-align: center !important;
+      display: block;
+      width: 100%;
+    }
+
+    .upgrade-section-title .emoji {
+      margin-right: 8px;
     }
 
     /* 🎨 技能按鈕與技能列表間距 */
@@ -637,7 +649,7 @@
 <h1 class="fancy-title">🧩 升級與技能管理</h1>
 <hr>
 
-<h2 class="fancy-subtitle"><span class="emoji">📊</span> 分配能力點</h2>
+<h2 class="upgrade-section-title"><span class="emoji">📊</span> 分配能力點</h2>
 <div class="stats-container">
   <div class="current-stats-panel">
     <div class="panel-title">✨ 目前能力值</div>
@@ -661,7 +673,7 @@
 
 <hr>
 
-<h2 class="fancy-subtitle"><span class="emoji">🌀</span> 技能點分配</h2>
+<h2 class="upgrade-section-title"><span class="emoji">🌀</span> 技能點分配</h2>
 <div class="skills-section">
   <div class="remaining-skill-points">
     剩餘技能點數：<span id="remainingSkillPoints" class="remaining-points">0</span>
