@@ -1,4 +1,4 @@
-/統一的能力值區域樣式 */
+/* 統一的能力值區域樣式 */
     .stats-container {
       display: flex;
       gap: 30px;
