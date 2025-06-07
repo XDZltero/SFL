@@ -148,7 +148,7 @@
       },
       "4": {
         "attack": 35,
-        "accuracy": 25,
+        "accuracy": 0.25,
         "shield": 50
       },
       "5": {
