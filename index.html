@@ -60,11 +60,11 @@
   <!-- 行為腳本 -->
   <script type="module">
     import { auth, signOut } from "./js/firebase-init.js";
-    let currentBgm = "main";
+    let currentBgm = "main_theme";
 
     // 🎵 音樂資源配置
     const musicSources = {
-      main: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/main_page_theme_bgm-biupwsR9M1RQlzuZG0CZmhqOkZ6P15.mp3",
+      main_theme: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/main_page_theme_bgm-biupwsR9M1RQlzuZG0CZmhqOkZ6P15.mp3",
       boss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/Last_Boss_Battle_theme_v2-zrhJSBVfzYfK17ro58EyHtmr0smIxi.mp3",
       worldBoss: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/World_Boss_Battle_theme-1iojoQSoKrHoSGqZX5R6NrXmPwGAJ0.mp3",
       story: "https://d6sxwifruvavjc3u.public.blob.vercel-storage.com/StoryPage-XBTqYtVyxoO0C48l0UPrKtutWNgB2t.mp3",
@@ -82,8 +82,8 @@
         bgm.src = musicSources[musicType];
       } else {
         console.warn(`⚠️ 找不到音樂類型：${musicType}，使用主音樂`);
-        bgm.src = musicSources.main;
-        currentBgm = "main";
+        bgm.src = musicSources.main_theme;
+        currentBgm = "main_theme";
       }
     
       bgm.load();
@@ -118,7 +118,7 @@
           break;
           
         case "restoreMainMusic":
-          switchMusic("main");
+          switchMusic("main_theme");
           break;
 
         case "switchToStoryMusic": // 故事音樂指令
@@ -243,9 +243,9 @@
                  !page.includes("story.html") && 
                  !page.includes("world_boss.html") && 
                  !page.includes("shop.html") &&
-                 currentBgm !== "main") {
+                 currentBgm !== "main_theme") {
         // 🎵 離開特殊頁面時恢復主音樂
-        switchMusic("main");
+        switchMusic("main_theme");
       }
     
       iframe.src = page;
@@ -338,7 +338,7 @@
     // 🎵 音樂預載入
     function preloadMusic() {
       Object.entries(musicSources).forEach(([key, src]) => {
-        if (key !== "main") { // 主音樂已經預載入了
+        if (key !== "main_theme") { // 主音樂已經預載入了
           const audio = new Audio();
           audio.preload = "metadata";
           audio.src = src;
